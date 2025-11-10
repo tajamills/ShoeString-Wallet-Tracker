@@ -21,6 +21,7 @@ function App() {
   const [analysis, setAnalysis] = useState(null);
   const [error, setError] = useState('');
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const analyzeWallet = async () => {
     if (!user) {
