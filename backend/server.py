@@ -152,6 +152,92 @@ async def check_usage_limit(user: dict = Depends(get_current_user)) -> dict:
 async def root():
     return {"message": "Hello World"}
 
+# Authentication Routes
+@api_router.post("/auth/register", response_model=TokenResponse)
+async def register(user_data: UserRegister):
+    """Register a new user"""
+    # Validate email
+    if not auth_service.validate_email(user_data.email):
+        raise HTTPException(status_code=400, detail="Invalid email format")
+    
+    # Validate password
+    is_valid, error_msg = auth_service.validate_password(user_data.password)
+    if not is_valid:
+        raise HTTPException(status_code=400, detail=error_msg)
+    
+    # Check if user already exists
+    existing_user = await db.users.find_one({"email": user_data.email.lower()})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    # Create new user
+    user = User(
+        email=user_data.email.lower(),
+        password_hash=auth_service.get_password_hash(user_data.password)
+    )
+    
+    # Store in database
+    doc = user.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    doc['last_usage_reset'] = doc['last_usage_reset'].isoformat()
+    await db.users.insert_one(doc)
+    
+    # Generate token
+    access_token = auth_service.create_access_token(data={"sub": user.id})
+    
+    # Return response
+    user_response = UserResponse(
+        id=user.id,
+        email=user.email,
+        subscription_tier=user.subscription_tier,
+        daily_usage_count=user.daily_usage_count,
+        created_at=user.created_at
+    )
+    
+    return TokenResponse(access_token=access_token, user=user_response)
+
+@api_router.post("/auth/login", response_model=TokenResponse)
+async def login(user_data: UserLogin):
+    """Login user"""
+    # Find user
+    user = await db.users.find_one({"email": user_data.email.lower()})
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    # Verify password
+    if not auth_service.verify_password(user_data.password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    # Generate token
+    access_token = auth_service.create_access_token(data={"sub": user["id"]})
+    
+    # Parse dates
+    created_at = datetime.fromisoformat(user["created_at"]) if isinstance(user["created_at"], str) else user["created_at"]
+    
+    # Return response
+    user_response = UserResponse(
+        id=user["id"],
+        email=user["email"],
+        subscription_tier=user["subscription_tier"],
+        daily_usage_count=user["daily_usage_count"],
+        created_at=created_at
+    )
+    
+    return TokenResponse(access_token=access_token, user=user_response)
+
+@api_router.get("/auth/me", response_model=UserResponse)
+async def get_me(user: dict = Depends(get_current_user)):
+    """Get current user info"""
+    created_at = datetime.fromisoformat(user["created_at"]) if isinstance(user["created_at"], str) else user["created_at"]
+    
+    return UserResponse(
+        id=user["id"],
+        email=user["email"],
+        subscription_tier=user["subscription_tier"],
+        daily_usage_count=user["daily_usage_count"],
+        created_at=created_at
+    )
+
 @api_router.post("/status", response_model=StatusCheck)
 async def create_status_check(input: StatusCheckCreate):
     status_dict = input.model_dump()
