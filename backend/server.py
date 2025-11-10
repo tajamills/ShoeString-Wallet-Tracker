@@ -38,6 +38,26 @@ class StatusCheck(BaseModel):
 class StatusCheckCreate(BaseModel):
     client_name: str
 
+class WalletAnalysisRequest(BaseModel):
+    address: str
+
+class WalletAnalysisResponse(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    address: str
+    totalEthSent: float
+    totalEthReceived: float
+    totalGasFees: float
+    netEth: float
+    outgoingTransactionCount: int
+    incomingTransactionCount: int
+    tokensSent: Dict[str, float]
+    tokensReceived: Dict[str, float]
+    recentTransactions: List[Dict[str, Any]]
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+# Initialize wallet service
+wallet_service = WalletService()
+
 # Add your routes to the router instead of directly to app
 @api_router.get("/")
 async def root():
