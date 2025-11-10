@@ -109,7 +109,7 @@ class Payment(BaseModel):
     btc_address: str
     status: str  # waiting, confirming, confirmed, failed, expired
     subscription_tier: str
-    payment_url: str
+    payment_url: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     confirmed_at: Optional[datetime] = None
 
