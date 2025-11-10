@@ -5,8 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Wallet, TrendingUp, TrendingDown, DollarSign, Activity } from 'lucide-react';
+import { Loader2, Wallet, TrendingUp, TrendingDown, DollarSign, Activity, LogOut, User, Crown } from 'lucide-react';
 import axios from 'axios';
+import { useAuth } from '@/contexts/AuthContext';
+import { AuthModal } from '@/components/AuthModal';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
