@@ -176,7 +176,7 @@ function App() {
           <CardHeader>
             <CardTitle className="text-white">Enter Wallet Address</CardTitle>
             <CardDescription className="text-gray-400">
-              Enter an Ethereum wallet address to analyze transactions and calculate costs
+              Enter an Ethereum wallet address to track transactions, gas fees, and calculate your crypto taxes
             </CardDescription>
           </CardHeader>
           <CardContent>
