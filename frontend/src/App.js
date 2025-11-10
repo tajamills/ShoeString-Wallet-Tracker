@@ -81,11 +81,19 @@ function App() {
     }).format(num);
   };
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <Loader2 className="w-12 h-12 text-purple-400 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-4">
             <Wallet className="w-12 h-12 text-purple-400" />
             <h1 className="text-5xl font-bold text-white">Crypto Wallet Tracker</h1>
@@ -93,6 +101,60 @@ function App() {
           <p className="text-gray-300 text-lg">
             Analyze your Ethereum wallet transactions and calculate costs
           </p>
+        </div>
+
+        {/* User Info Bar */}
+        <div className="max-w-3xl mx-auto mb-6">
+          {user ? (
+            <Card className="bg-slate-800/50 border-slate-700\" data-testid=\"user-info-bar\">
+              <CardContent className="py-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <User className="w-5 h-5 text-purple-400\" />
+                    <div>
+                      <p className="text-white font-medium">{user.email}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge className={`${user.subscription_tier === 'free' ? 'bg-gray-600' : 'bg-purple-600'}`}>
+                          {user.subscription_tier === 'premium' && <Crown className="w-3 h-3 mr-1\" />}
+                          {user.subscription_tier === 'pro' && <Crown className="w-3 h-3 mr-1\" />}
+                          {user.subscription_tier.toUpperCase()}
+                        </Badge>
+                        <span className="text-sm text-gray-400">
+                          {user.subscription_tier === 'free' 
+                            ? `${user.daily_usage_count}/1 analyses today` 
+                            : `${user.daily_usage_count} analyses today`}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    onClick={logout}
+                    className="border-slate-600 text-gray-300 hover:bg-slate-700"
+                    data-testid="logout-button"
+                  >
+                    <LogOut className="w-4 h-4 mr-2\" />
+                    Logout
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="bg-slate-800/50 border-slate-700\" data-testid=\"login-prompt\">
+              <CardContent className="py-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-gray-300">Login to start analyzing wallets</p>
+                  <Button 
+                    onClick={() => setShowAuthModal(true)}
+                    className="bg-purple-600 hover:bg-purple-700"
+                    data-testid="login-button"
+                  >
+                    Login / Sign Up
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Input Section */}
