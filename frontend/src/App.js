@@ -129,15 +129,27 @@ function App() {
                       </div>
                     </div>
                   </div>
-                  <Button 
-                    variant="outline" 
-                    onClick={logout}
-                    className="border-slate-600 text-gray-300 hover:bg-slate-700"
-                    data-testid="logout-button"
-                  >
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Logout
-                  </Button>
+                  <div className="flex gap-2">
+                    {user.subscription_tier === 'free' && (
+                      <Button 
+                        onClick={() => setShowUpgradeModal(true)}
+                        className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                        data-testid="upgrade-button"
+                      >
+                        <Crown className="w-4 h-4 mr-2" />
+                        Upgrade
+                      </Button>
+                    )}
+                    <Button 
+                      variant="outline" 
+                      onClick={logout}
+                      className="border-slate-600 text-gray-300 hover:bg-slate-700"
+                      data-testid="logout-button"
+                    >
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Logout
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
