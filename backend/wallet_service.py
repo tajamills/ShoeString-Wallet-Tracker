@@ -218,29 +218,44 @@ class WalletService:
         
         # Format outgoing
         for tx in outgoing[:10]:
+            value = tx.get('value', 0)
+            try:
+                value = float(value) if value is not None else 0.0
+            except (ValueError, TypeError):
+                value = 0.0
+                
             formatted.append({
                 'hash': tx.get('hash', ''),
                 'type': 'sent',
-                'value': tx.get('value', 0),
+                'value': value,
                 'asset': tx.get('asset', 'ETH'),
                 'to': tx.get('to', ''),
-                'blockNum': tx.get('blockNum', ''),
+                'blockNum': tx.get('blockNum', '0x0'),
                 'category': tx.get('category', '')
             })
         
         # Format incoming
         for tx in incoming[:10]:
+            value = tx.get('value', 0)
+            try:
+                value = float(value) if value is not None else 0.0
+            except (ValueError, TypeError):
+                value = 0.0
+                
             formatted.append({
                 'hash': tx.get('hash', ''),
                 'type': 'received',
-                'value': tx.get('value', 0),
+                'value': value,
                 'asset': tx.get('asset', 'ETH'),
                 'from': tx.get('from', ''),
-                'blockNum': tx.get('blockNum', ''),
+                'blockNum': tx.get('blockNum', '0x0'),
                 'category': tx.get('category', '')
             })
         
         # Sort by block number (most recent first)
-        formatted.sort(key=lambda x: int(x.get('blockNum', '0'), 16) if x.get('blockNum', '').startswith('0x') else int(x.get('blockNum', '0')), reverse=True)
+        try:
+            formatted.sort(key=lambda x: int(x.get('blockNum', '0x0'), 16) if x.get('blockNum', '0x0').startswith('0x') else int(x.get('blockNum', '0') or '0'), reverse=True)
+        except:
+            pass  # Keep original order if sorting fails
         
         return formatted[:20]
