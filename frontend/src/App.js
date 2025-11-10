@@ -98,10 +98,10 @@ function App() {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-4">
             <Wallet className="w-12 h-12 text-purple-400" />
-            <h1 className="text-5xl font-bold text-white">Crypto Wallet Tracker</h1>
+            <h1 className="text-5xl font-bold text-white">ShoeString Wallet Tracker</h1>
           </div>
           <p className="text-gray-300 text-lg">
-            Analyze your Ethereum wallet transactions and calculate costs
+            Review your transactions on the blockchain
           </p>
         </div>
 
