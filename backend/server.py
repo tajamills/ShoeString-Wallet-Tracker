@@ -12,6 +12,7 @@ import uuid
 from datetime import datetime, timezone, timedelta
 from wallet_service import WalletService
 from auth_service import AuthService
+from nowpayments_service import NOWPaymentsService
 
 
 ROOT_DIR = Path(__file__).parent
