@@ -9,6 +9,7 @@ import { Loader2, Wallet, TrendingUp, TrendingDown, DollarSign, Activity, LogOut
 import axios from 'axios';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthModal } from '@/components/AuthModal';
+import { UpgradeModal } from '@/components/UpgradeModal';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
