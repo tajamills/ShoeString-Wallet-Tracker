@@ -14,11 +14,12 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 function App() {
+  const { user, logout, getAuthHeader, loading: authLoading, fetchUserProfile } = useAuth();
   const [walletAddress, setWalletAddress] = useState('');
   const [loading, setLoading] = useState(false);
   const [analysis, setAnalysis] = useState(null);
   const [error, setError] = useState('');
-  const [history, setHistory] = useState([]);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   const analyzeWallet = async () => {
     if (!walletAddress || !walletAddress.startsWith('0x') || walletAddress.length !== 42) {
