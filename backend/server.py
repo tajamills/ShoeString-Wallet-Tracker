@@ -87,6 +87,61 @@ async def get_status_checks():
     
     return status_checks
 
+@api_router.post("/wallet/analyze", response_model=WalletAnalysisResponse)
+async def analyze_wallet(request: WalletAnalysisRequest):
+    """Analyze a crypto wallet and calculate statistics"""
+    try:
+        # Validate address format (basic check)
+        address = request.address.strip()
+        if not address.startswith('0x') or len(address) != 42:
+            raise HTTPException(status_code=400, detail="Invalid Ethereum address format")
+        
+        # Analyze wallet using wallet service
+        analysis_data = wallet_service.analyze_wallet(address)
+        
+        # Create response object
+        analysis_response = WalletAnalysisResponse(
+            address=analysis_data['address'],
+            totalEthSent=analysis_data['totalEthSent'],
+            totalEthReceived=analysis_data['totalEthReceived'],
+            totalGasFees=analysis_data['totalGasFees'],
+            netEth=analysis_data['netEth'],
+            outgoingTransactionCount=analysis_data['outgoingTransactionCount'],
+            incomingTransactionCount=analysis_data['incomingTransactionCount'],
+            tokensSent=analysis_data['tokensSent'],
+            tokensReceived=analysis_data['tokensReceived'],
+            recentTransactions=analysis_data['recentTransactions']
+        )
+        
+        # Store in database
+        doc = analysis_response.model_dump()
+        doc['timestamp'] = doc['timestamp'].isoformat()
+        await db.wallet_analyses.insert_one(doc)
+        
+        return analysis_response
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error analyzing wallet: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to analyze wallet: {str(e)}")
+
+@api_router.get("/wallet/history", response_model=List[WalletAnalysisResponse])
+async def get_wallet_history(limit: int = 10):
+    """Get wallet analysis history"""
+    try:
+        analyses = await db.wallet_analyses.find({}, {"_id": 0}).sort("timestamp", -1).to_list(limit)
+        
+        # Convert ISO string timestamps back to datetime objects
+        for analysis in analyses:
+            if isinstance(analysis['timestamp'], str):
+                analysis['timestamp'] = datetime.fromisoformat(analysis['timestamp'])
+        
+        return analyses
+    except Exception as e:
+        logger.error(f"Error fetching wallet history: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch wallet history")
+
 # Include the router in the main app
 app.include_router(api_router)
 
