@@ -148,13 +148,22 @@ class WalletService:
                 if tx_hash:
                     tx_hashes.add(tx_hash)
                 
+                # Skip if value is None or invalid
+                if value is None:
+                    continue
+                    
+                try:
+                    value_float = float(value) if value else 0.0
+                except (ValueError, TypeError):
+                    continue
+                
                 if category in ['external', 'internal'] and asset == 'ETH':
-                    total_eth_sent += float(value)
+                    total_eth_sent += value_float
                 elif category in ['erc20']:
                     token_symbol = asset
                     if token_symbol not in tokens_sent:
                         tokens_sent[token_symbol] = 0.0
-                    tokens_sent[token_symbol] += float(value)
+                    tokens_sent[token_symbol] += value_float
             
             # Process incoming transactions
             for tx in incoming:
@@ -162,13 +171,22 @@ class WalletService:
                 value = tx.get('value', 0)
                 asset = tx.get('asset', 'ETH')
                 
+                # Skip if value is None or invalid
+                if value is None:
+                    continue
+                    
+                try:
+                    value_float = float(value) if value else 0.0
+                except (ValueError, TypeError):
+                    continue
+                
                 if category in ['external', 'internal'] and asset == 'ETH':
-                    total_eth_received += float(value)
+                    total_eth_received += value_float
                 elif category in ['erc20']:
                     token_symbol = asset
                     if token_symbol not in tokens_received:
                         tokens_received[token_symbol] = 0.0
-                    tokens_received[token_symbol] += float(value)
+                    tokens_received[token_symbol] += value_float
             
             # Get gas fees for outgoing transactions
             receipts = self.get_transaction_receipts(list(tx_hashes))
