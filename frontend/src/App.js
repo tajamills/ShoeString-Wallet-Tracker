@@ -22,6 +22,11 @@ function App() {
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   const analyzeWallet = async () => {
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
+
     if (!walletAddress || !walletAddress.startsWith('0x') || walletAddress.length !== 42) {
       setError('Please enter a valid Ethereum address (0x...)');
       return;
@@ -32,12 +37,23 @@ function App() {
     setAnalysis(null);
 
     try {
-      const response = await axios.post(`${API}/wallet/analyze`, {
-        address: walletAddress
-      });
+      const response = await axios.post(
+        `${API}/wallet/analyze`,
+        { address: walletAddress },
+        { headers: getAuthHeader() }
+      );
       setAnalysis(response.data);
+      // Refresh user data to update usage count
+      await fetchUserProfile();
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to analyze wallet. Please try again.');
+      if (err.response?.status === 429) {
+        setError('Daily limit reached! Upgrade to Premium for unlimited wallet analyses.');
+      } else if (err.response?.status === 401) {
+        setError('Please login to continue');
+        setShowAuthModal(true);
+      } else {
+        setError(err.response?.data?.detail || 'Failed to analyze wallet. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
