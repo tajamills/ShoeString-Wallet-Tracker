@@ -263,8 +263,8 @@ async def get_status_checks():
     return status_checks
 
 @api_router.post("/wallet/analyze", response_model=WalletAnalysisResponse)
-async def analyze_wallet(request: WalletAnalysisRequest):
-    """Analyze a crypto wallet and calculate statistics"""
+async def analyze_wallet(request: WalletAnalysisRequest, user: dict = Depends(check_usage_limit)):
+    """Analyze a crypto wallet and calculate statistics (requires authentication)"""
     try:
         # Validate address format (basic check)
         address = request.address.strip()
@@ -288,10 +288,17 @@ async def analyze_wallet(request: WalletAnalysisRequest):
             recentTransactions=analysis_data['recentTransactions']
         )
         
-        # Store in database
+        # Store in database with user info
         doc = analysis_response.model_dump()
         doc['timestamp'] = doc['timestamp'].isoformat()
+        doc['user_id'] = user['id']
         await db.wallet_analyses.insert_one(doc)
+        
+        # Increment user's daily usage count
+        await db.users.update_one(
+            {"id": user["id"]},
+            {"$inc": {"daily_usage_count": 1}}
+        )
         
         return analysis_response
         
