@@ -101,7 +101,7 @@ function App() {
             <h1 className="text-5xl font-bold text-white">ShoeString Wallet Tracker</h1>
           </div>
           <p className="text-gray-300 text-lg">
-            Review your transactions on the blockchain
+            Review your transactions on the blockchain. Perfect for taxes.
           </p>
         </div>
 
