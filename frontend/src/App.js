@@ -414,6 +414,9 @@ function App() {
 
         {/* Auth Modal */}
         <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
+        
+        {/* Upgrade Modal */}
+        <UpgradeModal isOpen={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} />
       </div>
     </div>
   );
