@@ -57,8 +57,95 @@ class WalletAnalysisResponse(BaseModel):
     recentTransactions: List[Dict[str, Any]]
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-# Initialize wallet service
+# Initialize services
 wallet_service = WalletService()
+auth_service = AuthService()
+security = HTTPBearer()
+
+# User Models
+class User(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    email: str
+    password_hash: str
+    subscription_tier: str = "free"  # free, premium, pro
+    daily_usage_count: int = 0
+    last_usage_reset: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class UserRegister(BaseModel):
+    email: EmailStr
+    password: str
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+class UserResponse(BaseModel):
+    id: str
+    email: str
+    subscription_tier: str
+    daily_usage_count: int
+    created_at: datetime
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserResponse
+
+# Auth dependency
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
+    """Get current authenticated user from JWT token"""
+    token = credentials.credentials
+    payload = auth_service.decode_token(token)
+    
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    
+    return user
+
+async def check_usage_limit(user: dict = Depends(get_current_user)) -> dict:
+    """Check if user has exceeded their daily usage limit"""
+    # Reset daily count if it's a new day
+    last_reset = user.get("last_usage_reset")
+    if isinstance(last_reset, str):
+        last_reset = datetime.fromisoformat(last_reset)
+    
+    now = datetime.now(timezone.utc)
+    if (now - last_reset).days >= 1:
+        # Reset usage count
+        await db.users.update_one(
+            {"id": user["id"]},
+            {
+                "$set": {
+                    "daily_usage_count": 0,
+                    "last_usage_reset": now.isoformat()
+                }
+            }
+        )
+        user["daily_usage_count"] = 0
+    
+    # Check limits based on tier
+    tier = user.get("subscription_tier", "free")
+    daily_limit = {
+        "free": 1,
+        "premium": 999999,  # Unlimited
+        "pro": 999999  # Unlimited
+    }.get(tier, 1)
+    
+    if user.get("daily_usage_count", 0) >= daily_limit:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Daily limit reached. Upgrade to Premium for unlimited analyses."
+        )
+    
+    return user
 
 # Add your routes to the router instead of directly to app
 @api_router.get("/")
