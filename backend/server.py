@@ -259,6 +259,172 @@ async def get_me(user: dict = Depends(get_current_user)):
         created_at=created_at
     )
 
+# Payment Routes
+@api_router.post("/payments/create-upgrade")
+async def create_upgrade_payment(
+    request: UpgradeRequest,
+    user: dict = Depends(get_current_user)
+):
+    """Create BTC payment for subscription upgrade"""
+    try:
+        # Determine price based on tier
+        tier_prices = {
+            "premium": 19.00,
+            "pro": 49.00
+        }
+        
+        if request.tier not in tier_prices:
+            raise HTTPException(status_code=400, detail="Invalid subscription tier")
+        
+        price_usd = tier_prices[request.tier]
+        
+        # Create unique order ID
+        order_id = f"upgrade_{user['id']}_{request.tier}_{int(datetime.now(timezone.utc).timestamp())}"
+        
+        # Create payment with NOWPayments
+        payment_data = await nowpayments_service.create_payment(
+            price_amount=price_usd,
+            price_currency="usd",
+            pay_currency="btc",
+            order_id=order_id,
+            order_description=f"Upgrade to {request.tier.upper()} subscription",
+            ipn_callback_url=f"{os.environ.get('BACKEND_URL', 'http://localhost:8001')}/api/payments/webhook",
+            success_url=f"{os.environ.get('FRONTEND_URL', 'http://localhost:3000')}/payment-success",
+            cancel_url=f"{os.environ.get('FRONTEND_URL', 'http://localhost:3000')}/payment-cancelled"
+        )
+        
+        # Store payment in database
+        payment = Payment(
+            user_id=user["id"],
+            payment_id=payment_data["payment_id"],
+            order_id=order_id,
+            amount_usd=price_usd,
+            amount_btc=float(payment_data["pay_amount"]),
+            btc_address=payment_data["pay_address"],
+            status=payment_data["payment_status"],
+            subscription_tier=request.tier,
+            payment_url=payment_data.get("payment_url", "")
+        )
+        
+        doc = payment.model_dump()
+        doc['created_at'] = doc['created_at'].isoformat()
+        if doc.get('confirmed_at'):
+            doc['confirmed_at'] = doc['confirmed_at'].isoformat()
+        
+        await db.payments.insert_one(doc)
+        
+        logger.info(f"Payment created for user {user['id']}: {payment_data['payment_id']}")
+        
+        return {
+            "payment_id": payment_data["payment_id"],
+            "btc_address": payment_data["pay_address"],
+            "btc_amount": payment_data["pay_amount"],
+            "usd_amount": price_usd,
+            "status": payment_data["payment_status"],
+            "payment_url": payment_data.get("payment_url", ""),
+            "order_id": order_id
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to create payment: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Payment creation failed: {str(e)}")
+
+@api_router.post("/payments/webhook")
+async def handle_nowpayments_webhook(request: Request):
+    """Handle NOWPayments IPN (Instant Payment Notification) webhook"""
+    try:
+        # Get request body and signature
+        body = await request.body()
+        signature = request.headers.get("x-nowpayments-sig", "")
+        
+        # Verify signature
+        if signature and not nowpayments_service.verify_ipn_signature(body.decode(), signature):
+            logger.warning("Invalid webhook signature")
+            raise HTTPException(status_code=401, detail="Invalid signature")
+        
+        # Parse webhook data
+        data = json.loads(body)
+        
+        payment_id = data.get("payment_id")
+        payment_status = data.get("payment_status")
+        order_id = data.get("order_id")
+        
+        logger.info(f"Webhook received for payment {payment_id}: status={payment_status}")
+        
+        # Find payment in database
+        payment_doc = await db.payments.find_one({"payment_id": payment_id})
+        
+        if not payment_doc:
+            logger.error(f"Payment not found: {payment_id}")
+            return {"status": "error", "message": "Payment not found"}
+        
+        # Update payment status
+        update_data = {"status": payment_status}
+        
+        # If payment is confirmed, upgrade user subscription
+        if payment_status in ["confirmed", "finished"]:
+            update_data["confirmed_at"] = datetime.now(timezone.utc).isoformat()
+            
+            # Upgrade user subscription
+            user_id = payment_doc["user_id"]
+            subscription_tier = payment_doc["subscription_tier"]
+            
+            await db.users.update_one(
+                {"id": user_id},
+                {
+                    "$set": {
+                        "subscription_tier": subscription_tier,
+                        "daily_usage_count": 0,
+                        "last_usage_reset": datetime.now(timezone.utc).isoformat()
+                    }
+                }
+            )
+            
+            logger.info(f"User {user_id} upgraded to {subscription_tier}")
+        
+        # Update payment document
+        await db.payments.update_one(
+            {"payment_id": payment_id},
+            {"$set": update_data}
+        )
+        
+        return {"status": "ok"}
+        
+    except Exception as e:
+        logger.error(f"Webhook processing error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Webhook processing failed")
+
+@api_router.get("/payments/status/{payment_id}")
+async def get_payment_status(
+    payment_id: str,
+    user: dict = Depends(get_current_user)
+):
+    """Check payment status"""
+    try:
+        # Get from database
+        payment_doc = await db.payments.find_one(
+            {"payment_id": payment_id, "user_id": user["id"]},
+            {"_id": 0}
+        )
+        
+        if not payment_doc:
+            raise HTTPException(status_code=404, detail="Payment not found")
+        
+        # Also check with NOWPayments API for latest status
+        try:
+            live_status = await nowpayments_service.get_payment_status(payment_id)
+            payment_doc["live_status"] = live_status.get("payment_status")
+        except:
+            pass
+        
+        return payment_doc
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get payment status: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get payment status")
+
 @api_router.post("/status", response_model=StatusCheck)
 async def create_status_check(input: StatusCheckCreate):
     status_dict = input.model_dump()
