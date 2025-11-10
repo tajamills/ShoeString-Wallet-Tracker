@@ -61,6 +61,7 @@ class WalletAnalysisResponse(BaseModel):
 # Initialize services
 wallet_service = WalletService()
 auth_service = AuthService()
+nowpayments_service = NOWPaymentsService()
 security = HTTPBearer()
 
 # User Models
