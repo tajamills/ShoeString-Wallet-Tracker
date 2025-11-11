@@ -402,30 +402,67 @@ async def handle_nowpayments_webhook(request: Request):
         logger.error(f"Webhook processing error: {str(e)}")
         raise HTTPException(status_code=500, detail="Webhook processing failed")
 
-@api_router.get("/payments/status/{payment_id}")
+@api_router.get("/payments/status/{session_id}")
 async def get_payment_status(
-    payment_id: str,
+    session_id: str,
     user: dict = Depends(get_current_user)
 ):
-    """Check payment status"""
+    """Check Stripe checkout session status"""
     try:
-        # Get from database
-        payment_doc = await db.payments.find_one(
-            {"payment_id": payment_id, "user_id": user["id"]},
+        # Get payment from database
+        payment_doc = await db.payment_transactions.find_one(
+            {"session_id": session_id, "user_id": user["id"]},
             {"_id": 0}
         )
         
         if not payment_doc:
             raise HTTPException(status_code=404, detail="Payment not found")
         
-        # Also check with NOWPayments API for latest status
+        # Check with Stripe for latest status
         try:
-            live_status = await nowpayments_service.get_payment_status(payment_id)
-            payment_doc["live_status"] = live_status.get("payment_status")
-        except:
-            pass
-        
-        return payment_doc
+            checkout_status = await stripe_service.get_checkout_status(session_id)
+            
+            # Update database if payment completed and not already processed
+            if checkout_status.payment_status == "paid" and payment_doc["payment_status"] != "paid":
+                # Update payment status
+                await db.payment_transactions.update_one(
+                    {"session_id": session_id},
+                    {
+                        "$set": {
+                            "status": "completed",
+                            "payment_status": "paid",
+                            "confirmed_at": datetime.now(timezone.utc).isoformat()
+                        }
+                    }
+                )
+                
+                # Upgrade user subscription
+                tier = payment_doc["subscription_tier"]
+                await db.users.update_one(
+                    {"id": user["id"]},
+                    {
+                        "$set": {
+                            "subscription_tier": tier,
+                            "daily_usage_count": 0,
+                            "last_usage_reset": datetime.now(timezone.utc).isoformat()
+                        }
+                    }
+                )
+                
+                logger.info(f"User {user['id']} upgraded to {tier}")
+            
+            return {
+                "session_id": session_id,
+                "status": checkout_status.status,
+                "payment_status": checkout_status.payment_status,
+                "amount": checkout_status.amount_total / 100,  # Convert from cents
+                "currency": checkout_status.currency,
+                "subscription_tier": payment_doc["subscription_tier"]
+            }
+        except Exception as e:
+            logger.error(f"Error checking Stripe status: {str(e)}")
+            # Return database status if Stripe check fails
+            return payment_doc
         
     except HTTPException:
         raise
