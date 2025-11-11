@@ -5,8 +5,8 @@ from passlib.context import CryptContext
 from jose import JWTError, jwt
 from fastapi import HTTPException, status
 
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Password hashing (reduced rounds for better performance on free tier servers)
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__rounds=8)
 
 # JWT settings
 SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "your-secret-key-change-in-production")
