@@ -83,7 +83,7 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
             Upgrade Your Subscription
           </DialogTitle>
           <DialogDescription className="text-gray-400">
-            Choose a plan and pay with USDC
+            Choose a plan and pay securely with Stripe
           </DialogDescription>
         </DialogHeader>
 
