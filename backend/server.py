@@ -579,6 +579,120 @@ async def get_wallet_history(limit: int = 10):
         logger.error(f"Error fetching wallet history: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to fetch wallet history")
 
+# Saved Wallets Routes
+@api_router.post("/wallets/save")
+async def save_wallet(
+    wallet_data: SavedWalletCreate,
+    user: dict = Depends(get_current_user)
+):
+    """Save a wallet for quick access"""
+    try:
+        # Check if wallet already saved
+        existing = await db.saved_wallets.find_one({
+            "user_id": user["id"],
+            "address": wallet_data.address.lower(),
+            "chain": wallet_data.chain
+        })
+        
+        if existing:
+            raise HTTPException(status_code=400, detail="Wallet already saved")
+        
+        # Create saved wallet
+        saved_wallet = SavedWallet(
+            user_id=user["id"],
+            address=wallet_data.address.lower(),
+            nickname=wallet_data.nickname,
+            chain=wallet_data.chain
+        )
+        
+        doc = saved_wallet.model_dump()
+        doc['created_at'] = doc['created_at'].isoformat()
+        await db.saved_wallets.insert_one(doc)
+        
+        return {"message": "Wallet saved successfully", "wallet": saved_wallet}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error saving wallet: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to save wallet")
+
+@api_router.get("/wallets/saved")
+async def get_saved_wallets(user: dict = Depends(get_current_user)):
+    """Get all saved wallets for current user"""
+    try:
+        wallets = await db.saved_wallets.find(
+            {"user_id": user["id"]},
+            {"_id": 0}
+        ).to_list(100)
+        
+        return {"wallets": wallets}
+    except Exception as e:
+        logger.error(f"Error fetching saved wallets: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch saved wallets")
+
+@api_router.delete("/wallets/saved/{wallet_id}")
+async def delete_saved_wallet(
+    wallet_id: str,
+    user: dict = Depends(get_current_user)
+):
+    """Delete a saved wallet"""
+    try:
+        result = await db.saved_wallets.delete_one({
+            "id": wallet_id,
+            "user_id": user["id"]
+        })
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Wallet not found")
+        
+        return {"message": "Wallet deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting wallet: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to delete wallet")
+
+# Chain Request Route (for premium users)
+@api_router.post("/chain-request")
+async def request_chain(
+    request_data: ChainRequest,
+    user: dict = Depends(get_current_user)
+):
+    """Request support for a new blockchain (premium users only)"""
+    try:
+        if user.get("subscription_tier") == "free":
+            raise HTTPException(
+                status_code=403,
+                detail="Chain requests are only available for premium subscribers"
+            )
+        
+        # Store chain request
+        chain_request = {
+            "id": str(uuid.uuid4()),
+            "user_id": user["id"],
+            "user_email": user["email"],
+            "chain_name": request_data.chain_name,
+            "reason": request_data.reason,
+            "status": "pending",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db.chain_requests.insert_one(chain_request)
+        
+        logger.info(f"Chain request from {user['email']}: {request_data.chain_name}")
+        
+        return {
+            "message": "Chain request submitted successfully. We'll review it and get back to you!",
+            "request_id": chain_request["id"]
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error submitting chain request: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to submit chain request")
+
 # Include the router in the main app
 app.include_router(api_router)
 
