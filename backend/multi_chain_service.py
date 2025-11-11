@@ -261,29 +261,156 @@ class MultiChainService:
             logger.error(f"Error analyzing Bitcoin wallet: {str(e)}")
             raise Exception(f"Failed to analyze Bitcoin wallet: {str(e)}")
     
+    def _analyze_solana_wallet(
+        self,
+        address: str,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Analyze Solana wallet using public RPC"""
+        try:
+            rpc_url = self.chains['solana']['rpc_url']
+            
+            # Get balance
+            balance_payload = {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "getBalance",
+                "params": [address]
+            }
+            
+            balance_response = requests.post(rpc_url, json=balance_payload, timeout=30)
+            balance_response.raise_for_status()
+            balance_data = balance_response.json()
+            balance_lamports = balance_data.get('result', {}).get('value', 0)
+            balance_sol = balance_lamports / 10**9
+            
+            # Get recent signatures
+            sig_payload = {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "getSignaturesForAddress",
+                "params": [address, {"limit": 10}]
+            }
+            
+            sig_response = requests.post(rpc_url, json=sig_payload, timeout=30)
+            sig_response.raise_for_status()
+            sig_data = sig_response.json()
+            signatures = sig_data.get('result', [])
+            
+            recent_transactions = []
+            for sig in signatures:
+                recent_transactions.append({
+                    "hash": sig.get('signature', ''),
+                    "type": "transaction",
+                    "value": 0.0,  # Would need to parse tx details for exact amount
+                    "asset": "SOL",
+                    "blockNum": str(sig.get('slot', '')),
+                    "category": "external"
+                })
+            
+            return {
+                'address': address,
+                'chain': 'solana',
+                'totalEthSent': 0.0,
+                'totalEthReceived': balance_sol,
+                'totalGasFees': 0.0,
+                'netEth': balance_sol,
+                'outgoingTransactionCount': len(signatures),
+                'incomingTransactionCount': len(signatures),
+                'tokensSent': {},
+                'tokensReceived': {},
+                'recentTransactions': recent_transactions
+            }
+            
+        except Exception as e:
+            logger.error(f"Error analyzing Solana wallet: {str(e)}")
+            raise Exception(f"Failed to analyze Solana wallet: {str(e)}")
+    
     def _analyze_bsc_wallet(
         self,
         address: str,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Analyze BSC wallet - simplified version"""
+        """Analyze BSC wallet using BSCScan API"""
         try:
-            # For now, return a placeholder
-            # In production, you'd use BSCScan API or similar
+            api_key = self.chains['bsc']['api_key']
+            base_url = "https://api.bscscan.com/api"
+            
+            # Get BNB balance
+            balance_params = {
+                "module": "account",
+                "action": "balance",
+                "address": address,
+                "apikey": api_key
+            }
+            
+            balance_response = requests.get(base_url, params=balance_params, timeout=30)
+            balance_response.raise_for_status()
+            balance_data = balance_response.json()
+            
+            if balance_data.get('status') == '1':
+                balance_wei = int(balance_data.get('result', 0))
+                balance_bnb = balance_wei / 10**18
+            else:
+                balance_bnb = 0.0
+            
+            # Get normal transactions
+            tx_params = {
+                "module": "account",
+                "action": "txlist",
+                "address": address,
+                "startblock": 0,
+                "endblock": 99999999,
+                "page": 1,
+                "offset": 10,
+                "sort": "desc",
+                "apikey": api_key
+            }
+            
+            tx_response = requests.get(base_url, params=tx_params, timeout=30)
+            tx_response.raise_for_status()
+            tx_data = tx_response.json()
+            
+            transactions = tx_data.get('result', []) if tx_data.get('status') == '1' else []
+            
+            total_sent = 0.0
+            total_received = 0.0
+            recent_transactions = []
+            
+            for tx in transactions:
+                value_bnb = int(tx.get('value', 0)) / 10**18
+                is_sender = tx.get('from', '').lower() == address.lower()
+                
+                if is_sender:
+                    total_sent += value_bnb
+                else:
+                    total_received += value_bnb
+                
+                recent_transactions.append({
+                    "hash": tx.get('hash', ''),
+                    "type": "sent" if is_sender else "received",
+                    "value": value_bnb,
+                    "asset": "BNB",
+                    "to": tx.get('to', '') if is_sender else None,
+                    "from": tx.get('from', '') if not is_sender else None,
+                    "blockNum": tx.get('blockNumber', ''),
+                    "category": "external"
+                })
+            
             return {
                 'address': address,
                 'chain': 'bsc',
-                'totalEthSent': 0.0,
-                'totalEthReceived': 0.0,
+                'totalEthSent': total_sent,
+                'totalEthReceived': total_received,
                 'totalGasFees': 0.0,
-                'netEth': 0.0,
-                'outgoingTransactionCount': 0,
-                'incomingTransactionCount': 0,
+                'netEth': balance_bnb,
+                'outgoingTransactionCount': len([tx for tx in transactions if tx.get('from', '').lower() == address.lower()]),
+                'incomingTransactionCount': len([tx for tx in transactions if tx.get('to', '').lower() == address.lower()]),
                 'tokensSent': {},
                 'tokensReceived': {},
-                'recentTransactions': [],
-                'note': 'BSC support coming soon. Please request full implementation via the chain request feature.'
+                'recentTransactions': recent_transactions
             }
             
         except Exception as e:
