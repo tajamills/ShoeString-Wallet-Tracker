@@ -69,10 +69,6 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
     }
   };
 
-  const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text);
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-3xl bg-slate-800 border-slate-700 max-h-[90vh] overflow-y-auto" data-testid="upgrade-modal">
@@ -86,7 +82,7 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
           </DialogDescription>
         </DialogHeader>
 
-        {!paymentData ? (
+        <div className="space-y-6">(
           <div className="space-y-6">
             {/* Tier Selection */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
