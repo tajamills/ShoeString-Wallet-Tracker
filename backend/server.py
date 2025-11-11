@@ -14,6 +14,7 @@ from datetime import datetime, timezone, timedelta
 from wallet_service import WalletService
 from auth_service import AuthService
 from stripe_service import StripeService
+from multi_chain_service import MultiChainService
 
 
 ROOT_DIR = Path(__file__).parent
