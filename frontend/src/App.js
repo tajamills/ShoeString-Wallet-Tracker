@@ -41,9 +41,19 @@ function App() {
     setAnalysis(null);
 
     try {
+      const payload = { address: walletAddress };
+      
+      // Add date range if provided
+      if (startDate) {
+        payload.start_date = startDate;
+      }
+      if (endDate) {
+        payload.end_date = endDate;
+      }
+      
       const response = await axios.post(
         `${API}/wallet/analyze`,
-        { address: walletAddress },
+        payload,
         { headers: getAuthHeader() }
       );
       setAnalysis(response.data);
