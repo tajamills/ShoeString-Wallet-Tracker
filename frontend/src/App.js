@@ -24,6 +24,56 @@ function App() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+
+  // Check for payment success on component mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionId = urlParams.get('session_id');
+    
+    if (sessionId && user) {
+      // Poll payment status
+      pollPaymentStatus(sessionId);
+    }
+  }, [user]);
+
+  const pollPaymentStatus = async (sessionId, attempts = 0) => {
+    const maxAttempts = 5;
+    
+    if (attempts >= maxAttempts) {
+      setError('Payment verification timed out. Please check your subscription status.');
+      return;
+    }
+
+    try {
+      const response = await axios.get(
+        `${API}/payments/status/${sessionId}`,
+        { headers: getAuthHeader() }
+      );
+
+      if (response.data.payment_status === 'paid') {
+        setPaymentSuccess(true);
+        setError('');
+        // Refresh user profile to get updated subscription tier
+        await fetchUserProfile();
+        // Remove session_id from URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return;
+      }
+
+      // Continue polling if still pending
+      if (response.data.status !== 'expired') {
+        setTimeout(() => pollPaymentStatus(sessionId, attempts + 1), 2000);
+      } else {
+        setError('Payment session expired.');
+      }
+    } catch (err) {
+      console.error('Error checking payment status:', err);
+      if (attempts < maxAttempts) {
+        setTimeout(() => pollPaymentStatus(sessionId, attempts + 1), 2000);
+      }
+    }
+  };
 
   const analyzeWallet = async () => {
     if (!user) {
