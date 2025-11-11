@@ -271,10 +271,10 @@ async def create_upgrade_payment(
 ):
     """Create USDC payment for subscription upgrade"""
     try:
-        # Determine price based on tier
+        # Determine price based on tier (increased to meet NOWPayments minimum)
         tier_prices = {
-            "premium": 19.00,
-            "pro": 49.00
+            "premium": 99.00,
+            "pro": 199.00
         }
         
         if request.tier not in tier_prices:
