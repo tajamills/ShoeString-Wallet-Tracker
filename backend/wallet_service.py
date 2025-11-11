@@ -115,11 +115,27 @@ class WalletService:
         
         return receipts
     
-    def analyze_wallet(self, address: str) -> Dict[str, Any]:
-        """Analyze wallet and calculate statistics"""
+    def analyze_wallet(self, address: str, start_date: str = None, end_date: str = None) -> Dict[str, Any]:
+        """Analyze wallet and calculate statistics with optional date filtering"""
         try:
             # Normalize address
             address = address.lower()
+            
+            # Parse dates if provided
+            start_timestamp = None
+            end_timestamp = None
+            
+            if start_date:
+                from datetime import datetime
+                start_dt = datetime.strptime(start_date, '%Y-%m-%d')
+                start_timestamp = int(start_dt.timestamp())
+            
+            if end_date:
+                from datetime import datetime
+                end_dt = datetime.strptime(end_date, '%Y-%m-%d')
+                # Set to end of day
+                end_dt = end_dt.replace(hour=23, minute=59, second=59)
+                end_timestamp = int(end_dt.timestamp())
             
             # Fetch transactions
             transactions = self.get_transactions(address)
