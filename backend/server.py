@@ -44,8 +44,28 @@ class StatusCheckCreate(BaseModel):
 
 class WalletAnalysisRequest(BaseModel):
     address: str
+    chain: str = "ethereum"  # ethereum, bitcoin, polygon, bsc, arbitrum
     start_date: Optional[str] = None  # Format: YYYY-MM-DD
     end_date: Optional[str] = None    # Format: YYYY-MM-DD
+
+class SavedWallet(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    address: str
+    nickname: str
+    chain: str  # ethereum, bitcoin, polygon, bsc, arbitrum
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class SavedWalletCreate(BaseModel):
+    address: str
+    nickname: str
+    chain: str = "ethereum"
+
+class ChainRequest(BaseModel):
+    chain_name: str
+    reason: Optional[str] = None
 
 class WalletAnalysisResponse(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
