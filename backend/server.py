@@ -44,6 +44,8 @@ class StatusCheckCreate(BaseModel):
 
 class WalletAnalysisRequest(BaseModel):
     address: str
+    start_date: Optional[str] = None  # Format: YYYY-MM-DD
+    end_date: Optional[str] = None    # Format: YYYY-MM-DD
 
 class WalletAnalysisResponse(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
