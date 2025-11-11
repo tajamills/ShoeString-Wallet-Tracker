@@ -11,10 +11,10 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 export const UpgradeModal = ({ isOpen, onClose }) => {
-  const [selectedTier, setSelectedTier] = useState('premium');
+  const { user, getAuthHeader } = useAuth();
+  const [selectedTier, setSelectedTier] = useState(user?.subscription_tier === 'premium' ? 'pro' : 'premium');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { getAuthHeader } = useAuth();
 
   const tiers = {
     premium: {
