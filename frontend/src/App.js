@@ -78,6 +78,28 @@ function App() {
     }
   };
 
+  const getChainSymbol = (chain) => {
+    const symbols = {
+      ethereum: 'ETH',
+      bitcoin: 'BTC',
+      arbitrum: 'ETH',
+      bsc: 'BNB',
+      solana: 'SOL'
+    };
+    return symbols[chain] || 'ETH';
+  };
+
+  const getChainIcon = (chain) => {
+    const icons = {
+      ethereum: '⟠',
+      bitcoin: '₿',
+      arbitrum: '🔷',
+      bsc: '🟡',
+      solana: '◎'
+    };
+    return icons[chain] || '⟠';
+  };
+
   const analyzeWallet = async (addressOverride = null, chainOverride = null) => {
     if (!user) {
       setShowAuthModal(true);
