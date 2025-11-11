@@ -14,7 +14,6 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
   const [selectedTier, setSelectedTier] = useState('premium');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [paymentData, setPaymentData] = useState(null);
   const { getAuthHeader } = useAuth();
 
   const tiers = {
