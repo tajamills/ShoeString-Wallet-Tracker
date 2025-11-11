@@ -46,22 +46,26 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
     setLoading(true);
 
     try {
+      const originUrl = window.location.origin;
+      
       const response = await axios.post(
         `${API}/payments/create-upgrade`,
-        { tier: selectedTier },
+        { 
+          tier: selectedTier,
+          origin_url: originUrl
+        },
         { headers: getAuthHeader() }
       );
       
-      setPaymentData(response.data);
-      
-      // Open payment URL in new tab
-      if (response.data.payment_url) {
-        window.open(response.data.payment_url, '_blank');
+      // Redirect to Stripe Checkout
+      if (response.data.url) {
+        window.location.href = response.data.url;
+      } else {
+        throw new Error('No checkout URL received');
       }
       
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to create payment. Please try again.');
-    } finally {
       setLoading(false);
     }
   };
