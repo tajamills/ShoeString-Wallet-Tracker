@@ -261,51 +261,62 @@ async def get_me(user: dict = Depends(get_current_user)):
     )
 
 # Payment Routes
+class CheckoutRequest(BaseModel):
+    tier: str
+    origin_url: str  # Frontend origin URL
+
 @api_router.post("/payments/create-upgrade")
 async def create_upgrade_payment(
-    request: UpgradeRequest,
+    checkout_request: CheckoutRequest,
+    http_request: Request,
     user: dict = Depends(get_current_user)
 ):
-    """Create USDC payment for subscription upgrade"""
+    """Create Stripe checkout session for subscription upgrade"""
     try:
-        # Determine price based on tier (increased to meet NOWPayments minimum)
+        # Define fixed tier prices (server-side only for security)
         tier_prices = {
-            "premium": 99.00,
-            "pro": 199.00
+            "premium": 19.00,
+            "pro": 49.00
         }
         
-        if request.tier not in tier_prices:
+        if checkout_request.tier not in tier_prices:
             raise HTTPException(status_code=400, detail="Invalid subscription tier")
         
-        price_usd = tier_prices[request.tier]
+        amount = tier_prices[checkout_request.tier]
         
-        # Create unique order ID
-        order_id = f"upgrade_{user['id']}_{request.tier}_{int(datetime.now(timezone.utc).timestamp())}"
+        # Initialize Stripe checkout
+        host_url = str(http_request.base_url)
+        stripe_service.initialize_checkout(host_url)
         
-        # Create payment with NOWPayments using USDC
-        payment_data = await nowpayments_service.create_payment(
-            price_amount=price_usd,
-            price_currency="usd",
-            pay_currency="usdcbsc",  # USDC on Binance Smart Chain (lowest fees)
-            order_id=order_id,
-            order_description=f"Upgrade to {request.tier.upper()} subscription",
-            ipn_callback_url=f"{os.environ.get('BACKEND_URL', 'http://localhost:8001')}/api/payments/webhook",
-            success_url=f"{os.environ.get('FRONTEND_URL', 'http://localhost:3000')}/payment-success",
-            cancel_url=f"{os.environ.get('FRONTEND_URL', 'http://localhost:3000')}/payment-cancelled"
+        # Build success and cancel URLs from frontend origin
+        success_url = f"{checkout_request.origin_url}/payment-success?session_id={{CHECKOUT_SESSION_ID}}"
+        cancel_url = f"{checkout_request.origin_url}"
+        
+        # Create metadata for tracking
+        metadata = {
+            "user_id": user["id"],
+            "tier": checkout_request.tier,
+            "email": user["email"]
+        }
+        
+        # Create Stripe checkout session
+        session = await stripe_service.create_checkout_session(
+            amount=amount,
+            currency="usd",
+            success_url=success_url,
+            cancel_url=cancel_url,
+            metadata=metadata
         )
         
-        # Store payment in database
+        # Store payment transaction in database (MANDATORY)
         payment = Payment(
             user_id=user["id"],
-            payment_id=payment_data["payment_id"],
-            order_id=order_id,
-            amount_usd=price_usd,
-            amount_crypto=float(payment_data["pay_amount"]),
-            crypto_address=payment_data["pay_address"],
-            crypto_currency="usdcbsc",
-            status=payment_data["payment_status"],
-            subscription_tier=request.tier,
-            payment_url=payment_data.get("payment_url", "")
+            session_id=session.session_id,
+            amount=amount,
+            currency="usd",
+            status="pending",
+            payment_status="unpaid",
+            subscription_tier=checkout_request.tier
         )
         
         doc = payment.model_dump()
@@ -313,23 +324,17 @@ async def create_upgrade_payment(
         if doc.get('confirmed_at'):
             doc['confirmed_at'] = doc['confirmed_at'].isoformat()
         
-        await db.payments.insert_one(doc)
+        await db.payment_transactions.insert_one(doc)
         
-        logger.info(f"Payment created for user {user['id']}: {payment_data['payment_id']}")
+        logger.info(f"Stripe checkout created for user {user['id']}: {session.session_id}")
         
         return {
-            "payment_id": payment_data["payment_id"],
-            "crypto_address": payment_data["pay_address"],
-            "crypto_amount": payment_data["pay_amount"],
-            "crypto_currency": "USDC",
-            "usd_amount": price_usd,
-            "status": payment_data["payment_status"],
-            "payment_url": payment_data.get("payment_url", ""),
-            "order_id": order_id
+            "url": session.url,
+            "session_id": session.session_id
         }
         
     except Exception as e:
-        logger.error(f"Failed to create payment: {str(e)}")
+        logger.error(f"Failed to create Stripe checkout: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Payment creation failed: {str(e)}")
 
 @api_router.post("/payments/webhook")
