@@ -269,7 +269,7 @@ async def create_upgrade_payment(
     request: UpgradeRequest,
     user: dict = Depends(get_current_user)
 ):
-    """Create BTC payment for subscription upgrade"""
+    """Create USDC payment for subscription upgrade"""
     try:
         # Determine price based on tier
         tier_prices = {
@@ -285,11 +285,11 @@ async def create_upgrade_payment(
         # Create unique order ID
         order_id = f"upgrade_{user['id']}_{request.tier}_{int(datetime.now(timezone.utc).timestamp())}"
         
-        # Create payment with NOWPayments
+        # Create payment with NOWPayments using USDC
         payment_data = await nowpayments_service.create_payment(
             price_amount=price_usd,
             price_currency="usd",
-            pay_currency="btc",
+            pay_currency="usdcbsc",  # USDC on Binance Smart Chain (lowest fees)
             order_id=order_id,
             order_description=f"Upgrade to {request.tier.upper()} subscription",
             ipn_callback_url=f"{os.environ.get('BACKEND_URL', 'http://localhost:8001')}/api/payments/webhook",
@@ -303,8 +303,9 @@ async def create_upgrade_payment(
             payment_id=payment_data["payment_id"],
             order_id=order_id,
             amount_usd=price_usd,
-            amount_btc=float(payment_data["pay_amount"]),
-            btc_address=payment_data["pay_address"],
+            amount_crypto=float(payment_data["pay_amount"]),
+            crypto_address=payment_data["pay_address"],
+            crypto_currency="usdcbsc",
             status=payment_data["payment_status"],
             subscription_tier=request.tier,
             payment_url=payment_data.get("payment_url", "")
@@ -321,8 +322,9 @@ async def create_upgrade_payment(
         
         return {
             "payment_id": payment_data["payment_id"],
-            "btc_address": payment_data["pay_address"],
-            "btc_amount": payment_data["pay_amount"],
+            "crypto_address": payment_data["pay_address"],
+            "crypto_amount": payment_data["pay_amount"],
+            "crypto_currency": "USDC",
             "usd_amount": price_usd,
             "status": payment_data["payment_status"],
             "payment_url": payment_data.get("payment_url", ""),
