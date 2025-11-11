@@ -104,15 +104,12 @@ class Payment(BaseModel):
     
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: str
-    payment_id: str  # NOWPayments payment_id
-    order_id: str
-    amount_usd: float
-    amount_crypto: float
-    crypto_address: str
-    crypto_currency: str  # usdc, btc, etc.
-    status: str  # waiting, confirming, confirmed, failed, expired
+    session_id: str  # Stripe session_id
+    amount: float
+    currency: str
+    status: str  # pending, paid, failed, expired
+    payment_status: str  # Stripe payment_status
     subscription_tier: str
-    payment_url: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     confirmed_at: Optional[datetime] = None
 
