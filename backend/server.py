@@ -524,12 +524,15 @@ async def analyze_wallet(request: WalletAnalysisRequest, user: dict = Depends(ch
         chain = request.chain.lower()
         
         # Basic validation
-        if chain in ["ethereum", "polygon", "arbitrum", "bsc"]:
+        if chain in ["ethereum", "arbitrum", "bsc"]:
             if not address.startswith('0x') or len(address) != 42:
                 raise HTTPException(status_code=400, detail=f"Invalid {chain} address format")
         elif chain == "bitcoin":
-            if len(address) < 26 or len(address) > 35:
+            if len(address) < 26 or len(address) > 62:
                 raise HTTPException(status_code=400, detail="Invalid Bitcoin address format")
+        elif chain == "solana":
+            if len(address) < 32 or len(address) > 44:
+                raise HTTPException(status_code=400, detail="Invalid Solana address format")
         
         # Analyze wallet using multi-chain service
         analysis_data = multi_chain_service.analyze_wallet(
