@@ -589,6 +589,17 @@ async def get_wallet_history(limit: int = 10):
         logger.error(f"Error fetching wallet history: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to fetch wallet history")
 
+# Chains Route
+@api_router.get("/chains/supported")
+async def get_supported_chains():
+    """Get list of supported blockchain networks"""
+    try:
+        chains = multi_chain_service.get_supported_chains()
+        return {"chains": chains}
+    except Exception as e:
+        logger.error(f"Error fetching supported chains: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch supported chains")
+
 # Saved Wallets Routes
 @api_router.post("/wallets/save")
 async def save_wallet(
