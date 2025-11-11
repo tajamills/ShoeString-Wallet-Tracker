@@ -414,21 +414,32 @@ function App() {
         {/* Analysis Results */}
         {analysis && (
           <div className="max-w-7xl mx-auto space-y-6" data-testid="analysis-results">
+            {/* Chain Badge */}
+            <div className="flex items-center gap-2">
+              <Badge className="bg-purple-900/50 text-purple-300 border-purple-700">
+                {getChainIcon(analysis.chain || selectedChain)} {(analysis.chain || selectedChain).toUpperCase()}
+              </Badge>
+              <span className="text-gray-400 text-sm">Analyzing {getChainSymbol(analysis.chain || selectedChain)} wallet</span>
+            </div>
+
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card className="bg-gradient-to-br from-green-900/30 to-green-800/20 border-green-700" data-testid="received-card">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium text-green-300 flex items-center gap-2">
                     <TrendingUp className="w-4 h-4" />
-                    Total Received
+                    Total Flow In
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-white">
-                    {formatNumber(analysis.totalEthReceived)} ETH
+                    {formatNumber(analysis.totalEthReceived)} {getChainSymbol(analysis.chain || selectedChain)}
                   </div>
                   <p className="text-xs text-green-300 mt-1">
                     {analysis.incomingTransactionCount} transactions
+                  </p>
+                  <p className="text-xs text-gray-400 mt-2">
+                    All incoming transfers
                   </p>
                 </CardContent>
               </Card>
@@ -437,15 +448,18 @@ function App() {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium text-red-300 flex items-center gap-2">
                     <TrendingDown className="w-4 h-4" />
-                    Total Sent
+                    Total Flow Out
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-white">
-                    {formatNumber(analysis.totalEthSent)} ETH
+                    {formatNumber(analysis.totalEthSent)} {getChainSymbol(analysis.chain || selectedChain)}
                   </div>
                   <p className="text-xs text-red-300 mt-1">
                     {analysis.outgoingTransactionCount} transactions
+                  </p>
+                  <p className="text-xs text-gray-400 mt-2">
+                    All outgoing transfers
                   </p>
                 </CardContent>
               </Card>
