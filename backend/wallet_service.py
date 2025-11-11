@@ -156,6 +156,24 @@ class WalletService:
             
             # Process outgoing transactions
             for tx in outgoing:
+                # Check date filter
+                if start_timestamp or end_timestamp:
+                    # Get transaction timestamp from metadata
+                    tx_metadata = tx.get('metadata', {})
+                    block_timestamp = tx_metadata.get('blockTimestamp')
+                    
+                    if block_timestamp:
+                        # Parse ISO timestamp to unix timestamp
+                        from datetime import datetime
+                        tx_dt = datetime.fromisoformat(block_timestamp.replace('Z', '+00:00'))
+                        tx_timestamp = int(tx_dt.timestamp())
+                        
+                        # Skip if outside date range
+                        if start_timestamp and tx_timestamp < start_timestamp:
+                            continue
+                        if end_timestamp and tx_timestamp > end_timestamp:
+                            continue
+                
                 category = tx.get('category', '')
                 value = tx.get('value', 0)
                 asset = tx.get('asset', 'ETH')
