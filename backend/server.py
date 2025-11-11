@@ -517,16 +517,24 @@ async def get_status_checks():
 
 @api_router.post("/wallet/analyze", response_model=WalletAnalysisResponse)
 async def analyze_wallet(request: WalletAnalysisRequest, user: dict = Depends(check_usage_limit)):
-    """Analyze a crypto wallet and calculate statistics (requires authentication)"""
+    """Analyze a crypto wallet across multiple blockchains (requires authentication)"""
     try:
-        # Validate address format (basic check)
+        # Validate address format based on chain
         address = request.address.strip()
-        if not address.startswith('0x') or len(address) != 42:
-            raise HTTPException(status_code=400, detail="Invalid Ethereum address format")
+        chain = request.chain.lower()
         
-        # Analyze wallet using wallet service
-        analysis_data = wallet_service.analyze_wallet(
+        # Basic validation
+        if chain in ["ethereum", "polygon", "arbitrum", "bsc"]:
+            if not address.startswith('0x') or len(address) != 42:
+                raise HTTPException(status_code=400, detail=f"Invalid {chain} address format")
+        elif chain == "bitcoin":
+            if len(address) < 26 or len(address) > 35:
+                raise HTTPException(status_code=400, detail="Invalid Bitcoin address format")
+        
+        # Analyze wallet using multi-chain service
+        analysis_data = multi_chain_service.analyze_wallet(
             address, 
+            chain=chain,
             start_date=request.start_date,
             end_date=request.end_date
         )
