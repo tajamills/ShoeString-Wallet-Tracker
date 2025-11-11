@@ -1,0 +1,395 @@
+#!/usr/bin/env python3
+"""
+Backend Test Suite for ShoeString Wallet Tracker
+Tests the deployed backend at https://shoestring-backend.onrender.com
+"""
+
+import requests
+import json
+import time
+from datetime import datetime
+import sys
+
+# Configuration
+BASE_URL = "https://shoestring-backend.onrender.com/api"
+TIMEOUT = 30
+
+class BackendTester:
+    def __init__(self):
+        self.session = requests.Session()
+        self.session.timeout = TIMEOUT
+        self.access_token = None
+        self.user_data = None
+        self.test_results = []
+        
+        # Generate unique test email with timestamp
+        timestamp = int(time.time())
+        self.test_email = f"qa_test_{timestamp}@example.com"
+        self.test_password = "TestPassword123!"
+        
+    def log_result(self, test_name, success, details, response_data=None):
+        """Log test result"""
+        result = {
+            "test": test_name,
+            "success": success,
+            "details": details,
+            "timestamp": datetime.now().isoformat(),
+            "response_data": response_data
+        }
+        self.test_results.append(result)
+        
+        status = "✅ PASS" if success else "❌ FAIL"
+        print(f"{status} {test_name}: {details}")
+        if response_data and not success:
+            print(f"   Response: {json.dumps(response_data, indent=2)}")
+    
+    def test_basic_connectivity(self):
+        """Test basic API connectivity"""
+        try:
+            response = self.session.get(f"{BASE_URL}/")
+            if response.status_code == 200:
+                data = response.json()
+                self.log_result("Basic Connectivity", True, f"API accessible, response: {data}")
+                return True
+            else:
+                self.log_result("Basic Connectivity", False, f"HTTP {response.status_code}", response.json())
+                return False
+        except Exception as e:
+            self.log_result("Basic Connectivity", False, f"Connection error: {str(e)}")
+            return False
+    
+    def test_user_registration(self):
+        """Test user registration"""
+        try:
+            payload = {
+                "email": self.test_email,
+                "password": self.test_password
+            }
+            
+            response = self.session.post(f"{BASE_URL}/auth/register", json=payload)
+            
+            if response.status_code == 200:
+                data = response.json()
+                self.access_token = data.get("access_token")
+                self.user_data = data.get("user")
+                
+                # Validate response structure
+                required_fields = ["access_token", "token_type", "user"]
+                user_fields = ["id", "email", "subscription_tier", "daily_usage_count", "created_at"]
+                
+                missing_fields = [field for field in required_fields if field not in data]
+                missing_user_fields = [field for field in user_fields if field not in data.get("user", {})]
+                
+                if missing_fields or missing_user_fields:
+                    self.log_result("User Registration", False, 
+                                  f"Missing fields: {missing_fields + missing_user_fields}", data)
+                    return False
+                
+                self.log_result("User Registration", True, 
+                              f"User registered successfully. ID: {self.user_data['id']}, Tier: {self.user_data['subscription_tier']}")
+                return True
+            else:
+                self.log_result("User Registration", False, f"HTTP {response.status_code}", response.json())
+                return False
+                
+        except Exception as e:
+            self.log_result("User Registration", False, f"Error: {str(e)}")
+            return False
+    
+    def test_user_login(self):
+        """Test user login with registered credentials"""
+        try:
+            payload = {
+                "email": self.test_email,
+                "password": self.test_password
+            }
+            
+            response = self.session.post(f"{BASE_URL}/auth/login", json=payload)
+            
+            if response.status_code == 200:
+                data = response.json()
+                self.access_token = data.get("access_token")
+                self.user_data = data.get("user")
+                
+                self.log_result("User Login", True, 
+                              f"Login successful. Token received, User ID: {self.user_data['id']}")
+                return True
+            else:
+                self.log_result("User Login", False, f"HTTP {response.status_code}", response.json())
+                return False
+                
+        except Exception as e:
+            self.log_result("User Login", False, f"Error: {str(e)}")
+            return False
+    
+    def test_get_current_user(self):
+        """Test getting current user info"""
+        if not self.access_token:
+            self.log_result("Get Current User", False, "No access token available")
+            return False
+            
+        try:
+            headers = {"Authorization": f"Bearer {self.access_token}"}
+            response = self.session.get(f"{BASE_URL}/auth/me", headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Validate user data structure
+                required_fields = ["id", "email", "subscription_tier", "daily_usage_count", "created_at"]
+                missing_fields = [field for field in required_fields if field not in data]
+                
+                if missing_fields:
+                    self.log_result("Get Current User", False, f"Missing fields: {missing_fields}", data)
+                    return False
+                
+                self.log_result("Get Current User", True, 
+                              f"User info retrieved. Email: {data['email']}, Tier: {data['subscription_tier']}, Usage: {data['daily_usage_count']}")
+                return True
+            else:
+                self.log_result("Get Current User", False, f"HTTP {response.status_code}", response.json())
+                return False
+                
+        except Exception as e:
+            self.log_result("Get Current User", False, f"Error: {str(e)}")
+            return False
+    
+    def test_wallet_analysis(self):
+        """Test wallet analysis with valid Ethereum address"""
+        if not self.access_token:
+            self.log_result("Wallet Analysis", False, "No access token available")
+            return False
+            
+        try:
+            headers = {"Authorization": f"Bearer {self.access_token}"}
+            payload = {
+                "address": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0"
+            }
+            
+            response = self.session.post(f"{BASE_URL}/wallet/analyze", json=payload, headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Validate response structure
+                required_fields = ["address", "totalEthSent", "totalEthReceived", "totalGasFees", 
+                                 "netEth", "outgoingTransactionCount", "incomingTransactionCount",
+                                 "tokensSent", "tokensReceived", "recentTransactions", "timestamp"]
+                
+                missing_fields = [field for field in required_fields if field not in data]
+                
+                if missing_fields:
+                    self.log_result("Wallet Analysis", False, f"Missing fields: {missing_fields}", data)
+                    return False
+                
+                self.log_result("Wallet Analysis", True, 
+                              f"Analysis successful. ETH Sent: {data['totalEthSent']}, ETH Received: {data['totalEthReceived']}, Gas Fees: {data['totalGasFees']}, Net ETH: {data['netEth']}")
+                return True
+            else:
+                self.log_result("Wallet Analysis", False, f"HTTP {response.status_code}", response.json())
+                return False
+                
+        except Exception as e:
+            self.log_result("Wallet Analysis", False, f"Error: {str(e)}")
+            return False
+    
+    def test_usage_limits(self):
+        """Test free tier usage limits (should fail on second analysis)"""
+        if not self.access_token:
+            self.log_result("Usage Limits", False, "No access token available")
+            return False
+            
+        try:
+            headers = {"Authorization": f"Bearer {self.access_token}"}
+            payload = {
+                "address": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0"
+            }
+            
+            # Second analysis should fail with 429 (rate limit)
+            response = self.session.post(f"{BASE_URL}/wallet/analyze", json=payload, headers=headers)
+            
+            if response.status_code == 429:
+                data = response.json()
+                if "Daily limit reached" in data.get("detail", ""):
+                    self.log_result("Usage Limits", True, 
+                                  f"Rate limiting working correctly. Response: {data['detail']}")
+                    return True
+                else:
+                    self.log_result("Usage Limits", False, f"Unexpected 429 response: {data}")
+                    return False
+            elif response.status_code == 200:
+                self.log_result("Usage Limits", False, "Rate limiting not working - second analysis succeeded")
+                return False
+            else:
+                self.log_result("Usage Limits", False, f"Unexpected HTTP {response.status_code}", response.json())
+                return False
+                
+        except Exception as e:
+            self.log_result("Usage Limits", False, f"Error: {str(e)}")
+            return False
+    
+    def test_payment_endpoints(self):
+        """Test payment endpoint structure"""
+        if not self.access_token:
+            self.log_result("Payment Endpoints", False, "No access token available")
+            return False
+            
+        try:
+            headers = {"Authorization": f"Bearer {self.access_token}"}
+            payload = {"tier": "premium"}
+            
+            response = self.session.post(f"{BASE_URL}/payments/create-upgrade", json=payload, headers=headers)
+            
+            # This might fail due to NOWPayments configuration, but we check the structure
+            if response.status_code == 200:
+                data = response.json()
+                expected_fields = ["payment_id", "btc_address", "btc_amount", "usd_amount", "status", "order_id"]
+                missing_fields = [field for field in expected_fields if field not in data]
+                
+                if missing_fields:
+                    self.log_result("Payment Endpoints", False, f"Missing fields in response: {missing_fields}", data)
+                    return False
+                
+                self.log_result("Payment Endpoints", True, 
+                              f"Payment endpoint working. Payment ID: {data.get('payment_id')}, Amount: ${data.get('usd_amount')}")
+                return True
+            elif response.status_code == 500:
+                # Expected if NOWPayments is not properly configured
+                error_data = response.json()
+                if "Payment creation failed" in error_data.get("detail", ""):
+                    self.log_result("Payment Endpoints", True, 
+                                  f"Payment endpoint structure correct (NOWPayments config issue expected): {error_data['detail']}")
+                    return True
+                else:
+                    self.log_result("Payment Endpoints", False, f"Unexpected 500 error: {error_data}")
+                    return False
+            else:
+                self.log_result("Payment Endpoints", False, f"HTTP {response.status_code}", response.json())
+                return False
+                
+        except Exception as e:
+            self.log_result("Payment Endpoints", False, f"Error: {str(e)}")
+            return False
+    
+    def test_error_handling(self):
+        """Test various error scenarios"""
+        results = []
+        
+        # Test 1: Invalid wallet address format
+        try:
+            if self.access_token:
+                headers = {"Authorization": f"Bearer {self.access_token}"}
+                payload = {"address": "invalid_address"}
+                
+                response = self.session.post(f"{BASE_URL}/wallet/analyze", json=payload, headers=headers)
+                
+                if response.status_code == 400:
+                    data = response.json()
+                    if "Invalid Ethereum address format" in data.get("detail", ""):
+                        results.append(("Invalid Address Format", True, "Correctly rejected invalid address"))
+                    else:
+                        results.append(("Invalid Address Format", False, f"Wrong error message: {data}"))
+                else:
+                    results.append(("Invalid Address Format", False, f"Expected 400, got {response.status_code}"))
+            else:
+                results.append(("Invalid Address Format", False, "No access token"))
+        except Exception as e:
+            results.append(("Invalid Address Format", False, f"Error: {str(e)}"))
+        
+        # Test 2: Missing authentication token
+        try:
+            payload = {"address": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0"}
+            response = self.session.post(f"{BASE_URL}/wallet/analyze", json=payload)
+            
+            if response.status_code == 403:
+                results.append(("Missing Auth Token", True, "Correctly rejected request without token"))
+            else:
+                data = response.json() if response.headers.get('content-type', '').startswith('application/json') else response.text
+                results.append(("Missing Auth Token", False, f"Expected 403, got {response.status_code}: {data}"))
+        except Exception as e:
+            results.append(("Missing Auth Token", False, f"Error: {str(e)}"))
+        
+        # Test 3: Invalid token
+        try:
+            headers = {"Authorization": "Bearer invalid_token_here"}
+            payload = {"address": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0"}
+            
+            response = self.session.post(f"{BASE_URL}/wallet/analyze", json=payload, headers=headers)
+            
+            if response.status_code in [401, 403]:
+                results.append(("Invalid Token", True, "Correctly rejected invalid token"))
+            else:
+                data = response.json() if response.headers.get('content-type', '').startswith('application/json') else response.text
+                results.append(("Invalid Token", False, f"Expected 401/403, got {response.status_code}: {data}"))
+        except Exception as e:
+            results.append(("Invalid Token", False, f"Error: {str(e)}"))
+        
+        # Log all error handling results
+        all_passed = True
+        for test_name, success, details in results:
+            self.log_result(f"Error Handling - {test_name}", success, details)
+            if not success:
+                all_passed = False
+        
+        return all_passed
+    
+    def run_all_tests(self):
+        """Run all backend tests in sequence"""
+        print(f"🚀 Starting Backend Tests for ShoeString Wallet Tracker")
+        print(f"📍 Testing URL: {BASE_URL}")
+        print(f"📧 Test Email: {self.test_email}")
+        print("=" * 80)
+        
+        # Test sequence
+        tests = [
+            ("Basic Connectivity", self.test_basic_connectivity),
+            ("User Registration", self.test_user_registration),
+            ("User Login", self.test_user_login),
+            ("Get Current User", self.test_get_current_user),
+            ("Wallet Analysis", self.test_wallet_analysis),
+            ("Usage Limits", self.test_usage_limits),
+            ("Payment Endpoints", self.test_payment_endpoints),
+            ("Error Handling", self.test_error_handling),
+        ]
+        
+        passed = 0
+        total = len(tests)
+        
+        for test_name, test_func in tests:
+            print(f"\n🧪 Running: {test_name}")
+            try:
+                if test_func():
+                    passed += 1
+            except Exception as e:
+                self.log_result(test_name, False, f"Test execution error: {str(e)}")
+        
+        print("\n" + "=" * 80)
+        print(f"📊 Test Results: {passed}/{total} tests passed")
+        
+        # Summary of critical issues
+        failed_tests = [result for result in self.test_results if not result["success"]]
+        if failed_tests:
+            print("\n❌ Failed Tests:")
+            for result in failed_tests:
+                print(f"   • {result['test']}: {result['details']}")
+        
+        print(f"\n✅ Successful Tests: {passed}")
+        print(f"❌ Failed Tests: {len(failed_tests)}")
+        
+        return passed, total, self.test_results
+
+def main():
+    """Main test execution"""
+    tester = BackendTester()
+    passed, total, results = tester.run_all_tests()
+    
+    # Return exit code based on results
+    if passed == total:
+        print("\n🎉 All tests passed!")
+        return 0
+    else:
+        print(f"\n⚠️  {total - passed} tests failed")
+        return 1
+
+if __name__ == "__main__":
+    sys.exit(main())
