@@ -147,19 +147,19 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
           <div className="space-y-6">
             <Alert className="bg-green-900/20 border-green-700 text-green-300">
               <AlertDescription>
-                Payment created! Send Bitcoin to the address below or use the payment link.
+                Payment created! Send USDC to the address below or use the payment link.
               </AlertDescription>
             </Alert>
 
             <div className="bg-slate-700/50 p-6 rounded-lg space-y-4">
               <div>
-                <label className="text-sm text-gray-400 block mb-2">BTC Amount</label>
+                <label className="text-sm text-gray-400 block mb-2">USDC Amount</label>
                 <div className="flex items-center justify-between bg-slate-800 p-3 rounded">
-                  <span className="text-white font-mono">{paymentData.btc_amount} BTC</span>
+                  <span className="text-white font-mono">{paymentData.crypto_amount} USDC</span>
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => copyToClipboard(paymentData.btc_amount)}
+                    onClick={() => copyToClipboard(paymentData.crypto_amount)}
                     className="border-slate-600"
                   >
                     Copy
@@ -168,13 +168,13 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
               </div>
 
               <div>
-                <label className="text-sm text-gray-400 block mb-2">BTC Address</label>
+                <label className="text-sm text-gray-400 block mb-2">USDC Address (BSC)</label>
                 <div className="flex items-center justify-between bg-slate-800 p-3 rounded">
-                  <span className="text-white font-mono text-sm break-all">{paymentData.btc_address}</span>
+                  <span className="text-white font-mono text-sm break-all">{paymentData.crypto_address}</span>
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => copyToClipboard(paymentData.btc_address)}
+                    onClick={() => copyToClipboard(paymentData.crypto_address)}
                     className="border-slate-600 ml-2"
                   >
                     Copy
