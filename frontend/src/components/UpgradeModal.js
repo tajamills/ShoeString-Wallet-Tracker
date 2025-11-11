@@ -20,7 +20,7 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
   const tiers = {
     premium: {
       name: 'Premium',
-      price: 19,
+      price: 99,
       features: [
         'Unlimited wallet analyses',
         'CSV export',
@@ -30,7 +30,7 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
     },
     pro: {
       name: 'Pro',
-      price: 49,
+      price: 199,
       features: [
         'Everything in Premium',
         'Real-time alerts',
