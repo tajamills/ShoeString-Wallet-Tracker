@@ -121,8 +121,8 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
             )}
 
             <div className="flex items-center justify-center gap-2 text-gray-400 text-sm">
-              <Bitcoin className="w-5 h-5 text-orange-400" />
-              <span>Pay with Bitcoin (BTC)</span>
+              <Bitcoin className="w-5 h-5 text-green-400" />
+              <span>Pay with USDC (Stablecoin)</span>
             </div>
 
             <Button
