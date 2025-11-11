@@ -289,7 +289,7 @@ async def create_upgrade_payment(
         stripe_service.initialize_checkout(host_url)
         
         # Build success and cancel URLs from frontend origin
-        success_url = f"{checkout_request.origin_url}/payment-success?session_id={{CHECKOUT_SESSION_ID}}"
+        success_url = f"{checkout_request.origin_url}?session_id={{CHECKOUT_SESSION_ID}}"
         cancel_url = f"{checkout_request.origin_url}"
         
         # Create metadata for tracking
