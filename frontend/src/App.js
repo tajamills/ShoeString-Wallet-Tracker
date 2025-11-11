@@ -464,36 +464,44 @@ function App() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-br from-orange-900/30 to-orange-800/20 border-orange-700" data-testid="gas-fees-card">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-orange-300 flex items-center gap-2">
-                    <Activity className="w-4 h-4" />
-                    Gas Fees
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-white">
-                    {formatNumber(analysis.totalGasFees)} ETH
-                  </div>
-                  <p className="text-xs text-orange-300 mt-1">
-                    Transaction costs
-                  </p>
-                </CardContent>
-              </Card>
+              {(analysis.totalGasFees > 0 || selectedChain === 'ethereum' || selectedChain === 'arbitrum') && (
+                <Card className="bg-gradient-to-br from-orange-900/30 to-orange-800/20 border-orange-700" data-testid="gas-fees-card">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium text-orange-300 flex items-center gap-2">
+                      <Activity className="w-4 h-4" />
+                      Gas Fees
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-bold text-white">
+                      {formatNumber(analysis.totalGasFees)} {getChainSymbol(analysis.chain || selectedChain)}
+                    </div>
+                    <p className="text-xs text-orange-300 mt-1">
+                      Transaction costs
+                    </p>
+                    <p className="text-xs text-gray-400 mt-2">
+                      Network fees paid
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
 
               <Card className={`bg-gradient-to-br ${analysis.netEth >= 0 ? 'from-blue-900/30 to-blue-800/20 border-blue-700' : 'from-purple-900/30 to-purple-800/20 border-purple-700'}`} data-testid="net-card">
                 <CardHeader className="pb-3">
                   <CardTitle className={`text-sm font-medium ${analysis.netEth >= 0 ? 'text-blue-300' : 'text-purple-300'} flex items-center gap-2`}>
                     <DollarSign className="w-4 h-4" />
-                    Net Balance
+                    Current Balance
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-white">
-                    {formatNumber(analysis.netEth)} ETH
+                    {formatNumber(analysis.netEth)} {getChainSymbol(analysis.chain || selectedChain)}
                   </div>
                   <p className="text-xs text-gray-300 mt-1">
-                    {analysis.netEth >= 0 ? 'Profit' : 'Loss'}
+                    Net position
+                  </p>
+                  <p className="text-xs text-gray-400 mt-2">
+                    Received - Sent{analysis.totalGasFees > 0 ? ' - Gas' : ''}
                   </p>
                 </CardContent>
               </Card>
