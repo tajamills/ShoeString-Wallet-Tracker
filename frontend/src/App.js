@@ -364,8 +364,8 @@ function App() {
                 />
                 <Button
                   data-testid="analyze-button"
-                  onClick={analyzeWallet}
-                  disabled={loading}
+                  onClick={() => analyzeWallet()}
+                  disabled={loading || !user}
                   className="bg-purple-600 hover:bg-purple-700"
                 >
                   {loading ? (
