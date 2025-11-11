@@ -85,7 +85,15 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
         <div className="space-y-6">
             {/* Tier Selection */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {Object.entries(tiers).map(([key, tier]) => (
+              {Object.entries(tiers)
+                .filter(([key]) => {
+                  // Hide Premium if user is already Premium or Pro
+                  if (key === 'premium' && (user?.subscription_tier === 'premium' || user?.subscription_tier === 'pro')) {
+                    return false;
+                  }
+                  return true;
+                })
+                .map(([key, tier]) => (
                 <div
                   key={key}
                   onClick={() => setSelectedTier(key)}
