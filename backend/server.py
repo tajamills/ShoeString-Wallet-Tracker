@@ -107,8 +107,9 @@ class Payment(BaseModel):
     payment_id: str  # NOWPayments payment_id
     order_id: str
     amount_usd: float
-    amount_btc: float
-    btc_address: str
+    amount_crypto: float
+    crypto_address: str
+    crypto_currency: str  # usdc, btc, etc.
     status: str  # waiting, confirming, confirmed, failed, expired
     subscription_tier: str
     payment_url: Optional[str] = None
