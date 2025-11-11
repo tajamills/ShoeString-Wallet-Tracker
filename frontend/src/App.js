@@ -78,15 +78,26 @@ function App() {
     }
   };
 
-  const analyzeWallet = async () => {
+  const analyzeWallet = async (addressOverride = null, chainOverride = null) => {
     if (!user) {
       setShowAuthModal(true);
       return;
     }
 
-    if (!walletAddress || !walletAddress.startsWith('0x') || walletAddress.length !== 42) {
-      setError('Please enter a valid Ethereum address (0x...)');
+    const address = addressOverride || walletAddress;
+    const chain = chainOverride || selectedChain;
+
+    // Basic validation - chain-specific
+    if (!address) {
+      setError('Please enter a wallet address');
       return;
+    }
+
+    if (chain === 'ethereum' || chain === 'arbitrum' || chain === 'bsc') {
+      if (!address.startsWith('0x') || address.length !== 42) {
+        setError('Please enter a valid address (0x...)');
+        return;
+      }
     }
 
     setLoading(true);
@@ -94,7 +105,10 @@ function App() {
     setAnalysis(null);
 
     try {
-      const payload = { address: walletAddress };
+      const payload = { 
+        address: address,
+        chain: chain
+      };
       
       // Add date range if provided
       if (startDate) {
