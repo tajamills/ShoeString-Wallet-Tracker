@@ -204,14 +204,14 @@ function App() {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    {user.subscription_tier === 'free' && (
+                    {user.subscription_tier !== 'pro' && (
                       <Button 
                         onClick={() => setShowUpgradeModal(true)}
                         className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
                         data-testid="upgrade-button"
                       >
                         <Crown className="w-4 h-4 mr-2" />
-                        Upgrade
+                        {user.subscription_tier === 'free' ? 'Upgrade' : 'Upgrade to Pro'}
                       </Button>
                     )}
                     <Button 
