@@ -147,66 +147,6 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
               )}
             </Button>
           </div>
-        ) : (
-          <div className="space-y-6">
-            <Alert className="bg-green-900/20 border-green-700 text-green-300">
-              <AlertDescription>
-                Payment created! Send USDC to the address below or use the payment link.
-              </AlertDescription>
-            </Alert>
-
-            <div className="bg-slate-700/50 p-6 rounded-lg space-y-4">
-              <div>
-                <label className="text-sm text-gray-400 block mb-2">USDC Amount</label>
-                <div className="flex items-center justify-between bg-slate-800 p-3 rounded">
-                  <span className="text-white font-mono">{paymentData.crypto_amount} USDC</span>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => copyToClipboard(paymentData.crypto_amount)}
-                    className="border-slate-600"
-                  >
-                    Copy
-                  </Button>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-sm text-gray-400 block mb-2">USDC Address (BSC)</label>
-                <div className="flex items-center justify-between bg-slate-800 p-3 rounded">
-                  <span className="text-white font-mono text-sm break-all">{paymentData.crypto_address}</span>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => copyToClipboard(paymentData.crypto_address)}
-                    className="border-slate-600 ml-2"
-                  >
-                    Copy
-                  </Button>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-sm text-gray-400 block mb-2">Order ID</label>
-                <div className="bg-slate-800 p-3 rounded">
-                  <span className="text-white font-mono text-sm">{paymentData.order_id}</span>
-                </div>
-              </div>
-
-              <div className="text-center text-sm text-gray-400">
-                <p>Payment status: <span className="text-yellow-400 font-semibold">{paymentData.status}</span></p>
-                <p className="mt-2">Your subscription will be activated automatically after payment confirmation.</p>
-              </div>
-            </div>
-
-            <Button
-              onClick={onClose}
-              variant="outline"
-              className="w-full border-slate-600 text-gray-300"
-            >
-              Close
-            </Button>
-          </div>
         )}
       </DialogContent>
     </Dialog>
