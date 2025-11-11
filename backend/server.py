@@ -462,7 +462,11 @@ async def analyze_wallet(request: WalletAnalysisRequest, user: dict = Depends(ch
             raise HTTPException(status_code=400, detail="Invalid Ethereum address format")
         
         # Analyze wallet using wallet service
-        analysis_data = wallet_service.analyze_wallet(address)
+        analysis_data = wallet_service.analyze_wallet(
+            address, 
+            start_date=request.start_date,
+            end_date=request.end_date
+        )
         
         # Create response object
         analysis_response = WalletAnalysisResponse(
