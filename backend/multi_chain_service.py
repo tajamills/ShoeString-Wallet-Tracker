@@ -21,13 +21,6 @@ class MultiChainService:
                 "symbol": "ETH",
                 "explorer": "https://etherscan.io"
             },
-            "polygon": {
-                "name": "Polygon",
-                "alchemy_url": f"https://polygon-mainnet.g.alchemy.com/v2/{self.alchemy_api_key}",
-                "decimals": 18,
-                "symbol": "MATIC",
-                "explorer": "https://polygonscan.com"
-            },
             "arbitrum": {
                 "name": "Arbitrum",
                 "alchemy_url": f"https://arb-mainnet.g.alchemy.com/v2/{self.alchemy_api_key}",
@@ -40,7 +33,8 @@ class MultiChainService:
                 "rpc_url": "https://bsc-dataseed1.binance.org",
                 "decimals": 18,
                 "symbol": "BNB",
-                "explorer": "https://bscscan.com"
+                "explorer": "https://bscscan.com",
+                "api_key": os.environ.get('BSCSCAN_API_KEY', 'YourApiKeyToken')
             },
             "bitcoin": {
                 "name": "Bitcoin",
@@ -48,6 +42,13 @@ class MultiChainService:
                 "decimals": 8,
                 "symbol": "BTC",
                 "explorer": "https://blockchain.info"
+            },
+            "solana": {
+                "name": "Solana",
+                "rpc_url": "https://api.mainnet-beta.solana.com",
+                "decimals": 9,
+                "symbol": "SOL",
+                "explorer": "https://solscan.io"
             }
         }
     
