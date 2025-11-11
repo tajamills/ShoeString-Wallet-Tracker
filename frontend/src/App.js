@@ -167,6 +167,18 @@ function App() {
           </p>
         </div>
 
+        {/* Payment Success Alert */}
+        {paymentSuccess && (
+          <div className="max-w-3xl mx-auto mb-6">
+            <Alert className="bg-green-900/20 border-green-700 text-green-300">
+              <AlertDescription className="flex items-center">
+                <Crown className="w-4 h-4 mr-2" />
+                Payment successful! Your subscription has been upgraded.
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+
         {/* User Info Bar */}
         <div className="max-w-3xl mx-auto mb-6">
           {user ? (
