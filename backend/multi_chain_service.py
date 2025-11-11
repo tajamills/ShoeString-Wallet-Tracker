@@ -213,7 +213,7 @@ class MultiChainService:
     ) -> Dict[str, Any]:
         """Analyze Bitcoin wallet using blockchain.info API"""
         try:
-            url = f"https://blockchain.info/rawaddr/{address}?limit=1000"
+            url = f"https://blockchain.info/rawaddr/{address}?limit=50"
             response = requests.get(url, timeout=30)
             response.raise_for_status()
             data = response.json()
@@ -221,20 +221,22 @@ class MultiChainService:
             total_received = self.satoshi_to_btc(data.get('total_received', 0))
             total_sent = self.satoshi_to_btc(data.get('total_sent', 0))
             final_balance = self.satoshi_to_btc(data.get('final_balance', 0))
+            n_tx = data.get('n_tx', 0)
             
             txs = data.get('txs', [])
             recent_transactions = []
             
             for tx in txs[:10]:
-                # Determine if sending or receiving
-                is_sender = any(inp.get('prev_out', {}).get('addr') == address for inp in tx.get('inputs', []))
+                # Calculate transaction value for this address
+                tx_value = abs(tx.get('result', 0))
+                is_sender = tx.get('result', 0) < 0
                 
                 recent_transactions.append({
                     "hash": tx.get('hash', ''),
                     "type": "sent" if is_sender else "received",
-                    "value": self.satoshi_to_btc(tx.get('result', 0)),
+                    "value": self.satoshi_to_btc(abs(tx_value)),
                     "asset": "BTC",
-                    "blockNum": str(tx.get('block_height', 0)),
+                    "blockNum": str(tx.get('block_height', 'pending')),
                     "category": "external"
                 })
             
@@ -243,10 +245,10 @@ class MultiChainService:
                 'chain': 'bitcoin',
                 'totalEthSent': total_sent,
                 'totalEthReceived': total_received,
-                'totalGasFees': 0.0,  # Gas fees not easily calculable for Bitcoin
+                'totalGasFees': 0.0,
                 'netEth': final_balance,
-                'outgoingTransactionCount': data.get('n_tx', 0),
-                'incomingTransactionCount': data.get('n_tx', 0),
+                'outgoingTransactionCount': n_tx,
+                'incomingTransactionCount': n_tx,
                 'tokensSent': {},
                 'tokensReceived': {},
                 'recentTransactions': recent_transactions
