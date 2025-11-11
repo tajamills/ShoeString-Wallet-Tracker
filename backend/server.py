@@ -337,45 +337,44 @@ async def create_upgrade_payment(
         logger.error(f"Failed to create Stripe checkout: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Payment creation failed: {str(e)}")
 
-@api_router.post("/payments/webhook")
-async def handle_nowpayments_webhook(request: Request):
-    """Handle NOWPayments IPN (Instant Payment Notification) webhook"""
+@api_router.post("/payments/webhook/stripe")
+async def handle_stripe_webhook(request: Request):
+    """Handle Stripe webhook"""
     try:
         # Get request body and signature
         body = await request.body()
-        signature = request.headers.get("x-nowpayments-sig", "")
+        signature = request.headers.get("stripe-signature", "")
         
-        # Verify signature
-        if signature and not nowpayments_service.verify_ipn_signature(body.decode(), signature):
-            logger.warning("Invalid webhook signature")
-            raise HTTPException(status_code=401, detail="Invalid signature")
+        # Handle webhook
+        webhook_response = await stripe_service.handle_webhook(body, signature)
         
-        # Parse webhook data
-        data = json.loads(body)
+        session_id = webhook_response.session_id
+        payment_status = webhook_response.payment_status
+        event_type = webhook_response.event_type
+        metadata = webhook_response.metadata
         
-        payment_id = data.get("payment_id")
-        payment_status = data.get("payment_status")
-        order_id = data.get("order_id")
-        
-        logger.info(f"Webhook received for payment {payment_id}: status={payment_status}")
+        logger.info(f"Stripe webhook received: {event_type} for session {session_id}")
         
         # Find payment in database
-        payment_doc = await db.payments.find_one({"payment_id": payment_id})
+        payment_doc = await db.payment_transactions.find_one({"session_id": session_id})
         
         if not payment_doc:
-            logger.error(f"Payment not found: {payment_id}")
+            logger.error(f"Payment not found for session: {session_id}")
             return {"status": "error", "message": "Payment not found"}
         
         # Update payment status
-        update_data = {"status": payment_status}
+        update_data = {
+            "payment_status": payment_status,
+            "status": "completed" if payment_status == "paid" else payment_doc.get("status", "pending")
+        }
         
-        # If payment is confirmed, upgrade user subscription
-        if payment_status in ["confirmed", "finished"]:
+        # If payment is completed, upgrade user subscription (prevent duplicate processing)
+        if payment_status == "paid" and payment_doc.get("payment_status") != "paid":
             update_data["confirmed_at"] = datetime.now(timezone.utc).isoformat()
             
             # Upgrade user subscription
-            user_id = payment_doc["user_id"]
-            subscription_tier = payment_doc["subscription_tier"]
+            user_id = metadata.get("user_id") or payment_doc["user_id"]
+            subscription_tier = metadata.get("tier") or payment_doc["subscription_tier"]
             
             await db.users.update_one(
                 {"id": user_id},
@@ -388,18 +387,18 @@ async def handle_nowpayments_webhook(request: Request):
                 }
             )
             
-            logger.info(f"User {user_id} upgraded to {subscription_tier}")
+            logger.info(f"User {user_id} upgraded to {subscription_tier} via webhook")
         
         # Update payment document
-        await db.payments.update_one(
-            {"payment_id": payment_id},
+        await db.payment_transactions.update_one(
+            {"session_id": session_id},
             {"$set": update_data}
         )
         
         return {"status": "ok"}
         
     except Exception as e:
-        logger.error(f"Webhook processing error: {str(e)}")
+        logger.error(f"Stripe webhook processing error: {str(e)}")
         raise HTTPException(status_code=500, detail="Webhook processing failed")
 
 @api_router.get("/payments/status/{session_id}")
