@@ -192,31 +192,65 @@ function App() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-4">
-              <Input
-                data-testid="wallet-address-input"
-                type="text"
-                placeholder="0x..."
-                value={walletAddress}
-                onChange={(e) => setWalletAddress(e.target.value)}
-                className="flex-1 bg-slate-700 border-slate-600 text-white placeholder:text-gray-500"
-                disabled={loading}
-              />
-              <Button
-                data-testid="analyze-button"
-                onClick={analyzeWallet}
-                disabled={loading}
-                className="bg-purple-600 hover:bg-purple-700"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Analyzing...
-                  </>
-                ) : (
-                  'Analyze'
-                )}
-              </Button>
+            <div className="space-y-4">
+              <div className="flex gap-4">
+                <Input
+                  data-testid="wallet-address-input"
+                  type="text"
+                  placeholder="0x..."
+                  value={walletAddress}
+                  onChange={(e) => setWalletAddress(e.target.value)}
+                  className="flex-1 bg-slate-700 border-slate-600 text-white placeholder:text-gray-500"
+                  disabled={loading}
+                />
+                <Button
+                  data-testid="analyze-button"
+                  onClick={analyzeWallet}
+                  disabled={loading}
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Analyzing...
+                    </>
+                  ) : (
+                    'Analyze'
+                  )}
+                </Button>
+              </div>
+              
+              {/* Date Range Filter */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm text-gray-400 block mb-2">Start Date (Optional)</label>
+                  <Input
+                    data-testid="start-date-input"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="bg-slate-700 border-slate-600 text-white"
+                    disabled={loading}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm text-gray-400 block mb-2">End Date (Optional)</label>
+                  <Input
+                    data-testid="end-date-input"
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="bg-slate-700 border-slate-600 text-white"
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+              
+              {(startDate || endDate) && (
+                <div className="text-sm text-gray-400">
+                  Filtering transactions {startDate && `from ${startDate}`} {endDate && `to ${endDate}`}
+                </div>
+              )}
             </div>
             {error && (
               <Alert className="mt-4 bg-red-900/20 border-red-900 text-red-300" data-testid="error-alert">
