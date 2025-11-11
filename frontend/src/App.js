@@ -262,21 +262,71 @@ function App() {
           )}
         </div>
 
+        {/* Saved Wallets Toggle */}
+        {user && (
+          <div className="max-w-3xl mx-auto mb-4">
+            <Button
+              onClick={() => setShowSavedWallets(!showSavedWallets)}
+              variant="outline"
+              className="border-slate-600 text-gray-300"
+            >
+              <Wallet className="w-4 h-4 mr-2" />
+              {showSavedWallets ? 'Hide' : 'Show'} Saved Wallets
+            </Button>
+          </div>
+        )}
+
+        {/* Saved Wallets Section */}
+        {showSavedWallets && user && (
+          <div className="max-w-3xl mx-auto mb-8">
+            <Card className="bg-slate-800/50 border-slate-700">
+              <CardContent className="pt-6">
+                <SavedWallets 
+                  getAuthHeader={getAuthHeader}
+                  onSelectWallet={(address, chain) => {
+                    setWalletAddress(address);
+                    setSelectedChain(chain);
+                    setShowSavedWallets(false);
+                    analyzeWallet(address, chain);
+                  }}
+                />
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {/* Input Section */}
         <Card className="max-w-3xl mx-auto mb-8 bg-slate-800/50 border-slate-700" data-testid="wallet-input-card">
           <CardHeader>
-            <CardTitle className="text-white">Enter Wallet Address</CardTitle>
+            <CardTitle className="text-white">Analyze Wallet</CardTitle>
             <CardDescription className="text-gray-400">
-              Enter an Ethereum wallet address to track transactions, gas fees, and calculate your crypto taxes
+              Multi-chain wallet analysis: Ethereum, Bitcoin, Arbitrum, BSC, and Solana
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
+              {/* Chain Selector */}
+              <div>
+                <label className="text-sm text-gray-400 block mb-2">Blockchain Network</label>
+                <select
+                  value={selectedChain}
+                  onChange={(e) => setSelectedChain(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-600 text-white rounded-md px-3 py-2"
+                  disabled={!user}
+                >
+                  <option value="ethereum">⟠ Ethereum</option>
+                  <option value="bitcoin">₿ Bitcoin</option>
+                  <option value="arbitrum">🔷 Arbitrum</option>
+                  <option value="bsc">🟡 BNB Smart Chain</option>
+                  <option value="solana">◎ Solana</option>
+                </select>
+              </div>
+
               <div className="flex gap-4">
                 <Input
                   data-testid="wallet-address-input"
                   type="text"
-                  placeholder="0x..."
+                  placeholder={selectedChain === 'ethereum' || selectedChain === 'arbitrum' || selectedChain === 'bsc' ? '0x...' : 'Wallet address'}
                   value={walletAddress}
                   onChange={(e) => setWalletAddress(e.target.value)}
                   className="flex-1 bg-slate-700 border-slate-600 text-white placeholder:text-gray-500"
