@@ -84,6 +84,7 @@ class WalletAnalysisResponse(BaseModel):
 
 # Initialize services
 wallet_service = WalletService()
+multi_chain_service = MultiChainService()
 auth_service = AuthService()
 stripe_service = StripeService()
 security = HTTPBearer()
