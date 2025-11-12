@@ -154,16 +154,17 @@ class BackendTester:
             self.log_result("Get Current User", False, f"Error: {str(e)}")
             return False
     
-    def test_wallet_analysis(self):
-        """Test wallet analysis with valid Ethereum address"""
+    def test_wallet_analysis_ethereum(self):
+        """Test wallet analysis with Ethereum address"""
         if not self.access_token:
-            self.log_result("Wallet Analysis", False, "No access token available")
+            self.log_result("Wallet Analysis - Ethereum", False, "No access token available")
             return False
             
         try:
             headers = {"Authorization": f"Bearer {self.access_token}"}
             payload = {
-                "address": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0"
+                "address": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0",
+                "chain": "ethereum"
             }
             
             response = self.session.post(f"{BASE_URL}/wallet/analyze", json=payload, headers=headers)
@@ -179,18 +180,94 @@ class BackendTester:
                 missing_fields = [field for field in required_fields if field not in data]
                 
                 if missing_fields:
-                    self.log_result("Wallet Analysis", False, f"Missing fields: {missing_fields}", data)
+                    self.log_result("Wallet Analysis - Ethereum", False, f"Missing fields: {missing_fields}", data)
                     return False
                 
-                self.log_result("Wallet Analysis", True, 
+                self.log_result("Wallet Analysis - Ethereum", True, 
                               f"Analysis successful. ETH Sent: {data['totalEthSent']}, ETH Received: {data['totalEthReceived']}, Gas Fees: {data['totalGasFees']}, Net ETH: {data['netEth']}")
                 return True
             else:
-                self.log_result("Wallet Analysis", False, f"HTTP {response.status_code}", response.json())
+                self.log_result("Wallet Analysis - Ethereum", False, f"HTTP {response.status_code}", response.json())
                 return False
                 
         except Exception as e:
-            self.log_result("Wallet Analysis", False, f"Error: {str(e)}")
+            self.log_result("Wallet Analysis - Ethereum", False, f"Error: {str(e)}")
+            return False
+    
+    def test_wallet_analysis_bitcoin(self):
+        """Test wallet analysis with Bitcoin address"""
+        if not self.access_token:
+            self.log_result("Wallet Analysis - Bitcoin", False, "No access token available")
+            return False
+            
+        try:
+            headers = {"Authorization": f"Bearer {self.access_token}"}
+            payload = {
+                "address": "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
+                "chain": "bitcoin"
+            }
+            
+            response = self.session.post(f"{BASE_URL}/wallet/analyze", json=payload, headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                self.log_result("Wallet Analysis - Bitcoin", True, 
+                              f"Bitcoin analysis successful. BTC Sent: {data['totalEthSent']}, BTC Received: {data['totalEthReceived']}, Net BTC: {data['netEth']}")
+                return True
+            elif response.status_code == 403:
+                # Expected for free tier users
+                error_data = response.json()
+                if "Multi-chain analysis is a Premium feature" in error_data.get("detail", ""):
+                    self.log_result("Wallet Analysis - Bitcoin", True, 
+                                  "Bitcoin analysis correctly restricted for free tier users")
+                    return True
+                else:
+                    self.log_result("Wallet Analysis - Bitcoin", False, f"Unexpected 403 error: {error_data}")
+                    return False
+            else:
+                self.log_result("Wallet Analysis - Bitcoin", False, f"HTTP {response.status_code}", response.json())
+                return False
+                
+        except Exception as e:
+            self.log_result("Wallet Analysis - Bitcoin", False, f"Error: {str(e)}")
+            return False
+    
+    def test_wallet_analysis_polygon(self):
+        """Test wallet analysis with Polygon address"""
+        if not self.access_token:
+            self.log_result("Wallet Analysis - Polygon", False, "No access token available")
+            return False
+            
+        try:
+            headers = {"Authorization": f"Bearer {self.access_token}"}
+            payload = {
+                "address": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0",
+                "chain": "polygon"
+            }
+            
+            response = self.session.post(f"{BASE_URL}/wallet/analyze", json=payload, headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                self.log_result("Wallet Analysis - Polygon", True, 
+                              f"Polygon analysis successful. MATIC Sent: {data['totalEthSent']}, MATIC Received: {data['totalEthReceived']}, Net MATIC: {data['netEth']}")
+                return True
+            elif response.status_code == 403:
+                # Expected for free tier users
+                error_data = response.json()
+                if "Multi-chain analysis is a Premium feature" in error_data.get("detail", ""):
+                    self.log_result("Wallet Analysis - Polygon", True, 
+                                  "Polygon analysis correctly restricted for free tier users")
+                    return True
+                else:
+                    self.log_result("Wallet Analysis - Polygon", False, f"Unexpected 403 error: {error_data}")
+                    return False
+            else:
+                self.log_result("Wallet Analysis - Polygon", False, f"HTTP {response.status_code}", response.json())
+                return False
+                
+        except Exception as e:
+            self.log_result("Wallet Analysis - Polygon", False, f"Error: {str(e)}")
             return False
     
     def test_usage_limits(self):
