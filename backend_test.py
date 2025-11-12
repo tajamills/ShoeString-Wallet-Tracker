@@ -340,25 +340,30 @@ class BackendTester:
             
             response = self.session.post(f"{BASE_URL}/payments/create-upgrade", json=payload, headers=headers)
             
-            # This might fail due to NOWPayments configuration, but we check the structure
+            # This uses Stripe, so we check for Stripe response structure
             if response.status_code == 200:
                 data = response.json()
-                expected_fields = ["payment_id", "btc_address", "btc_amount", "usd_amount", "status", "order_id"]
+                expected_fields = ["url", "session_id"]
                 missing_fields = [field for field in expected_fields if field not in data]
                 
                 if missing_fields:
                     self.log_result("Payment Endpoints", False, f"Missing fields in response: {missing_fields}", data)
                     return False
                 
-                self.log_result("Payment Endpoints", True, 
-                              f"Payment endpoint working. Payment ID: {data.get('payment_id')}, Amount: ${data.get('usd_amount')}")
-                return True
+                # Validate Stripe URL format
+                if "checkout.stripe.com" in data.get("url", ""):
+                    self.log_result("Payment Endpoints", True, 
+                                  f"Stripe payment endpoint working. Session ID: {data.get('session_id')}")
+                    return True
+                else:
+                    self.log_result("Payment Endpoints", False, f"Invalid Stripe URL: {data.get('url')}")
+                    return False
             elif response.status_code == 500:
-                # Expected if NOWPayments is not properly configured
+                # Expected if Stripe is not properly configured
                 error_data = response.json()
                 if "Payment creation failed" in error_data.get("detail", ""):
                     self.log_result("Payment Endpoints", True, 
-                                  f"Payment endpoint structure correct (NOWPayments config issue expected): {error_data['detail']}")
+                                  f"Payment endpoint structure correct (Stripe config issue expected): {error_data['detail']}")
                     return True
                 else:
                     self.log_result("Payment Endpoints", False, f"Unexpected 500 error: {error_data}")
