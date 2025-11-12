@@ -27,7 +27,7 @@ const CHAIN_COLORS = {
   solana: 'bg-indigo-500'
 };
 
-export const SavedWallets = ({ getAuthHeader, onSelectWallet }) => {
+export const SavedWallets = ({ getAuthHeader, onSelectWallet, userTier }) => {
   const [wallets, setWallets] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
