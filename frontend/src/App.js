@@ -82,6 +82,7 @@ function App() {
     const symbols = {
       ethereum: 'ETH',
       bitcoin: 'BTC',
+      polygon: 'MATIC',
       arbitrum: 'ETH',
       bsc: 'BNB',
       solana: 'SOL'
@@ -93,6 +94,7 @@ function App() {
     const icons = {
       ethereum: '⟠',
       bitcoin: '₿',
+      polygon: '🔺',
       arbitrum: '🔷',
       bsc: '🟡',
       solana: '◎'
