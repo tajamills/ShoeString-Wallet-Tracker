@@ -776,7 +776,16 @@ function App() {
           onClose={() => setShowDowngradeModal(false)}
           user={user}
           getAuthHeader={getAuthHeader}
-          onSuccess={() => window.location.reload()}
+          onSuccess={async (newTier) => {
+            // Reset UI state for free tier restrictions
+            if (newTier === 'free') {
+              setSelectedChain('ethereum');
+              setAnalysis(null); // Clear any non-Ethereum analysis
+            }
+            // Refresh user profile to get updated tier
+            await fetchUserProfile();
+            setShowDowngradeModal(false);
+          }}
         />
       </div>
     </div>
