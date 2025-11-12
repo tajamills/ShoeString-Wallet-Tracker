@@ -182,15 +182,20 @@ function App() {
 
   const exportToCSV = (data) => {
     // Create CSV content
-    const headers = ['Type', 'Hash', 'Asset', 'Amount', 'Address', 'Block Number'];
-    const rows = data.recentTransactions.map(tx => [
-      tx.type,
-      tx.hash || 'N/A',
-      tx.asset,
-      tx.value,
-      tx.type === 'sent' ? (tx.to || 'N/A') : (tx.from || 'N/A'),
-      tx.blockNum || 'N/A'
-    ]);
+    const headers = ['Type', 'Hash', 'Asset', 'Amount', 'Address', 'Label/Exchange', 'Block Number'];
+    const rows = data.recentTransactions.map(tx => {
+      const address = tx.type === 'sent' ? (tx.to || 'N/A') : (tx.from || 'N/A');
+      const label = tx.type === 'sent' ? (tx.to_label || '') : (tx.from_label || '');
+      return [
+        tx.type,
+        tx.hash || 'N/A',
+        tx.asset,
+        tx.value,
+        address,
+        label,
+        tx.blockNum || 'N/A'
+      ];
+    });
 
     // Add summary data at the top
     const summaryRows = [
