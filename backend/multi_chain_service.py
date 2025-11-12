@@ -208,28 +208,42 @@ class MultiChainService:
                     token = tx.get('asset', 'UNKNOWN')
                     tokens_received[token] = tokens_received.get(token, 0) + float(value)
             
-            # Get recent transactions (last 10)
+            # Get recent transactions (last 10) with metadata
             all_txs = []
             for tx in outgoing_txs[:10]:
                 value = tx.get('value', 0)
+                to_address = tx.get('to', '')
+                
+                # Get metadata for the address (exchange, contract name, etc.)
+                to_metadata = tx.get('metadata', {})
+                to_label = to_metadata.get('exchangeName') or to_metadata.get('contractName') or None
+                
                 all_txs.append({
                     "hash": tx.get('hash', ''),
                     "type": "sent",
                     "value": float(value) if value is not None else 0.0,
                     "asset": tx.get('asset', symbol),
-                    "to": tx.get('to', ''),
+                    "to": to_address,
+                    "to_label": to_label,
                     "blockNum": tx.get('blockNum', ''),
                     "category": tx.get('category', '')
                 })
             
             for tx in incoming_txs[:10]:
                 value = tx.get('value', 0)
+                from_address = tx.get('from', '')
+                
+                # Get metadata for the address
+                from_metadata = tx.get('metadata', {})
+                from_label = from_metadata.get('exchangeName') or from_metadata.get('contractName') or None
+                
                 all_txs.append({
                     "hash": tx.get('hash', ''),
                     "type": "received",
                     "value": float(value) if value is not None else 0.0,
                     "asset": tx.get('asset', symbol),
-                    "from": tx.get('from', ''),
+                    "from": from_address,
+                    "from_label": from_label,
                     "blockNum": tx.get('blockNum', ''),
                     "category": tx.get('category', '')
                 })
