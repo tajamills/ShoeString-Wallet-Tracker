@@ -12,6 +12,7 @@ const API = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 const CHAIN_ICONS = {
   ethereum: '⟠',
   bitcoin: '₿',
+  polygon: '🔺',
   arbitrum: '🔷',
   bsc: '🟡',
   solana: '◎'
@@ -20,9 +21,10 @@ const CHAIN_ICONS = {
 const CHAIN_COLORS = {
   ethereum: 'bg-blue-500',
   bitcoin: 'bg-orange-500',
+  polygon: 'bg-purple-500',
   arbitrum: 'bg-cyan-500',
   bsc: 'bg-yellow-500',
-  solana: 'bg-purple-500'
+  solana: 'bg-indigo-500'
 };
 
 export const SavedWallets = ({ getAuthHeader, onSelectWallet }) => {
