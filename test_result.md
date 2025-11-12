@@ -364,6 +364,36 @@ frontend:
           agent: "testing"
           comment: "✅ Responsive design working correctly. UI elements properly visible and accessible on desktop (1920x1080), tablet (768x1024), and mobile (390x844) viewports. Title, wallet input card, and other components maintain proper layout across different screen sizes."
 
+  - task: "Downgrade Flow - UI State Reset"
+    implemented: false
+    working: false
+    file: "App.js, DowngradeModal.js, SavedWallets.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: false
+          agent: "user"
+          comment: "After downgrading subscription, multi-chain options and non-Ethereum wallets still show. Should be restricted to Ethereum only for free tier."
+        - working: "NA"
+          agent: "main"
+          comment: "Need to implement: 1) Reset selectedChain to 'ethereum' after downgrade, 2) Filter saved wallets to show only Ethereum wallets for free tier, 3) Clear non-Ethereum analysis data, 4) Force refresh user state"
+
+  - task: "Wallet Analysis - Failure Investigation"
+    implemented: true
+    working: false
+    file: "server.py, multi_chain_service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: false
+          agent: "user"
+          comment: "Wallet analysis is failing on live site - no specific error message provided"
+        - working: "NA"
+          agent: "main"
+          comment: "Need to investigate: Check backend logs, test analyze endpoint, verify Alchemy API keys, check for chain-specific errors"
+
 metadata:
   created_by: "testing_agent"
   version: "1.0"
