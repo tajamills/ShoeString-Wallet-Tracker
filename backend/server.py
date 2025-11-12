@@ -524,7 +524,7 @@ async def analyze_wallet(request: WalletAnalysisRequest, user: dict = Depends(ch
         chain = request.chain.lower()
         
         # Basic validation
-        if chain in ["ethereum", "arbitrum", "bsc"]:
+        if chain in ["ethereum", "arbitrum", "bsc", "polygon"]:
             if not address.startswith('0x') or len(address) != 42:
                 raise HTTPException(status_code=400, detail=f"Invalid {chain} address format")
         elif chain == "bitcoin":
