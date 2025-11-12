@@ -81,6 +81,17 @@ class MultiChainService:
         if chain not in self.chains:
             raise ValueError(f"Unsupported chain: {chain}. Supported chains: {', '.join(self.chains.keys())}")
         
+        # Provide helpful error if wrong chain selected for address type
+        if chain in ["ethereum", "polygon", "arbitrum", "bsc"]:
+            if not address.startswith('0x'):
+                raise ValueError(f"This appears to be a non-EVM address. For {chain}, use an address starting with 0x. Try selecting Bitcoin or Solana instead.")
+        elif chain == "bitcoin":
+            if address.startswith('0x'):
+                raise ValueError(f"This appears to be an EVM address (starts with 0x). Try selecting Ethereum, Polygon, Arbitrum, or BSC instead.")
+        elif chain == "solana":
+            if address.startswith('0x'):
+                raise ValueError(f"This appears to be an EVM address (starts with 0x). Try selecting Ethereum, Polygon, Arbitrum, or BSC instead.")
+        
         if chain == "bitcoin":
             return self._analyze_bitcoin_wallet(address, start_date, end_date)
         elif chain == "solana":
