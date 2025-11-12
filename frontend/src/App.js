@@ -29,6 +29,7 @@ function App() {
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [selectedChain, setSelectedChain] = useState('ethereum');
   const [showSavedWallets, setShowSavedWallets] = useState(false);
+  const [showDowngradeModal, setShowDowngradeModal] = useState(false);
 
   // Check for payment success on component mount
   useEffect(() => {
