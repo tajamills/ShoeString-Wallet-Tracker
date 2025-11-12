@@ -22,6 +22,7 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
       price: 19,
       features: [
         'Unlimited wallet analyses',
+        'Multi-chain support (6 blockchains)',
         'CSV export',
         'Priority support',
         'Advanced analytics'
@@ -33,9 +34,9 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
       features: [
         'Everything in Premium',
         'Real-time alerts',
-        'Multi-chain support',
         'API access',
-        'Custom reports'
+        'Custom reports',
+        'Request new chains'
       ]
     }
   };
