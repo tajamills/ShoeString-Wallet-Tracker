@@ -381,7 +381,7 @@ frontend:
 
   - task: "Wallet Analysis - Failure Investigation"
     implemented: true
-    working: false
+    working: "NA"
     file: "server.py, multi_chain_service.py"
     stuck_count: 0
     priority: "high"
@@ -392,7 +392,31 @@ frontend:
           comment: "Wallet analysis is failing on live site - no specific error message provided"
         - working: "NA"
           agent: "main"
-          comment: "Need to investigate: Check backend logs, test analyze endpoint, verify Alchemy API keys, check for chain-specific errors"
+          comment: "Verified backend code is correct. Alchemy API key exists in .env. Backend logs show no errors. Need to test live endpoint with curl to reproduce issue and check if it's specific to certain chains or addresses."
+
+  - task: "Advanced Analytics Feature"
+    implemented: true
+    working: "NA"
+    file: "App.js"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "NEW FEATURE: Added Advanced Analytics card for Premium/Pro users showing: Avg Transaction Value, Activity Ratio (incoming:outgoing), Unique Assets count, Avg Gas per TX (EVM chains), Net Flow, and Total Volume. Displayed in a gradient indigo card after token activity section."
+
+  - task: "Chain Request UI (Pro Feature)"
+    implemented: true
+    working: "NA"
+    file: "App.js, ChainRequestModal.js"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "NEW FEATURE: Added ChainRequestModal component (already existed). Integrated into App.js with button under chain selector for Pro users. Modal allows Pro users to request new blockchain support with chain name and optional reason. Backend endpoint already existed at /api/chain-request."
 
 metadata:
   created_by: "testing_agent"
