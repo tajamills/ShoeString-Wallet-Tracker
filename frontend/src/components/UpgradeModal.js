@@ -24,7 +24,6 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
         'Unlimited wallet analyses',
         'Multi-chain support (6 blockchains)',
         'CSV export',
-        'Priority support',
         'Advanced analytics'
       ]
     },
