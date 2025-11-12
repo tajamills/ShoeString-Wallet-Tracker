@@ -645,14 +645,26 @@ function App() {
                               </Badge>
                             </td>
                             <td className="py-3 px-4">
-                              <a
-                                href={`https://etherscan.io/tx/${tx.hash}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-purple-400 hover:text-purple-300 font-mono text-sm"
-                              >
-                                {formatAddress(tx.hash)}
-                              </a>
+                              {tx.hash ? (
+                                <a
+                                  href={
+                                    analysis.chain === 'ethereum' ? `https://etherscan.io/tx/${tx.hash}` :
+                                    analysis.chain === 'bitcoin' ? `https://blockchain.info/tx/${tx.hash}` :
+                                    analysis.chain === 'polygon' ? `https://polygonscan.com/tx/${tx.hash}` :
+                                    analysis.chain === 'arbitrum' ? `https://arbiscan.io/tx/${tx.hash}` :
+                                    analysis.chain === 'bsc' ? `https://bscscan.com/tx/${tx.hash}` :
+                                    analysis.chain === 'solana' ? `https://solscan.io/tx/${tx.hash}` :
+                                    `#`
+                                  }
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-purple-400 hover:text-purple-300 font-mono text-sm"
+                                >
+                                  {formatAddress(tx.hash)}
+                                </a>
+                              ) : (
+                                <span className="text-gray-500 text-sm">N/A</span>
+                              )}
                             </td>
                             <td className="py-3 px-4">
                               <span className="text-white font-medium">{tx.asset}</span>
