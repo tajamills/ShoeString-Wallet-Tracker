@@ -163,6 +163,29 @@ class MultiChainService:
             tokens_received = {}
             recent_transactions = []
             
+            # Get transaction receipts for gas fees (only for sent transactions)
+            for tx in outgoing_txs[:100]:  # Limit to first 100 to avoid rate limits
+                tx_hash = tx.get('hash')
+                if tx_hash and tx.get('asset') == symbol:
+                    try:
+                        receipt_payload = {
+                            "jsonrpc": "2.0",
+                            "id": 1,
+                            "method": "eth_getTransactionReceipt",
+                            "params": [tx_hash]
+                        }
+                        receipt_response = requests.post(alchemy_url, json=receipt_payload, timeout=10)
+                        receipt_data = receipt_response.json().get('result', {})
+                        
+                        if receipt_data:
+                            gas_used = int(receipt_data.get('gasUsed', '0x0'), 16)
+                            effective_gas_price = int(receipt_data.get('effectiveGasPrice', '0x0'), 16)
+                            gas_cost_wei = gas_used * effective_gas_price
+                            gas_cost_eth = gas_cost_wei / 10**18
+                            total_gas += gas_cost_eth
+                    except:
+                        pass  # Skip if can't get receipt
+            
             # Process outgoing
             for tx in outgoing_txs:
                 value = tx.get('value')
