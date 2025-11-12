@@ -365,8 +365,8 @@ frontend:
           comment: "✅ Responsive design working correctly. UI elements properly visible and accessible on desktop (1920x1080), tablet (768x1024), and mobile (390x844) viewports. Title, wallet input card, and other components maintain proper layout across different screen sizes."
 
   - task: "Downgrade Flow - UI State Reset"
-    implemented: false
-    working: false
+    implemented: true
+    working: "NA"
     file: "App.js, DowngradeModal.js, SavedWallets.js"
     stuck_count: 0
     priority: "high"
@@ -377,7 +377,7 @@ frontend:
           comment: "After downgrading subscription, multi-chain options and non-Ethereum wallets still show. Should be restricted to Ethereum only for free tier."
         - working: "NA"
           agent: "main"
-          comment: "Need to implement: 1) Reset selectedChain to 'ethereum' after downgrade, 2) Filter saved wallets to show only Ethereum wallets for free tier, 3) Clear non-Ethereum analysis data, 4) Force refresh user state"
+          comment: "FIXED: 1) Updated DowngradeModal to pass new tier to onSuccess callback, 2) Modified App.js to reset selectedChain to 'ethereum' and clear analysis when downgrading to free tier, 3) Updated SavedWallets to filter and show only Ethereum wallets for free tier users, 4) Added userTier dependency to SavedWallets useEffect to re-fetch on tier change. Ready for testing."
 
   - task: "Wallet Analysis - Failure Investigation"
     implemented: true
