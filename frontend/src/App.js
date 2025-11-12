@@ -181,11 +181,11 @@ function App() {
   };
 
   const formatNumber = (num) => {
-    if (num === null || num === undefined) return '0';
-    return new Intl.NumberFormat('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 6
-    }).format(num);
+    const value = Number(num);
+    if (value === 0) return '0';
+    if (value < 0.0001) return value.toExponential(4);
+    if (value < 1) return value.toFixed(6);
+    return value.toFixed(4);
   };
 
   if (authLoading) {
