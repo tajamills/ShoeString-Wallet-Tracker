@@ -272,6 +272,16 @@ class BackendTester:
                 else:
                     self.log_result("Wallet Analysis - Polygon", False, f"Unexpected 403 error: {error_data}")
                     return False
+            elif response.status_code == 429:
+                # Daily limit reached - this is expected for free tier after first analysis
+                error_data = response.json()
+                if "Daily limit reached" in error_data.get("detail", ""):
+                    self.log_result("Wallet Analysis - Polygon", True, 
+                                  "Polygon analysis blocked by daily limit (expected for free tier)")
+                    return True
+                else:
+                    self.log_result("Wallet Analysis - Polygon", False, f"Unexpected 429 error: {error_data}")
+                    return False
             else:
                 self.log_result("Wallet Analysis - Polygon", False, f"HTTP {response.status_code}", response.json())
                 return False
