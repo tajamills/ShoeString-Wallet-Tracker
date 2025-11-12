@@ -341,19 +341,42 @@ function App() {
             <div className="space-y-4">
               {/* Chain Selector */}
               <div>
-                <label className="text-sm text-gray-400 block mb-2">Blockchain Network</label>
+                <label className="text-sm text-gray-400 block mb-2">
+                  Blockchain Network
+                  {user?.subscription_tier === 'free' && (
+                    <span className="ml-2 text-xs text-purple-400">(Upgrade for multi-chain)</span>
+                  )}
+                </label>
                 <select
                   value={selectedChain}
-                  onChange={(e) => setSelectedChain(e.target.value)}
+                  onChange={(e) => {
+                    if (user?.subscription_tier === 'free' && e.target.value !== 'ethereum') {
+                      setError('Multi-chain analysis requires Premium. Upgrade to unlock!');
+                      setShowUpgradeModal(true);
+                      return;
+                    }
+                    setSelectedChain(e.target.value);
+                    setError('');
+                  }}
                   className="w-full bg-slate-900 border border-slate-600 text-white rounded-md px-3 py-2"
                   disabled={!user}
                 >
                   <option value="ethereum">⟠ Ethereum</option>
-                  <option value="bitcoin">₿ Bitcoin</option>
-                  <option value="polygon">🔺 Polygon</option>
-                  <option value="arbitrum">🔷 Arbitrum</option>
-                  <option value="bsc">🟡 BNB Smart Chain</option>
-                  <option value="solana">◎ Solana</option>
+                  <option value="bitcoin" disabled={user?.subscription_tier === 'free'}>
+                    ₿ Bitcoin {user?.subscription_tier === 'free' ? '🔒' : ''}
+                  </option>
+                  <option value="polygon" disabled={user?.subscription_tier === 'free'}>
+                    🔺 Polygon {user?.subscription_tier === 'free' ? '🔒' : ''}
+                  </option>
+                  <option value="arbitrum" disabled={user?.subscription_tier === 'free'}>
+                    🔷 Arbitrum {user?.subscription_tier === 'free' ? '🔒' : ''}
+                  </option>
+                  <option value="bsc" disabled={user?.subscription_tier === 'free'}>
+                    🟡 BNB Smart Chain {user?.subscription_tier === 'free' ? '🔒' : ''}
+                  </option>
+                  <option value="solana" disabled={user?.subscription_tier === 'free'}>
+                    ◎ Solana {user?.subscription_tier === 'free' ? '🔒' : ''}
+                  </option>
                 </select>
               </div>
 
