@@ -385,7 +385,15 @@ function App() {
                 <Input
                   data-testid="wallet-address-input"
                   type="text"
-                  placeholder={selectedChain === 'ethereum' || selectedChain === 'arbitrum' || selectedChain === 'bsc' ? '0x...' : 'Wallet address'}
+                  placeholder={
+                    selectedChain === 'ethereum' || selectedChain === 'polygon' || selectedChain === 'arbitrum' || selectedChain === 'bsc' 
+                      ? '0x...' 
+                      : selectedChain === 'bitcoin' 
+                        ? 'Bitcoin address (e.g., 1A1z...)' 
+                        : selectedChain === 'solana'
+                          ? 'Solana address (base58)'
+                          : 'Wallet address'
+                  }
                   value={walletAddress}
                   onChange={(e) => setWalletAddress(e.target.value)}
                   className="flex-1 bg-slate-700 border-slate-600 text-white placeholder:text-gray-500"
