@@ -438,10 +438,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Downgrade Flow - UI State Reset"
     - "Advanced Analytics Feature"
-    - "Chain Request UI (Pro Feature)"
-    - "Wallet Analysis - Failure Investigation"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
