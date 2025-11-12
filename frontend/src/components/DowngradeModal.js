@@ -49,7 +49,8 @@ export const DowngradeModal = ({ isOpen, onClose, user, getAuthHeader, onSuccess
       setConfirmed(true);
       setTimeout(() => {
         onClose();
-        onSuccess && onSuccess();
+        // Pass the new tier to the success callback
+        onSuccess && onSuccess(newTier);
         setConfirmed(false);
       }, 2000);
 
