@@ -244,12 +244,12 @@ function App() {
                             : `${user.daily_usage_count} analyses today`}
                         </span>
                         {user.subscription_tier !== 'free' && (
-                          <a 
-                            href="mailto:support@shoestringwallet.com?subject=Downgrade Request"
+                          <button
+                            onClick={() => setShowDowngradeModal(true)}
                             className="text-xs text-gray-500 hover:text-gray-400 underline ml-2"
                           >
                             manage
-                          </a>
+                          </button>
                         )}
                       </div>
                     </div>
