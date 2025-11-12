@@ -30,11 +30,10 @@ class MultiChainService:
             },
             "bsc": {
                 "name": "BNB Smart Chain",
-                "rpc_url": "https://bsc-dataseed1.binance.org",
+                "alchemy_url": f"https://bnb-mainnet.g.alchemy.com/v2/{self.alchemy_api_key}",
                 "decimals": 18,
                 "symbol": "BNB",
-                "explorer": "https://bscscan.com",
-                "api_key": os.environ.get('BSCSCAN_API_KEY', 'YourApiKeyToken')
+                "explorer": "https://bscscan.com"
             },
             "bitcoin": {
                 "name": "Bitcoin",
