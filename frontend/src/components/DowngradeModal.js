@@ -18,14 +18,14 @@ export const DowngradeModal = ({ isOpen, onClose, user, getAuthHeader, onSuccess
         from: 'Pro',
         to: 'Premium',
         newPrice: '$19/month',
-        loses: ['API access', 'Custom reports', 'Multi-chain support']
+        loses: ['Custom reports', 'Request new chains']
       };
     } else if (user?.subscription_tier === 'premium') {
       return {
         from: 'Premium',
         to: 'Free',
         newPrice: 'Free',
-        loses: ['Unlimited analyses', 'CSV export', 'Priority support', 'Advanced analytics']
+        loses: ['Unlimited analyses', 'Multi-chain support', 'CSV export', 'Exchange detection', 'Saved wallets (non-Ethereum)']
       };
     }
     return null;
