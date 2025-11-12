@@ -1,0 +1,97 @@
+<analysis>
+The AI engineer's work documents a complete software development lifecycle, starting from initial product requirements for a crypto wallet tracker and culminating in a full-stack application deployed on Render. The trajectory shows a progression from building the core MVP—with a FastAPI backend and React frontend—to tackling complex deployment and integration challenges.
+
+Key phases include:
+1.  **MVP Development:** Creation of wallet analysis using the Alchemy API, user authentication with JWT, and initial monetization via NOWPayments for Bitcoin.
+2.  **Deployment and Troubleshooting:** A significant portion of the work involved deploying to Render. This included resolving frontend dependency conflicts, debugging a backend 502 error (which was due to the backend service not being created on Render), and fixing numerous environment variable issues.
+3.  **Payment System Pivot:** The initial NOWPayments integration failed due to minimum transaction amount errors. After a brief attempt to switch to USDC failed for the same reason, the user requested a complete switch to Stripe, which the AI successfully implemented. This involved creating a new Stripe service, updating backend endpoints, and refactoring the frontend's upgrade modal.
+4.  **Major Feature Expansion:** Following successful deployment, the user requested a large set of new features. The AI implemented multi-chain support (for 6 chains), a Saved Wallets feature, CSV export, and exchange address labeling. It also refined the product by gating multi-chain access to premium users, adding a downgrade flow, and improving the accuracy of financial data display.
+
+The final messages indicate the AI is actively debugging new user-reported issues related to wallet analysis failures on the live application.
+</analysis>
+
+<product_requirements>
+The goal is to build a ShoeString Wallet Tracker, a web application for analyzing cryptocurrency wallet transactions, primarily for tax reporting purposes.
+
+**Initial MVP & Core Features:**
+*   Analyze a user-provided wallet address to calculate total ETH sent/received, gas fees, and net balance.
+*   Display recent transactions and ERC-20 token activity.
+*   Use the Alchemy API as the primary data source.
+*   Implement user authentication (registration/login) to secure the service.
+*   Include a date range filter for transaction analysis.
+
+**Monetization & Tiers (Evolved):**
+*   **Initial Plan:** Monetize via recurring Bitcoin-only payments using NOWPayments. This was abandoned due to minimum transaction amount issues.
+*   **Current Plan:** Use Stripe for subscription payments.
+*   **Free Tier:** Limited to 1 wallet analysis per day and Ethereum-only analysis.
+*   **Premium Tier:** Unlimited analyses, multi-chain support (6 chains), CSV export, and advanced analytics.
+*   **Pro Tier:** All Premium features, plus custom reports and the ability to request new chains.
+
+**Recent Feature Additions:**
+*   **Multi-Chain Support:** Analyze wallets on Ethereum, Bitcoin, Polygon, Arbitrum, BSC, and Solana.
+*   **Saved Wallets:** Allow authenticated users to save, name, and quickly re-analyze their favorite wallet addresses.
+*   **CSV Export:** Allow premium users to download their transaction history.
+*   **Exchange Detection:** Identify and label transactions involving known exchange addresses.
+*   **Downgrade Flow:** Provide users a way to request a subscription downgrade.
+</product_requirements>
+
+<key_technical_concepts>
+- **Full-stack Frameworks**: React (frontend) with Tailwind CSS (shadcn/ui), FastAPI (backend).
+- **Database**: MongoDB for user data and saved wallets.
+- **Blockchain Data APIs**: Primarily Alchemy API for EVM chains (ETH, Polygon, Arbitrum, BSC) and Solana. Blockchain.info API for Bitcoin.
+- **Authentication**: Custom JWT (JSON Web Token) based authentication.
+- **Payments**: Stripe for handling recurring subscriptions (pivoted from NOWPayments).
+- **Deployment**: Render for both frontend and backend web services.
+</key_technical_concepts>
+
+<code_architecture>
+The application follows a classic monorepo structure with separate  and  directories. The backend is a FastAPI server that exposes a REST API, and the frontend is a React single-page application that consumes this API.
+
+**Directory Structure:**
+
+
+**Key File Analysis:**
+
+- ****
+  - **Importance:** The main entry point for the FastAPI application. It defines all API routes, handles database connection, manages CORS, and integrates all other services.
+  - **Changes:** Heavily modified. Initial routes for  and  were created. Payment routes were added for NOWPayments, then completely removed and replaced with Stripe-specific endpoints (, ). New endpoints for saved wallets (), chain requests, and subscription downgrades were added. The main analysis endpoint () was updated to use the new .
+
+- **** (New File)
+  - **Importance:** Centralizes all blockchain data fetching. This service is a wrapper that calls the correct underlying API (Alchemy for EVM/Solana, Blockchain.info for Bitcoin) based on the selected chain.
+  - **Changes:** Created to support multi-chain functionality. Contains specific methods like , , and . Logic was added to fetch gas fees and identify exchange addresses via Alchemy's enhanced APIs.
+
+- **** (New File)
+  - **Importance:** Handles all interactions with the Stripe API. It is responsible for creating Stripe Checkout Sessions.
+  - **Changes:** Created as part of the pivot away from NOWPayments. It uses the  library to interact with Stripe.
+
+- ****
+  - **Importance:** The main component for the entire frontend. It manages the primary state, including wallet address input, analysis results, user authentication status, and modal visibility.
+  - **Changes:** Extensively modified. State was added for chain selection, saved wallets, and loading/error states. The main  function was updated to pass the selected chain to the backend. The UI was updated to include a chain selector dropdown, a Show Saved Wallets toggle, and an Export CSV button. Conditional rendering logic was added to gate multi-chain access and show upgrade/downgrade buttons based on the user's subscription tier.
+
+- ****
+  - **Importance:** The UI component for handling user subscriptions.
+  - **Changes:** Initially built for NOWPayments (displaying a crypto address). It was completely refactored to support Stripe's redirect-based checkout flow. The marketing copy listing features for Premium and Pro tiers was repeatedly updated to remove unimplemented features like priority support and API access.
+
+- **** (New File)
+  - **Importance:** A modal component that allows users to view, add, use, and delete their saved wallet addresses.
+  - **Changes:** Created to provide a UI for the wallet storage feature. It fetches the user's saved wallets from the backend and allows them to trigger an analysis directly from the list.
+</code_architecture>
+
+<pending_tasks>
+- **Implement Advanced Analytics**: This feature is listed for Premium users, but its specific functionality has not been defined or built.
+- **Implement Custom Reports**: This is a listed Pro feature that has not been implemented.
+- **Implement Chain Request UI**: The backend has an endpoint for chain requests, but the frontend UI/modal for this feature was not completed.
+- **End-to-End Testing on Render**: The user has reported multiple issues on the live site, indicating a need for thorough testing after the final deployment.
+</pending_tasks>
+
+<current_work>
+The AI engineer was in the middle of a debugging session based on the user's latest feedback on the live Render application. The user reported two problems:
+1.  **when i click the multi = chain it still shows old wallets from various addresses**: The AI was trying to understand this ambiguous statement, positing that it might refer to the intended functionality of the Saved Wallets feature, which persists wallets across sessions.
+2.  **analyze wallet failed**: The AI was actively investigating why the wallet analysis was failing on the live site.
+
+The trajectory ends just as the AI begins its investigation into these two issues. The context implies that despite many local fixes, there might be a discrepancy between the local environment and the deployed Render environment, or a new bug has been introduced. The AI's immediate task is to diagnose the root cause of the analyze wallet failed error and seek clarification from the user on the first point. All recent feature additions (multi-chain, saved wallets, CSV export, exchange detection, downgrade modal) and bug fixes have been completed locally but are the subject of the user's current bug report on the live version.
+</current_work>
+
+<optional_next_step>
+Investigate the analyze wallet failed error on the live Render environment by checking browser console logs and backend logs. Clarify with the user what they mean by multi-chain it still shows old wallets.
+</optional_next_step>
