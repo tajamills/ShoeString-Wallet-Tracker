@@ -649,6 +649,13 @@ function App() {
         
         {/* Upgrade Modal */}
         <UpgradeModal isOpen={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} />
+        <DowngradeModal 
+          isOpen={showDowngradeModal} 
+          onClose={() => setShowDowngradeModal(false)}
+          user={user}
+          getAuthHeader={getAuthHeader}
+          onSuccess={() => window.location.reload()}
+        />
       </div>
     </div>
   );
