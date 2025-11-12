@@ -32,7 +32,6 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
       price: 49,
       features: [
         'Everything in Premium',
-        'API access',
         'Custom reports',
         'Request new chains'
       ]
