@@ -177,10 +177,11 @@ class MultiChainService:
             # Get recent transactions (last 10)
             all_txs = []
             for tx in outgoing_txs[:10]:
+                value = tx.get('value', 0)
                 all_txs.append({
                     "hash": tx.get('hash', ''),
                     "type": "sent",
-                    "value": float(tx.get('value', 0)),
+                    "value": float(value) if value is not None else 0.0,
                     "asset": tx.get('asset', symbol),
                     "to": tx.get('to', ''),
                     "blockNum": tx.get('blockNum', ''),
@@ -188,10 +189,11 @@ class MultiChainService:
                 })
             
             for tx in incoming_txs[:10]:
+                value = tx.get('value', 0)
                 all_txs.append({
                     "hash": tx.get('hash', ''),
                     "type": "received",
-                    "value": float(tx.get('value', 0)),
+                    "value": float(value) if value is not None else 0.0,
                     "asset": tx.get('asset', symbol),
                     "from": tx.get('from', ''),
                     "blockNum": tx.get('blockNum', ''),
