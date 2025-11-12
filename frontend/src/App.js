@@ -433,6 +433,14 @@ function App() {
                     ◎ Solana {user?.subscription_tier === 'free' ? '🔒' : ''}
                   </option>
                 </select>
+                {user?.subscription_tier === 'pro' && (
+                  <button
+                    onClick={() => setShowChainRequestModal(true)}
+                    className="text-xs text-purple-400 hover:text-purple-300 underline mt-2"
+                  >
+                    Need a different chain? Request it here
+                  </button>
+                )}
               </div>
 
               <div className="flex gap-4">
