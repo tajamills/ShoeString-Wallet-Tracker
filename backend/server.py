@@ -558,6 +558,14 @@ async def analyze_wallet(request: WalletAnalysisRequest, user: dict = Depends(ch
         address = request.address.strip()
         chain = request.chain.lower()
         
+        # Check if user has access to multi-chain (Premium/Pro feature)
+        user_tier = user.get('subscription_tier', 'free')
+        if chain != 'ethereum' and user_tier == 'free':
+            raise HTTPException(
+                status_code=403, 
+                detail="Multi-chain analysis is a Premium feature. Upgrade to analyze Bitcoin, Polygon, Arbitrum, BSC, and Solana wallets."
+            )
+        
         # Basic validation
         if chain in ["ethereum", "arbitrum", "bsc", "polygon"]:
             if not address.startswith('0x') or len(address) != 42:
