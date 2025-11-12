@@ -117,7 +117,7 @@ function App() {
       return;
     }
 
-    if (chain === 'ethereum' || chain === 'arbitrum' || chain === 'bsc') {
+    if (chain === 'ethereum' || chain === 'arbitrum' || chain === 'bsc' || chain === 'polygon') {
       if (!address.startsWith('0x') || address.length !== 42) {
         setError('Please enter a valid address (0x...)');
         return;
