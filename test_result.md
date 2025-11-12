@@ -426,9 +426,12 @@ metadata:
 
 test_plan:
   current_focus:
-    - "All frontend testing completed successfully"
+    - "Downgrade Flow - UI State Reset"
+    - "Advanced Analytics Feature"
+    - "Chain Request UI (Pro Feature)"
+    - "Wallet Analysis - Failure Investigation"
   stuck_tasks: []
-  test_all: true
+  test_all: false
   test_priority: "high_first"
 
 agent_communication:
