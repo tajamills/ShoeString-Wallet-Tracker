@@ -271,9 +271,9 @@ class MultiChainService:
         start_date: Optional[str] = None,
         end_date: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Analyze Solana wallet using public RPC"""
+        """Analyze Solana wallet using Alchemy"""
         try:
-            rpc_url = self.chains['solana']['rpc_url']
+            rpc_url = self.chains['solana']['alchemy_url']
             
             # Get balance
             balance_payload = {
