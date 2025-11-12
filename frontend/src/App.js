@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { AuthModal } from '@/components/AuthModal';
 import { UpgradeModal } from '@/components/UpgradeModal';
 import { SavedWallets } from '@/components/SavedWallets';
+import { DowngradeModal } from '@/components/DowngradeModal';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
