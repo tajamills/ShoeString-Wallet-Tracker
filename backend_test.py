@@ -390,7 +390,8 @@ class BackendTester:
                 
                 if response.status_code == 400:
                     data = response.json()
-                    if "Invalid Ethereum address format" in data.get("detail", ""):
+                    error_detail = data.get("detail", "").lower()
+                    if "invalid ethereum address format" in error_detail:
                         results.append(("Invalid Address Format", True, "Correctly rejected invalid address"))
                     else:
                         results.append(("Invalid Address Format", False, f"Wrong error message: {data}"))
