@@ -699,6 +699,7 @@ class BackendTester:
             ("Wallet Analysis - Ethereum", self.test_wallet_analysis_ethereum),
             ("Wallet Analysis - Bitcoin", self.test_wallet_analysis_bitcoin),
             ("Wallet Analysis - Polygon", self.test_wallet_analysis_polygon),
+            ("Multi-chain Premium Test", self.test_multichain_with_premium_user),
             ("Usage Limits", self.test_usage_limits),
             ("Upgrade to Pro", self.test_upgrade_to_pro),
             ("Chain Request (Pro Feature)", self.test_chain_request_pro_feature),
