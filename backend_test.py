@@ -389,6 +389,34 @@ class BackendTester:
                         results.append(("Invalid Address Format", True, "Correctly rejected invalid address"))
                     else:
                         results.append(("Invalid Address Format", False, f"Wrong error message: {data}"))
+                elif response.status_code == 429:
+                    # Daily limit reached - create new user to test validation
+                    timestamp = int(time.time())
+                    test_email = f"validation_test_{timestamp}@example.com"
+                    test_password = "ValidationTest123!"
+                    
+                    # Register new user
+                    reg_payload = {"email": test_email, "password": test_password}
+                    reg_response = self.session.post(f"{BASE_URL}/auth/register", json=reg_payload)
+                    
+                    if reg_response.status_code == 200:
+                        reg_data = reg_response.json()
+                        test_token = reg_data.get("access_token")
+                        test_headers = {"Authorization": f"Bearer {test_token}"}
+                        
+                        # Test invalid address with fresh user
+                        val_response = self.session.post(f"{BASE_URL}/wallet/analyze", json=payload, headers=test_headers)
+                        
+                        if val_response.status_code == 400:
+                            val_data = val_response.json()
+                            if "Invalid Ethereum address format" in val_data.get("detail", ""):
+                                results.append(("Invalid Address Format", True, "Correctly rejected invalid address (with fresh user)"))
+                            else:
+                                results.append(("Invalid Address Format", False, f"Wrong error message: {val_data}"))
+                        else:
+                            results.append(("Invalid Address Format", False, f"Expected 400, got {val_response.status_code}"))
+                    else:
+                        results.append(("Invalid Address Format", False, "Could not create test user for validation"))
                 else:
                     results.append(("Invalid Address Format", False, f"Expected 400, got {response.status_code}"))
             else:
