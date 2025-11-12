@@ -44,10 +44,17 @@ class MultiChainService:
             },
             "solana": {
                 "name": "Solana",
-                "rpc_url": "https://api.mainnet-beta.solana.com",
+                "alchemy_url": f"https://solana-mainnet.g.alchemy.com/v2/{self.alchemy_api_key}",
                 "decimals": 9,
                 "symbol": "SOL",
                 "explorer": "https://solscan.io"
+            },
+            "polygon": {
+                "name": "Polygon",
+                "alchemy_url": f"https://polygon-mainnet.g.alchemy.com/v2/{self.alchemy_api_key}",
+                "decimals": 18,
+                "symbol": "MATIC",
+                "explorer": "https://polygonscan.com"
             }
         }
     
