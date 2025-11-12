@@ -734,9 +734,21 @@ function App() {
                               <span className="text-white font-mono">{formatNumber(tx.value)}</span>
                             </td>
                             <td className="py-3 px-4">
-                              <span className="text-gray-400 font-mono text-sm">
-                                {tx.type === 'sent' ? formatAddress(tx.to) : formatAddress(tx.from)}
-                              </span>
+                              <div className="flex flex-col">
+                                {tx.type === 'sent' && tx.to_label && (
+                                  <Badge variant="outline" className="text-blue-300 border-blue-700 mb-1 w-fit">
+                                    🏦 {tx.to_label}
+                                  </Badge>
+                                )}
+                                {tx.type === 'received' && tx.from_label && (
+                                  <Badge variant="outline" className="text-blue-300 border-blue-700 mb-1 w-fit">
+                                    🏦 {tx.from_label}
+                                  </Badge>
+                                )}
+                                <span className="text-gray-400 font-mono text-sm">
+                                  {tx.type === 'sent' ? formatAddress(tx.to) : formatAddress(tx.from)}
+                                </span>
+                              </div>
                             </td>
                           </tr>
                         ))}
