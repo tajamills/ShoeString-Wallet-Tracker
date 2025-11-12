@@ -674,6 +674,92 @@ function App() {
               </Card>
             )}
 
+            {/* Advanced Analytics - Premium/Pro Feature */}
+            {user?.subscription_tier !== 'free' && (
+              <Card className="bg-gradient-to-br from-indigo-900/30 to-indigo-800/20 border-indigo-700">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-indigo-400" />
+                    Advanced Analytics
+                    <Badge className="bg-purple-600 ml-2">Premium</Badge>
+                  </CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Deeper insights into your wallet activity
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Average Transaction Value */}
+                    <div className="bg-slate-900/50 rounded-lg p-4">
+                      <div className="text-sm text-gray-400 mb-1">Avg Transaction Value</div>
+                      <div className="text-2xl font-bold text-white">
+                        {formatNumber(
+                          (analysis.totalEthReceived + analysis.totalEthSent) / 
+                          Math.max(1, (analysis.incomingTransactionCount + analysis.outgoingTransactionCount))
+                        )} {getChainSymbol(analysis.chain || selectedChain)}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">Per transaction</div>
+                    </div>
+
+                    {/* Transaction Activity Ratio */}
+                    <div className="bg-slate-900/50 rounded-lg p-4">
+                      <div className="text-sm text-gray-400 mb-1">Activity Ratio</div>
+                      <div className="text-2xl font-bold text-white">
+                        {analysis.outgoingTransactionCount > 0
+                          ? (analysis.incomingTransactionCount / analysis.outgoingTransactionCount).toFixed(2)
+                          : analysis.incomingTransactionCount.toFixed(2)
+                        }:1
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">Incoming : Outgoing</div>
+                    </div>
+
+                    {/* Unique Assets */}
+                    <div className="bg-slate-900/50 rounded-lg p-4">
+                      <div className="text-sm text-gray-400 mb-1">Unique Assets</div>
+                      <div className="text-2xl font-bold text-white">
+                        {1 + new Set([
+                          ...Object.keys(analysis.tokensReceived || {}),
+                          ...Object.keys(analysis.tokensSent || {})
+                        ]).size}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">Native + Tokens</div>
+                    </div>
+
+                    {/* Gas Efficiency (EVM chains only) */}
+                    {(analysis.chain === 'ethereum' || analysis.chain === 'arbitrum' || analysis.chain === 'polygon' || analysis.chain === 'bsc') && analysis.totalGasFees > 0 && (
+                      <div className="bg-slate-900/50 rounded-lg p-4">
+                        <div className="text-sm text-gray-400 mb-1">Avg Gas per TX</div>
+                        <div className="text-2xl font-bold text-white">
+                          {formatNumber(analysis.totalGasFees / Math.max(1, analysis.outgoingTransactionCount))} {getChainSymbol(analysis.chain || selectedChain)}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">Average gas cost</div>
+                      </div>
+                    )}
+
+                    {/* Net Flow */}
+                    <div className="bg-slate-900/50 rounded-lg p-4">
+                      <div className="text-sm text-gray-400 mb-1">Net Flow</div>
+                      <div className={`text-2xl font-bold ${analysis.netEth >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {analysis.netEth >= 0 ? '+' : ''}{formatNumber(analysis.netEth)} {getChainSymbol(analysis.chain || selectedChain)}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {analysis.netEth >= 0 ? 'Net accumulation' : 'Net spending'}
+                      </div>
+                    </div>
+
+                    {/* Total Volume */}
+                    <div className="bg-slate-900/50 rounded-lg p-4">
+                      <div className="text-sm text-gray-400 mb-1">Total Volume</div>
+                      <div className="text-2xl font-bold text-white">
+                        {formatNumber(analysis.totalEthReceived + analysis.totalEthSent)} {getChainSymbol(analysis.chain || selectedChain)}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">Combined flow</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Recent Transactions */}
             {analysis.recentTransactions && analysis.recentTransactions.length > 0 && (
               <Card className="bg-slate-800/50 border-slate-700" data-testid="transactions-table">
