@@ -332,7 +332,7 @@ function App() {
           <CardHeader>
             <CardTitle className="text-white">Analyze Wallet</CardTitle>
             <CardDescription className="text-gray-400">
-              Multi-chain wallet analysis: Ethereum, Bitcoin, Arbitrum, BSC, and Solana
+              Multi-chain wallet analysis: Ethereum, Bitcoin, Polygon, Arbitrum, BSC, and Solana
             </CardDescription>
           </CardHeader>
           <CardContent>
