@@ -797,6 +797,12 @@ function App() {
             setShowDowngradeModal(false);
           }}
         />
+        <ChainRequestModal
+          isOpen={showChainRequestModal}
+          onClose={() => setShowChainRequestModal(false)}
+          getAuthHeader={getAuthHeader}
+          userTier={user?.subscription_tier || 'free'}
+        />
       </div>
     </div>
   );
