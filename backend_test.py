@@ -313,7 +313,10 @@ class BackendTester:
             
         try:
             headers = {"Authorization": f"Bearer {self.access_token}"}
-            payload = {"tier": "premium"}
+            payload = {
+                "tier": "premium",
+                "origin_url": "https://cryptotracker-63.preview.emergentagent.com"
+            }
             
             response = self.session.post(f"{BASE_URL}/payments/create-upgrade", json=payload, headers=headers)
             
