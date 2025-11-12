@@ -346,6 +346,7 @@ function App() {
                 >
                   <option value="ethereum">⟠ Ethereum</option>
                   <option value="bitcoin">₿ Bitcoin</option>
+                  <option value="polygon">🔺 Polygon</option>
                   <option value="arbitrum">🔷 Arbitrum</option>
                   <option value="bsc">🟡 BNB Smart Chain</option>
                   <option value="solana">◎ Solana</option>
