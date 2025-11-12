@@ -317,6 +317,7 @@ function App() {
               <CardContent className="pt-6">
                 <SavedWallets 
                   getAuthHeader={getAuthHeader}
+                  userTier={user?.subscription_tier || 'free'}
                   onSelectWallet={(address, chain) => {
                     setWalletAddress(address);
                     setSelectedChain(chain);
