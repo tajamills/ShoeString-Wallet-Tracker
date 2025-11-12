@@ -220,11 +220,21 @@ export const SavedWallets = ({ getAuthHeader, onSelectWallet, userTier }) => {
                 className="w-full bg-slate-900 border border-slate-600 text-white rounded-md px-3 py-2"
               >
                 <option value="ethereum">Ethereum</option>
-                <option value="bitcoin">Bitcoin</option>
-                <option value="polygon">Polygon</option>
-                <option value="arbitrum">Arbitrum</option>
-                <option value="bsc">BNB Smart Chain</option>
-                <option value="solana">Solana</option>
+                <option value="bitcoin" disabled={userTier === 'free'}>
+                  Bitcoin {userTier === 'free' ? '🔒 Premium' : ''}
+                </option>
+                <option value="polygon" disabled={userTier === 'free'}>
+                  Polygon {userTier === 'free' ? '🔒 Premium' : ''}
+                </option>
+                <option value="arbitrum" disabled={userTier === 'free'}>
+                  Arbitrum {userTier === 'free' ? '🔒 Premium' : ''}
+                </option>
+                <option value="bsc" disabled={userTier === 'free'}>
+                  BNB Smart Chain {userTier === 'free' ? '🔒 Premium' : ''}
+                </option>
+                <option value="solana" disabled={userTier === 'free'}>
+                  Solana {userTier === 'free' ? '🔒 Premium' : ''}
+                </option>
               </select>
             </div>
 
