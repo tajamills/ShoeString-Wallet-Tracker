@@ -78,10 +78,8 @@ class MultiChainService:
             return self._analyze_bitcoin_wallet(address, start_date, end_date)
         elif chain == "solana":
             return self._analyze_solana_wallet(address, start_date, end_date)
-        elif chain == "bsc":
-            return self._analyze_bsc_wallet(address, start_date, end_date)
         else:
-            # EVM chains (Ethereum, Arbitrum) - use Alchemy
+            # EVM chains (Ethereum, Arbitrum, BSC) - use Alchemy
             return self._analyze_evm_wallet(address, chain, start_date, end_date)
     
     def _analyze_evm_wallet(
