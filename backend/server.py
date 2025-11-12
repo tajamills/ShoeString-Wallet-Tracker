@@ -269,18 +269,53 @@ async def login(user_data: UserLogin):
     
     return TokenResponse(access_token=access_token, user=user_response)
 
-@api_router.get("/auth/me", response_model=UserResponse)
-async def get_me(user: dict = Depends(get_current_user)):
-    """Get current user info"""
-    created_at = datetime.fromisoformat(user["created_at"]) if isinstance(user["created_at"], str) else user["created_at"]
-    
-    return UserResponse(
-        id=user["id"],
-        email=user["email"],
-        subscription_tier=user["subscription_tier"],
-        daily_usage_count=user["daily_usage_count"],
-        created_at=created_at
-    )
+@api_router.get("/auth/me")
+async def get_current_user_info(user: dict = Depends(get_current_user)):
+    """Get current user information"""
+    return user
+
+@api_router.post("/auth/downgrade")
+async def downgrade_subscription(
+    request: Request,
+    user: dict = Depends(get_current_user)
+):
+    """Downgrade user subscription tier"""
+    try:
+        body = await request.json()
+        new_tier = body.get('new_tier')
+        
+        if new_tier not in ['free', 'premium', 'pro']:
+            raise HTTPException(status_code=400, detail="Invalid tier")
+        
+        current_tier = user.get('subscription_tier')
+        
+        # Validate downgrade path
+        valid_downgrades = {
+            'pro': 'premium',
+            'premium': 'free'
+        }
+        
+        if current_tier not in valid_downgrades:
+            raise HTTPException(status_code=400, detail="Cannot downgrade from current tier")
+        
+        if new_tier != valid_downgrades[current_tier]:
+            raise HTTPException(status_code=400, detail="Invalid downgrade path")
+        
+        # Update user tier
+        await db.users.update_one(
+            {"id": user["id"]},
+            {"$set": {"subscription_tier": new_tier, "daily_usage_count": 0}}
+        )
+        
+        logger.info(f"User {user['id']} downgraded from {current_tier} to {new_tier}")
+        
+        return {"message": "Subscription downgraded successfully", "new_tier": new_tier}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Downgrade error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to downgrade subscription")
 
 # Payment Routes
 class CheckoutRequest(BaseModel):
