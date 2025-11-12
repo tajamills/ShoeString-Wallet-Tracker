@@ -50,7 +50,14 @@ export const SavedWallets = ({ getAuthHeader, onSelectWallet, userTier }) => {
         `${API}/api/wallets/saved`,
         { headers: getAuthHeader() }
       );
-      setWallets(response.data.wallets || []);
+      let fetchedWallets = response.data.wallets || [];
+      
+      // Filter to show only Ethereum wallets for free tier users
+      if (userTier === 'free') {
+        fetchedWallets = fetchedWallets.filter(w => w.chain === 'ethereum');
+      }
+      
+      setWallets(fetchedWallets);
     } catch (err) {
       console.error('Error fetching wallets:', err);
     }
