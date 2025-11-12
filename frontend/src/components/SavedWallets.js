@@ -42,7 +42,7 @@ export const SavedWallets = ({ getAuthHeader, onSelectWallet, userTier }) => {
 
   useEffect(() => {
     fetchWallets();
-  }, []);
+  }, [userTier]); // Re-fetch when user tier changes
 
   const fetchWallets = async () => {
     try {
