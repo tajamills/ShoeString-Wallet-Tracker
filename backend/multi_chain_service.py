@@ -154,19 +154,25 @@ class MultiChainService:
             
             # Process outgoing
             for tx in outgoing_txs:
+                value = tx.get('value')
+                if value is None:
+                    continue
                 if tx.get('asset') == symbol:
-                    total_sent += float(tx.get('value', 0))
+                    total_sent += float(value)
                 else:
                     token = tx.get('asset', 'UNKNOWN')
-                    tokens_sent[token] = tokens_sent.get(token, 0) + float(tx.get('value', 0))
+                    tokens_sent[token] = tokens_sent.get(token, 0) + float(value)
             
             # Process incoming
             for tx in incoming_txs:
+                value = tx.get('value')
+                if value is None:
+                    continue
                 if tx.get('asset') == symbol:
-                    total_received += float(tx.get('value', 0))
+                    total_received += float(value)
                 else:
                     token = tx.get('asset', 'UNKNOWN')
-                    tokens_received[token] = tokens_received.get(token, 0) + float(tx.get('value', 0))
+                    tokens_received[token] = tokens_received.get(token, 0) + float(value)
             
             # Get recent transactions (last 10)
             all_txs = []
