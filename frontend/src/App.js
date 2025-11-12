@@ -616,10 +616,24 @@ function App() {
             {analysis.recentTransactions && analysis.recentTransactions.length > 0 && (
               <Card className="bg-slate-800/50 border-slate-700" data-testid="transactions-table">
                 <CardHeader>
-                  <CardTitle className="text-white">Recent Transactions</CardTitle>
-                  <CardDescription className="text-gray-400">
-                    Showing up to 20 most recent transactions
-                  </CardDescription>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-white">Recent Transactions</CardTitle>
+                      <CardDescription className="text-gray-400">
+                        Showing up to 20 most recent transactions
+                      </CardDescription>
+                    </div>
+                    {user?.subscription_tier !== 'free' && (
+                      <Button
+                        onClick={() => exportToCSV(analysis)}
+                        variant="outline"
+                        className="border-slate-600 text-gray-300"
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Export CSV
+                      </Button>
+                    )}
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="overflow-x-auto">
