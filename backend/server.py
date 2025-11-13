@@ -274,8 +274,32 @@ async def login(user_data: UserLogin):
 
 @api_router.get("/auth/me")
 async def get_current_user_info(user: dict = Depends(get_current_user)):
-    """Get current user information"""
-    return user
+    """Get current user information with subscription details"""
+    response = {
+        "id": user["id"],
+        "email": user["email"],
+        "subscription_tier": user.get("subscription_tier", "free"),
+        "subscription_status": user.get("subscription_status"),
+        "daily_usage_count": user.get("daily_usage_count", 0),
+        "created_at": user.get("created_at")
+    }
+    
+    # Get subscription details from Stripe if exists
+    if user.get('stripe_subscription_id'):
+        try:
+            import stripe as stripe_lib
+            stripe_lib.api_key = os.environ.get('STRIPE_API_KEY')
+            
+            subscription = stripe_lib.Subscription.retrieve(user['stripe_subscription_id'])
+            response["subscription_details"] = {
+                "current_period_end": subscription.current_period_end,
+                "cancel_at_period_end": subscription.cancel_at_period_end,
+                "status": subscription.status
+            }
+        except Exception as e:
+            logger.error(f"Failed to fetch subscription details: {str(e)}")
+    
+    return response
 
 @api_router.post("/auth/downgrade")
 async def downgrade_subscription(
