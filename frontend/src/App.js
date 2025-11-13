@@ -108,6 +108,65 @@ function App() {
     return icons[chain] || '⟠';
   };
 
+  const analyzeAllChains = async () => {
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
+
+    if (user.subscription_tier !== 'pro') {
+      setError('Analyze All Chains is a Pro-only feature. Upgrade to Pro to unlock this feature!');
+      return;
+    }
+
+    const address = walletAddress;
+
+    if (!address) {
+      setError('Please enter a wallet address');
+      return;
+    }
+
+    if (!address.startsWith('0x') || address.length !== 42) {
+      setError('Please enter a valid EVM address (0x...) for multi-chain analysis');
+      return;
+    }
+
+    setAnalyzingAll(true);
+    setError('');
+    setAnalysis(null);
+    setMultiChainResults(null);
+
+    try {
+      const payload = { 
+        address: address,
+        chain: 'ethereum' // Not used but required by backend
+      };
+      
+      if (startDate) payload.start_date = startDate;
+      if (endDate) payload.end_date = endDate;
+      
+      const response = await axios.post(
+        `${API}/wallet/analyze-all`,
+        payload,
+        { headers: getAuthHeader() }
+      );
+      
+      setMultiChainResults(response.data);
+      await fetchUserProfile();
+    } catch (err) {
+      if (err.response?.status === 403) {
+        setError('Analyze All Chains is a Pro-only feature. Upgrade to Pro!');
+      } else if (err.response?.status === 401) {
+        setError('Please login to analyze wallets');
+        setShowAuthModal(true);
+      } else {
+        setError(err.response?.data?.detail || 'Failed to analyze wallet across all chains');
+      }
+    } finally {
+      setAnalyzingAll(false);
+    }
+  };
+
   const analyzeWallet = async (addressOverride = null, chainOverride = null) => {
     if (!user) {
       setShowAuthModal(true);
@@ -133,6 +192,7 @@ function App() {
     setLoading(true);
     setError('');
     setAnalysis(null);
+    setMultiChainResults(null);
 
     try {
       const payload = { 
