@@ -403,61 +403,130 @@ async def create_upgrade_payment(
 
 @api_router.post("/payments/webhook/stripe")
 async def handle_stripe_webhook(request: Request):
-    """Handle Stripe webhook"""
+    """Handle Stripe webhook for subscriptions"""
     try:
         # Get request body and signature
         body = await request.body()
         signature = request.headers.get("stripe-signature", "")
         
-        # Handle webhook
-        webhook_response = await stripe_service.handle_webhook(body, signature)
+        # Parse webhook with Stripe library
+        import stripe as stripe_lib
+        stripe_lib.api_key = os.environ.get('STRIPE_API_KEY')
+        webhook_secret = os.environ.get('STRIPE_WEBHOOK_SECRET')
         
-        session_id = webhook_response.session_id
-        payment_status = webhook_response.payment_status
-        event_type = webhook_response.event_type
-        metadata = webhook_response.metadata
-        
-        logger.info(f"Stripe webhook received: {event_type} for session {session_id}")
-        
-        # Find payment in database
-        payment_doc = await db.payment_transactions.find_one({"session_id": session_id})
-        
-        if not payment_doc:
-            logger.error(f"Payment not found for session: {session_id}")
-            return {"status": "error", "message": "Payment not found"}
-        
-        # Update payment status
-        update_data = {
-            "payment_status": payment_status,
-            "status": "completed" if payment_status == "paid" else payment_doc.get("status", "pending")
-        }
-        
-        # If payment is completed, upgrade user subscription (prevent duplicate processing)
-        if payment_status == "paid" and payment_doc.get("payment_status") != "paid":
-            update_data["confirmed_at"] = datetime.now(timezone.utc).isoformat()
-            
-            # Upgrade user subscription
-            user_id = metadata.get("user_id") or payment_doc["user_id"]
-            subscription_tier = metadata.get("tier") or payment_doc["subscription_tier"]
-            
-            await db.users.update_one(
-                {"id": user_id},
-                {
-                    "$set": {
-                        "subscription_tier": subscription_tier,
-                        "daily_usage_count": 0,
-                        "last_usage_reset": datetime.now(timezone.utc).isoformat()
-                    }
-                }
+        try:
+            event = stripe_lib.Webhook.construct_event(
+                body, signature, webhook_secret
             )
-            
-            logger.info(f"User {user_id} upgraded to {subscription_tier} via webhook")
+        except ValueError as e:
+            logger.error(f"Invalid webhook payload: {str(e)}")
+            raise HTTPException(status_code=400, detail="Invalid payload")
+        except stripe_lib.error.SignatureVerificationError as e:
+            logger.error(f"Invalid webhook signature: {str(e)}")
+            raise HTTPException(status_code=400, detail="Invalid signature")
         
-        # Update payment document
-        await db.payment_transactions.update_one(
-            {"session_id": session_id},
-            {"$set": update_data}
-        )
+        event_type = event['type']
+        logger.info(f"Stripe webhook received: {event_type}")
+        
+        # Handle checkout.session.completed (initial subscription creation)
+        if event_type == 'checkout.session.completed':
+            session = event['data']['object']
+            session_id = session['id']
+            customer_id = session.get('customer')
+            subscription_id = session.get('subscription')
+            metadata = session.get('metadata', {})
+            
+            user_id = metadata.get('user_id')
+            tier = metadata.get('tier')
+            
+            if user_id and tier and subscription_id:
+                # Update user with subscription info
+                await db.users.update_one(
+                    {"id": user_id},
+                    {
+                        "$set": {
+                            "subscription_tier": tier,
+                            "stripe_customer_id": customer_id,
+                            "stripe_subscription_id": subscription_id,
+                            "subscription_status": "active",
+                            "daily_usage_count": 0,
+                            "last_usage_reset": datetime.now(timezone.utc).isoformat()
+                        }
+                    }
+                )
+                
+                # Update payment transaction
+                await db.payment_transactions.update_one(
+                    {"session_id": session_id},
+                    {
+                        "$set": {
+                            "status": "completed",
+                            "payment_status": "paid",
+                            "confirmed_at": datetime.now(timezone.utc).isoformat()
+                        }
+                    }
+                )
+                
+                logger.info(f"User {user_id} subscribed to {tier} (subscription: {subscription_id})")
+        
+        # Handle customer.subscription.updated (subscription changes)
+        elif event_type == 'customer.subscription.updated':
+            subscription = event['data']['object']
+            subscription_id = subscription['id']
+            status = subscription['status']
+            
+            # Find user by subscription_id
+            user = await db.users.find_one({"stripe_subscription_id": subscription_id})
+            
+            if user:
+                update_data = {"subscription_status": status}
+                
+                # If subscription canceled or past_due, downgrade to free
+                if status in ['canceled', 'unpaid']:
+                    update_data["subscription_tier"] = "free"
+                    logger.info(f"User {user['id']} subscription {status}, downgraded to free")
+                
+                await db.users.update_one(
+                    {"id": user["id"]},
+                    {"$set": update_data}
+                )
+        
+        # Handle customer.subscription.deleted (subscription canceled)
+        elif event_type == 'customer.subscription.deleted':
+            subscription = event['data']['object']
+            subscription_id = subscription['id']
+            
+            # Find user and downgrade to free
+            user = await db.users.find_one({"stripe_subscription_id": subscription_id})
+            
+            if user:
+                await db.users.update_one(
+                    {"id": user["id"]},
+                    {
+                        "$set": {
+                            "subscription_tier": "free",
+                            "subscription_status": "canceled",
+                            "daily_usage_count": 0
+                        }
+                    }
+                )
+                logger.info(f"User {user['id']} subscription canceled, downgraded to free")
+        
+        # Handle invoice.payment_failed
+        elif event_type == 'invoice.payment_failed':
+            invoice = event['data']['object']
+            subscription_id = invoice.get('subscription')
+            
+            if subscription_id:
+                user = await db.users.find_one({"stripe_subscription_id": subscription_id})
+                if user:
+                    await db.users.update_one(
+                        {"id": user["id"]},
+                        {"$set": {"subscription_status": "past_due"}}
+                    )
+                    logger.warning(f"Payment failed for user {user['id']}")
+        
+        return {"status": "success"}
         
         return {"status": "ok"}
         
