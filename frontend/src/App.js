@@ -32,6 +32,8 @@ function App() {
   const [showSavedWallets, setShowSavedWallets] = useState(false);
   const [showDowngradeModal, setShowDowngradeModal] = useState(false);
   const [showChainRequestModal, setShowChainRequestModal] = useState(false);
+  const [multiChainResults, setMultiChainResults] = useState(null);
+  const [analyzingAll, setAnalyzingAll] = useState(false);
 
   // Check for payment success on component mount
   useEffect(() => {
