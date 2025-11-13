@@ -67,6 +67,9 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
     }
   };
 
+  // Check if user already has this tier
+  const hasActiveTier = user?.subscription_tier === selectedTier && user?.subscription_status === 'active';
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-3xl bg-slate-800 border-slate-700 max-h-[90vh] overflow-y-auto" data-testid="upgrade-modal">
