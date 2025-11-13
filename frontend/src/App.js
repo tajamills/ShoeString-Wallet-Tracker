@@ -257,7 +257,7 @@ function App() {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-4">
             <Wallet className="w-12 h-12 text-purple-400" />
-            <h1 className="text-5xl font-bold text-white">ShoeString Wallet Tracker</h1>
+            <h1 className="text-5xl font-bold text-white">Crypto Bag Tracker</h1>
           </div>
           <p className="text-gray-300 text-lg">
             Review your transactions on the blockchain. Perfect for taxes.
