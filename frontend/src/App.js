@@ -260,7 +260,7 @@ function App() {
             <h1 className="text-5xl font-bold text-white">Crypto Bag Tracker</h1>
           </div>
           <p className="text-gray-300 text-lg">
-            Review your transactions on the blockchain. Perfect for taxes.
+            Track your crypto transactions across multiple blockchains.
           </p>
         </div>
 
