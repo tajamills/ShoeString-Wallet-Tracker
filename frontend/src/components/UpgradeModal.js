@@ -132,23 +132,32 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
               <span>Secure payment powered by Stripe</span>
             </div>
 
-            <Button
-              onClick={handleUpgrade}
-              disabled={loading}
-              className="w-full bg-purple-600 hover:bg-purple-700 h-12 text-lg"
-              data-testid="create-payment-button"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Creating Payment...
-                </>
-              ) : (
-                <>
-                  Upgrade to {tiers[selectedTier].name} - ${tiers[selectedTier].price}/mo
-                </>
-              )}
-            </Button>
+            {hasActiveTier ? (
+              <Alert className="bg-green-900/20 border-green-700 text-green-300">
+                <Check className="h-4 w-4" />
+                <AlertDescription>
+                  You already have an active {tiers[selectedTier].name} subscription
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <Button
+                onClick={handleUpgrade}
+                disabled={loading}
+                className="w-full bg-purple-600 hover:bg-purple-700 h-12 text-lg"
+                data-testid="create-payment-button"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Creating Payment...
+                  </>
+                ) : (
+                  <>
+                    {user?.subscription_tier === 'premium' && selectedTier === 'pro' ? 'Upgrade' : 'Subscribe'} to {tiers[selectedTier].name} - ${tiers[selectedTier].price}/mo
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         )}
       </DialogContent>
