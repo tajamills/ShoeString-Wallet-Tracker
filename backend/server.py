@@ -282,7 +282,7 @@ async def downgrade_subscription(
     request: Request,
     user: dict = Depends(get_current_user)
 ):
-    """Downgrade user subscription tier"""
+    """Downgrade user subscription tier and cancel Stripe subscription"""
     try:
         body = await request.json()
         new_tier = body.get('new_tier')
@@ -304,10 +304,35 @@ async def downgrade_subscription(
         if new_tier != valid_downgrades[current_tier]:
             raise HTTPException(status_code=400, detail="Invalid downgrade path")
         
+        # Cancel Stripe subscription if downgrading to free
+        if new_tier == 'free' and user.get('stripe_subscription_id'):
+            try:
+                import stripe as stripe_lib
+                stripe_lib.api_key = os.environ.get('STRIPE_API_KEY')
+                
+                # Cancel subscription at period end (user keeps access until end of billing period)
+                stripe_lib.Subscription.modify(
+                    user['stripe_subscription_id'],
+                    cancel_at_period_end=True
+                )
+                logger.info(f"Canceled Stripe subscription {user['stripe_subscription_id']} for user {user['id']}")
+            except Exception as e:
+                logger.error(f"Failed to cancel Stripe subscription: {str(e)}")
+                # Continue with downgrade even if Stripe cancellation fails
+        
         # Update user tier
+        update_data = {
+            "subscription_tier": new_tier,
+            "daily_usage_count": 0
+        }
+        
+        # Clear subscription data if downgrading to free
+        if new_tier == 'free':
+            update_data["subscription_status"] = "canceled"
+        
         await db.users.update_one(
             {"id": user["id"]},
-            {"$set": {"subscription_tier": new_tier, "daily_usage_count": 0}}
+            {"$set": update_data}
         )
         
         logger.info(f"User {user['id']} downgraded from {current_tier} to {new_tier}")
