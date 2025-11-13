@@ -395,12 +395,47 @@ async def create_upgrade_payment(
                     detail=f"You already have an active {checkout_request.tier} subscription"
                 )
             
-            # If upgrading to a higher tier, we need to handle subscription change
-            # For now, require them to cancel first or handle via Stripe portal
-            if current_tier in ['premium', 'pro']:
+            # Handle tier upgrades (Premium → Pro)
+            if current_tier == 'premium' and checkout_request.tier == 'pro':
+                try:
+                    import stripe as stripe_lib
+                    stripe_lib.api_key = os.environ.get('STRIPE_API_KEY')
+                    
+                    # Get current subscription
+                    subscription = stripe_lib.Subscription.retrieve(stripe_subscription_id)
+                    
+                    # Update subscription to new price (with proration)
+                    stripe_lib.Subscription.modify(
+                        stripe_subscription_id,
+                        items=[{
+                            'id': subscription['items']['data'][0].id,
+                            'price': price_ids['pro'],
+                        }],
+                        proration_behavior='always_invoice'
+                    )
+                    
+                    # Update user tier immediately
+                    await db.users.update_one(
+                        {"id": user["id"]},
+                        {"$set": {"subscription_tier": "pro"}}
+                    )
+                    
+                    logger.info(f"User {user['id']} upgraded from Premium to Pro")
+                    
+                    return {
+                        "message": "Subscription upgraded successfully",
+                        "tier": "pro"
+                    }
+                    
+                except Exception as e:
+                    logger.error(f"Failed to upgrade subscription: {str(e)}")
+                    raise HTTPException(status_code=500, detail="Failed to upgrade subscription")
+            
+            # Can't downgrade via this endpoint
+            if current_tier == 'pro' and checkout_request.tier == 'premium':
                 raise HTTPException(
                     status_code=400,
-                    detail="You already have an active subscription. Please cancel it first or contact support to change plans."
+                    detail="Please use the downgrade option to switch to a lower tier"
                 )
         
         # Get Stripe Price IDs from environment
