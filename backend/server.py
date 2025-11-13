@@ -800,6 +800,135 @@ async def analyze_wallet(request: WalletAnalysisRequest, user: dict = Depends(ch
         logger.error(f"Error analyzing wallet: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to analyze wallet: {str(e)}")
 
+@api_router.post("/wallet/analyze-all")
+async def analyze_all_chains(request: WalletAnalysisRequest, user: dict = Depends(check_usage_limit)):
+    """Analyze wallet across all supported chains (Pro feature only)"""
+    try:
+        # Check if user is Pro
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier != 'pro':
+            raise HTTPException(
+                status_code=403, 
+                detail="Analyze All Chains is a Pro-only feature. Upgrade to Pro to analyze across all blockchains simultaneously."
+            )
+        
+        address = request.address.strip()
+        
+        # Define chains to analyze
+        # EVM chains can use same address
+        evm_chains = ['ethereum', 'polygon', 'arbitrum', 'bsc']
+        
+        # Determine which chains to analyze based on address format
+        chains_to_analyze = []
+        
+        # EVM address (0x...)
+        if address.startswith('0x') and len(address) == 42:
+            chains_to_analyze.extend(evm_chains)
+        
+        # For simplicity, we'll focus on EVM chains for multi-chain analysis
+        # Bitcoin and Solana require different address formats
+        
+        if not chains_to_analyze:
+            raise HTTPException(
+                status_code=400,
+                detail="Address format not recognized. Currently supporting EVM addresses (0x...) for multi-chain analysis."
+            )
+        
+        # Analyze each chain in parallel
+        import asyncio
+        
+        async def analyze_single_chain(chain: str):
+            try:
+                return {
+                    'chain': chain,
+                    'success': True,
+                    'data': multi_chain_service.analyze_wallet(
+                        address, 
+                        chain=chain,
+                        start_date=request.start_date,
+                        end_date=request.end_date
+                    )
+                }
+            except Exception as e:
+                logger.error(f"Error analyzing {chain}: {str(e)}")
+                return {
+                    'chain': chain,
+                    'success': False,
+                    'error': str(e)
+                }
+        
+        # Run all analyses in parallel
+        results = await asyncio.gather(
+            *[analyze_single_chain(chain) for chain in chains_to_analyze],
+            return_exceptions=True
+        )
+        
+        # Aggregate results
+        successful_analyses = []
+        failed_chains = []
+        
+        total_value = 0.0
+        total_gas_fees = 0.0
+        total_transactions = 0
+        
+        for result in results:
+            if isinstance(result, Exception):
+                logger.error(f"Chain analysis failed with exception: {str(result)}")
+                continue
+                
+            if result['success']:
+                data = result['data']
+                successful_analyses.append({
+                    'chain': result['chain'],
+                    'totalSent': data['totalEthSent'],
+                    'totalReceived': data['totalEthReceived'],
+                    'netBalance': data['netEth'],
+                    'gasFees': data['totalGasFees'],
+                    'transactionCount': data['outgoingTransactionCount'] + data['incomingTransactionCount'],
+                    'tokensCount': len(data.get('tokensSent', {})) + len(data.get('tokensReceived', {}))
+                })
+                
+                # Aggregate totals (convert to USD for aggregation - simplified)
+                total_value += abs(data['totalEthReceived'])
+                total_gas_fees += data['totalGasFees']
+                total_transactions += data['outgoingTransactionCount'] + data['incomingTransactionCount']
+            else:
+                failed_chains.append({
+                    'chain': result['chain'],
+                    'error': result.get('error', 'Unknown error')
+                })
+        
+        if not successful_analyses:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to analyze any chains. Please try again."
+            )
+        
+        # Increment user's daily usage count (count as 1 usage)
+        await db.users.update_one(
+            {"id": user["id"]},
+            {"$inc": {"daily_usage_count": 1}}
+        )
+        
+        return {
+            'address': address,
+            'chains_analyzed': len(successful_analyses),
+            'total_chains': len(chains_to_analyze),
+            'results': successful_analyses,
+            'failed_chains': failed_chains,
+            'aggregated': {
+                'total_value': total_value,
+                'total_gas_fees': total_gas_fees,
+                'total_transactions': total_transactions
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in multi-chain analysis: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Multi-chain analysis failed: {str(e)}")
+
 @api_router.get("/wallet/history", response_model=List[WalletAnalysisResponse])
 async def get_wallet_history(limit: int = 10):
     """Get wallet analysis history"""
