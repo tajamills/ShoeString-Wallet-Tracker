@@ -97,6 +97,9 @@ class User(BaseModel):
     email: str
     password_hash: str
     subscription_tier: str = "free"  # free, premium, pro
+    stripe_customer_id: Optional[str] = None
+    stripe_subscription_id: Optional[str] = None
+    subscription_status: Optional[str] = None  # active, canceled, past_due, etc.
     daily_usage_count: int = 0
     last_usage_reset: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
