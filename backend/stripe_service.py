@@ -24,42 +24,44 @@ class StripeService:
     
     async def create_checkout_session(
         self,
-        amount: float,
-        currency: str,
+        price_id: str,
+        customer_email: str,
         success_url: str,
         cancel_url: str,
         metadata: Dict[str, str],
+        customer_id: str = None,
         allow_promotion_codes: bool = True
     ) -> CheckoutSessionResponse:
-        """Create a Stripe checkout session"""
+        """Create a Stripe subscription checkout session"""
         try:
             # Set the API key for this request
             stripe.api_key = self.api_key
             
-            # Convert amount to cents
-            amount_in_cents = int(amount * 100)
-            
-            # Create checkout session directly with Stripe API to support coupons
-            session = stripe.checkout.Session.create(
-                payment_method_types=['card'],
-                line_items=[{
-                    'price_data': {
-                        'currency': currency,
-                        'product_data': {
-                            'name': 'Subscription Upgrade',
-                        },
-                        'unit_amount': amount_in_cents,
-                    },
+            # Build session parameters
+            session_params = {
+                'payment_method_types': ['card'],
+                'line_items': [{
+                    'price': price_id,
                     'quantity': 1,
                 }],
-                mode='payment',
-                success_url=success_url,
-                cancel_url=cancel_url,
-                metadata=metadata,
-                allow_promotion_codes=allow_promotion_codes  # Enable coupon codes
-            )
+                'mode': 'subscription',  # Changed from 'payment' to 'subscription'
+                'success_url': success_url,
+                'cancel_url': cancel_url,
+                'metadata': metadata,
+                'allow_promotion_codes': allow_promotion_codes,
+                'billing_address_collection': 'auto',
+            }
             
-            logger.info(f"Created Stripe checkout session: {session.id}")
+            # Use existing customer or create new one
+            if customer_id:
+                session_params['customer'] = customer_id
+            else:
+                session_params['customer_email'] = customer_email
+            
+            # Create checkout session
+            session = stripe.checkout.Session.create(**session_params)
+            
+            logger.info(f"Created Stripe subscription session: {session.id}")
             
             # Return in expected format
             return CheckoutSessionResponse(
