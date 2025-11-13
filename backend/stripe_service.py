@@ -62,7 +62,6 @@ class StripeService:
             logger.info(f"Created Stripe checkout session: {session.id}")
             
             # Return in expected format
-            from emergentintegrations.payments.stripe.checkout import CheckoutSessionResponse
             return CheckoutSessionResponse(
                 url=session.url,
                 session_id=session.id
