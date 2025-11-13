@@ -33,13 +33,14 @@ class StripeService:
     ) -> CheckoutSessionResponse:
         """Create a Stripe checkout session"""
         try:
-            import stripe as stripe_lib
+            # Set the API key for this request
+            stripe.api_key = self.api_key
             
             # Convert amount to cents
             amount_in_cents = int(amount * 100)
             
             # Create checkout session directly with Stripe API to support coupons
-            session = stripe_lib.checkout.Session.create(
+            session = stripe.checkout.Session.create(
                 payment_method_types=['card'],
                 line_items=[{
                     'price_data': {
