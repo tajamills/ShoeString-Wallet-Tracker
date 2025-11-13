@@ -27,21 +27,44 @@ class StripeService:
         currency: str,
         success_url: str,
         cancel_url: str,
-        metadata: Dict[str, str]
+        metadata: Dict[str, str],
+        allow_promotion_codes: bool = True
     ) -> CheckoutSessionResponse:
         """Create a Stripe checkout session"""
         try:
-            checkout_request = CheckoutSessionRequest(
-                amount=amount,
-                currency=currency,
+            import stripe as stripe_lib
+            
+            # Convert amount to cents
+            amount_in_cents = int(amount * 100)
+            
+            # Create checkout session directly with Stripe API to support coupons
+            session = stripe_lib.checkout.Session.create(
+                payment_method_types=['card'],
+                line_items=[{
+                    'price_data': {
+                        'currency': currency,
+                        'product_data': {
+                            'name': 'Subscription Upgrade',
+                        },
+                        'unit_amount': amount_in_cents,
+                    },
+                    'quantity': 1,
+                }],
+                mode='payment',
                 success_url=success_url,
                 cancel_url=cancel_url,
-                metadata=metadata
+                metadata=metadata,
+                allow_promotion_codes=allow_promotion_codes  # Enable coupon codes
             )
             
-            session = await self.stripe_checkout.create_checkout_session(checkout_request)
-            logger.info(f"Created Stripe checkout session: {session.session_id}")
-            return session
+            logger.info(f"Created Stripe checkout session: {session.id}")
+            
+            # Return in expected format
+            from emergentintegrations.payments.stripe.checkout import CheckoutSessionResponse
+            return CheckoutSessionResponse(
+                url=session.url,
+                session_id=session.id
+            )
             
         except Exception as e:
             logger.error(f"Failed to create Stripe checkout session: {str(e)}")
