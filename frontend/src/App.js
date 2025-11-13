@@ -600,6 +600,93 @@ function App() {
           </CardContent>
         </Card>
 
+        {/* Multi-Chain Analysis Results */}
+        {multiChainResults && (
+          <Card className="bg-gradient-to-br from-orange-900/30 to-yellow-800/20 border-orange-700">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <Crown className="w-6 h-6 text-yellow-400" />
+                Multi-Chain Portfolio Analysis
+                <Badge className="bg-yellow-600 ml-2">Pro Feature</Badge>
+              </CardTitle>
+              <CardDescription className="text-gray-400">
+                Analyzed {multiChainResults.address} across {multiChainResults.chains_analyzed} blockchains
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {/* Aggregated Totals */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="bg-slate-900/50 rounded-lg p-4">
+                  <div className="text-sm text-gray-400 mb-1">Total Transactions</div>
+                  <div className="text-3xl font-bold text-white">
+                    {multiChainResults.aggregated.total_transactions.toLocaleString()}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">Across all chains</div>
+                </div>
+                <div className="bg-slate-900/50 rounded-lg p-4">
+                  <div className="text-sm text-gray-400 mb-1">Total Gas Fees</div>
+                  <div className="text-3xl font-bold text-orange-400">
+                    {formatNumber(multiChainResults.aggregated.total_gas_fees)}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">Combined across chains</div>
+                </div>
+                <div className="bg-slate-900/50 rounded-lg p-4">
+                  <div className="text-sm text-gray-400 mb-1">Chains Analyzed</div>
+                  <div className="text-3xl font-bold text-green-400">
+                    {multiChainResults.chains_analyzed}/{multiChainResults.total_chains}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">Successfully analyzed</div>
+                </div>
+              </div>
+
+              {/* Per-Chain Breakdown */}
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold text-white mb-3">Chain Breakdown</h3>
+                {multiChainResults.results.map((result) => (
+                  <div key={result.chain} className="bg-slate-900/30 rounded-lg p-4 border border-slate-700">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">{getChainIcon(result.chain)}</span>
+                        <span className="text-lg font-semibold text-white capitalize">{result.chain}</span>
+                      </div>
+                      <Badge className="bg-green-900/50 text-green-300">Active</Badge>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                      <div>
+                        <div className="text-gray-400">Sent</div>
+                        <div className="text-white font-semibold">{formatNumber(result.totalSent)}</div>
+                      </div>
+                      <div>
+                        <div className="text-gray-400">Received</div>
+                        <div className="text-white font-semibold">{formatNumber(result.totalReceived)}</div>
+                      </div>
+                      <div>
+                        <div className="text-gray-400">Net Balance</div>
+                        <div className={`font-semibold ${result.netBalance >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {result.netBalance >= 0 ? '+' : ''}{formatNumber(result.netBalance)}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-gray-400">Transactions</div>
+                        <div className="text-white font-semibold">{result.transactionCount}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Failed Chains */}
+              {multiChainResults.failed_chains && multiChainResults.failed_chains.length > 0 && (
+                <Alert className="mt-4 bg-yellow-900/20 border-yellow-700 text-yellow-300">
+                  <AlertDescription>
+                    <strong>Note:</strong> Could not analyze {multiChainResults.failed_chains.map(f => f.chain).join(', ')}
+                  </AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Analysis Results */}
         {analysis && (
           <div className="max-w-7xl mx-auto space-y-6" data-testid="analysis-results">
