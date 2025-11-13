@@ -201,7 +201,7 @@ function App() {
 
     // Add summary data at the top
     const summaryRows = [
-      ['ShoeString Wallet Tracker - Transaction Export'],
+      ['Crypto Bag Tracker - Transaction Export'],
       [''],
       ['Wallet Address', data.address],
       ['Chain', (data.chain || selectedChain).toUpperCase()],
