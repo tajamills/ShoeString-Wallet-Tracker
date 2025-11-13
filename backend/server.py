@@ -331,18 +331,21 @@ async def create_upgrade_payment(
     http_request: Request,
     user: dict = Depends(get_current_user)
 ):
-    """Create Stripe checkout session for subscription upgrade"""
+    """Create Stripe subscription checkout session for upgrade"""
     try:
-        # Define fixed tier prices (server-side only for security)
-        tier_prices = {
-            "premium": 19.00,
-            "pro": 49.00
+        # Get Stripe Price IDs from environment
+        price_ids = {
+            "premium": os.environ.get('STRIPE_PRICE_ID_PREMIUM'),
+            "pro": os.environ.get('STRIPE_PRICE_ID_PRO')
         }
         
-        if checkout_request.tier not in tier_prices:
+        if checkout_request.tier not in price_ids:
             raise HTTPException(status_code=400, detail="Invalid subscription tier")
         
-        amount = tier_prices[checkout_request.tier]
+        price_id = price_ids[checkout_request.tier]
+        
+        if not price_id:
+            raise HTTPException(status_code=500, detail=f"Price ID not configured for {checkout_request.tier}")
         
         # Initialize Stripe checkout
         host_url = str(http_request.base_url)
@@ -359,10 +362,11 @@ async def create_upgrade_payment(
             "email": user["email"]
         }
         
-        # Create Stripe checkout session
+        # Create Stripe subscription checkout session
         session = await stripe_service.create_checkout_session(
-            amount=amount,
-            currency="usd",
+            price_id=price_id,
+            customer_email=user["email"],
+            customer_id=user.get("stripe_customer_id"),
             success_url=success_url,
             cancel_url=cancel_url,
             metadata=metadata
@@ -372,7 +376,7 @@ async def create_upgrade_payment(
         payment = Payment(
             user_id=user["id"],
             session_id=session.session_id,
-            amount=amount,
+            amount=0.0,  # Will be updated by webhook
             currency="usd",
             status="pending",
             payment_status="unpaid",
@@ -386,7 +390,7 @@ async def create_upgrade_payment(
         
         await db.payment_transactions.insert_one(doc)
         
-        logger.info(f"Stripe checkout created for user {user['id']}: {session.session_id}")
+        logger.info(f"Stripe subscription checkout created for user {user['id']}: {session.session_id}")
         
         return {
             "url": session.url,
