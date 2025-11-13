@@ -8,12 +8,17 @@ logger = logging.getLogger(__name__)
 class StripeService:
     def __init__(self):
         self.api_key = os.environ.get('STRIPE_API_KEY')
+        self.webhook_secret = os.environ.get('STRIPE_WEBHOOK_SECRET')
         self.stripe_checkout = None
     
     def initialize_checkout(self, host_url: str):
-        """Initialize Stripe checkout with webhook URL"""
+        """Initialize Stripe checkout with webhook URL and secret"""
         webhook_url = f"{host_url}api/payments/webhook/stripe"
-        self.stripe_checkout = StripeCheckout(api_key=self.api_key, webhook_url=webhook_url)
+        self.stripe_checkout = StripeCheckout(
+            api_key=self.api_key,
+            webhook_secret=self.webhook_secret,
+            webhook_url=webhook_url
+        )
         return self.stripe_checkout
     
     async def create_checkout_session(
