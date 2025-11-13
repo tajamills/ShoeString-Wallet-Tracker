@@ -526,7 +526,7 @@ function App() {
                 <Button
                   data-testid="analyze-button"
                   onClick={() => analyzeWallet()}
-                  disabled={loading || !user}
+                  disabled={loading || analyzingAll || !user}
                   className="bg-purple-600 hover:bg-purple-700"
                 >
                   {loading ? (
@@ -538,6 +538,26 @@ function App() {
                     'Analyze'
                   )}
                 </Button>
+                
+                {user?.subscription_tier === 'pro' && (
+                  <Button
+                    onClick={analyzeAllChains}
+                    disabled={loading || analyzingAll || !user}
+                    className="bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700"
+                  >
+                    {analyzingAll ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Analyzing All...
+                      </>
+                    ) : (
+                      <>
+                        <Crown className="mr-2 h-4 w-4" />
+                        Analyze All Chains
+                      </>
+                    )}
+                  </Button>
+                )}
               </div>
               
               {/* Date Range Filter */}
