@@ -358,6 +358,27 @@ async def create_upgrade_payment(
 ):
     """Create Stripe subscription checkout session for upgrade"""
     try:
+        # Check if user already has an active subscription
+        current_tier = user.get('subscription_tier', 'free')
+        subscription_status = user.get('subscription_status')
+        stripe_subscription_id = user.get('stripe_subscription_id')
+        
+        # Prevent duplicate subscription purchases
+        if stripe_subscription_id and subscription_status == 'active':
+            if current_tier == checkout_request.tier:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"You already have an active {checkout_request.tier} subscription"
+                )
+            
+            # If upgrading to a higher tier, we need to handle subscription change
+            # For now, require them to cancel first or handle via Stripe portal
+            if current_tier in ['premium', 'pro']:
+                raise HTTPException(
+                    status_code=400,
+                    detail="You already have an active subscription. Please cancel it first or contact support to change plans."
+                )
+        
         # Get Stripe Price IDs from environment
         price_ids = {
             "premium": os.environ.get('STRIPE_PRICE_ID_PREMIUM'),
