@@ -1138,6 +1138,116 @@ async def request_chain(
         logger.error(f"Error submitting chain request: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to submit chain request")
 
+
+# Tax Form 8949 Generation (Premium/Pro only)
+@api_router.post("/tax/form-8949")
+async def generate_form_8949(
+    request_data: WalletAnalysisRequest,
+    user: dict = Depends(get_current_user)
+):
+    """Generate IRS Form 8949 data for tax reporting (Premium/Pro only)"""
+    try:
+        if user.get("subscription_tier") == "free":
+            raise HTTPException(
+                status_code=403,
+                detail="Tax forms are only available for Premium and Pro subscribers"
+            )
+        
+        # Get wallet analysis with tax data
+        analysis = await multi_chain_service.analyze_wallet(
+            request_data.address,
+            request_data.chain,
+            user["subscription_tier"],
+            request_data.start_date,
+            request_data.end_date
+        )
+        
+        if not analysis.get("tax_data"):
+            raise HTTPException(
+                status_code=400,
+                detail="No tax data available for this wallet"
+            )
+        
+        # Get tax year from request or use current year
+        tax_year = datetime.now().year
+        if request_data.start_date:
+            try:
+                tax_year = int(request_data.start_date.split('-')[0])
+            except:
+                pass
+        
+        # Import tax_service
+        from tax_service import tax_service
+        
+        # Generate Form 8949
+        form_8949 = tax_service.generate_form_8949_data(
+            analysis["tax_data"]["realized_gains"],
+            tax_year,
+            analysis.get("symbol", "ETH")
+        )
+        
+        return form_8949
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating Form 8949: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate Form 8949: {str(e)}")
+
+
+# Tax Summary by Years (Premium/Pro only)
+@api_router.post("/tax/summary")
+async def get_tax_summary(
+    request_data: WalletAnalysisRequest,
+    user: dict = Depends(get_current_user)
+):
+    """Get comprehensive tax summary across multiple years (Premium/Pro only)"""
+    try:
+        if user.get("subscription_tier") == "free":
+            raise HTTPException(
+                status_code=403,
+                detail="Tax summaries are only available for Premium and Pro subscribers"
+            )
+        
+        # Get wallet analysis
+        analysis = await multi_chain_service.analyze_wallet(
+            request_data.address,
+            request_data.chain,
+            user["subscription_tier"],
+            None,  # Get all transactions
+            None
+        )
+        
+        if not analysis.get("recentTransactions"):
+            return {
+                "message": "No transactions found",
+                "summary": {}
+            }
+        
+        # Import tax_service
+        from tax_service import tax_service
+        
+        # Get current year and previous 2 years
+        current_year = datetime.now().year
+        tax_years = [current_year - 2, current_year - 1, current_year]
+        
+        # Generate tax summary
+        tax_summary = tax_service.get_tax_summary_by_year(
+            analysis["recentTransactions"],
+            analysis.get("currentBalance", 0),
+            analysis.get("current_price_usd", 0),
+            analysis.get("symbol", "ETH"),
+            tax_years
+        )
+        
+        return tax_summary
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating tax summary: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate tax summary: {str(e)}")
+
 # Include the router in the main app
 app.include_router(api_router)
 
