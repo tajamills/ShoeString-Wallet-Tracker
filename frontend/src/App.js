@@ -848,6 +848,130 @@ function App() {
               </Card>
             )}
 
+            {/* Tax Report - Premium/Pro Feature */}
+            {user?.subscription_tier !== 'free' && analysis.tax_data && (
+              <Card className="bg-gradient-to-br from-emerald-900/30 to-green-800/20 border-emerald-700">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <DollarSign className="w-5 h-5 text-emerald-400" />
+                    Tax Report (FIFO Method)
+                    <Badge className="bg-emerald-600 ml-2">Premium</Badge>
+                  </CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Capital gains calculations for tax reporting
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {/* Summary Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div className="bg-slate-900/50 rounded-lg p-4">
+                      <div className="text-sm text-gray-400 mb-1">Total Gain/Loss</div>
+                      <div className={`text-2xl font-bold ${analysis.tax_data.summary.total_gain >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {analysis.tax_data.summary.total_gain >= 0 ? '+' : ''}{formatUSD(analysis.tax_data.summary.total_gain)}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">Realized + Unrealized</div>
+                    </div>
+
+                    <div className="bg-slate-900/50 rounded-lg p-4">
+                      <div className="text-sm text-gray-400 mb-1">Realized Gains</div>
+                      <div className={`text-2xl font-bold ${analysis.tax_data.summary.total_realized_gain >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {analysis.tax_data.summary.total_realized_gain >= 0 ? '+' : ''}{formatUSD(analysis.tax_data.summary.total_realized_gain)}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">From {analysis.tax_data.summary.sell_count} sales</div>
+                    </div>
+
+                    <div className="bg-slate-900/50 rounded-lg p-4">
+                      <div className="text-sm text-gray-400 mb-1">Unrealized Gains</div>
+                      <div className={`text-2xl font-bold ${analysis.tax_data.summary.total_unrealized_gain >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {analysis.tax_data.summary.total_unrealized_gain >= 0 ? '+' : ''}{formatUSD(analysis.tax_data.summary.total_unrealized_gain)}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">Current holdings</div>
+                    </div>
+
+                    <div className="bg-slate-900/50 rounded-lg p-4">
+                      <div className="text-sm text-gray-400 mb-1">Cost Basis</div>
+                      <div className="text-2xl font-bold text-white">
+                        {formatUSD(analysis.tax_data.unrealized_gains?.total_cost_basis || 0)}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">Total invested</div>
+                    </div>
+                  </div>
+
+                  {/* Short-term vs Long-term Gains */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div className="bg-orange-900/20 rounded-lg p-4 border border-orange-700">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-sm text-orange-300 font-semibold">Short-Term Gains</div>
+                        <Badge className="bg-orange-700">{'<'} 1 Year</Badge>
+                      </div>
+                      <div className={`text-3xl font-bold ${analysis.tax_data.summary.short_term_gains >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {analysis.tax_data.summary.short_term_gains >= 0 ? '+' : ''}{formatUSD(analysis.tax_data.summary.short_term_gains)}
+                      </div>
+                      <p className="text-xs text-gray-400 mt-2">Taxed as ordinary income</p>
+                    </div>
+
+                    <div className="bg-blue-900/20 rounded-lg p-4 border border-blue-700">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-sm text-blue-300 font-semibold">Long-Term Gains</div>
+                        <Badge className="bg-blue-700">≥ 1 Year</Badge>
+                      </div>
+                      <div className={`text-3xl font-bold ${analysis.tax_data.summary.long_term_gains >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {analysis.tax_data.summary.long_term_gains >= 0 ? '+' : ''}{formatUSD(analysis.tax_data.summary.long_term_gains)}
+                      </div>
+                      <p className="text-xs text-gray-400 mt-2">Preferential tax rates apply</p>
+                    </div>
+                  </div>
+
+                  {/* Remaining Tax Lots */}
+                  {analysis.tax_data.remaining_lots && analysis.tax_data.remaining_lots.length > 0 && (
+                    <div className="mt-4">
+                      <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
+                        <Wallet className="w-4 h-4" />
+                        Unrealized Positions ({analysis.tax_data.remaining_lots.length} lots)
+                      </h3>
+                      <div className="space-y-2 max-h-60 overflow-y-auto">
+                        {analysis.tax_data.remaining_lots.slice(0, 10).map((lot, idx) => (
+                          <div key={idx} className="bg-slate-900/30 rounded-lg p-3 border border-slate-700">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                              <div>
+                                <div className="text-gray-400 text-xs">Amount</div>
+                                <div className="text-white font-semibold">{formatNumber(lot.amount)} {getChainSymbol(analysis.chain || selectedChain)}</div>
+                              </div>
+                              <div>
+                                <div className="text-gray-400 text-xs">Buy Price</div>
+                                <div className="text-white font-semibold">{formatUSD(lot.price_usd)}</div>
+                              </div>
+                              <div>
+                                <div className="text-gray-400 text-xs">Cost Basis</div>
+                                <div className="text-white font-semibold">{formatUSD(lot.amount * lot.price_usd)}</div>
+                              </div>
+                              <div>
+                                <div className="text-gray-400 text-xs">Date</div>
+                                <div className="text-gray-300 text-xs">{lot.date}</div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        {analysis.tax_data.remaining_lots.length > 10 && (
+                          <p className="text-gray-400 text-sm text-center py-2">
+                            Showing 10 of {analysis.tax_data.remaining_lots.length} lots
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Tax Disclaimer */}
+                  <Alert className="mt-4 bg-yellow-900/20 border-yellow-700">
+                    <AlertDescription className="text-yellow-300 text-xs">
+                      ⚠️ <strong>Tax Disclaimer:</strong> These calculations are for informational purposes only. 
+                      Consult a tax professional for accurate tax reporting. FIFO method is used by default.
+                    </AlertDescription>
+                  </Alert>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Advanced Analytics - Premium/Pro Feature */}
             {user?.subscription_tier !== 'free' && (
               <Card className="bg-gradient-to-br from-indigo-900/30 to-indigo-800/20 border-indigo-700">
