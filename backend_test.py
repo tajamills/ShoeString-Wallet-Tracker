@@ -603,17 +603,70 @@ class BackendTester:
                 print(f"📤 Outgoing Transactions: {data.get('outgoingTransactionCount', 0)}")
                 print(f"📥 Incoming Transactions: {data.get('incomingTransactionCount', 0)}")
                 
-                # Check for negative values - THIS IS THE KEY PART
-                negative_values_found = []
+                # CURRENT BALANCE FIX VERIFICATION - THIS IS THE KEY PART
+                print(f"\n🔍 CURRENT BALANCE FIX VERIFICATION:")
+                print(f"=" * 80)
+                
+                # Check for new fields: currentBalance and netFlow
+                current_balance = data.get('currentBalance')
+                net_flow = data.get('netFlow')
+                net_eth = data.get('netEth')  # Legacy field
+                
+                print(f"💰 Current Balance: {current_balance} ETH")
+                print(f"🔄 Net Flow: {net_flow} ETH")
+                print(f"📊 Net ETH (legacy): {net_eth} ETH")
+                
+                # Verification checks
+                verification_results = []
+                
+                # 1. currentBalance field is present and cannot be negative
+                if current_balance is not None:
+                    if current_balance >= 0:
+                        verification_results.append(("✅ currentBalance field present and non-negative", True, f"Value: {current_balance} ETH"))
+                    else:
+                        verification_results.append(("❌ currentBalance field is negative", False, f"Value: {current_balance} ETH"))
+                else:
+                    verification_results.append(("❌ currentBalance field missing", False, "Field not found in response"))
+                
+                # 2. netFlow field shows the flow calculation (can be negative)
+                if net_flow is not None:
+                    verification_results.append(("✅ netFlow field present", True, f"Value: {net_flow} ETH (can be negative)"))
+                    
+                    # Verify netFlow calculation: total_received - total_sent - total_gas
+                    expected_net_flow = data.get('totalEthReceived', 0) - data.get('totalEthSent', 0) - data.get('totalGasFees', 0)
+                    if abs(net_flow - expected_net_flow) < 0.000001:  # Allow for floating point precision
+                        verification_results.append(("✅ netFlow calculation correct", True, f"Expected: {expected_net_flow}, Got: {net_flow}"))
+                    else:
+                        verification_results.append(("❌ netFlow calculation incorrect", False, f"Expected: {expected_net_flow}, Got: {net_flow}"))
+                else:
+                    verification_results.append(("❌ netFlow field missing", False, "Field not found in response"))
+                
+                # 3. Portfolio value uses currentBalance (not netFlow)
+                if current_balance is not None and net_eth is not None:
+                    if current_balance == net_eth:
+                        verification_results.append(("✅ Portfolio value uses currentBalance", True, f"netEth matches currentBalance: {current_balance}"))
+                    else:
+                        verification_results.append(("❌ Portfolio value mismatch", False, f"netEth: {net_eth}, currentBalance: {current_balance}"))
+                
+                # 4. Show both values in the response
+                if current_balance is not None and net_flow is not None:
+                    verification_results.append(("✅ Both currentBalance and netFlow present", True, f"currentBalance: {current_balance}, netFlow: {net_flow}"))
+                else:
+                    verification_results.append(("❌ Missing required fields", False, f"currentBalance: {current_balance}, netFlow: {net_flow}"))
+                
+                # Check for any negative values that shouldn't be negative
+                negative_issues = []
                 
                 if data.get('totalEthSent', 0) < 0:
-                    negative_values_found.append(f"totalEthSent: {data.get('totalEthSent')}")
+                    negative_issues.append(f"totalEthSent: {data.get('totalEthSent')}")
                 if data.get('totalEthReceived', 0) < 0:
-                    negative_values_found.append(f"totalEthReceived: {data.get('totalEthReceived')}")
+                    negative_issues.append(f"totalEthReceived: {data.get('totalEthReceived')}")
                 if data.get('totalGasFees', 0) < 0:
-                    negative_values_found.append(f"totalGasFees: {data.get('totalGasFees')}")
-                if data.get('netEth', 0) < 0:
-                    negative_values_found.append(f"netEth: {data.get('netEth')}")
+                    negative_issues.append(f"totalGasFees: {data.get('totalGasFees')}")
+                if current_balance is not None and current_balance < 0:
+                    negative_issues.append(f"currentBalance: {current_balance}")
+                
+                # netFlow CAN be negative, so we don't check it
                 
                 # Check tokens for negative values
                 tokens_sent = data.get('tokensSent', {})
