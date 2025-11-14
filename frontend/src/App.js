@@ -724,6 +724,11 @@ function App() {
                   <div className="text-3xl font-bold text-white">
                     {formatNumber(analysis.totalEthSent)} {getChainSymbol(analysis.chain || selectedChain)}
                   </div>
+                  {analysis.total_sent_usd !== undefined && (
+                    <p className="text-xl font-semibold text-red-300 mt-1">
+                      {formatUSD(analysis.total_sent_usd)}
+                    </p>
+                  )}
                   <p className="text-xs text-red-300 mt-1">
                     {analysis.outgoingTransactionCount} transactions
                   </p>
