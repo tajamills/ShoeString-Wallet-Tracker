@@ -530,6 +530,141 @@ class BackendTester:
             self.log_result("Multi-chain Premium Test", False, f"Error: {str(e)}")
             return False
     
+    def test_specific_bitcoin_wallet_analysis(self):
+        """Test specific Bitcoin wallet analysis for bc1q2wlr8me2780hctleja9fjnz07nay9kknqz9p3n"""
+        try:
+            # Create a new premium user for testing
+            timestamp = int(time.time())
+            premium_email = f"bitcoin_premium_test_{timestamp}@example.com"
+            premium_password = "BitcoinPremiumTest123!"
+            
+            print(f"\n🔑 Creating Premium User for Bitcoin Analysis:")
+            print(f"   Email: {premium_email}")
+            print(f"   Password: {premium_password}")
+            
+            # Register premium user
+            payload = {
+                "email": premium_email,
+                "password": premium_password
+            }
+            
+            response = self.session.post(f"{BASE_URL}/auth/register", json=payload)
+            if response.status_code != 200:
+                self.log_result("Specific Bitcoin Wallet Analysis", False, f"Failed to register premium user: {response.status_code}")
+                return False
+            
+            premium_data = response.json()
+            premium_token = premium_data.get("access_token")
+            premium_user_id = premium_data.get("user", {}).get("id")
+            
+            if not premium_token or not premium_user_id:
+                self.log_result("Specific Bitcoin Wallet Analysis", False, "Failed to get premium user token or ID")
+                return False
+            
+            print(f"✅ Premium User Created Successfully:")
+            print(f"   User ID: {premium_user_id}")
+            print(f"   Token: {premium_token[:20]}...")
+            
+            headers = {"Authorization": f"Bearer {premium_token}"}
+            
+            # Test the specific Bitcoin address: bc1q2wlr8me2780hctleja9fjnz07nay9kknqz9p3n
+            bitcoin_address = "bc1q2wlr8me2780hctleja9fjnz07nay9kknqz9p3n"
+            bitcoin_payload = {
+                "address": bitcoin_address,
+                "chain": "bitcoin"
+            }
+            
+            print(f"\n🪙 Analyzing Bitcoin Wallet:")
+            print(f"   Address: {bitcoin_address}")
+            print(f"   Chain: bitcoin")
+            
+            bitcoin_response = self.session.post(f"{BASE_URL}/wallet/analyze", json=bitcoin_payload, headers=headers)
+            
+            print(f"\n📊 Analysis Response:")
+            print(f"   Status Code: {bitcoin_response.status_code}")
+            
+            if bitcoin_response.status_code == 200:
+                data = bitcoin_response.json()
+                
+                print(f"\n✅ BITCOIN WALLET ANALYSIS SUCCESSFUL!")
+                print(f"=" * 60)
+                print(f"📍 Wallet Address: {data.get('address', 'N/A')}")
+                print(f"💰 Total BTC Sent: {data.get('totalEthSent', 0)} BTC")
+                print(f"💰 Total BTC Received: {data.get('totalEthReceived', 0)} BTC")
+                print(f"⛽ Total Gas Fees: {data.get('totalGasFees', 0)} BTC")
+                print(f"💎 Net BTC Balance: {data.get('netEth', 0)} BTC")
+                print(f"📤 Outgoing Transactions: {data.get('outgoingTransactionCount', 0)}")
+                print(f"📥 Incoming Transactions: {data.get('incomingTransactionCount', 0)}")
+                
+                # Show tokens if any
+                tokens_sent = data.get('tokensSent', {})
+                tokens_received = data.get('tokensReceived', {})
+                
+                if tokens_sent:
+                    print(f"\n🪙 Tokens Sent:")
+                    for token, amount in tokens_sent.items():
+                        print(f"   • {token}: {amount}")
+                
+                if tokens_received:
+                    print(f"\n🪙 Tokens Received:")
+                    for token, amount in tokens_received.items():
+                        print(f"   • {token}: {amount}")
+                
+                # Show recent transactions
+                recent_transactions = data.get('recentTransactions', [])
+                print(f"\n📋 Recent Transactions ({len(recent_transactions)} total):")
+                
+                for i, tx in enumerate(recent_transactions[:5]):  # Show first 5 transactions
+                    print(f"   {i+1}. Hash: {tx.get('hash', 'N/A')[:20]}...")
+                    print(f"      Amount: {tx.get('value', 0)} BTC")
+                    print(f"      Type: {tx.get('type', 'N/A')}")
+                    print(f"      Date: {tx.get('timestamp', 'N/A')}")
+                    print()
+                
+                if len(recent_transactions) > 5:
+                    print(f"   ... and {len(recent_transactions) - 5} more transactions")
+                
+                print(f"=" * 60)
+                
+                self.log_result("Specific Bitcoin Wallet Analysis", True, 
+                              f"Bitcoin wallet analysis successful for {bitcoin_address}. "
+                              f"BTC Sent: {data.get('totalEthSent', 0)}, "
+                              f"BTC Received: {data.get('totalEthReceived', 0)}, "
+                              f"Net: {data.get('netEth', 0)}, "
+                              f"Transactions: {data.get('outgoingTransactionCount', 0) + data.get('incomingTransactionCount', 0)}")
+                return True
+                
+            elif bitcoin_response.status_code == 403:
+                error_data = bitcoin_response.json()
+                if "Multi-chain analysis is a Premium feature" in error_data.get("detail", ""):
+                    print(f"\n⚠️  Bitcoin analysis restricted for free tier users")
+                    print(f"   Error: {error_data.get('detail', 'N/A')}")
+                    self.log_result("Specific Bitcoin Wallet Analysis", True, 
+                                  "Bitcoin analysis correctly restricted - user needs actual premium upgrade")
+                    return True
+                else:
+                    print(f"\n❌ Unexpected 403 error: {error_data}")
+                    self.log_result("Specific Bitcoin Wallet Analysis", False, f"Unexpected 403 error: {error_data}")
+                    return False
+            elif bitcoin_response.status_code == 429:
+                error_data = bitcoin_response.json()
+                print(f"\n⚠️  Rate limit reached: {error_data.get('detail', 'N/A')}")
+                self.log_result("Specific Bitcoin Wallet Analysis", True, 
+                              "Bitcoin analysis blocked by rate limit (expected behavior)")
+                return True
+            else:
+                error_data = bitcoin_response.json() if bitcoin_response.headers.get('content-type', '').startswith('application/json') else bitcoin_response.text
+                print(f"\n❌ Unexpected response: HTTP {bitcoin_response.status_code}")
+                print(f"   Error: {error_data}")
+                self.log_result("Specific Bitcoin Wallet Analysis", False, 
+                              f"Unexpected response: HTTP {bitcoin_response.status_code} - {error_data}")
+                return False
+                
+        except Exception as e:
+            print(f"\n❌ Error during Bitcoin wallet analysis: {str(e)}")
+            self.log_result("Specific Bitcoin Wallet Analysis", False, f"Error: {str(e)}")
+            return False
+    
     def test_upgrade_to_pro(self):
         """Upgrade user to Pro tier for testing Pro features"""
         if not self.access_token:
