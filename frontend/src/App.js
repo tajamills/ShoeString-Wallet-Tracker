@@ -1060,6 +1060,14 @@ function App() {
           getAuthHeader={getAuthHeader}
           userTier={user?.subscription_tier || 'free'}
         />
+        <ExportModal
+          isOpen={showExportModal}
+          onClose={() => setShowExportModal(false)}
+          analysis={analysis}
+          selectedChain={selectedChain}
+          getAuthHeader={getAuthHeader}
+          getChainSymbol={getChainSymbol}
+        />
       </div>
     </div>
   );
