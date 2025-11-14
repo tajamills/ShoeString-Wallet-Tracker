@@ -668,19 +668,31 @@ class BackendTester:
                 
                 # netFlow CAN be negative, so we don't check it
                 
+                # Print verification results
+                print(f"\n📋 VERIFICATION RESULTS:")
+                print(f"=" * 80)
+                
+                all_verifications_passed = True
+                for description, passed, details in verification_results:
+                    status = "✅" if passed else "❌"
+                    print(f"{status} {description}")
+                    print(f"   Details: {details}")
+                    if not passed:
+                        all_verifications_passed = False
+                
                 # Check tokens for negative values
                 tokens_sent = data.get('tokensSent', {})
                 tokens_received = data.get('tokensReceived', {})
                 
                 for token, amount in tokens_sent.items():
                     if amount < 0:
-                        negative_values_found.append(f"tokensSent[{token}]: {amount}")
+                        negative_issues.append(f"tokensSent[{token}]: {amount}")
                 
                 for token, amount in tokens_received.items():
                     if amount < 0:
-                        negative_values_found.append(f"tokensReceived[{token}]: {amount}")
+                        negative_issues.append(f"tokensReceived[{token}]: {amount}")
                 
-                # Check recent transactions for negative values
+                # Check recent transactions for negative values (excluding netFlow which can be negative)
                 recent_transactions = data.get('recentTransactions', [])
                 negative_tx_values = []
                 
@@ -695,7 +707,7 @@ class BackendTester:
                     print(f"      Value: {tx_value} ETH")
                     print(f"      Type: {tx_type}")
                     
-                    # Check for negative transaction values
+                    # Check for negative transaction values (these shouldn't be negative)
                     if isinstance(tx_value, (int, float)) and tx_value < 0:
                         negative_tx_values.append(f"Transaction {i+1} (Hash: {tx_hash[:10]}...): {tx_value}")
                     
@@ -712,12 +724,12 @@ class BackendTester:
                 print(f"\n🔍 NEGATIVE VALUES ANALYSIS:")
                 print(f"=" * 80)
                 
-                if negative_values_found:
-                    print(f"❌ NEGATIVE VALUES DETECTED IN MAIN FIELDS:")
-                    for negative_val in negative_values_found:
+                if negative_issues:
+                    print(f"❌ INAPPROPRIATE NEGATIVE VALUES DETECTED:")
+                    for negative_val in negative_issues:
                         print(f"   • {negative_val}")
                 else:
-                    print(f"✅ No negative values found in main fields")
+                    print(f"✅ No inappropriate negative values found in main fields")
                 
                 if negative_tx_values:
                     print(f"\n❌ NEGATIVE VALUES DETECTED IN TRANSACTIONS:")
