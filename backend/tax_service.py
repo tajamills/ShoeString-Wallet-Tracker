@@ -10,6 +10,43 @@ class TaxService:
     
     def __init__(self):
         self.method = "FIFO"  # First In, First Out
+        
+        # Known exchange and service addresses for categorization
+        self.known_addresses = {
+            # Exchanges
+            '0x3f5ce5fbfe3e9af3971dd833d26ba9b5c936f0be': 'Binance',
+            '0xd551234ae421e3bcba99a0da6d736074f22192ff': 'Binance',
+            '0x564286362092d8e7936f0549571a803b203aaced': 'Binance',
+            '0x0681d8db095565fe8a346fa0277bffde9c0edbbf': 'Binance',
+            '0xfe9e8709d3215310075d67e3ed32a380ccf451c8': 'Binance',
+            '0xa090e606e30bd747d4e6245a1517ebe430f0057e': 'Coinbase',
+            '0x503828976d22510aad0201ac7ec88293211d23da': 'Coinbase',
+            '0xddfabcdc4d8ffc6d5beaf154f18b778f892a0740': 'Coinbase',
+            '0x71660c4005ba85c37ccec55d0c4493e66fe775d3': 'Coinbase',
+            '0x267be1c1d684f78cb4f6a176c4911b741e4ffdc0': 'Kraken',
+            '0xfa52274dd61e1643d2205169732f29114bc240b3': 'Kraken',
+            '0x2910543af39aba0cd09dbb2d50200b3e800a63d2': 'Kraken',
+            '0x0a869d79a7052c7f1b55a8ebabbea3420f0d1e13': 'Kraken',
+            '0xe93381fb4c4f14bda253907b18fad305d799241a': 'Kraken',
+            '0x73bceb1cd57c711feac4224d062b0f6ff338501e': 'Gemini',
+            '0xd24400ae8bfebb18ca49be86258a3c749cf46853': 'Gemini',
+            '0x6fc82a5fe25a5cdb58bc74600a40a69c065263f8': 'Gemini',
+            '0x5f65f7b609678448494de4c87521cdf6cef1e932': 'Gemini',
+            # DeFi Protocols
+            '0x7a250d5630b4cf539739df2c5dacb4c659f2488d': 'Uniswap V2',
+            '0xe592427a0aece92de3edee1f18e0157c05861564': 'Uniswap V3',
+            '0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45': 'Uniswap',
+            '0x11111112542d85b3ef69ae05771c2dccff4faa26': '1inch',
+            '0x1111111254fb6c44bac0bed2854e76f90643097d': '1inch V4',
+            '0xdef1c0ded9bec7f1a1670819833240f027b25eff': '0x Exchange',
+            '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2': 'WETH Contract',
+            # NFT Marketplaces
+            '0x7be8076f4ea4a4ad08075c2508e481d6c946d12b': 'OpenSea',
+            '0x7f268357a8c2552623316e2562d90e642bb538e5': 'OpenSea',
+            # Bridges
+            '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48': 'Circle USDC',
+            '0xdac17f958d2ee523a2206206994597c13d831ec7': 'Tether USDT',
+        }
     
     def calculate_tax_data(
         self,
