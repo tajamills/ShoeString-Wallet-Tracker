@@ -305,7 +305,9 @@ class MultiChainService:
                 'totalEthSent': total_sent,
                 'totalEthReceived': total_received,
                 'totalGasFees': total_gas,
-                'netEth': total_received - total_sent - total_gas,
+                'currentBalance': current_balance,
+                'netEth': current_balance,  # Keep for backward compatibility
+                'netFlow': total_received - total_sent - total_gas,  # This can be negative
                 'outgoingTransactionCount': len(outgoing_txs),
                 'incomingTransactionCount': len(incoming_txs),
                 'tokensSent': tokens_sent,
