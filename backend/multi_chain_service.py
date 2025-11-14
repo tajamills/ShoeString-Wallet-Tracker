@@ -91,6 +91,7 @@ class MultiChainService:
         try:
             # Get current price
             current_price = price_service.get_current_price(symbol)
+            logger.info(f"Price service returned {current_price} for symbol {symbol}")
             
             if current_price:
                 analysis['current_price_usd'] = current_price
@@ -99,6 +100,9 @@ class MultiChainService:
                 analysis['total_received_usd'] = analysis.get('totalEthReceived', 0) * current_price
                 analysis['total_sent_usd'] = analysis.get('totalEthSent', 0) * current_price
                 analysis['gas_fees_usd'] = analysis.get('totalGasFees', 0) * current_price
+                logger.info(f"Added USD values to analysis, current_price_usd: {current_price}")
+            else:
+                logger.warning(f"No price returned for symbol {symbol}, skipping USD values")
             
             # Add USD value to each transaction (if we have timestamp)
             for tx in analysis.get('recentTransactions', []):
