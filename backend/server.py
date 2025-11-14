@@ -74,7 +74,9 @@ class WalletAnalysisResponse(BaseModel):
     totalEthSent: float
     totalEthReceived: float
     totalGasFees: float
-    netEth: float
+    currentBalance: float  # Current wallet balance (cannot be negative)
+    netEth: float  # Keep for backward compatibility
+    netFlow: float  # Flow calculation (can be negative)
     outgoingTransactionCount: int
     incomingTransactionCount: int
     tokensSent: Dict[str, float]
