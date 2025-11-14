@@ -451,12 +451,16 @@ class MultiChainService:
         self,
         address: str,
         start_date: Optional[str] = None,
-        end_date: Optional[str] = None
+        end_date: Optional[str] = None,
+        user_tier: str = 'free'
     ) -> Dict[str, Any]:
         """Analyze Bitcoin wallet using blockchain.info API"""
         try:
             # Check if input is an xPub instead of regular address
             if address.startswith(('xpub', 'ypub', 'zpub')):
+                # xPub analysis is Pro-only
+                if user_tier != 'pro':
+                    raise Exception("xPub analysis is a Pro-only feature. Upgrade to Pro to analyze Ledger/HD wallets using xPub.")
                 return self._analyze_bitcoin_xpub(address, start_date, end_date)
             
             url = f"https://blockchain.info/rawaddr/{address}?limit=50"
