@@ -962,7 +962,8 @@ async def export_wallet_paginated(
             start_date=request.start_date,
             end_date=request.end_date,
             limit=page_size,
-            offset=(page - 1) * page_size
+            offset=(page - 1) * page_size,
+            user_tier=user.get('subscription_tier', 'free')
         )
         
         # Get total transaction count for pagination info
