@@ -763,7 +763,8 @@ async def analyze_wallet(request: WalletAnalysisRequest, user: dict = Depends(ch
             address, 
             chain=chain,
             start_date=request.start_date,
-            end_date=request.end_date
+            end_date=request.end_date,
+            user_tier=user.get('subscription_tier', 'free')
         )
         
         # Create response object
