@@ -686,7 +686,7 @@ function App() {
               </Card>
             )}
 
-            {/* Summary Cards */}
+            {/* Lifetime Statistics */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card className="bg-gradient-to-br from-green-900/30 to-green-800/20 border-green-700" data-testid="received-card">
                 <CardHeader className="pb-3">
