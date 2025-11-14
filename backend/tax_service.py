@@ -327,6 +327,178 @@ class TaxService:
                 'sell_count': 0
             }
         }
+    
+    def categorize_transaction(self, tx: Dict[str, Any], user_address: str) -> str:
+        """
+        Categorize a transaction based on type, addresses, and patterns
+        
+        Categories:
+        - income: Received from unknown/external source (airdrops, rewards, mining)
+        - trade: Exchange or swap (to/from known exchanges or DEXs)
+        - transfer: Self-transfer between own wallets
+        - expense: Payment for goods/services
+        - gift: Donation or gift
+        - unknown: Cannot determine category
+        """
+        tx_type = tx.get('type', '')
+        to_addr = tx.get('to', '').lower()
+        from_addr = tx.get('from', '').lower()
+        value = float(tx.get('value', 0))
+        
+        # Check if to/from known exchanges or services
+        to_service = self.known_addresses.get(to_addr)
+        from_service = self.known_addresses.get(from_addr)
+        
+        if tx_type == 'received':
+            if from_service:
+                return f'trade (from {from_service})'
+            # Check if it could be income (mining, staking, airdrop)
+            if value > 0:
+                return 'income'
+            return 'received'
+        
+        elif tx_type == 'sent':
+            if to_service:
+                return f'trade (to {to_service})'
+            # Check if it's a small transaction (could be gift/tip)
+            if value < 0.01:
+                return 'expense'
+            return 'sent'
+        
+        return 'unknown'
+    
+    def generate_form_8949_data(
+        self,
+        realized_gains: List[Dict[str, Any]],
+        tax_year: int = None,
+        symbol: str = 'ETH'
+    ) -> Dict[str, Any]:
+        """
+        Generate IRS Form 8949 compatible data structure
+        
+        Form 8949: Sales and Other Dispositions of Capital Assets
+        Used to report capital gains and losses
+        """
+        if tax_year is None:
+            tax_year = datetime.now().year
+        
+        # Separate short-term and long-term transactions
+        short_term_transactions = []
+        long_term_transactions = []
+        
+        for gain in realized_gains:
+            # Parse sell date to check if it's in the tax year
+            sell_date = gain.get('sell_date', '')
+            try:
+                if isinstance(sell_date, str) and '-' in sell_date:
+                    year = int(sell_date.split('-')[0])
+                    if year != tax_year:
+                        continue  # Skip transactions from other years
+            except:
+                pass
+            
+            form_line = {
+                'description': f"{gain['amount']} {symbol}",
+                'date_acquired': gain.get('buy_date', 'Various'),
+                'date_sold': gain.get('sell_date', 'Unknown'),
+                'proceeds': gain.get('proceeds', 0),
+                'cost_basis': gain.get('cost_basis', 0),
+                'gain_or_loss': gain.get('gain_loss', 0),
+                'adjustment_code': '',  # IRS adjustment codes if needed
+                'adjustment_amount': 0
+            }
+            
+            if gain.get('holding_period') == 'short-term':
+                short_term_transactions.append(form_line)
+            else:
+                long_term_transactions.append(form_line)
+        
+        # Calculate totals
+        short_term_total = sum(t['gain_or_loss'] for t in short_term_transactions)
+        long_term_total = sum(t['gain_or_loss'] for t in long_term_transactions)
+        
+        return {
+            'form_type': '8949',
+            'tax_year': tax_year,
+            'taxpayer_name': '',  # To be filled by user
+            'taxpayer_ssn': '',  # To be filled by user
+            'part_1_short_term': {
+                'box_checked': 'A',  # Box A: Short-term transactions reported on 1099-B
+                'transactions': short_term_transactions,
+                'totals': {
+                    'proceeds': sum(t['proceeds'] for t in short_term_transactions),
+                    'cost_basis': sum(t['cost_basis'] for t in short_term_transactions),
+                    'adjustment': 0,
+                    'gain_or_loss': short_term_total
+                }
+            },
+            'part_2_long_term': {
+                'box_checked': 'D',  # Box D: Long-term transactions reported on 1099-B
+                'transactions': long_term_transactions,
+                'totals': {
+                    'proceeds': sum(t['proceeds'] for t in long_term_transactions),
+                    'cost_basis': sum(t['cost_basis'] for t in long_term_transactions),
+                    'adjustment': 0,
+                    'gain_or_loss': long_term_total
+                }
+            },
+            'summary': {
+                'total_short_term_gain': short_term_total,
+                'total_long_term_gain': long_term_total,
+                'total_gain': short_term_total + long_term_total,
+                'transaction_count': len(short_term_transactions) + len(long_term_transactions)
+            }
+        }
+    
+    def get_tax_summary_by_year(
+        self,
+        transactions: List[Dict[str, Any]],
+        current_balance: float,
+        current_price: float,
+        symbol: str,
+        tax_years: List[int] = None
+    ) -> Dict[str, Any]:
+        """
+        Generate comprehensive tax summary for specified years
+        """
+        if tax_years is None:
+            # Default to current year and previous 2 years
+            current_year = datetime.now().year
+            tax_years = [current_year - 2, current_year - 1, current_year]
+        
+        tax_data = self.calculate_tax_data(transactions, current_balance, current_price, symbol)
+        
+        # Group realized gains by year
+        gains_by_year = {}
+        for year in tax_years:
+            gains_by_year[str(year)] = {
+                'short_term_gains': 0,
+                'long_term_gains': 0,
+                'total_gain': 0,
+                'transactions': 0
+            }
+        
+        for gain in tax_data.get('realized_gains', []):
+            sell_date = gain.get('sell_date', '')
+            try:
+                if isinstance(sell_date, str) and '-' in sell_date:
+                    year = int(sell_date.split('-')[0])
+                    if str(year) in gains_by_year:
+                        if gain.get('holding_period') == 'short-term':
+                            gains_by_year[str(year)]['short_term_gains'] += gain['gain_loss']
+                        else:
+                            gains_by_year[str(year)]['long_term_gains'] += gain['gain_loss']
+                        gains_by_year[str(year)]['total_gain'] += gain['gain_loss']
+                        gains_by_year[str(year)]['transactions'] += 1
+            except:
+                pass
+        
+        return {
+            'method': self.method,
+            'tax_years': gains_by_year,
+            'unrealized_gains': tax_data.get('unrealized_gains'),
+            'overall_summary': tax_data.get('summary')
+        }
 
 # Initialize global tax service
 tax_service = TaxService()
