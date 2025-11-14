@@ -1092,81 +1092,120 @@ function App() {
                           <th className="text-right py-3 px-4 text-gray-400 font-medium">Amount</th>
                           <th className="text-right py-3 px-4 text-gray-400 font-medium">USD Value</th>
                           <th className="text-right py-3 px-4 text-gray-400 font-medium">Running Balance</th>
+                          {user?.subscription_tier !== 'free' && analysis.tax_data && (
+                            <>
+                              <th className="text-right py-3 px-4 text-gray-400 font-medium">Cost Basis</th>
+                              <th className="text-right py-3 px-4 text-gray-400 font-medium">Gain/Loss</th>
+                            </>
+                          )}
                           <th className="text-left py-3 px-4 text-gray-400 font-medium">Address/Label</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {analysis.recentTransactions.map((tx, idx) => (
-                          <tr key={idx} className="border-b border-slate-700/50 hover:bg-slate-700/30">
-                            <td className="py-3 px-4">
-                              <Badge
-                                variant="outline"
-                                className={tx.type === 'sent' ? 'text-red-300 border-red-700' : 'text-green-300 border-green-700'}
-                              >
-                                {tx.type === 'sent' ? 'Sent' : 'Received'}
-                              </Badge>
-                            </td>
-                            <td className="py-3 px-4">
-                              {tx.hash ? (
-                                <a
-                                  href={
-                                    analysis.chain === 'ethereum' ? `https://etherscan.io/tx/${tx.hash}` :
-                                    analysis.chain === 'bitcoin' ? `https://blockchain.info/tx/${tx.hash}` :
-                                    analysis.chain === 'polygon' ? `https://polygonscan.com/tx/${tx.hash}` :
-                                    analysis.chain === 'arbitrum' ? `https://arbiscan.io/tx/${tx.hash}` :
-                                    analysis.chain === 'bsc' ? `https://bscscan.com/tx/${tx.hash}` :
-                                    analysis.chain === 'solana' ? `https://solscan.io/tx/${tx.hash}` :
-                                    `#`
-                                  }
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-purple-400 hover:text-purple-300 font-mono text-sm"
+                        {analysis.recentTransactions.map((tx, idx) => {
+                          // Find matching realized gain for this transaction if it's a sell
+                          const realizedGain = analysis.tax_data?.realized_gains?.find(g => g.sell_hash === tx.hash);
+                          
+                          return (
+                            <tr key={idx} className="border-b border-slate-700/50 hover:bg-slate-700/30">
+                              <td className="py-3 px-4">
+                                <Badge
+                                  variant="outline"
+                                  className={tx.type === 'sent' ? 'text-red-300 border-red-700' : 'text-green-300 border-green-700'}
                                 >
-                                  {formatAddress(tx.hash)}
-                                </a>
-                              ) : (
-                                <span className="text-gray-500 text-sm">N/A</span>
-                              )}
-                            </td>
-                            <td className="py-3 px-4">
-                              <span className="text-white font-medium">{tx.asset}</span>
-                            </td>
-                            <td className="py-3 px-4 text-right">
-                              <span className="text-white font-mono">{formatNumber(tx.value)}</span>
-                            </td>
-                            <td className="py-3 px-4 text-right">
-                              {tx.value_usd !== undefined ? (
-                                <span className="text-gray-300 font-semibold">{formatUSD(tx.value_usd)}</span>
-                              ) : (
-                                <span className="text-gray-500 text-sm">-</span>
-                              )}
-                            </td>
-                            <td className="py-3 px-4 text-right">
-                              {tx.running_balance !== undefined ? (
-                                <span className="text-blue-300 font-semibold font-mono">{formatNumber(tx.running_balance)}</span>
-                              ) : (
-                                <span className="text-gray-500 text-sm">-</span>
-                              )}
-                            </td>
-                            <td className="py-3 px-4">
-                              <div className="flex flex-col">
-                                {tx.type === 'sent' && tx.to_label && (
-                                  <Badge variant="outline" className="text-blue-300 border-blue-700 mb-1 w-fit">
-                                    🏦 {tx.to_label}
-                                  </Badge>
+                                  {tx.type === 'sent' ? 'Sent' : 'Received'}
+                                </Badge>
+                              </td>
+                              <td className="py-3 px-4">
+                                {tx.hash ? (
+                                  <a
+                                    href={
+                                      analysis.chain === 'ethereum' ? `https://etherscan.io/tx/${tx.hash}` :
+                                      analysis.chain === 'bitcoin' ? `https://blockchain.info/tx/${tx.hash}` :
+                                      analysis.chain === 'polygon' ? `https://polygonscan.com/tx/${tx.hash}` :
+                                      analysis.chain === 'arbitrum' ? `https://arbiscan.io/tx/${tx.hash}` :
+                                      analysis.chain === 'bsc' ? `https://bscscan.com/tx/${tx.hash}` :
+                                      analysis.chain === 'solana' ? `https://solscan.io/tx/${tx.hash}` :
+                                      `#`
+                                    }
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-purple-400 hover:text-purple-300 font-mono text-sm"
+                                  >
+                                    {formatAddress(tx.hash)}
+                                  </a>
+                                ) : (
+                                  <span className="text-gray-500 text-sm">N/A</span>
                                 )}
-                                {tx.type === 'received' && tx.from_label && (
-                                  <Badge variant="outline" className="text-blue-300 border-blue-700 mb-1 w-fit">
-                                    🏦 {tx.from_label}
-                                  </Badge>
+                              </td>
+                              <td className="py-3 px-4">
+                                <span className="text-white font-medium">{tx.asset}</span>
+                              </td>
+                              <td className="py-3 px-4 text-right">
+                                <span className="text-white font-mono">{formatNumber(tx.value)}</span>
+                              </td>
+                              <td className="py-3 px-4 text-right">
+                                {tx.value_usd !== undefined ? (
+                                  <span className="text-gray-300 font-semibold">{formatUSD(tx.value_usd)}</span>
+                                ) : (
+                                  <span className="text-gray-500 text-sm">-</span>
                                 )}
-                                <span className="text-gray-400 font-mono text-sm">
-                                  {tx.type === 'sent' ? formatAddress(tx.to) : formatAddress(tx.from)}
-                                </span>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
+                              </td>
+                              <td className="py-3 px-4 text-right">
+                                {tx.running_balance !== undefined ? (
+                                  <span className="text-blue-300 font-semibold font-mono">{formatNumber(tx.running_balance)}</span>
+                                ) : (
+                                  <span className="text-gray-500 text-sm">-</span>
+                                )}
+                              </td>
+                              {user?.subscription_tier !== 'free' && analysis.tax_data && (
+                                <>
+                                  <td className="py-3 px-4 text-right">
+                                    {realizedGain ? (
+                                      <span className="text-gray-300 font-mono text-sm">{formatUSD(realizedGain.cost_basis)}</span>
+                                    ) : (
+                                      <span className="text-gray-500 text-sm">-</span>
+                                    )}
+                                  </td>
+                                  <td className="py-3 px-4 text-right">
+                                    {realizedGain ? (
+                                      <div className="flex flex-col items-end">
+                                        <span className={`font-semibold ${realizedGain.gain_loss >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                          {realizedGain.gain_loss >= 0 ? '+' : ''}{formatUSD(realizedGain.gain_loss)}
+                                        </span>
+                                        <Badge 
+                                          variant="outline" 
+                                          className={`text-xs mt-1 ${realizedGain.holding_period === 'long-term' ? 'bg-blue-900/30 border-blue-700 text-blue-300' : 'bg-orange-900/30 border-orange-700 text-orange-300'}`}
+                                        >
+                                          {realizedGain.holding_period === 'long-term' ? 'LT' : 'ST'}
+                                        </Badge>
+                                      </div>
+                                    ) : (
+                                      <span className="text-gray-500 text-sm">-</span>
+                                    )}
+                                  </td>
+                                </>
+                              )}
+                              <td className="py-3 px-4">
+                                <div className="flex flex-col">
+                                  {tx.type === 'sent' && tx.to_label && (
+                                    <Badge variant="outline" className="text-blue-300 border-blue-700 mb-1 w-fit">
+                                      🏦 {tx.to_label}
+                                    </Badge>
+                                  )}
+                                  {tx.type === 'received' && tx.from_label && (
+                                    <Badge variant="outline" className="text-blue-300 border-blue-700 mb-1 w-fit">
+                                      🏦 {tx.from_label}
+                                    </Badge>
+                                  )}
+                                  <span className="text-gray-400 font-mono text-sm">
+                                    {tx.type === 'sent' ? formatAddress(tx.to) : formatAddress(tx.from)}
+                                  </span>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
