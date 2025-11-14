@@ -1546,6 +1546,12 @@ class BackendTester:
             print(f"   User ID: {premium_user_id}")
             print(f"   Token: {premium_token[:20]}...")
             
+            # Manually upgrade user to Premium tier for testing
+            print(f"\n🔧 Manually upgrading user to Premium tier for testing...")
+            if not self.upgrade_user_to_premium_manually(premium_user_id):
+                self.log_result("Tax Form 8949 Endpoint", False, "Failed to upgrade user to Premium tier")
+                return False
+            
             headers = {"Authorization": f"Bearer {premium_token}"}
             
             # Test Form 8949 endpoint with Premium user
