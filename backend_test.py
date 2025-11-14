@@ -839,6 +839,7 @@ class BackendTester:
             ("User Login", self.test_user_login),
             ("Get Current User", self.test_get_current_user),
             ("Wallet Analysis - Ethereum", self.test_wallet_analysis_ethereum),
+            ("Specific Bitcoin Wallet Analysis", self.test_specific_bitcoin_wallet_analysis),
             ("Wallet Analysis - Bitcoin", self.test_wallet_analysis_bitcoin),
             ("Wallet Analysis - Polygon", self.test_wallet_analysis_polygon),
             ("Multi-chain Premium Test", self.test_multichain_with_premium_user),
