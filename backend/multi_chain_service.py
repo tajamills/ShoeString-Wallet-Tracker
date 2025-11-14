@@ -67,6 +67,21 @@ class MultiChainService:
         except:
             return 0.0
     
+    def safe_parse_block_num(self, block_num: str) -> int:
+        """Safely parse block number that could be hex or decimal"""
+        try:
+            if block_num == 'pending' or not block_num:
+                return float('inf')
+            
+            # Try hex first (if starts with 0x)
+            if isinstance(block_num, str) and block_num.startswith('0x'):
+                return int(block_num, 16)
+            
+            # Try decimal
+            return int(block_num)
+        except (ValueError, TypeError):
+            return float('inf')
+    
     def satoshi_to_btc(self, satoshi: int) -> float:
         """Convert Satoshi to BTC"""
         return float(Decimal(satoshi) / Decimal(10**8))
