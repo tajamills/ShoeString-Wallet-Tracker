@@ -1012,6 +1012,13 @@ function App() {
                             <td className="py-3 px-4 text-right">
                               <span className="text-white font-mono">{formatNumber(tx.value)}</span>
                             </td>
+                            <td className="py-3 px-4 text-right">
+                              {tx.value_usd !== undefined ? (
+                                <span className="text-gray-300 font-semibold">{formatUSD(tx.value_usd)}</span>
+                              ) : (
+                                <span className="text-gray-500 text-sm">-</span>
+                              )}
+                            </td>
                             <td className="py-3 px-4">
                               <div className="flex flex-col">
                                 {tx.type === 'sent' && tx.to_label && (
