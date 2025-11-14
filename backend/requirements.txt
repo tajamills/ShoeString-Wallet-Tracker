@@ -100,3 +100,4 @@ websockets==15.0.1
 yarl==1.22.0
 bech32==1.2.0
 bip32==5.0.0
+base58
