@@ -665,6 +665,27 @@ function App() {
               <span className="text-gray-400 text-sm">Analyzing {getChainSymbol(analysis.chain || selectedChain)} wallet</span>
             </div>
 
+            {/* Portfolio Value Header */}
+            {analysis.total_value_usd !== undefined && (
+              <Card className="bg-gradient-to-r from-green-900/30 to-emerald-800/30 border-green-700">
+                <CardContent className="pt-6">
+                  <div className="text-center">
+                    <p className="text-gray-400 text-sm mb-2">Portfolio Value</p>
+                    <h2 className="text-5xl font-bold text-white mb-2">
+                      {formatUSD(analysis.total_value_usd)}
+                    </h2>
+                    {analysis.current_price_usd && (
+                      <p className="text-gray-400 text-sm">
+                        {formatNumber(analysis.netEth)} {getChainSymbol(analysis.chain || selectedChain)} 
+                        <span className="mx-2">•</span>
+                        1 {getChainSymbol(analysis.chain || selectedChain)} = {formatUSD(analysis.current_price_usd)}
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card className="bg-gradient-to-br from-green-900/30 to-green-800/20 border-green-700" data-testid="received-card">
