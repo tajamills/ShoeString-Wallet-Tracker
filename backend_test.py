@@ -1179,6 +1179,282 @@ class BackendTester:
         except Exception as e:
             self.log_result("Downgrade Functionality", False, f"Error: {str(e)}")
             return False
+
+    def test_tax_calculations_phase2(self):
+        """Test Phase 2 Tax Calculations with address: 0x31232008889208eb26d84e18b1d028e9f9494449
+        
+        Requirements:
+        1. Create a Premium user (tax features require Premium)
+        2. Analyze the Ethereum wallet
+        3. Verify tax_data is included in response
+        4. Check for: tax_data object, realized_gains array, unrealized_gains object, 
+           summary with total gains, short_term vs long_term gains, cost basis calculations
+        """
+        try:
+            # Create a new premium user for testing tax calculations
+            timestamp = int(time.time())
+            premium_email = f"tax_premium_test_{timestamp}@example.com"
+            premium_password = "TaxPremiumTest123!"
+            
+            print(f"\n🔑 Creating Premium User for Tax Calculations Testing:")
+            print(f"   Email: {premium_email}")
+            print(f"   Password: {premium_password}")
+            
+            # Register premium user
+            payload = {
+                "email": premium_email,
+                "password": premium_password
+            }
+            
+            response = self.session.post(f"{BASE_URL}/auth/register", json=payload)
+            if response.status_code != 200:
+                self.log_result("Tax Calculations Phase 2", False, f"Failed to register premium user: {response.status_code}")
+                return False
+            
+            premium_data = response.json()
+            premium_token = premium_data.get("access_token")
+            premium_user_id = premium_data.get("user", {}).get("id")
+            
+            if not premium_token or not premium_user_id:
+                self.log_result("Tax Calculations Phase 2", False, "Failed to get premium user token or ID")
+                return False
+            
+            print(f"✅ Premium User Created Successfully:")
+            print(f"   User ID: {premium_user_id}")
+            print(f"   Token: {premium_token[:20]}...")
+            
+            headers = {"Authorization": f"Bearer {premium_token}"}
+            
+            # Test the specific Ethereum address for tax calculations
+            ethereum_address = "0x31232008889208eb26d84e18b1d028e9f9494449"
+            ethereum_payload = {
+                "address": ethereum_address,
+                "chain": "ethereum"
+            }
+            
+            print(f"\n🧮 Analyzing Ethereum Wallet for Tax Calculations:")
+            print(f"   Address: {ethereum_address}")
+            print(f"   Chain: ethereum")
+            
+            ethereum_response = self.session.post(f"{BASE_URL}/wallet/analyze", json=ethereum_payload, headers=headers)
+            
+            print(f"\n📊 Analysis Response:")
+            print(f"   Status Code: {ethereum_response.status_code}")
+            
+            if ethereum_response.status_code == 200:
+                data = ethereum_response.json()
+                
+                print(f"\n✅ ETHEREUM WALLET ANALYSIS SUCCESSFUL!")
+                print(f"=" * 80)
+                print(f"📍 Wallet Address: {data.get('address', 'N/A')}")
+                print(f"💰 Total ETH Sent: {data.get('totalEthSent', 0)} ETH")
+                print(f"💰 Total ETH Received: {data.get('totalEthReceived', 0)} ETH")
+                print(f"⛽ Total Gas Fees: {data.get('totalGasFees', 0)} ETH")
+                print(f"💎 Net ETH Balance: {data.get('netEth', 0)} ETH")
+                print(f"📤 Outgoing Transactions: {data.get('outgoingTransactionCount', 0)}")
+                print(f"📥 Incoming Transactions: {data.get('incomingTransactionCount', 0)}")
+                
+                # TAX CALCULATIONS VERIFICATION - THIS IS THE KEY PART
+                print(f"\n🧮 TAX CALCULATIONS PHASE 2 VERIFICATION:")
+                print(f"=" * 80)
+                
+                # Check for tax_data object
+                tax_data = data.get('tax_data')
+                
+                if tax_data is None:
+                    print(f"❌ tax_data object missing from response")
+                    self.log_result("Tax Calculations Phase 2", False, 
+                                  f"❌ tax_data object missing from response for address {ethereum_address}. "
+                                  f"User tier may not be Premium or tax calculations not implemented.")
+                    return False
+                
+                print(f"✅ tax_data object found in response")
+                
+                # Verification checks for tax data structure
+                verification_results = []
+                
+                # 1. Check for realized_gains array
+                realized_gains = tax_data.get('realized_gains')
+                if realized_gains is not None and isinstance(realized_gains, list):
+                    verification_results.append(("✅ realized_gains array present", True, f"Found {len(realized_gains)} realized gains"))
+                else:
+                    verification_results.append(("❌ realized_gains array missing or invalid", False, f"Value: {realized_gains}"))
+                
+                # 2. Check for unrealized_gains object
+                unrealized_gains = tax_data.get('unrealized_gains')
+                if unrealized_gains is not None and isinstance(unrealized_gains, dict):
+                    verification_results.append(("✅ unrealized_gains object present", True, f"Structure: {list(unrealized_gains.keys())}"))
+                    
+                    # Check unrealized_gains structure
+                    ug_lots = unrealized_gains.get('lots', [])
+                    ug_total_gain = unrealized_gains.get('total_gain', 0)
+                    ug_total_cost = unrealized_gains.get('total_cost_basis', 0)
+                    ug_total_value = unrealized_gains.get('total_current_value', 0)
+                    
+                    print(f"   • Unrealized Gains Lots: {len(ug_lots)}")
+                    print(f"   • Total Unrealized Gain: ${ug_total_gain}")
+                    print(f"   • Total Cost Basis: ${ug_total_cost}")
+                    print(f"   • Total Current Value: ${ug_total_value}")
+                else:
+                    verification_results.append(("❌ unrealized_gains object missing or invalid", False, f"Value: {unrealized_gains}"))
+                
+                # 3. Check for summary with total gains
+                summary = tax_data.get('summary')
+                if summary is not None and isinstance(summary, dict):
+                    verification_results.append(("✅ summary object present", True, f"Structure: {list(summary.keys())}"))
+                    
+                    # Check summary fields
+                    total_realized_gain = summary.get('total_realized_gain', 0)
+                    total_unrealized_gain = summary.get('total_unrealized_gain', 0)
+                    total_gain = summary.get('total_gain', 0)
+                    short_term_gains = summary.get('short_term_gains', 0)
+                    long_term_gains = summary.get('long_term_gains', 0)
+                    
+                    print(f"   • Total Realized Gain: ${total_realized_gain}")
+                    print(f"   • Total Unrealized Gain: ${total_unrealized_gain}")
+                    print(f"   • Total Gain: ${total_gain}")
+                    print(f"   • Short-term Gains: ${short_term_gains}")
+                    print(f"   • Long-term Gains: ${long_term_gains}")
+                    
+                    if 'total_gain' in summary:
+                        verification_results.append(("✅ summary contains total gains", True, f"Total: ${total_gain}"))
+                    else:
+                        verification_results.append(("❌ summary missing total gains", False, "total_gain field not found"))
+                else:
+                    verification_results.append(("❌ summary object missing or invalid", False, f"Value: {summary}"))
+                
+                # 4. Check for short_term vs long_term gains
+                if summary and 'short_term_gains' in summary and 'long_term_gains' in summary:
+                    verification_results.append(("✅ short_term vs long_term gains present", True, 
+                                               f"Short-term: ${summary['short_term_gains']}, Long-term: ${summary['long_term_gains']}"))
+                else:
+                    verification_results.append(("❌ short_term vs long_term gains missing", False, "Fields not found in summary"))
+                
+                # 5. Check for cost basis calculations
+                cost_basis_found = False
+                if realized_gains:
+                    for gain in realized_gains:
+                        if 'cost_basis' in gain:
+                            cost_basis_found = True
+                            break
+                
+                if unrealized_gains and 'total_cost_basis' in unrealized_gains:
+                    cost_basis_found = True
+                
+                if cost_basis_found:
+                    verification_results.append(("✅ cost basis calculations present", True, "Found in realized/unrealized gains"))
+                else:
+                    verification_results.append(("❌ cost basis calculations missing", False, "No cost_basis fields found"))
+                
+                # 6. Check tax calculation method
+                method = tax_data.get('method')
+                if method:
+                    verification_results.append(("✅ tax calculation method present", True, f"Method: {method}"))
+                else:
+                    verification_results.append(("❌ tax calculation method missing", False, "method field not found"))
+                
+                # Print verification results
+                print(f"\n📋 TAX CALCULATIONS VERIFICATION RESULTS:")
+                print(f"=" * 80)
+                
+                all_verifications_passed = True
+                for description, passed, details in verification_results:
+                    status = "✅" if passed else "❌"
+                    print(f"{status} {description}")
+                    print(f"   Details: {details}")
+                    if not passed:
+                        all_verifications_passed = False
+                
+                # Show detailed tax data if available
+                if realized_gains:
+                    print(f"\n📊 REALIZED GAINS DETAILS ({len(realized_gains)} transactions):")
+                    for i, gain in enumerate(realized_gains[:3]):  # Show first 3
+                        print(f"   {i+1}. Amount: {gain.get('amount', 0)}")
+                        print(f"      Buy Price: ${gain.get('buy_price', 0)}")
+                        print(f"      Sell Price: ${gain.get('sell_price', 0)}")
+                        print(f"      Cost Basis: ${gain.get('cost_basis', 0)}")
+                        print(f"      Proceeds: ${gain.get('proceeds', 0)}")
+                        print(f"      Gain/Loss: ${gain.get('gain_loss', 0)}")
+                        print(f"      Holding Period: {gain.get('holding_period', 'N/A')}")
+                        print()
+                    
+                    if len(realized_gains) > 3:
+                        print(f"   ... and {len(realized_gains) - 3} more realized gains")
+                
+                if unrealized_gains and unrealized_gains.get('lots'):
+                    ug_lots = unrealized_gains['lots']
+                    print(f"\n📊 UNREALIZED GAINS DETAILS ({len(ug_lots)} lots):")
+                    for i, lot in enumerate(ug_lots[:3]):  # Show first 3
+                        print(f"   {i+1}. Amount: {lot.get('amount', 0)}")
+                        print(f"      Buy Price: ${lot.get('buy_price', 0)}")
+                        print(f"      Current Price: ${lot.get('current_price', 0)}")
+                        print(f"      Cost Basis: ${lot.get('cost_basis', 0)}")
+                        print(f"      Current Value: ${lot.get('current_value', 0)}")
+                        print(f"      Unrealized Gain: ${lot.get('unrealized_gain', 0)}")
+                        print(f"      Gain %: {lot.get('gain_percentage', 0):.2f}%")
+                        print()
+                    
+                    if len(ug_lots) > 3:
+                        print(f"   ... and {len(ug_lots) - 3} more unrealized lots")
+                
+                print(f"=" * 80)
+                
+                # Final assessment
+                print(f"\n🎯 FINAL TAX CALCULATIONS ASSESSMENT:")
+                print(f"=" * 80)
+                
+                if all_verifications_passed:
+                    print(f"✅ TAX CALCULATIONS PHASE 2 WORKING CORRECTLY!")
+                    print(f"   • tax_data object present with all required fields")
+                    print(f"   • realized_gains array with {len(realized_gains) if realized_gains else 0} transactions")
+                    print(f"   • unrealized_gains object with proper structure")
+                    print(f"   • summary with total gains calculations")
+                    print(f"   • short_term vs long_term gains breakdown")
+                    print(f"   • cost basis calculations implemented")
+                    
+                    self.log_result("Tax Calculations Phase 2", True, 
+                                  f"✅ TAX CALCULATIONS PHASE 2 VERIFIED for {ethereum_address}. "
+                                  f"All required fields present: tax_data object, realized_gains array ({len(realized_gains) if realized_gains else 0} items), "
+                                  f"unrealized_gains object, summary with total gains, short_term vs long_term gains, cost basis calculations. "
+                                  f"Method: {tax_data.get('method', 'N/A')}. All verifications passed.")
+                else:
+                    print(f"❌ TAX CALCULATIONS PHASE 2 ISSUES DETECTED!")
+                    failed_checks = [desc for desc, passed, _ in verification_results if not passed]
+                    print(f"   • Failed verifications: {len(failed_checks)}")
+                    for failed in failed_checks:
+                        print(f"     - {failed}")
+                    
+                    self.log_result("Tax Calculations Phase 2", False, 
+                                  f"❌ TAX CALCULATIONS PHASE 2 ISSUES for {ethereum_address}. "
+                                  f"Failed verifications: {failed_checks}. "
+                                  f"tax_data present: {tax_data is not None}")
+                
+                return all_verifications_passed
+                
+            elif ethereum_response.status_code == 403:
+                error_data = ethereum_response.json()
+                print(f"\n⚠️  Ethereum analysis restricted: {error_data.get('detail', 'N/A')}")
+                self.log_result("Tax Calculations Phase 2", False, 
+                              f"Analysis restricted - need premium upgrade: {error_data.get('detail', 'N/A')}")
+                return False
+            elif ethereum_response.status_code == 429:
+                error_data = ethereum_response.json()
+                print(f"\n⚠️  Rate limit reached: {error_data.get('detail', 'N/A')}")
+                self.log_result("Tax Calculations Phase 2", False, 
+                              f"Rate limit reached: {error_data.get('detail', 'N/A')}")
+                return False
+            else:
+                error_data = ethereum_response.json() if ethereum_response.headers.get('content-type', '').startswith('application/json') else ethereum_response.text
+                print(f"\n❌ Unexpected response: HTTP {ethereum_response.status_code}")
+                print(f"   Error: {error_data}")
+                self.log_result("Tax Calculations Phase 2", False, 
+                              f"Unexpected response: HTTP {ethereum_response.status_code} - {error_data}")
+                return False
+                
+        except Exception as e:
+            print(f"\n❌ Error during Tax Calculations Phase 2 testing: {str(e)}")
+            self.log_result("Tax Calculations Phase 2", False, f"Error: {str(e)}")
+            return False
     
     def run_all_tests(self):
         """Run all backend tests in sequence"""
