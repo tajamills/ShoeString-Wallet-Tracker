@@ -4,6 +4,7 @@ from typing import Dict, List, Any, Optional
 from decimal import Decimal
 import logging
 from price_service import price_service
+from tax_service import tax_service
 
 logger = logging.getLogger(__name__)
 
