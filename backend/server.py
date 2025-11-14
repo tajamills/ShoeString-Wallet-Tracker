@@ -847,7 +847,8 @@ async def analyze_all_chains(request: WalletAnalysisRequest, user: dict = Depend
                         address, 
                         chain=chain,
                         start_date=request.start_date,
-                        end_date=request.end_date
+                        end_date=request.end_date,
+                        user_tier=user.get('subscription_tier', 'free')
                     )
                 }
             except Exception as e:
