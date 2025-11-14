@@ -135,6 +135,10 @@ class MultiChainService:
         # Add USD values
         analysis = self.add_usd_values(analysis, symbol)
         
+        # Add tax calculations (Premium/Pro feature)
+        if user_tier in ['premium', 'pro']:
+            analysis = self.add_tax_data(analysis, symbol)
+        
         return analysis
     
     def _analyze_evm_wallet(
