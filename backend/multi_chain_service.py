@@ -70,6 +70,30 @@ class MultiChainService:
         """Convert Satoshi to BTC"""
         return float(Decimal(satoshi) / Decimal(10**8))
     
+    def add_usd_values(self, analysis: Dict[str, Any], symbol: str) -> Dict[str, Any]:
+        """Add USD values to analysis data"""
+        try:
+            # Get current price
+            current_price = price_service.get_current_price(symbol)
+            
+            if current_price:
+                analysis['current_price_usd'] = current_price
+                analysis['total_value_usd'] = analysis.get('netEth', 0) * current_price
+                analysis['total_received_usd'] = analysis.get('totalEthReceived', 0) * current_price
+                analysis['total_sent_usd'] = analysis.get('totalEthSent', 0) * current_price
+                analysis['gas_fees_usd'] = analysis.get('totalGasFees', 0) * current_price
+            
+            # Add USD value to each transaction (if we have timestamp)
+            for tx in analysis.get('recentTransactions', []):
+                if current_price:
+                    tx['value_usd'] = float(tx.get('value', 0)) * current_price
+            
+            return analysis
+            
+        except Exception as e:
+            logger.error(f"Error adding USD values: {str(e)}")
+            return analysis
+    
     def analyze_wallet(
         self,
         address: str,
