@@ -765,27 +765,24 @@ function App() {
                 </Card>
               )}
 
-              <Card className={`bg-gradient-to-br ${analysis.netEth >= 0 ? 'from-blue-900/30 to-blue-800/20 border-blue-700' : 'from-purple-900/30 to-purple-800/20 border-purple-700'}`} data-testid="net-card">
+              <Card className="bg-gradient-to-br from-blue-900/30 to-indigo-800/20 border-blue-700" data-testid="balance-card">
                 <CardHeader className="pb-3">
-                  <CardTitle className={`text-sm font-medium ${analysis.netEth >= 0 ? 'text-blue-300' : 'text-purple-300'} flex items-center gap-2`}>
-                    <DollarSign className="w-4 h-4" />
+                  <CardTitle className="text-sm font-medium text-blue-300 flex items-center gap-2">
+                    <Wallet className="w-4 h-4" />
                     Current Balance
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-white">
-                    {formatNumber(analysis.netEth)} {getChainSymbol(analysis.chain || selectedChain)}
-                  </div>
-                  {analysis.net_balance_usd !== undefined && (
-                    <p className={`text-xl font-semibold mt-1 ${analysis.netEth >= 0 ? 'text-blue-300' : 'text-purple-300'}`}>
-                      {formatUSD(analysis.net_balance_usd)}
+                  <p className="text-2xl font-bold text-blue-400" data-testid="balance-value">
+                    {formatNumber(analysis.currentBalance || analysis.netEth)} {getChainSymbol(analysis.chain || selectedChain)}
+                  </p>
+                  {analysis.total_value_usd !== undefined && (
+                    <p className="text-lg font-semibold mt-1 text-blue-300">
+                      {formatUSD(analysis.total_value_usd)}
                     </p>
                   )}
-                  <p className="text-xs text-gray-300 mt-1">
-                    Net position
-                  </p>
-                  <p className="text-xs text-gray-400 mt-2">
-                    Received - Sent{analysis.totalGasFees > 0 ? ' - Gas' : ''}
+                  <p className="text-gray-400 text-xs mt-2">
+                    Right now in wallet
                   </p>
                 </CardContent>
               </Card>
