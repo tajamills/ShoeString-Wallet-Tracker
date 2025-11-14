@@ -1212,10 +1212,10 @@ async def get_tax_summary(
         # Get wallet analysis
         analysis = multi_chain_service.analyze_wallet(
             request_data.address,
-            request_data.chain,
-            user["subscription_tier"],
-            None,  # Get all transactions
-            None
+            chain=request_data.chain,
+            start_date=None,  # Get all transactions
+            end_date=None,
+            user_tier=user["subscription_tier"]
         )
         
         if not analysis.get("recentTransactions"):
