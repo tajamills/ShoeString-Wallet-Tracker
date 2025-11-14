@@ -456,6 +456,21 @@ frontend:
         - working: true
           agent: "testing"
           comment: "✅ TAX CALCULATIONS PHASE 2 FULLY IMPLEMENTED AND WORKING: Comprehensive testing completed for address 0x31232008889208eb26d84e18b1d028e9f9494449. VERIFIED: 1) Tax service exists (tax_service.py) with FIFO cost basis calculations, 2) Tax data integration implemented in multi_chain_service.py with add_tax_data method, 3) Premium/Pro tier restriction working correctly - free tier users do not receive tax_data in response, 4) Tax calculations include: realized_gains array, unrealized_gains object with lots and totals, summary with total gains, short_term vs long_term gains breakdown, cost basis calculations using FIFO method. 5) Fixed hexadecimal block number parsing issue that was preventing wallet analysis. The feature is properly implemented and restricted to Premium/Pro subscribers as intended. Tax calculations would be visible in wallet analysis response for Premium/Pro users."
+        - working: true
+          agent: "main"
+          comment: "✅ PHASE 2 FRONTEND COMPLETE: Added comprehensive tax data UI display. 1) Capital Gains Summary card showing total, realized, unrealized gains with short-term/long-term breakdown. 2) Enhanced transaction table with Cost Basis and Gain/Loss columns for Premium/Pro users. 3) Remaining tax lots display showing unsold positions with buy price and date. 4) All data properly restricted to Premium/Pro tiers. Ready for testing."
+
+  - task: "Tax Calculations Phase 3 - Form 8949 and Tax Dashboard"
+    implemented: true
+    working: "NA"
+    file: "tax_service.py, server.py, TaxDashboard.js, App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "✅ PHASE 3 COMPLETE - NEEDS TESTING: Implemented comprehensive tax dashboard with: 1) Transaction categorization logic (exchanges, DeFi, income, etc.) with 40+ known addresses. 2) IRS Form 8949 generation with Part I (short-term) and Part II (long-term) sections. 3) New backend endpoints: /api/tax/form-8949 and /api/tax/summary for multi-year tax reporting. 4) TaxDashboard component with multi-year summary, Form 8949 display, and CSV export. 5) Integrated into App.js with collapsible toggle button. Features include: tax summary by year, downloadable Form 8949 CSV, comprehensive disclaimers, and full Premium/Pro tier restrictions. Ready for comprehensive backend and frontend testing."
 
 metadata:
   created_by: "testing_agent"
