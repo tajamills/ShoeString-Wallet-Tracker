@@ -1210,7 +1210,7 @@ async def get_tax_summary(
             )
         
         # Get wallet analysis
-        analysis = await multi_chain_service.analyze_wallet(
+        analysis = multi_chain_service.analyze_wallet(
             request_data.address,
             request_data.chain,
             user["subscription_tier"],
