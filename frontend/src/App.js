@@ -1214,6 +1214,32 @@ function App() {
                 </CardContent>
               </Card>
             )}
+
+            {/* Tax Dashboard Toggle Button */}
+            {user?.subscription_tier !== 'free' && analysis && (
+              <div className="flex justify-center mt-6">
+                <Button
+                  onClick={() => setShowTaxDashboard(!showTaxDashboard)}
+                  className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  {showTaxDashboard ? 'Hide' : 'Show'} Advanced Tax Dashboard
+                  {showTaxDashboard ? <ChevronUp className="ml-2 h-4 w-4" /> : <ChevronDown className="ml-2 h-4 w-4" />}
+                </Button>
+              </div>
+            )}
+
+            {/* Tax Dashboard */}
+            {showTaxDashboard && user?.subscription_tier !== 'free' && analysis && (
+              <div className="mt-6">
+                <TaxDashboard
+                  walletAddress={walletAddress}
+                  selectedChain={selectedChain}
+                  getAuthHeader={getAuthHeader}
+                  analysis={analysis}
+                />
+              </div>
+            )}
           </div>
         )}
 
