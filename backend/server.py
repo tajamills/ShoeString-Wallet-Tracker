@@ -929,6 +929,67 @@ async def analyze_all_chains(request: WalletAnalysisRequest, user: dict = Depend
         logger.error(f"Error in multi-chain analysis: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Multi-chain analysis failed: {str(e)}")
 
+@api_router.post("/wallet/export-paginated")
+async def export_wallet_paginated(
+    request: WalletAnalysisRequest, 
+    page: int = 1,
+    page_size: int = 1000,
+    user: dict = Depends(get_current_user)
+):
+    """Export wallet transactions in paginated batches (Premium/Pro feature)"""
+    try:
+        # Check if user has Premium or Pro
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier == 'free':
+            raise HTTPException(
+                status_code=403, 
+                detail="CSV Export is a Premium feature. Upgrade to download your transaction history."
+            )
+        
+        address = request.address.strip()
+        chain = request.chain.lower()
+        
+        # Validate chain access
+        if chain != 'ethereum' and user_tier == 'free':
+            raise HTTPException(status_code=403, detail="Multi-chain export requires Premium")
+        
+        # Get full transaction history with pagination
+        analysis_data = multi_chain_service.analyze_wallet(
+            address, 
+            chain=chain,
+            start_date=request.start_date,
+            end_date=request.end_date,
+            limit=page_size,
+            offset=(page - 1) * page_size
+        )
+        
+        # Get total transaction count for pagination info
+        total_transactions = analysis_data.get('totalTransactionCount', 0)
+        total_pages = (total_transactions + page_size - 1) // page_size
+        
+        return {
+            'address': analysis_data['address'],
+            'chain': chain,
+            'page': page,
+            'page_size': page_size,
+            'total_transactions': total_transactions,
+            'total_pages': total_pages,
+            'has_more': page < total_pages,
+            'transactions': analysis_data['recentTransactions'],
+            'summary': {
+                'totalEthSent': analysis_data['totalEthSent'],
+                'totalEthReceived': analysis_data['totalEthReceived'],
+                'totalGasFees': analysis_data['totalGasFees'],
+                'netEth': analysis_data['netEth']
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error exporting wallet: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to export wallet: {str(e)}")
+
 @api_router.get("/wallet/history", response_model=List[WalletAnalysisResponse])
 async def get_wallet_history(limit: int = 10):
     """Get wallet analysis history"""
