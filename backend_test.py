@@ -1469,6 +1469,7 @@ class BackendTester:
             ("User Registration", self.test_user_registration),
             ("User Login", self.test_user_login),
             ("Get Current User", self.test_get_current_user),
+            ("Tax Calculations Phase 2", self.test_tax_calculations_phase2),
             ("Current Balance Fix Verification", self.test_current_balance_fix_verification),
             ("Wallet Analysis - Ethereum", self.test_wallet_analysis_ethereum),
             ("Specific Bitcoin Wallet Analysis", self.test_specific_bitcoin_wallet_analysis),
