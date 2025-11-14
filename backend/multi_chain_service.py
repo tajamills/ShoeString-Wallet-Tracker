@@ -74,7 +74,8 @@ class MultiChainService:
         address: str,
         chain: str = "ethereum",
         start_date: Optional[str] = None,
-        end_date: Optional[str] = None
+        end_date: Optional[str] = None,
+        user_tier: str = 'free'
     ) -> Dict[str, Any]:
         """Analyze wallet across different chains"""
         
@@ -93,7 +94,7 @@ class MultiChainService:
                 raise ValueError(f"This appears to be an EVM address (starts with 0x). Try selecting Ethereum, Polygon, Arbitrum, or BSC instead.")
         
         if chain == "bitcoin":
-            return self._analyze_bitcoin_wallet(address, start_date, end_date)
+            return self._analyze_bitcoin_wallet(address, start_date, end_date, user_tier)
         elif chain == "solana":
             return self._analyze_solana_wallet(address, start_date, end_date)
         else:
