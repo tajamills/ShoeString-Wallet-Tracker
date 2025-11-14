@@ -96,6 +96,33 @@ class MultiChainService:
             logger.error(f"Error adding USD values: {str(e)}")
             return analysis
     
+    def add_tax_data(self, analysis: Dict[str, Any], symbol: str) -> Dict[str, Any]:
+        """Add tax calculations including cost basis and capital gains"""
+        try:
+            current_price = analysis.get('current_price_usd')
+            current_balance = analysis.get('currentBalance', analysis.get('netEth', 0))
+            transactions = analysis.get('recentTransactions', [])
+            
+            if not current_price or not transactions:
+                return analysis
+            
+            # Calculate tax data
+            tax_data = tax_service.calculate_tax_data(
+                transactions=transactions,
+                current_balance=current_balance,
+                current_price=current_price,
+                symbol=symbol
+            )
+            
+            # Add to analysis
+            analysis['tax_data'] = tax_data
+            
+            return analysis
+            
+        except Exception as e:
+            logger.error(f"Error adding tax data: {str(e)}")
+            return analysis
+    
     def analyze_wallet(
         self,
         address: str,
