@@ -1154,7 +1154,7 @@ async def generate_form_8949(
             )
         
         # Get wallet analysis with tax data
-        analysis = await multi_chain_service.analyze_wallet(
+        analysis = multi_chain_service.analyze_wallet(
             request_data.address,
             request_data.chain,
             user["subscription_tier"],
