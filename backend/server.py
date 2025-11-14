@@ -83,6 +83,15 @@ class WalletAnalysisResponse(BaseModel):
     tokensReceived: Dict[str, float]
     recentTransactions: List[Dict[str, Any]]
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    # USD values (optional)
+    current_price_usd: Optional[float] = None
+    total_value_usd: Optional[float] = None
+    net_balance_usd: Optional[float] = None
+    total_received_usd: Optional[float] = None
+    total_sent_usd: Optional[float] = None
+    gas_fees_usd: Optional[float] = None
+    # Tax data (Premium/Pro only)
+    tax_data: Optional[Dict[str, Any]] = None
 
 # Initialize services
 wallet_service = WalletService()
