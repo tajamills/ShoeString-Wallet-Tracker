@@ -198,4 +198,4 @@ if __name__ == "__main__":
     if success:
         print(f"\n✅ TAX CALCULATIONS PHASE 2 IMPLEMENTATION VERIFIED!")
     else:
-        print(f"\n❌ TAX CALCULATIONS PHASE 2 IMPLEMENTATION HAS ISSUES!"))
+        print(f"\n❌ TAX CALCULATIONS PHASE 2 IMPLEMENTATION HAS ISSUES!")
