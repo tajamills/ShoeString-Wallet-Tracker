@@ -456,23 +456,30 @@ function App() {
               </div>
 
               <div className="flex gap-4">
-                <Input
-                  data-testid="wallet-address-input"
-                  type="text"
-                  placeholder={
-                    selectedChain === 'ethereum' || selectedChain === 'polygon' || selectedChain === 'arbitrum' || selectedChain === 'bsc' 
-                      ? '0x...' 
-                      : selectedChain === 'bitcoin' 
-                        ? 'Bitcoin address (e.g., 1A1z...)' 
-                        : selectedChain === 'solana'
-                          ? 'Solana address (base58)'
-                          : 'Wallet address'
-                  }
-                  value={walletAddress}
-                  onChange={(e) => setWalletAddress(e.target.value)}
-                  className="flex-1 bg-slate-700 border-slate-600 text-white placeholder:text-gray-500"
-                  disabled={loading}
-                />
+                <div className="flex-1">
+                  <Input
+                    data-testid="wallet-address-input"
+                    type="text"
+                    placeholder={
+                      selectedChain === 'ethereum' || selectedChain === 'polygon' || selectedChain === 'arbitrum' || selectedChain === 'bsc' 
+                        ? '0x...' 
+                        : selectedChain === 'bitcoin' 
+                          ? (user?.subscription_tier === 'pro' ? 'Address or xPub/yPub/zPub (Pro)' : 'Bitcoin address (e.g., 1A1z...)')
+                          : selectedChain === 'solana'
+                            ? 'Solana address (base58)'
+                            : 'Wallet address'
+                    }
+                    value={walletAddress}
+                    onChange={(e) => setWalletAddress(e.target.value)}
+                    className="bg-slate-700 border-slate-600 text-white placeholder:text-gray-500"
+                    disabled={loading}
+                  />
+                  {selectedChain === 'bitcoin' && user?.subscription_tier === 'pro' && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      💡 Pro tip: Enter your Ledger xPub to analyze your entire wallet
+                    </p>
+                  )}
+                </div>
                 <Button
                   data-testid="analyze-button"
                   onClick={() => analyzeWallet()}
