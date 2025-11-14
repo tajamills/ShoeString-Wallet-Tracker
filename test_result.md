@@ -485,8 +485,7 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus:
-    - "Tax Calculations Phase 3 - Form 8949 and Tax Dashboard"
+  current_focus: []
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
