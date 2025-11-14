@@ -35,6 +35,7 @@ function App() {
   const [showChainRequestModal, setShowChainRequestModal] = useState(false);
   const [multiChainResults, setMultiChainResults] = useState(null);
   const [analyzingAll, setAnalyzingAll] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
 
   // Check for payment success on component mount
   useEffect(() => {
