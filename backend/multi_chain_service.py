@@ -297,7 +297,22 @@ class MultiChainService:
                     "category": tx.get('category', '')
                 })
             
-            recent_transactions = sorted(all_txs, key=lambda x: x.get('blockNum', '0'), reverse=True)[:10]
+            # Sort transactions by block number (oldest first for running balance calculation)
+            all_transactions_sorted = sorted(all_txs, key=lambda x: int(x['blockNum']) if x['blockNum'] != 'pending' else float('inf'), reverse=False)
+            
+            # Calculate running balance for each transaction
+            running_balance = current_balance
+            for tx in reversed(all_transactions_sorted):  # Work backwards from most recent
+                if tx['type'] == 'sent':
+                    # Before this send, balance was higher
+                    running_balance += float(tx['value']) + float(tx.get('gasFee', 0))
+                else:
+                    # Before this receive, balance was lower
+                    running_balance -= float(tx['value'])
+                tx['running_balance'] = running_balance
+            
+            # Now sort for display (newest first) and take top 10
+            recent_transactions = sorted(all_transactions_sorted, key=lambda x: int(x['blockNum']) if x['blockNum'] != 'pending' else float('inf'), reverse=True)[:10]
             
             return {
                 'address': address,
