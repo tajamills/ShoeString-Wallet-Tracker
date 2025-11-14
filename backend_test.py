@@ -751,24 +751,38 @@ class BackendTester:
                 
                 print(f"=" * 80)
                 
-                # Determine if this is a bug
-                has_negative_bug = len(negative_values_found) > 0 or len(negative_tx_values) > 0
+                # Determine if the current balance fix is working correctly
+                has_inappropriate_negatives = len(negative_issues) > 0 or len(negative_tx_values) > 0
                 
-                if has_negative_bug:
-                    self.log_result("Ethereum Negative Values Analysis", False, 
-                                  f"🐛 NEGATIVE VALUES BUG DETECTED for {ethereum_address}. "
-                                  f"Negative main fields: {len(negative_values_found)}, "
-                                  f"Negative transaction values: {len(negative_tx_values)}. "
-                                  f"Details: {negative_values_found + negative_tx_values}")
+                print(f"\n🎯 FINAL ASSESSMENT:")
+                print(f"=" * 80)
+                
+                if all_verifications_passed and not has_inappropriate_negatives:
+                    print(f"✅ CURRENT BALANCE FIX WORKING CORRECTLY!")
+                    print(f"   • currentBalance: {current_balance} ETH (non-negative)")
+                    print(f"   • netFlow: {net_flow} ETH (can be negative)")
+                    print(f"   • Portfolio uses currentBalance correctly")
+                    print(f"   • Both values present in response")
+                    
+                    self.log_result("Current Balance Fix Verification", True, 
+                                  f"✅ CURRENT BALANCE FIX VERIFIED for {ethereum_address}. "
+                                  f"currentBalance: {current_balance} ETH (non-negative), "
+                                  f"netFlow: {net_flow} ETH (can be negative), "
+                                  f"Portfolio correctly uses currentBalance. All verifications passed.")
                 else:
-                    self.log_result("Ethereum Negative Values Analysis", True, 
-                                  f"✅ No negative values bug detected for {ethereum_address}. "
-                                  f"ETH Sent: {data.get('totalEthSent', 0)}, "
-                                  f"ETH Received: {data.get('totalEthReceived', 0)}, "
-                                  f"Net: {data.get('netEth', 0)}, "
-                                  f"Transactions: {len(recent_transactions)}")
+                    print(f"❌ CURRENT BALANCE FIX ISSUES DETECTED!")
+                    if not all_verifications_passed:
+                        print(f"   • Verification failures detected")
+                    if has_inappropriate_negatives:
+                        print(f"   • Inappropriate negative values found: {negative_issues + negative_tx_values}")
+                    
+                    self.log_result("Current Balance Fix Verification", False, 
+                                  f"❌ CURRENT BALANCE FIX ISSUES for {ethereum_address}. "
+                                  f"Verification passed: {all_verifications_passed}, "
+                                  f"Inappropriate negatives: {len(negative_issues) + len(negative_tx_values)}. "
+                                  f"Details: currentBalance={current_balance}, netFlow={net_flow}")
                 
-                return not has_negative_bug
+                return all_verifications_passed and not has_inappropriate_negatives
                 
             elif ethereum_response.status_code == 403:
                 error_data = ethereum_response.json()
