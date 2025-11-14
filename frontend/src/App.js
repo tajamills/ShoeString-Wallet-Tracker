@@ -1017,6 +1017,13 @@ function App() {
                                 <span className="text-gray-500 text-sm">-</span>
                               )}
                             </td>
+                            <td className="py-3 px-4 text-right">
+                              {tx.running_balance !== undefined ? (
+                                <span className="text-blue-300 font-semibold font-mono">{formatNumber(tx.running_balance)}</span>
+                              ) : (
+                                <span className="text-gray-500 text-sm">-</span>
+                              )}
+                            </td>
                             <td className="py-3 px-4">
                               <div className="flex flex-col">
                                 {tx.type === 'sent' && tx.to_label && (
