@@ -18,14 +18,15 @@ class PriceService:
         self.coin_ids = {
             'ETH': 'ethereum',
             'BTC': 'bitcoin',
-            'MATIC': 'matic-network',
+            'MATIC': 'polygon-ecosystem-token',
             'BNB': 'binancecoin',
             'SOL': 'solana',
             'USDT': 'tether',
             'USDC': 'usd-coin',
             'DAI': 'dai',
             'WETH': 'weth',
-            'WBTC': 'wrapped-bitcoin'
+            'WBTC': 'wrapped-bitcoin',
+            'ARB': 'arbitrum'
         }
     
     def get_current_price(self, symbol: str) -> Optional[float]:
