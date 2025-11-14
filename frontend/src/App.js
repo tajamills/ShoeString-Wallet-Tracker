@@ -776,6 +776,11 @@ function App() {
                   <div className="text-3xl font-bold text-white">
                     {formatNumber(analysis.netEth)} {getChainSymbol(analysis.chain || selectedChain)}
                   </div>
+                  {analysis.net_balance_usd !== undefined && (
+                    <p className={`text-xl font-semibold mt-1 ${analysis.netEth >= 0 ? 'text-blue-300' : 'text-purple-300'}`}>
+                      {formatUSD(analysis.net_balance_usd)}
+                    </p>
+                  )}
                   <p className="text-xs text-gray-300 mt-1">
                     Net position
                   </p>
