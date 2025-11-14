@@ -479,7 +479,8 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus: []
+  current_focus:
+    - "Tax Calculations Phase 3 - Form 8949 and Tax Dashboard"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
@@ -487,6 +488,8 @@ test_plan:
 agent_communication:
     - agent: "testing"
       message: "Comprehensive backend testing completed for ShoeString Wallet Tracker deployed at https://shoestring-backend.onrender.com. All core functionality working correctly including authentication flow, wallet analysis, usage limits, payment endpoints, and error handling. The backend is fully functional and ready for production use."
+    - agent: "main"
+      message: "🎉 TAX FEATURE COMPLETE (PHASES 2 & 3): Phase 2 Frontend - Added Capital Gains card, enhanced transaction table with cost basis/gain columns, remaining tax lots display. Phase 3 Complete - Implemented transaction categorization with 40+ known addresses (exchanges, DeFi, bridges), IRS Form 8949 generation (short/long-term sections), multi-year tax summary, new API endpoints (/api/tax/form-8949, /api/tax/summary), TaxDashboard component with CSV export. All features restricted to Premium/Pro users. Ready for comprehensive testing of: 1) Backend endpoints for Form 8949 and tax summary, 2) Frontend Tax Dashboard display and interactions, 3) CSV export functionality, 4) Multi-year tax calculations, 5) Transaction categorization accuracy."
     - agent: "testing"
       message: "Starting comprehensive frontend testing for ShoeString Wallet Tracker deployed at https://shoestring-frontend.onrender.com. Will test all user flows including authentication, wallet analysis, upgrade modal, and error handling scenarios."
     - agent: "testing"
