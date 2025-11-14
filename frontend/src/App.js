@@ -13,6 +13,7 @@ import { UpgradeModal } from '@/components/UpgradeModal';
 import { SavedWallets } from '@/components/SavedWallets';
 import { DowngradeModal } from '@/components/DowngradeModal';
 import { ChainRequestModal } from '@/components/ChainRequestModal';
+import { ExportModal } from '@/components/ExportModal';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
