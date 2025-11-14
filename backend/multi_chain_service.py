@@ -118,13 +118,22 @@ class MultiChainService:
             if address.startswith('0x'):
                 raise ValueError(f"This appears to be an EVM address (starts with 0x). Try selecting Ethereum, Polygon, Arbitrum, or BSC instead.")
         
+        # Get analysis data
         if chain == "bitcoin":
-            return self._analyze_bitcoin_wallet(address, start_date, end_date, user_tier)
+            analysis = self._analyze_bitcoin_wallet(address, start_date, end_date, user_tier)
+            symbol = 'BTC'
         elif chain == "solana":
-            return self._analyze_solana_wallet(address, start_date, end_date)
+            analysis = self._analyze_solana_wallet(address, start_date, end_date)
+            symbol = 'SOL'
         else:
-            # EVM chains (Ethereum, Arbitrum, BSC) - use Alchemy
-            return self._analyze_evm_wallet(address, chain, start_date, end_date)
+            # EVM chains (ethereum, polygon, arbitrum, bsc)
+            analysis = self._analyze_evm_wallet(address, chain, start_date, end_date)
+            symbol = 'ETH' if chain == 'ethereum' else 'MATIC' if chain == 'polygon' else 'BNB' if chain == 'bsc' else 'ETH'
+        
+        # Add USD values
+        analysis = self.add_usd_values(analysis, symbol)
+        
+        return analysis
     
     def _analyze_evm_wallet(
         self,
