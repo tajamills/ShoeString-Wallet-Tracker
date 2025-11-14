@@ -967,6 +967,7 @@ function App() {
                           <th className="text-left py-3 px-4 text-gray-400 font-medium">Asset</th>
                           <th className="text-right py-3 px-4 text-gray-400 font-medium">Amount</th>
                           <th className="text-right py-3 px-4 text-gray-400 font-medium">USD Value</th>
+                          <th className="text-right py-3 px-4 text-gray-400 font-medium">Running Balance</th>
                           <th className="text-left py-3 px-4 text-gray-400 font-medium">Address/Label</th>
                         </tr>
                       </thead>
