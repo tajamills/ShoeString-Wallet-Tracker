@@ -743,7 +743,7 @@ function App() {
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-medium text-orange-300 flex items-center gap-2">
                       <Activity className="w-4 h-4" />
-                      Gas Fees
+                      Gas Fees (All Time)
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
