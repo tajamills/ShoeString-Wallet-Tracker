@@ -427,6 +427,18 @@ frontend:
           agent: "testing"
           comment: "✅ CHAIN REQUEST BACKEND WORKING CORRECTLY. Tested POST /api/chain-request endpoint: 1) Properly restricts access to premium subscribers only (returns 403 for free tier with correct error message). 2) Accepts valid requests with chain_name and optional reason. 3) Returns proper response with request_id when successful. 4) All validation and authentication working as expected. Backend implementation is complete and functional."
 
+  - task: "Negative Values Bug Fix - Net Balance Calculation"
+    implemented: false
+    working: false
+    file: "multi_chain_service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: false
+          agent: "testing"
+          comment: "🐛 CRITICAL BUG IDENTIFIED: Negative values appearing in wallet analysis for address 0x31232008889208eb26d84e18b1d028e9f9494449. Net ETH shows -0.44181460322168675 ETH due to incorrect calculation in multi_chain_service.py line 295. Current formula: 'total_received - total_sent' should be 'total_received - total_sent - total_gas' to properly account for gas fees. This affects USD calculations as well since they multiply these incorrect values. REQUIRES IMMEDIATE FIX to prevent misleading negative balance displays."
+
 metadata:
   created_by: "testing_agent"
   version: "1.0"
