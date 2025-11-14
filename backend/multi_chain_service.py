@@ -191,6 +191,19 @@ class MultiChainService:
             response_in.raise_for_status()
             incoming_txs = response_in.json().get('result', {}).get('transfers', [])
             
+            # Get CURRENT BALANCE from blockchain
+            balance_payload = {
+                "jsonrpc": "2.0",
+                "id": 3,
+                "method": "eth_getBalance",
+                "params": [address, "latest"]
+            }
+            balance_response = requests.post(alchemy_url, json=balance_payload, timeout=30)
+            balance_response.raise_for_status()
+            current_balance_hex = balance_response.json().get('result', '0x0')
+            current_balance_wei = int(current_balance_hex, 16)
+            current_balance = current_balance_wei / 1e18  # Convert wei to ETH
+            
             # Calculate statistics
             total_sent = 0.0
             total_received = 0.0
