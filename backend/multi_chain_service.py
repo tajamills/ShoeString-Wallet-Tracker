@@ -345,7 +345,7 @@ class MultiChainService:
                 })
             
             # Sort transactions by block number (oldest first for running balance calculation)
-            all_transactions_sorted = sorted(all_txs, key=lambda x: int(x['blockNum']) if x['blockNum'] != 'pending' else float('inf'), reverse=False)
+            all_transactions_sorted = sorted(all_txs, key=lambda x: self.safe_parse_block_num(x['blockNum']), reverse=False)
             
             # Calculate running balance for each transaction
             running_balance = current_balance
