@@ -246,58 +246,6 @@ function App() {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
 
-  const exportToCSV = (data) => {
-    // Create CSV content
-    const headers = ['Type', 'Hash', 'Asset', 'Amount', 'Address', 'Label/Exchange', 'Block Number'];
-    const rows = data.recentTransactions.map(tx => {
-      const address = tx.type === 'sent' ? (tx.to || 'N/A') : (tx.from || 'N/A');
-      const label = tx.type === 'sent' ? (tx.to_label || '') : (tx.from_label || '');
-      return [
-        tx.type,
-        tx.hash || 'N/A',
-        tx.asset,
-        tx.value,
-        address,
-        label,
-        tx.blockNum || 'N/A'
-      ];
-    });
-
-    // Add summary data at the top
-    const summaryRows = [
-      ['Crypto Bag Tracker - Transaction Export'],
-      [''],
-      ['Wallet Address', data.address],
-      ['Chain', (data.chain || selectedChain).toUpperCase()],
-      ['Export Date', new Date().toISOString()],
-      [''],
-      ['Summary'],
-      ['Total Received', `${data.totalEthReceived} ${getChainSymbol(data.chain || selectedChain)}`],
-      ['Total Sent', `${data.totalEthSent} ${getChainSymbol(data.chain || selectedChain)}`],
-      ['Gas Fees', `${data.totalGasFees} ${getChainSymbol(data.chain || selectedChain)}`],
-      ['Net Balance', `${data.netEth} ${getChainSymbol(data.chain || selectedChain)}`],
-      [''],
-      ['Transactions']
-    ];
-
-    const csvContent = [
-      ...summaryRows.map(row => row.join(',')),
-      headers.join(','),
-      ...rows.map(row => row.join(','))
-    ].join('\n');
-
-    // Download CSV
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `wallet-analysis-${data.address.substring(0, 8)}-${Date.now()}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
   const formatNumber = (num) => {
     const value = Number(num);
     if (value === 0) return '0';
