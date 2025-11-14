@@ -12,6 +12,11 @@ export const ExportModal = ({ isOpen, onClose, analysis, selectedChain, getAuthH
   const [error, setError] = useState('');
   const [exportProgress, setExportProgress] = useState(null);
   const [exportMode, setExportMode] = useState('current'); // 'current' or 'all'
+  
+  // Safety check
+  if (!analysis) {
+    return null;
+  }
 
   const exportCurrentPage = () => {
     // Export only what's currently displayed (quick export)
