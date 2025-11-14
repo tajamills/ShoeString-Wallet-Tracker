@@ -547,7 +547,9 @@ class MultiChainService:
                 'totalEthSent': total_sent,
                 'totalEthReceived': total_received,
                 'totalGasFees': 0.0,
-                'netEth': final_balance,
+                'currentBalance': final_balance,
+                'netEth': final_balance,  # Current balance (not net flow)
+                'netFlow': total_received - total_sent,
                 'outgoingTransactionCount': n_tx,
                 'incomingTransactionCount': n_tx,
                 'tokensSent': {},
