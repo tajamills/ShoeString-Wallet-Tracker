@@ -530,8 +530,15 @@ class BackendTester:
             self.log_result("Multi-chain Premium Test", False, f"Error: {str(e)}")
             return False
     
-    def test_specific_ethereum_address_negative_values(self):
-        """Test specific Ethereum address for negative values bug: 0x31232008889208eb26d84e18b1d028e9f9494449"""
+    def test_current_balance_fix_verification(self):
+        """Test CURRENT BALANCE FIX with address: 0x31232008889208eb26d84e18b1d028e9f9494449
+        
+        Verify:
+        1. currentBalance field is present and cannot be negative
+        2. netFlow field shows the flow calculation (can be negative)
+        3. Portfolio value uses currentBalance (not netFlow)
+        4. Show both values in the response
+        """
         try:
             # Create a new premium user for testing
             timestamp = int(time.time())
