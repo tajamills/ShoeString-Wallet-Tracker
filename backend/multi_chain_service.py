@@ -268,6 +268,185 @@ class MultiChainService:
             logger.error(f"Error analyzing {chain} wallet: {str(e)}")
             raise Exception(f"Failed to analyze {chain} wallet: {str(e)}")
     
+    def _analyze_bitcoin_xpub(
+        self,
+        xpub: str,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Analyze Bitcoin HD wallet using xPub/yPub/zPub"""
+        try:
+            from bip32 import BIP32
+            import hashlib
+            
+            # Determine address type from xpub prefix
+            if xpub.startswith('xpub'):
+                # BIP44 - Legacy P2PKH
+                address_type = 'legacy'
+            elif xpub.startswith('ypub'):
+                # BIP49 - P2SH-P2WPKH (SegWit wrapped)
+                address_type = 'p2sh-segwit'
+            elif xpub.startswith('zpub'):
+                # BIP84 - Native SegWit (Bech32)
+                address_type = 'native-segwit'
+            else:
+                raise ValueError("Unsupported xPub format. Use xpub/ypub/zpub")
+            
+            # Initialize BIP32 with xpub
+            bip32 = BIP32.from_xpub(xpub)
+            
+            # Derive addresses (checking both external and internal chains)
+            gap_limit = 20  # Standard gap limit
+            addresses_to_check = []
+            
+            # External chain (receiving addresses) - m/0/*
+            for i in range(gap_limit):
+                child = bip32.get_pubkey_from_path(f"m/0/{i}")
+                address = self._pubkey_to_address(child, address_type)
+                addresses_to_check.append({
+                    'address': address,
+                    'path': f"m/0/{i}",
+                    'type': 'external'
+                })
+            
+            # Internal chain (change addresses) - m/1/*
+            for i in range(gap_limit):
+                child = bip32.get_pubkey_from_path(f"m/1/{i}")
+                address = self._pubkey_to_address(child, address_type)
+                addresses_to_check.append({
+                    'address': address,
+                    'path': f"m/1/{i}",
+                    'type': 'internal'
+                })
+            
+            # Check balance for each derived address
+            total_received = 0.0
+            total_sent = 0.0
+            total_balance = 0.0
+            all_transactions = []
+            active_addresses = []
+            
+            logger.info(f"Checking {len(addresses_to_check)} derived addresses from xPub...")
+            
+            for addr_info in addresses_to_check:
+                try:
+                    # Use Blockstream API (supports all address types)
+                    url = f"https://blockstream.info/api/address/{addr_info['address']}"
+                    response = requests.get(url, timeout=10)
+                    response.raise_for_status()
+                    data = response.json()
+                    
+                    chain_stats = data.get('chain_stats', {})
+                    funded_sum = chain_stats.get('funded_txo_sum', 0)
+                    spent_sum = chain_stats.get('spent_txo_sum', 0)
+                    
+                    if funded_sum > 0 or spent_sum > 0:
+                        # This address has activity
+                        addr_received = self.satoshi_to_btc(funded_sum)
+                        addr_sent = self.satoshi_to_btc(spent_sum)
+                        addr_balance = addr_received - addr_sent
+                        
+                        total_received += addr_received
+                        total_sent += addr_sent
+                        total_balance += addr_balance
+                        
+                        active_addresses.append({
+                            'address': addr_info['address'],
+                            'path': addr_info['path'],
+                            'type': addr_info['type'],
+                            'received': addr_received,
+                            'sent': addr_sent,
+                            'balance': addr_balance,
+                            'tx_count': chain_stats.get('tx_count', 0)
+                        })
+                        
+                        # Fetch recent transactions for this address
+                        txs_url = f"https://blockstream.info/api/address/{addr_info['address']}/txs"
+                        txs_response = requests.get(txs_url, timeout=10)
+                        if txs_response.status_code == 200:
+                            txs = txs_response.json()[:5]  # Get 5 most recent per address
+                            for tx in txs:
+                                all_transactions.append({
+                                    "hash": tx.get('txid', ''),
+                                    "address": addr_info['address'],
+                                    "path": addr_info['path'],
+                                    "blockNum": str(tx.get('status', {}).get('block_height', 'pending')),
+                                    "asset": "BTC"
+                                })
+                        
+                        logger.info(f"Found activity on {addr_info['path']}: {addr_balance} BTC")
+                    
+                    # Small delay to avoid rate limiting
+                    import time
+                    time.sleep(0.1)
+                    
+                except Exception as e:
+                    logger.warning(f"Error checking {addr_info['address']}: {str(e)}")
+                    continue
+            
+            # Sort transactions by block number
+            all_transactions.sort(key=lambda x: int(x['blockNum']) if x['blockNum'] != 'pending' else 0, reverse=True)
+            
+            return {
+                'address': xpub[:20] + '...' + xpub[-10:],  # Shortened xPub display
+                'xpub': xpub,
+                'address_type': address_type,
+                'chain': 'bitcoin',
+                'totalEthSent': total_sent,
+                'totalEthReceived': total_received,
+                'totalGasFees': 0.0,
+                'netEth': total_balance,
+                'outgoingTransactionCount': sum(a['tx_count'] for a in active_addresses),
+                'incomingTransactionCount': sum(a['tx_count'] for a in active_addresses),
+                'tokensSent': {},
+                'tokensReceived': {},
+                'recentTransactions': all_transactions[:20],
+                'active_addresses': active_addresses,
+                'total_addresses_checked': len(addresses_to_check),
+                'addresses_with_activity': len(active_addresses)
+            }
+            
+        except Exception as e:
+            logger.error(f"Error analyzing Bitcoin xPub: {str(e)}")
+            raise Exception(f"Failed to analyze Bitcoin xPub: {str(e)}")
+    
+    def _pubkey_to_address(self, pubkey: bytes, address_type: str) -> str:
+        """Convert public key to Bitcoin address based on type"""
+        import hashlib
+        
+        if address_type == 'native-segwit':
+            # Bech32 (bc1q...)
+            from bech32 import bech32_encode, convertbits
+            
+            # SHA256 then RIPEMD160
+            sha = hashlib.sha256(pubkey).digest()
+            ripe = hashlib.new('ripemd160', sha).digest()
+            
+            # Convert to 5-bit groups for bech32
+            five_bit = convertbits(ripe, 8, 5)
+            # Witness version 0 for P2WPKH
+            return bech32_encode('bc', [0] + five_bit)
+        
+        elif address_type == 'legacy':
+            # Legacy P2PKH (1...)
+            import base58
+            
+            # SHA256 then RIPEMD160
+            sha = hashlib.sha256(pubkey).digest()
+            ripe = hashlib.new('ripemd160', sha).digest()
+            
+            # Add version byte (0x00 for mainnet)
+            versioned = b'\x00' + ripe
+            
+            # Double SHA256 for checksum
+            checksum = hashlib.sha256(hashlib.sha256(versioned).digest()).digest()[:4]
+            
+            # Encode with base58
+            return base58.b58encode(versioned + checksum).decode()
+        
+        else:
+            raise ValueError(f"Unsupported address type: {address_type}")
+    
     def _analyze_bitcoin_wallet(
         self,
         address: str,
@@ -276,6 +455,10 @@ class MultiChainService:
     ) -> Dict[str, Any]:
         """Analyze Bitcoin wallet using blockchain.info API"""
         try:
+            # Check if input is an xPub instead of regular address
+            if address.startswith(('xpub', 'ypub', 'zpub')):
+                return self._analyze_bitcoin_xpub(address, start_date, end_date)
+            
             url = f"https://blockchain.info/rawaddr/{address}?limit=50"
             response = requests.get(url, timeout=30)
             response.raise_for_status()
