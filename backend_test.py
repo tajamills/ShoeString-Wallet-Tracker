@@ -530,6 +530,199 @@ class BackendTester:
             self.log_result("Multi-chain Premium Test", False, f"Error: {str(e)}")
             return False
     
+    def test_specific_ethereum_address_negative_values(self):
+        """Test specific Ethereum address for negative values bug: 0x31232008889208eb26d84e18b1d028e9f9494449"""
+        try:
+            # Create a new premium user for testing
+            timestamp = int(time.time())
+            premium_email = f"ethereum_premium_test_{timestamp}@example.com"
+            premium_password = "EthereumPremiumTest123!"
+            
+            print(f"\n🔑 Creating Premium User for Ethereum Negative Values Analysis:")
+            print(f"   Email: {premium_email}")
+            print(f"   Password: {premium_password}")
+            
+            # Register premium user
+            payload = {
+                "email": premium_email,
+                "password": premium_password
+            }
+            
+            response = self.session.post(f"{BASE_URL}/auth/register", json=payload)
+            if response.status_code != 200:
+                self.log_result("Ethereum Negative Values Analysis", False, f"Failed to register premium user: {response.status_code}")
+                return False
+            
+            premium_data = response.json()
+            premium_token = premium_data.get("access_token")
+            premium_user_id = premium_data.get("user", {}).get("id")
+            
+            if not premium_token or not premium_user_id:
+                self.log_result("Ethereum Negative Values Analysis", False, "Failed to get premium user token or ID")
+                return False
+            
+            print(f"✅ Premium User Created Successfully:")
+            print(f"   User ID: {premium_user_id}")
+            print(f"   Token: {premium_token[:20]}...")
+            
+            headers = {"Authorization": f"Bearer {premium_token}"}
+            
+            # Test the specific Ethereum address: 0x31232008889208eb26d84e18b1d028e9f9494449
+            ethereum_address = "0x31232008889208eb26d84e18b1d028e9f9494449"
+            ethereum_payload = {
+                "address": ethereum_address,
+                "chain": "ethereum"
+            }
+            
+            print(f"\n🔍 Analyzing Ethereum Wallet for Negative Values Bug:")
+            print(f"   Address: {ethereum_address}")
+            print(f"   Chain: ethereum")
+            
+            ethereum_response = self.session.post(f"{BASE_URL}/wallet/analyze", json=ethereum_payload, headers=headers)
+            
+            print(f"\n📊 Analysis Response:")
+            print(f"   Status Code: {ethereum_response.status_code}")
+            
+            if ethereum_response.status_code == 200:
+                data = ethereum_response.json()
+                
+                print(f"\n✅ ETHEREUM WALLET ANALYSIS SUCCESSFUL!")
+                print(f"=" * 80)
+                print(f"📍 Wallet Address: {data.get('address', 'N/A')}")
+                print(f"💰 Total ETH Sent: {data.get('totalEthSent', 0)} ETH")
+                print(f"💰 Total ETH Received: {data.get('totalEthReceived', 0)} ETH")
+                print(f"⛽ Total Gas Fees: {data.get('totalGasFees', 0)} ETH")
+                print(f"💎 Net ETH Balance: {data.get('netEth', 0)} ETH")
+                print(f"📤 Outgoing Transactions: {data.get('outgoingTransactionCount', 0)}")
+                print(f"📥 Incoming Transactions: {data.get('incomingTransactionCount', 0)}")
+                
+                # Check for negative values - THIS IS THE KEY PART
+                negative_values_found = []
+                
+                if data.get('totalEthSent', 0) < 0:
+                    negative_values_found.append(f"totalEthSent: {data.get('totalEthSent')}")
+                if data.get('totalEthReceived', 0) < 0:
+                    negative_values_found.append(f"totalEthReceived: {data.get('totalEthReceived')}")
+                if data.get('totalGasFees', 0) < 0:
+                    negative_values_found.append(f"totalGasFees: {data.get('totalGasFees')}")
+                if data.get('netEth', 0) < 0:
+                    negative_values_found.append(f"netEth: {data.get('netEth')}")
+                
+                # Check tokens for negative values
+                tokens_sent = data.get('tokensSent', {})
+                tokens_received = data.get('tokensReceived', {})
+                
+                for token, amount in tokens_sent.items():
+                    if amount < 0:
+                        negative_values_found.append(f"tokensSent[{token}]: {amount}")
+                
+                for token, amount in tokens_received.items():
+                    if amount < 0:
+                        negative_values_found.append(f"tokensReceived[{token}]: {amount}")
+                
+                # Check recent transactions for negative values
+                recent_transactions = data.get('recentTransactions', [])
+                negative_tx_values = []
+                
+                print(f"\n📋 Recent Transactions Analysis ({len(recent_transactions)} total):")
+                
+                for i, tx in enumerate(recent_transactions):
+                    tx_value = tx.get('value', 0)
+                    tx_hash = tx.get('hash', 'N/A')
+                    tx_type = tx.get('type', 'N/A')
+                    
+                    print(f"   {i+1}. Hash: {tx_hash[:20] if tx_hash != 'N/A' else 'N/A'}...")
+                    print(f"      Value: {tx_value} ETH")
+                    print(f"      Type: {tx_type}")
+                    
+                    # Check for negative transaction values
+                    if isinstance(tx_value, (int, float)) and tx_value < 0:
+                        negative_tx_values.append(f"Transaction {i+1} (Hash: {tx_hash[:10]}...): {tx_value}")
+                    
+                    # Check for USD values if present
+                    if 'usd_value' in tx:
+                        usd_value = tx.get('usd_value', 0)
+                        print(f"      USD Value: ${usd_value}")
+                        if isinstance(usd_value, (int, float)) and usd_value < 0:
+                            negative_tx_values.append(f"Transaction {i+1} USD (Hash: {tx_hash[:10]}...): ${usd_value}")
+                    
+                    print()
+                
+                # Report findings
+                print(f"\n🔍 NEGATIVE VALUES ANALYSIS:")
+                print(f"=" * 80)
+                
+                if negative_values_found:
+                    print(f"❌ NEGATIVE VALUES DETECTED IN MAIN FIELDS:")
+                    for negative_val in negative_values_found:
+                        print(f"   • {negative_val}")
+                else:
+                    print(f"✅ No negative values found in main fields")
+                
+                if negative_tx_values:
+                    print(f"\n❌ NEGATIVE VALUES DETECTED IN TRANSACTIONS:")
+                    for negative_tx in negative_tx_values:
+                        print(f"   • {negative_tx}")
+                else:
+                    print(f"\n✅ No negative values found in transaction data")
+                
+                # Show tokens if any
+                if tokens_sent:
+                    print(f"\n🪙 Tokens Sent:")
+                    for token, amount in tokens_sent.items():
+                        print(f"   • {token}: {amount}")
+                
+                if tokens_received:
+                    print(f"\n🪙 Tokens Received:")
+                    for token, amount in tokens_received.items():
+                        print(f"   • {token}: {amount}")
+                
+                print(f"=" * 80)
+                
+                # Determine if this is a bug
+                has_negative_bug = len(negative_values_found) > 0 or len(negative_tx_values) > 0
+                
+                if has_negative_bug:
+                    self.log_result("Ethereum Negative Values Analysis", False, 
+                                  f"🐛 NEGATIVE VALUES BUG DETECTED for {ethereum_address}. "
+                                  f"Negative main fields: {len(negative_values_found)}, "
+                                  f"Negative transaction values: {len(negative_tx_values)}. "
+                                  f"Details: {negative_values_found + negative_tx_values}")
+                else:
+                    self.log_result("Ethereum Negative Values Analysis", True, 
+                                  f"✅ No negative values bug detected for {ethereum_address}. "
+                                  f"ETH Sent: {data.get('totalEthSent', 0)}, "
+                                  f"ETH Received: {data.get('totalEthReceived', 0)}, "
+                                  f"Net: {data.get('netEth', 0)}, "
+                                  f"Transactions: {len(recent_transactions)}")
+                
+                return not has_negative_bug
+                
+            elif ethereum_response.status_code == 403:
+                error_data = ethereum_response.json()
+                print(f"\n⚠️  Ethereum analysis restricted: {error_data.get('detail', 'N/A')}")
+                self.log_result("Ethereum Negative Values Analysis", False, 
+                              f"Analysis restricted - need premium upgrade: {error_data.get('detail', 'N/A')}")
+                return False
+            elif ethereum_response.status_code == 429:
+                error_data = ethereum_response.json()
+                print(f"\n⚠️  Rate limit reached: {error_data.get('detail', 'N/A')}")
+                self.log_result("Ethereum Negative Values Analysis", False, 
+                              f"Rate limit reached: {error_data.get('detail', 'N/A')}")
+                return False
+            else:
+                error_data = ethereum_response.json() if ethereum_response.headers.get('content-type', '').startswith('application/json') else ethereum_response.text
+                print(f"\n❌ Unexpected response: HTTP {ethereum_response.status_code}")
+                print(f"   Error: {error_data}")
+                self.log_result("Ethereum Negative Values Analysis", False, 
+                              f"Unexpected response: HTTP {ethereum_response.status_code} - {error_data}")
+                return False
+                
+        except Exception as e:
+            print(f"\n❌ Error during Ethereum negative values analysis: {str(e)}")
+            self.log_result("Ethereum Negative Values Analysis", False, f"Error: {str(e)}")
+            return False
+
     def test_specific_bitcoin_wallet_analysis(self):
         """Test specific Bitcoin wallet analysis for bc1q2wlr8me2780hctleja9fjnz07nay9kknqz9p3n"""
         try:
