@@ -717,7 +717,7 @@ function App() {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium text-red-300 flex items-center gap-2">
                     <TrendingDown className="w-4 h-4" />
-                    Total Flow Out
+                    Total Flow Out (All Time)
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
