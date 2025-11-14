@@ -441,6 +441,9 @@ frontend:
         - working: true
           agent: "testing"
           comment: "✅ BUG FIX VERIFIED: Tested Ethereum address 0x31232008889208eb26d84e18b1d028e9f9494449 and confirmed the negative values bug has been FIXED. The netEth calculation in multi_chain_service.py line 295 now correctly implements 'total_received - total_sent - total_gas' formula. Analysis shows: Total Received: 33.75 ETH, Total Sent: 34.19 ETH, Gas Fees: 0.026 ETH, Net ETH: -0.468 ETH. The negative balance is LEGITIMATE (wallet spent more than received including gas fees) and mathematically correct. USD calculations are also working properly. Fix is complete and working as expected."
+        - working: true
+          agent: "testing"
+          comment: "✅ CURRENT BALANCE FIX FULLY VERIFIED: Comprehensive testing completed for address 0x31232008889208eb26d84e18b1d028e9f9494449. CONFIRMED: 1) currentBalance field present and non-negative (0.00161 ETH - actual wallet balance from blockchain), 2) netFlow field present and correctly calculated (-0.468 ETH - can be negative as it represents flow calculation), 3) Portfolio value correctly uses currentBalance (not netFlow), 4) Both values properly shown in response. The fix successfully separates actual wallet balance (currentBalance) from accounting flow (netFlow), preventing misleading negative balance displays while maintaining accurate flow calculations. Backend API updated with new fields in WalletAnalysisResponse model."
 
 metadata:
   created_by: "testing_agent"
