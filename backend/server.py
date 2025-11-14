@@ -1156,10 +1156,10 @@ async def generate_form_8949(
         # Get wallet analysis with tax data
         analysis = multi_chain_service.analyze_wallet(
             request_data.address,
-            request_data.chain,
-            user["subscription_tier"],
-            request_data.start_date,
-            request_data.end_date
+            chain=request_data.chain,
+            start_date=request_data.start_date,
+            end_date=request_data.end_date,
+            user_tier=user["subscription_tier"]
         )
         
         if not analysis.get("tax_data"):
