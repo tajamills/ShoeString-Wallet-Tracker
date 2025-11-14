@@ -359,7 +359,7 @@ class MultiChainService:
                 tx['running_balance'] = running_balance
             
             # Now sort for display (newest first) and take top 10
-            recent_transactions = sorted(all_transactions_sorted, key=lambda x: int(x['blockNum']) if x['blockNum'] != 'pending' else float('inf'), reverse=True)[:10]
+            recent_transactions = sorted(all_transactions_sorted, key=lambda x: self.safe_parse_block_num(x['blockNum']), reverse=True)[:10]
             
             return {
                 'address': address,
