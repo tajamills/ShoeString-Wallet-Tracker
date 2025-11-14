@@ -292,7 +292,7 @@ class MultiChainService:
                 'totalEthSent': total_sent,
                 'totalEthReceived': total_received,
                 'totalGasFees': total_gas,
-                'netEth': total_received - total_sent,
+                'netEth': total_received - total_sent - total_gas,
                 'outgoingTransactionCount': len(outgoing_txs),
                 'incomingTransactionCount': len(incoming_txs),
                 'tokensSent': tokens_sent,
