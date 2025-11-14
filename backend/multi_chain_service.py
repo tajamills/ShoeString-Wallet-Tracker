@@ -498,7 +498,7 @@ class MultiChainService:
                     continue
             
             # Sort transactions by block number
-            all_transactions.sort(key=lambda x: int(x['blockNum']) if x['blockNum'] != 'pending' else 0, reverse=True)
+            all_transactions.sort(key=lambda x: self.safe_parse_block_num(x['blockNum']), reverse=True)
             
             return {
                 'address': xpub[:20] + '...' + xpub[-10:],  # Shortened xPub display
