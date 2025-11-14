@@ -944,7 +944,7 @@ function App() {
                     </div>
                     {user?.subscription_tier !== 'free' && (
                       <Button
-                        onClick={() => exportToCSV(analysis)}
+                        onClick={() => setShowExportModal(true)}
                         variant="outline"
                         className="border-slate-600 text-gray-300"
                       >
