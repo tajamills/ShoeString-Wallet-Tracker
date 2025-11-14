@@ -1180,6 +1180,46 @@ class BackendTester:
             self.log_result("Downgrade Functionality", False, f"Error: {str(e)}")
             return False
 
+    def upgrade_user_to_premium_manually(self, user_id: str) -> bool:
+        """Manually upgrade user to premium tier for testing purposes
+        
+        This simulates what would happen after a successful payment.
+        In production, this is done via Stripe webhooks.
+        """
+        try:
+            import pymongo
+            from pymongo import MongoClient
+            
+            # Connect to MongoDB directly
+            mongo_url = "mongodb://localhost:27017"
+            client = MongoClient(mongo_url)
+            db = client["test_database"]
+            
+            # Update user to premium tier
+            result = db.users.update_one(
+                {"id": user_id},
+                {
+                    "$set": {
+                        "subscription_tier": "premium",
+                        "subscription_status": "active",
+                        "daily_usage_count": 0
+                    }
+                }
+            )
+            
+            client.close()
+            
+            if result.modified_count > 0:
+                print(f"   ✅ User {user_id} manually upgraded to Premium tier")
+                return True
+            else:
+                print(f"   ❌ Failed to upgrade user {user_id} to Premium tier")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Error upgrading user to Premium: {str(e)}")
+            return False
+
     def test_tax_calculations_phase2(self):
         """Test Phase 2 Tax Calculations with address: 0x31232008889208eb26d84e18b1d028e9f9494449
         
@@ -1222,6 +1262,12 @@ class BackendTester:
             print(f"✅ Premium User Created Successfully:")
             print(f"   User ID: {premium_user_id}")
             print(f"   Token: {premium_token[:20]}...")
+            
+            # Manually upgrade user to Premium tier for testing
+            print(f"\n🔧 Manually upgrading user to Premium tier for testing...")
+            if not self.upgrade_user_to_premium_manually(premium_user_id):
+                self.log_result("Tax Calculations Phase 2", False, "Failed to upgrade user to Premium tier")
+                return False
             
             headers = {"Authorization": f"Bearer {premium_token}"}
             
