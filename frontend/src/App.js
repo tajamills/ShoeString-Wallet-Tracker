@@ -860,10 +860,18 @@ function App() {
                     <Badge className="bg-emerald-600 ml-2">Premium</Badge>
                   </CardTitle>
                   <CardDescription className="text-gray-400">
-                    Capital gains calculations for tax reporting
+                    Capital gains calculations for tax reporting - Informational only, not professional tax advice
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
+                  {/* Important Notice */}
+                  <Alert className="mb-6 bg-red-900/30 border-red-700">
+                    <AlertDescription className="text-red-200 text-sm">
+                      <strong>⚠️ Not Tax Advice:</strong> These calculations are for informational purposes only. 
+                      Please consult a qualified tax professional or CPA before making any tax-related decisions or filing tax returns.
+                    </AlertDescription>
+                  </Alert>
+
                   {/* Summary Cards */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                     <div className="bg-slate-900/50 rounded-lg p-4">
