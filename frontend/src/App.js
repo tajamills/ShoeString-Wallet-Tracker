@@ -1305,7 +1305,7 @@ function App() {
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-white">Disclaimer</h3>
                 <p className="text-gray-400 text-sm leading-relaxed">
-                  The information provided in this content is for educational and informational purposes only and should not be construed as financial, legal, or tax advice. Always conduct your own research and consult with a qualified financial advisor, legal professional, or tax expert before making any decisions related to cryptocurrency investments or transactions.
+                  The information provided in this content is for informational purposes only and should not be construed as financial, legal, or tax advice. Always conduct your own research and consult with a qualified financial advisor, legal professional, or tax expert before making any decisions related to cryptocurrency investments or transactions.
                 </p>
                 
                 {/* Made with Emergent */}
