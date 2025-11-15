@@ -213,13 +213,13 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
                   </>
                 ) : (
                   <>
-                    {user?.subscription_tier === 'premium' && selectedTier === 'pro' ? 'Upgrade' : 'Subscribe'} to {tiers[selectedTier].name} - ${tiers[selectedTier].price}/mo
+                    {user?.subscription_tier === 'premium' && selectedTier === 'pro' ? 'Upgrade' : 'Subscribe'} to {tiers[selectedTier].name} - ${getPrice(selectedTier)}{billingPeriod === 'monthly' ? '/mo' : '/yr'}
                   </>
                 )}
               </Button>
             )}
           </div>
-        )}
+        </div>
       </DialogContent>
     </Dialog>
   );
