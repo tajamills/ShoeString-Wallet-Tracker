@@ -103,6 +103,33 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
         </DialogHeader>
 
         <div className="space-y-6">
+            {/* Billing Period Toggle */}
+            <div className="flex justify-center">
+              <div className="inline-flex rounded-lg border border-slate-600 p-1 bg-slate-700/50">
+                <button
+                  onClick={() => setBillingPeriod('monthly')}
+                  className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${
+                    billingPeriod === 'monthly'
+                      ? 'bg-purple-600 text-white'
+                      : 'text-gray-300 hover:text-white'
+                  }`}
+                >
+                  Monthly
+                </button>
+                <button
+                  onClick={() => setBillingPeriod('annual')}
+                  className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${
+                    billingPeriod === 'annual'
+                      ? 'bg-purple-600 text-white'
+                      : 'text-gray-300 hover:text-white'
+                  }`}
+                >
+                  Annual
+                  <span className="ml-2 text-xs text-green-400">Save 17%</span>
+                </button>
+              </div>
+            </div>
+
             {/* Tier Selection */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {Object.entries(tiers)
