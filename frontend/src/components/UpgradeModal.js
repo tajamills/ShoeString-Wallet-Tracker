@@ -13,25 +13,35 @@ const API = `${BACKEND_URL}/api`;
 export const UpgradeModal = ({ isOpen, onClose }) => {
   const { user, getAuthHeader } = useAuth();
   const [selectedTier, setSelectedTier] = useState(user?.subscription_tier === 'premium' ? 'pro' : 'premium');
+  const [billingPeriod, setBillingPeriod] = useState('monthly');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const tiers = {
     premium: {
       name: 'Premium',
-      price: 19,
+      monthlyPrice: 19,
+      annualPrice: 190,
+      monthlySavings: 0,
+      annualSavings: 38,
       features: [
         'Unlimited wallet analyses',
         'Multi-chain support (6 blockchains)',
         'CSV export',
-        'Advanced analytics'
+        'Advanced analytics',
+        'Tax reporting (FIFO)'
       ]
     },
     pro: {
       name: 'Pro',
-      price: 49,
+      monthlyPrice: 49,
+      annualPrice: 490,
+      monthlySavings: 0,
+      annualSavings: 98,
       features: [
         'Everything in Premium',
+        'IRS Form 8949 generation',
+        'Multi-year tax summaries',
         'Custom reports',
         'Request new chains'
       ]
