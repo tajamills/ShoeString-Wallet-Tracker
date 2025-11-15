@@ -450,25 +450,33 @@ async def create_upgrade_payment(
                     detail="Please use the downgrade option to switch to a lower tier"
                 )
         
-        # Get pricing based on tier and billing period
-        tier_pricing = {
+        # Get Stripe Price IDs from environment
+        price_id_map = {
             "premium": {
-                "monthly": 19.00,
-                "annual": 190.00
+                "monthly": os.environ.get('STRIPE_PRICE_ID_PREMIUM_MONTHLY'),
+                "annual": os.environ.get('STRIPE_PRICE_ID_PREMIUM_ANNUAL')
             },
             "pro": {
-                "monthly": 49.00,
-                "annual": 490.00
+                "monthly": os.environ.get('STRIPE_PRICE_ID_PRO_MONTHLY'),
+                "annual": os.environ.get('STRIPE_PRICE_ID_PRO_ANNUAL')
             }
         }
         
-        if checkout_request.tier not in tier_pricing:
+        if checkout_request.tier not in price_id_map:
             raise HTTPException(status_code=400, detail="Invalid subscription tier")
         
         if checkout_request.billing_period not in ["monthly", "annual"]:
             raise HTTPException(status_code=400, detail="Invalid billing period")
         
-        amount = tier_pricing[checkout_request.tier][checkout_request.billing_period]
+        stripe_price_id = price_id_map[checkout_request.tier][checkout_request.billing_period]
+        
+        if not stripe_price_id:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Price ID not configured for {checkout_request.tier} {checkout_request.billing_period}"
+            )
+        
+        logger.info(f"Using Stripe Price ID: {stripe_price_id} for {checkout_request.tier} {checkout_request.billing_period}")
         
         # Initialize Stripe checkout
         host_url = str(http_request.base_url)
