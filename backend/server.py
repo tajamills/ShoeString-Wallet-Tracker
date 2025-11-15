@@ -407,54 +407,10 @@ async def create_upgrade_payment(
                     detail=f"You already have an active {checkout_request.tier} subscription"
                 )
             
-            # Handle tier upgrades (Premium → Pro)
+            # Handle tier upgrades (Premium → Pro) - allow new payment
             if current_tier == 'premium' and checkout_request.tier == 'pro':
-                # Get the new pro price ID first
-                price_id_map_temp = {
-                    "premium": {
-                        "monthly": os.environ.get('STRIPE_PRICE_ID_PREMIUM_MONTHLY'),
-                        "annual": os.environ.get('STRIPE_PRICE_ID_PREMIUM_ANNUAL')
-                    },
-                    "pro": {
-                        "monthly": os.environ.get('STRIPE_PRICE_ID_PRO_MONTHLY'),
-                        "annual": os.environ.get('STRIPE_PRICE_ID_PRO_ANNUAL')
-                    }
-                }
-                new_pro_price_id = price_id_map_temp['pro'][checkout_request.billing_period]
-                
-                try:
-                    import stripe as stripe_lib
-                    stripe_lib.api_key = os.environ.get('STRIPE_API_KEY')
-                    
-                    # Get current subscription
-                    subscription = stripe_lib.Subscription.retrieve(stripe_subscription_id)
-                    
-                    # Update subscription to new price (with proration)
-                    stripe_lib.Subscription.modify(
-                        stripe_subscription_id,
-                        items=[{
-                            'id': subscription['items']['data'][0].id,
-                            'price': new_pro_price_id,
-                        }],
-                        proration_behavior='always_invoice'
-                    )
-                    
-                    # Update user tier immediately
-                    await db.users.update_one(
-                        {"id": user["id"]},
-                        {"$set": {"subscription_tier": "pro"}}
-                    )
-                    
-                    logger.info(f"User {user['id']} upgraded from Premium to Pro")
-                    
-                    return {
-                        "message": "Subscription upgraded successfully",
-                        "tier": "pro"
-                    }
-                    
-                except Exception as e:
-                    logger.error(f"Failed to upgrade subscription: {str(e)}")
-                    raise HTTPException(status_code=500, detail="Failed to upgrade subscription")
+                # Allow upgrade through new payment session
+                pass
             
             # Can't downgrade via this endpoint
             if current_tier == 'pro' and checkout_request.tier == 'premium':
