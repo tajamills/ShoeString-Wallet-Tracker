@@ -18,23 +18,24 @@ class StripeService:
     
     async def create_checkout_session(
         self,
-        price_id: str,
+        amount: float,
+        currency: str,
         success_url: str,
         cancel_url: str,
-        metadata: Dict[str, str],
-        customer_email: str = None
+        metadata: Dict[str, str]
     ) -> CheckoutSessionResponse:
-        """Create a Stripe subscription checkout session using price ID"""
+        """Create a Stripe checkout session"""
         try:
             checkout_request = CheckoutSessionRequest(
-                stripe_price_id=price_id,
+                amount=amount,
+                currency=currency,
                 success_url=success_url,
                 cancel_url=cancel_url,
                 metadata=metadata
             )
             
             session = await self.stripe_checkout.create_checkout_session(checkout_request)
-            logger.info(f"Created Stripe subscription session: {session.session_id}")
+            logger.info(f"Created Stripe checkout session: {session.session_id}")
             return session
             
         except Exception as e:
