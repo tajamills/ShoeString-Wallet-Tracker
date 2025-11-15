@@ -129,6 +129,22 @@ export const TaxDashboard = ({
 
   return (
     <div className="space-y-6">
+      {/* Important Notice */}
+      <Alert className="bg-red-900/40 border-red-600">
+        <AlertDescription className="text-red-100">
+          <div className="flex items-start gap-3">
+            <div className="text-3xl">⚠️</div>
+            <div className="space-y-1">
+              <div className="font-bold text-lg">NOT FINANCIAL OR TAX ADVICE</div>
+              <div className="text-sm">
+                This tool is for informational purposes only. All tax calculations and reports must be reviewed by a qualified tax professional, CPA, or tax attorney before filing. 
+                We assume no liability for the accuracy of these calculations or their use in tax reporting.
+              </div>
+            </div>
+          </div>
+        </AlertDescription>
+      </Alert>
+
       {/* Tax Dashboard Header */}
       <Card className="bg-gradient-to-br from-purple-900/30 to-indigo-800/20 border-purple-700">
         <CardHeader>
