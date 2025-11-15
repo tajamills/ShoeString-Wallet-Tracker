@@ -1300,6 +1300,7 @@ function App() {
         {/* Footer with Disclaimer */}
         <div className="max-w-4xl mx-auto mt-12 mb-6 px-4">
           <div className="space-y-3">
+            <h4 className="text-gray-500 text-xs font-semibold text-center">Disclaimer</h4>
             <p className="text-gray-500 text-xs leading-relaxed text-center">
               The information provided in this content is for informational purposes only and should not be construed as financial, legal, or tax advice. Always conduct your own research and consult with a qualified financial advisor, legal professional, or tax expert before making any decisions related to cryptocurrency investments or transactions.
             </p>
