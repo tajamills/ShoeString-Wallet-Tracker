@@ -383,6 +383,7 @@ async def downgrade_subscription(
 # Payment Routes
 class CheckoutRequest(BaseModel):
     tier: str
+    billing_period: str = "monthly"  # "monthly" or "annual"
     origin_url: str  # Frontend origin URL
 
 @api_router.post("/payments/create-upgrade")
