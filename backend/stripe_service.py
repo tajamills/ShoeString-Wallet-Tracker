@@ -27,11 +27,10 @@ class StripeService:
         """Create a Stripe subscription checkout session using price ID"""
         try:
             checkout_request = CheckoutSessionRequest(
-                price_id=price_id,
+                stripe_price_id=price_id,
                 success_url=success_url,
                 cancel_url=cancel_url,
-                metadata=metadata,
-                customer_email=customer_email
+                metadata=metadata
             )
             
             session = await self.stripe_checkout.create_checkout_session(checkout_request)
