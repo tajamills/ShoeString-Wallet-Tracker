@@ -1296,6 +1296,33 @@ function App() {
           getAuthHeader={getAuthHeader}
           getChainSymbol={getChainSymbol}
         />
+
+        {/* Footer with Disclaimer */}
+        <div className="max-w-5xl mx-auto mt-16 mb-8">
+          {/* General Disclaimer */}
+          <Card className="bg-slate-800/30 border-slate-700/50">
+            <CardContent className="pt-6">
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-white">Disclaimer</h3>
+                <p className="text-gray-400 text-sm leading-relaxed">
+                  The information provided in this content is for educational and informational purposes only and should not be construed as financial, legal, or tax advice. Always conduct your own research and consult with a qualified financial advisor, legal professional, or tax expert before making any decisions related to cryptocurrency investments or transactions.
+                </p>
+                
+                {/* Made with Emergent */}
+                <div className="pt-4 border-t border-slate-700/50 text-center">
+                  <a 
+                    href="https://emergent.ai" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-gray-500 hover:text-gray-400 transition-colors text-sm"
+                  >
+                    Made with Emergent
+                  </a>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
