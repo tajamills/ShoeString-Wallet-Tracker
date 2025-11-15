@@ -492,13 +492,13 @@ async def create_upgrade_payment(
             "email": user["email"]
         }
         
-        # Create Stripe checkout session
+        # Create Stripe subscription checkout session
         session = await stripe_service.create_checkout_session(
-            amount=amount,
-            currency="usd",
+            price_id=price_id,
             success_url=success_url,
             cancel_url=cancel_url,
-            metadata=metadata
+            metadata=metadata,
+            customer_email=user["email"]
         )
         
         # Store payment transaction in database (MANDATORY)
