@@ -207,10 +207,16 @@ export const TaxDashboard = ({
           <CardHeader>
             <CardTitle className="text-white">Tax Summary by Year</CardTitle>
             <CardDescription className="text-gray-400">
-              Capital gains breakdown across multiple tax years
+              Capital gains breakdown across multiple tax years - Review with a tax professional
             </CardDescription>
           </CardHeader>
           <CardContent>
+            <Alert className="mb-4 bg-yellow-900/20 border-yellow-700">
+              <AlertDescription className="text-yellow-200 text-xs">
+                <strong>Reminder:</strong> Tax laws vary by jurisdiction and individual circumstances. Always verify this data with a qualified tax professional before using for tax filing purposes.
+              </AlertDescription>
+            </Alert>
+
             <div className="space-y-4">
               {Object.entries(taxSummary.tax_years || {}).map(([year, data]) => (
                 <div key={year} className="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
