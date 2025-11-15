@@ -482,6 +482,7 @@ async def create_upgrade_payment(
         metadata = {
             "user_id": user["id"],
             "tier": checkout_request.tier,
+            "billing_period": checkout_request.billing_period,
             "email": user["email"]
         }
         
