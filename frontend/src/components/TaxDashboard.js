@@ -422,11 +422,20 @@ export const TaxDashboard = ({
             </div>
 
             {/* Disclaimer */}
-            <Alert className="mt-4 bg-yellow-900/20 border-yellow-700">
-              <AlertDescription className="text-yellow-300 text-xs">
-                <strong>Important:</strong> This Form 8949 data is for informational purposes only. 
-                Please consult with a qualified tax professional before filing your taxes. 
-                Additional forms (Schedule D, Form 1040) may be required.
+            <Alert className="mt-4 bg-red-900/30 border-red-700">
+              <AlertDescription className="text-red-200 text-sm">
+                <div className="space-y-2">
+                  <div className="font-bold text-red-100">⚠️ LEGAL DISCLAIMER - READ CAREFULLY</div>
+                  <div>
+                    <strong>NOT FINANCIAL OR TAX ADVICE:</strong> This Form 8949 data is generated for informational purposes only and does not constitute professional financial, investment, or tax advice. 
+                  </div>
+                  <div>
+                    <strong>CONSULT A TAX PROFESSIONAL:</strong> You MUST consult with a qualified tax professional, certified public accountant (CPA), or tax attorney before using this data for tax filing purposes. Tax laws are complex and vary by individual circumstances and jurisdiction.
+                  </div>
+                  <div>
+                    <strong>NO LIABILITY:</strong> The creators of this tool assume no responsibility for the accuracy of these calculations or any consequences from their use. Additional IRS forms (Schedule D, Form 1040, etc.) may be required for complete tax reporting.
+                  </div>
+                </div>
               </AlertDescription>
             </Alert>
           </CardContent>
