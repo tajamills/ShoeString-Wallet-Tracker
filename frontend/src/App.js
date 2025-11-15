@@ -964,10 +964,20 @@ function App() {
                   )}
 
                   {/* Tax Disclaimer */}
-                  <Alert className="mt-4 bg-yellow-900/20 border-yellow-700">
-                    <AlertDescription className="text-yellow-300 text-xs">
-                      ⚠️ <strong>Tax Disclaimer:</strong> These calculations are for informational purposes only. 
-                      Consult a tax professional for accurate tax reporting. FIFO method is used by default.
+                  <Alert className="mt-4 bg-red-900/30 border-red-700">
+                    <AlertDescription className="text-red-200 text-sm">
+                      <div className="space-y-2">
+                        <div className="font-bold text-red-100">⚠️ IMPORTANT DISCLAIMER</div>
+                        <div>
+                          <strong>NOT FINANCIAL OR TAX ADVICE:</strong> This tool provides informational calculations only and does not constitute financial, investment, or tax advice. Tax laws are complex and vary by jurisdiction.
+                        </div>
+                        <div>
+                          <strong>CONSULT A PROFESSIONAL:</strong> You must consult with a qualified tax professional, certified public accountant (CPA), or tax attorney before making any tax-related decisions or filing tax returns. Do not rely solely on these calculations for tax reporting purposes.
+                        </div>
+                        <div className="text-xs text-red-300 mt-2">
+                          FIFO (First-In-First-Out) cost basis method is used by default. Other methods may be more appropriate for your situation.
+                        </div>
+                      </div>
                     </AlertDescription>
                   </Alert>
                 </CardContent>
