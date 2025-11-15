@@ -37,7 +37,9 @@ class StripeService:
             return session
             
         except Exception as e:
-            logger.error(f"Failed to create Stripe checkout session: {str(e)}")
+            import traceback
+            error_details = traceback.format_exc()
+            logger.error(f"Failed to create Stripe checkout session: {str(e)}\n{error_details}")
             raise Exception(f"Stripe checkout session creation failed: {str(e)}")
     
     async def get_checkout_status(self, session_id: str) -> CheckoutStatusResponse:
