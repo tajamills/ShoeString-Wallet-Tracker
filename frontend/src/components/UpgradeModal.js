@@ -218,7 +218,6 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
                 )}
               </Button>
             )}
-          </div>
         </div>
       </DialogContent>
     </Dialog>
