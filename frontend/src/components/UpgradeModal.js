@@ -59,6 +59,7 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
         `${API}/payments/create-upgrade`,
         { 
           tier: selectedTier,
+          billing_period: billingPeriod,
           origin_url: originUrl
         },
         { headers: getAuthHeader() }
@@ -79,6 +80,14 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
 
   // Check if user already has this tier
   const hasActiveTier = user?.subscription_tier === selectedTier && user?.subscription_status === 'active';
+  
+  const getPrice = (tier) => {
+    return billingPeriod === 'monthly' ? tiers[tier].monthlyPrice : tiers[tier].annualPrice;
+  };
+  
+  const getSavings = (tier) => {
+    return billingPeriod === 'annual' ? tiers[tier].annualSavings : 0;
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
