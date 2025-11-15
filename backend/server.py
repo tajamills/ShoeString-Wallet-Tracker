@@ -409,6 +409,19 @@ async def create_upgrade_payment(
             
             # Handle tier upgrades (Premium → Pro)
             if current_tier == 'premium' and checkout_request.tier == 'pro':
+                # Get the new pro price ID first
+                price_id_map_temp = {
+                    "premium": {
+                        "monthly": os.environ.get('STRIPE_PRICE_ID_PREMIUM_MONTHLY'),
+                        "annual": os.environ.get('STRIPE_PRICE_ID_PREMIUM_ANNUAL')
+                    },
+                    "pro": {
+                        "monthly": os.environ.get('STRIPE_PRICE_ID_PRO_MONTHLY'),
+                        "annual": os.environ.get('STRIPE_PRICE_ID_PRO_ANNUAL')
+                    }
+                }
+                new_pro_price_id = price_id_map_temp['pro'][checkout_request.billing_period]
+                
                 try:
                     import stripe as stripe_lib
                     stripe_lib.api_key = os.environ.get('STRIPE_API_KEY')
@@ -421,7 +434,7 @@ async def create_upgrade_payment(
                         stripe_subscription_id,
                         items=[{
                             'id': subscription['items']['data'][0].id,
-                            'price': price_ids['pro'],
+                            'price': new_pro_price_id,
                         }],
                         proration_behavior='always_invoice'
                     )
