@@ -462,6 +462,9 @@ async def create_upgrade_payment(
             }
         }
         
+        logger.info(f"Price ID map: {price_id_map}")
+        logger.info(f"Requested tier: {checkout_request.tier}, billing_period: {checkout_request.billing_period}")
+        
         if checkout_request.tier not in price_id_map:
             raise HTTPException(status_code=400, detail="Invalid subscription tier")
         
@@ -469,6 +472,8 @@ async def create_upgrade_payment(
             raise HTTPException(status_code=400, detail="Invalid billing period")
         
         price_id = price_id_map[checkout_request.tier][checkout_request.billing_period]
+        
+        logger.info(f"Selected price_id: {price_id}")
         
         if not price_id:
             raise HTTPException(
