@@ -153,7 +153,21 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
                 >
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-xl font-bold text-white">{tier.name}</h3>
-                    <Badge className="bg-purple-600">${tier.price}/mo</Badge>
+                    <div className="text-right">
+                      <Badge className="bg-purple-600">
+                        ${getPrice(key)}{billingPeriod === 'monthly' ? '/mo' : '/yr'}
+                      </Badge>
+                      {billingPeriod === 'annual' && (
+                        <div className="text-xs text-gray-400 mt-1">
+                          ${(getPrice(key) / 12).toFixed(2)}/mo
+                        </div>
+                      )}
+                      {getSavings(key) > 0 && (
+                        <div className="text-xs text-green-400 mt-1">
+                          Save ${getSavings(key)}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <ul className="space-y-2">
                     {tier.features.map((feature, idx) => (
