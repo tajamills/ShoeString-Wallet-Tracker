@@ -449,19 +449,16 @@ async def create_upgrade_payment(
                     detail="Please use the downgrade option to switch to a lower tier"
                 )
         
-        # Get Stripe Price IDs from environment
-        price_ids = {
-            "premium": os.environ.get('STRIPE_PRICE_ID_PREMIUM'),
-            "pro": os.environ.get('STRIPE_PRICE_ID_PRO')
+        # Get pricing based on tier
+        tier_pricing = {
+            "premium": 19.00,
+            "pro": 49.00
         }
         
-        if checkout_request.tier not in price_ids:
+        if checkout_request.tier not in tier_pricing:
             raise HTTPException(status_code=400, detail="Invalid subscription tier")
         
-        price_id = price_ids[checkout_request.tier]
-        
-        if not price_id:
-            raise HTTPException(status_code=500, detail=f"Price ID not configured for {checkout_request.tier}")
+        amount = tier_pricing[checkout_request.tier]
         
         # Initialize Stripe checkout
         host_url = str(http_request.base_url)
@@ -478,11 +475,10 @@ async def create_upgrade_payment(
             "email": user["email"]
         }
         
-        # Create Stripe subscription checkout session
+        # Create Stripe checkout session
         session = await stripe_service.create_checkout_session(
-            price_id=price_id,
-            customer_email=user["email"],
-            customer_id=user.get("stripe_customer_id"),
+            amount=amount,
+            currency="usd",
             success_url=success_url,
             cancel_url=cancel_url,
             metadata=metadata
