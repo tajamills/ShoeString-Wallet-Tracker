@@ -100,10 +100,35 @@ class MultiChainService:
                 analysis['total_sent_usd'] = analysis.get('totalEthSent', 0) * current_price
                 analysis['gas_fees_usd'] = analysis.get('totalGasFees', 0) * current_price
             
-            # Add USD value to each transaction (if we have timestamp)
+            # Add USD value to each transaction using historical prices if available
             for tx in analysis.get('recentTransactions', []):
-                if current_price:
-                    tx['value_usd'] = float(tx.get('value', 0)) * current_price
+                tx_value = float(tx.get('value', 0))
+                timestamp = tx.get('timestamp')
+                
+                # Try to get historical price at transaction time
+                if timestamp:
+                    try:
+                        # Convert ISO timestamp to Unix timestamp if needed
+                        if isinstance(timestamp, str):
+                            from datetime import datetime
+                            dt = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                            timestamp_unix = int(dt.timestamp())
+                        else:
+                            timestamp_unix = int(timestamp)
+                        
+                        historical_price = price_service.get_price_at_block(symbol, timestamp_unix)
+                        if historical_price:
+                            tx['value_usd'] = tx_value * historical_price
+                            tx['price_at_time'] = historical_price
+                        else:
+                            # Fallback to current price
+                            tx['value_usd'] = tx_value * current_price if current_price else 0
+                    except Exception as e:
+                        logger.warning(f"Error getting historical price: {e}")
+                        tx['value_usd'] = tx_value * current_price if current_price else 0
+                else:
+                    # No timestamp, use current price
+                    tx['value_usd'] = tx_value * current_price if current_price else 0
             
             return analysis
             
