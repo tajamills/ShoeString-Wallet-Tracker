@@ -94,11 +94,17 @@ class MultiChainService:
             
             if current_price:
                 analysis['current_price_usd'] = current_price
-                analysis['total_value_usd'] = analysis.get('netEth', 0) * current_price
-                analysis['net_balance_usd'] = analysis.get('netEth', 0) * current_price
+                # Current balance uses current price
+                analysis['total_value_usd'] = analysis.get('currentBalance', analysis.get('netEth', 0)) * current_price
+                analysis['net_balance_usd'] = analysis.get('currentBalance', analysis.get('netEth', 0)) * current_price
+                # Gas fees use current price (historical gas prices would be negligible difference)
+                analysis['gas_fees_usd'] = analysis.get('totalGasFees', 0) * current_price
+                
+                # Note: total_received_usd and total_sent_usd are NOT accurate with current price
+                # They will be calculated from individual transaction USD values below
+                # For now, keep them as estimates using current price
                 analysis['total_received_usd'] = analysis.get('totalEthReceived', 0) * current_price
                 analysis['total_sent_usd'] = analysis.get('totalEthSent', 0) * current_price
-                analysis['gas_fees_usd'] = analysis.get('totalGasFees', 0) * current_price
             
             # Add USD value to each transaction using historical prices if available
             for tx in analysis.get('recentTransactions', []):
