@@ -107,6 +107,10 @@ class MultiChainService:
                 analysis['total_sent_usd'] = analysis.get('totalEthSent', 0) * current_price
             
             # Add USD value to each transaction using historical prices if available
+            total_sent_usd_accurate = 0
+            total_received_usd_accurate = 0
+            transactions_with_historical_prices = 0
+            
             for tx in analysis.get('recentTransactions', []):
                 tx_value = float(tx.get('value', 0))
                 timestamp = tx.get('timestamp')
@@ -126,6 +130,13 @@ class MultiChainService:
                         if historical_price:
                             tx['value_usd'] = tx_value * historical_price
                             tx['price_at_time'] = historical_price
+                            transactions_with_historical_prices += 1
+                            
+                            # Accumulate accurate totals
+                            if tx.get('type') == 'sent':
+                                total_sent_usd_accurate += tx['value_usd']
+                            elif tx.get('type') == 'received':
+                                total_received_usd_accurate += tx['value_usd']
                         else:
                             # Fallback to current price
                             tx['value_usd'] = tx_value * current_price if current_price else 0
@@ -135,6 +146,13 @@ class MultiChainService:
                 else:
                     # No timestamp, use current price
                     tx['value_usd'] = tx_value * current_price if current_price else 0
+            
+            # If we got historical prices for transactions, use those for the display totals
+            # Note: This only covers the recent transactions shown, not all-time totals
+            if transactions_with_historical_prices > 0:
+                analysis['displayed_sent_usd'] = total_sent_usd_accurate
+                analysis['displayed_received_usd'] = total_received_usd_accurate
+                logger.info(f"Calculated USD values using historical prices for {transactions_with_historical_prices} transactions")
             
             return analysis
             
