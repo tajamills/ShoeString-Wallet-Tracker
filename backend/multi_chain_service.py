@@ -339,6 +339,11 @@ class MultiChainService:
                 from_metadata = tx.get('metadata', {})
                 from_label = from_metadata.get('exchangeName') or from_metadata.get('contractName') or None
                 
+                # Extract timestamp if available
+                block_timestamp = None
+                if 'metadata' in tx and 'blockTimestamp' in tx['metadata']:
+                    block_timestamp = tx['metadata']['blockTimestamp']
+                
                 all_txs.append({
                     "hash": tx.get('hash', ''),
                     "type": "received",
@@ -347,7 +352,8 @@ class MultiChainService:
                     "from": from_address,
                     "from_label": from_label,
                     "blockNum": tx.get('blockNum', ''),
-                    "category": tx.get('category', '')
+                    "category": tx.get('category', ''),
+                    "timestamp": block_timestamp
                 })
             
             # Sort transactions by block number (oldest first for running balance calculation)
