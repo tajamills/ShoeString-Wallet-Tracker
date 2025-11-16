@@ -314,6 +314,11 @@ class MultiChainService:
                 to_metadata = tx.get('metadata', {})
                 to_label = to_metadata.get('exchangeName') or to_metadata.get('contractName') or None
                 
+                # Extract timestamp if available (Alchemy returns it in metadata)
+                block_timestamp = None
+                if 'metadata' in tx and 'blockTimestamp' in tx['metadata']:
+                    block_timestamp = tx['metadata']['blockTimestamp']
+                
                 all_txs.append({
                     "hash": tx.get('hash', ''),
                     "type": "sent",
@@ -322,7 +327,8 @@ class MultiChainService:
                     "to": to_address,
                     "to_label": to_label,
                     "blockNum": tx.get('blockNum', ''),
-                    "category": tx.get('category', '')
+                    "category": tx.get('category', ''),
+                    "timestamp": block_timestamp
                 })
             
             for tx in incoming_txs[:10]:
