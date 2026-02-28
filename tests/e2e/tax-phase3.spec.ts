@@ -56,13 +56,13 @@ test.describe('Phase 3 Tax Enhancements', () => {
     // Modal should open
     await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5000 });
     
-    // Check modal content
-    await expect(page.getByText(/Export Schedule D/i)).toBeVisible();
-    await expect(page.getByText(/Tax Year/i)).toBeVisible();
-    await expect(page.getByText(/Format/i)).toBeVisible();
+    // Check modal heading
+    await expect(page.getByRole('heading', { name: /Export Schedule D/i })).toBeVisible();
+    await expect(page.getByText(/Tax Year/i).first()).toBeVisible();
+    await expect(page.getByText(/Format/i).first()).toBeVisible();
     
-    // Check export button
-    await expect(page.getByRole('button', { name: /Export Schedule D/i })).toBeVisible();
+    // Check export button in modal
+    await expect(page.getByRole('dialog').getByRole('button', { name: /Export Schedule D/i })).toBeVisible();
     
     // Check cancel button
     await expect(page.getByRole('button', { name: /Cancel/i })).toBeVisible();
