@@ -56,9 +56,9 @@ test.describe('Core Tax Features', () => {
     await expect(taxSummary).toBeVisible({ timeout: 10000 });
     
     // Check key metrics are visible (they're on the page)
-    await expect(page.getByText(/Total Realized Gains/i)).toBeVisible();
-    await expect(page.getByText(/Unrealized Gains/i)).toBeVisible();
-    await expect(page.getByText(/FIFO/i)).toBeVisible();
+    await expect(page.getByText(/Total Realized Gains/i).first()).toBeVisible();
+    await expect(page.getByText(/Unrealized Gains/i).first()).toBeVisible();
+    await expect(page.getByText(/FIFO/i).first()).toBeVisible();
   });
   
   test('Export Form 8949 buttons are visible', async ({ page }) => {
