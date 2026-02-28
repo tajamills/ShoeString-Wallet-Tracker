@@ -142,19 +142,13 @@ Build a cryptocurrency wallet analyzer that:
 
 ## Upcoming Tasks
 
-### Phase 3: Tax Reports & Categorization Enhancements (P1)
-- [ ] Enhanced Form 8949 with all IRS required fields
-- [ ] Tax year filtering
-- [ ] Batch categorization improvements
-- [ ] Schedule D summary generation
-- [ ] Tax loss harvesting suggestions
-
 ### Future Features (P2-P5)
 - [ ] DeFi & NFT Integration (liquidity pools, staking, NFT valuations)
 - [ ] Exchange API Integration (Coinbase, Binance import)
 - [ ] Additional blockchains (Avalanche, Optimism, Base)
 - [ ] Data visualizations (charts, graphs)
 - [ ] Mobile responsiveness improvements
+- [ ] Tax loss harvesting suggestions
 
 ## Deployment
 - **Platform**: Render
