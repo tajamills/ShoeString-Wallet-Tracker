@@ -38,6 +38,8 @@ function App() {
   const [multiChainResults, setMultiChainResults] = useState(null);
   const [analyzingAll, setAnalyzingAll] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showCategorizer, setShowCategorizer] = useState(false);
+  const [exportingForm8949, setExportingForm8949] = useState(false);
 
   // Check for payment success on component mount
   useEffect(() => {
