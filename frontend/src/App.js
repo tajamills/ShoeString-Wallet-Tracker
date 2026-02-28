@@ -1192,6 +1192,23 @@ function App() {
           onSaveCategories={handleSaveCategories}
           getAuthHeader={getAuthHeader}
         />
+        <ScheduleDExport
+          isOpen={showScheduleD}
+          onClose={() => setShowScheduleD(false)}
+          address={analysis?.address || ''}
+          chain={analysis?.chain || selectedChain}
+          getAuthHeader={getAuthHeader}
+        />
+        <BatchCategorizationModal
+          isOpen={showBatchCategorize}
+          onClose={() => setShowBatchCategorize(false)}
+          address={analysis?.address || ''}
+          chain={analysis?.chain || selectedChain}
+          getAuthHeader={getAuthHeader}
+          onCategorized={(categories) => {
+            console.log('Batch categorized:', categories);
+          }}
+        />
       </div>
     </div>
   );
