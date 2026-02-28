@@ -1001,6 +1001,32 @@ function App() {
               </Card>
             )}
 
+            {/* Tax Dashboard - Premium/Pro Feature */}
+            {user?.subscription_tier !== 'free' && analysis?.tax_data && (
+              <TaxDashboard
+                taxData={analysis.tax_data}
+                symbol={getChainSymbol(analysis.chain || selectedChain)}
+                formatUSD={formatUSD}
+                formatNumber={formatNumber}
+                onExportForm8949={exportForm8949}
+              />
+            )}
+
+            {/* Categorize Transactions Button */}
+            {user?.subscription_tier !== 'free' && analysis?.recentTransactions && (
+              <div className="flex justify-end">
+                <Button
+                  onClick={() => setShowCategorizer(true)}
+                  variant="outline"
+                  className="border-purple-600 text-purple-300 hover:bg-purple-900/30"
+                  data-testid="categorize-transactions-btn"
+                >
+                  <Tag className="w-4 h-4 mr-2" />
+                  Categorize Transactions for Tax
+                </Button>
+              </div>
+            )}
+
             {/* Recent Transactions */}
             {analysis.recentTransactions && analysis.recentTransactions.length > 0 && (
               <Card className="bg-slate-800/50 border-slate-700" data-testid="transactions-table">
