@@ -2,13 +2,13 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: '/app/tests/e2e',
-  outputDir: '/root/.emergent/automation_output/20260228_165240/test-results',
+  outputDir: '/root/.emergent/automation_output/20260228_165332/test-results',
   timeout: 60000,
   retries: 0,
   workers: 1,
   reporter: [
     ['line'],
-    ['json', { outputFile: '/root/.emergent/automation_output/20260228_165240/results.json' }],
+    ['json', { outputFile: '/root/.emergent/automation_output/20260228_165332/results.json' }],
   ],
   use: {
     baseURL: 'https://tax-analysis-phase2.preview.emergentagent.com',
