@@ -13,10 +13,20 @@ import {
   Info,
   ChevronDown,
   ChevronUp,
-  Clock
+  Clock,
+  Calendar,
+  Wand2
 } from 'lucide-react';
 
-export const TaxDashboard = ({ taxData, symbol, formatUSD, formatNumber, onExportForm8949 }) => {
+export const TaxDashboard = ({ 
+  taxData, 
+  symbol, 
+  formatUSD, 
+  formatNumber, 
+  onExportForm8949,
+  onExportScheduleD,
+  onBatchCategorize 
+}) => {
   const [showRealizedDetails, setShowRealizedDetails] = useState(false);
   const [showUnrealizedDetails, setShowUnrealizedDetails] = useState(false);
   const [showTaxLots, setShowTaxLots] = useState(false);
