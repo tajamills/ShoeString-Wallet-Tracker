@@ -1,5 +1,5 @@
 """
-Tax Report Service - Generates IRS Form 8949 and other tax reports
+Tax Report Service - Generates IRS Form 8949, Schedule D, and other tax reports
 """
 import logging
 from typing import Dict, List, Any, Optional
@@ -8,6 +8,22 @@ import csv
 import io
 
 logger = logging.getLogger(__name__)
+
+# Transaction category constants
+TRANSACTION_CATEGORIES = {
+    'trade': {'label': 'Trade', 'taxable': True, 'type': 'capital_gains'},
+    'income': {'label': 'Income', 'taxable': True, 'type': 'ordinary_income'},
+    'gift_received': {'label': 'Gift Received', 'taxable': False, 'type': 'gift'},
+    'gift_sent': {'label': 'Gift Sent', 'taxable': False, 'type': 'gift'},
+    'payment': {'label': 'Payment', 'taxable': True, 'type': 'capital_gains'},
+    'transfer': {'label': 'Transfer', 'taxable': False, 'type': 'non_taxable'},
+    'lost': {'label': 'Lost/Stolen', 'taxable': True, 'type': 'capital_loss'},
+    'fee': {'label': 'Fee', 'taxable': False, 'type': 'cost_basis'},
+    'airdrop': {'label': 'Airdrop', 'taxable': True, 'type': 'ordinary_income'},
+    'staking': {'label': 'Staking Reward', 'taxable': True, 'type': 'ordinary_income'},
+    'mining': {'label': 'Mining Reward', 'taxable': True, 'type': 'ordinary_income'},
+    'other': {'label': 'Other', 'taxable': True, 'type': 'unknown'}
+}
 
 class TaxReportService:
     """Service for generating tax reports including IRS Form 8949"""
