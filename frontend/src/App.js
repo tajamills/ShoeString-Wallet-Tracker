@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Wallet, TrendingUp, TrendingDown, DollarSign, Activity, LogOut, User, Crown, Download } from 'lucide-react';
+import { Loader2, Wallet, TrendingUp, TrendingDown, DollarSign, Activity, LogOut, User, Crown, Download, Calculator, Tag } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthModal } from '@/components/AuthModal';
@@ -14,6 +14,8 @@ import { SavedWallets } from '@/components/SavedWallets';
 import { DowngradeModal } from '@/components/DowngradeModal';
 import { ChainRequestModal } from '@/components/ChainRequestModal';
 import { ExportModal } from '@/components/ExportModal';
+import { TaxDashboard } from '@/components/TaxDashboard';
+import { TransactionCategorizer } from '@/components/TransactionCategorizer';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
