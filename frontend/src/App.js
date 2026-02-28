@@ -1180,6 +1180,13 @@ function App() {
           getAuthHeader={getAuthHeader}
           getChainSymbol={getChainSymbol}
         />
+        <TransactionCategorizer
+          isOpen={showCategorizer}
+          onClose={() => setShowCategorizer(false)}
+          transactions={analysis?.recentTransactions || []}
+          onSaveCategories={handleSaveCategories}
+          getAuthHeader={getAuthHeader}
+        />
       </div>
     </div>
   );
