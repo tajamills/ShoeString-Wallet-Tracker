@@ -268,6 +268,69 @@ function App() {
     }).format(num);
   };
 
+  const exportForm8949 = async (filterType = 'all') => {
+    if (!analysis || !analysis.address) {
+      setError('Please analyze a wallet first');
+      return;
+    }
+
+    setExportingForm8949(true);
+    setError('');
+
+    try {
+      const response = await axios.post(
+        `${API}/tax/export-form-8949`,
+        {
+          address: analysis.address,
+          chain: analysis.chain || selectedChain,
+          filter_type: filterType
+        },
+        { 
+          headers: getAuthHeader(),
+          responseType: 'blob'
+        }
+      );
+
+      // Download the CSV
+      const blob = new Blob([response.data], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `form-8949-${analysis.address.substring(0, 8)}-${filterType}-${Date.now()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      if (err.response?.status === 403) {
+        setError('Form 8949 export is a Premium feature. Upgrade to access tax reports.');
+        setShowUpgradeModal(true);
+      } else {
+        setError(err.response?.data?.detail || 'Failed to export Form 8949');
+      }
+    } finally {
+      setExportingForm8949(false);
+    }
+  };
+
+  const handleSaveCategories = async (categories) => {
+    if (!analysis || !analysis.address) return;
+
+    try {
+      await axios.post(
+        `${API}/tax/save-categories`,
+        {
+          address: analysis.address,
+          chain: analysis.chain || selectedChain,
+          categories: categories
+        },
+        { headers: getAuthHeader() }
+      );
+    } catch (err) {
+      throw new Error(err.response?.data?.detail || 'Failed to save categories');
+    }
+  };
+
   if (authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
