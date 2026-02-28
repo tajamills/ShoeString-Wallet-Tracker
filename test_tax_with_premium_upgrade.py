@@ -9,7 +9,7 @@ import time
 from datetime import datetime
 
 # Configuration
-BASE_URL = "https://cryptotracker-63.preview.emergentagent.com/api"
+BASE_URL = "https://tax-analysis-phase2.preview.emergentagent.com/api"
 TIMEOUT = 30
 
 def test_tax_calculations_with_premium():
@@ -57,7 +57,7 @@ def test_tax_calculations_with_premium():
         print(f"\n💳 Attempting to create Premium upgrade checkout session...")
         upgrade_payload = {
             "tier": "premium",
-            "origin_url": "https://cryptotracker-63.preview.emergentagent.com"
+            "origin_url": "https://tax-analysis-phase2.preview.emergentagent.com"
         }
         
         upgrade_response = session.post(f"{BASE_URL}/payments/create-upgrade", json=upgrade_payload, headers=headers)
