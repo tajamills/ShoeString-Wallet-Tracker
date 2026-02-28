@@ -783,6 +783,7 @@ async def analyze_wallet(request: WalletAnalysisRequest, user: dict = Depends(ch
         # Create response object
         analysis_response = WalletAnalysisResponse(
             address=analysis_data['address'],
+            chain=analysis_data.get('chain'),
             totalEthSent=analysis_data['totalEthSent'],
             totalEthReceived=analysis_data['totalEthReceived'],
             totalGasFees=analysis_data['totalGasFees'],
@@ -793,7 +794,15 @@ async def analyze_wallet(request: WalletAnalysisRequest, user: dict = Depends(ch
             incomingTransactionCount=analysis_data['incomingTransactionCount'],
             tokensSent=analysis_data['tokensSent'],
             tokensReceived=analysis_data['tokensReceived'],
-            recentTransactions=analysis_data['recentTransactions']
+            recentTransactions=analysis_data['recentTransactions'],
+            # USD values
+            current_price_usd=analysis_data.get('current_price_usd'),
+            total_value_usd=analysis_data.get('total_value_usd'),
+            total_received_usd=analysis_data.get('total_received_usd'),
+            total_sent_usd=analysis_data.get('total_sent_usd'),
+            total_gas_fees_usd=analysis_data.get('total_gas_fees_usd'),
+            # Tax data
+            tax_data=analysis_data.get('tax_data')
         )
         
         # Store in database with user info
