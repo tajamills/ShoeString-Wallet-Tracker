@@ -103,4 +103,3 @@ bip32==5.0.0
 base58
 gunicorn==21.2.0
 stripe==8.0.0
-emergentintegrations
