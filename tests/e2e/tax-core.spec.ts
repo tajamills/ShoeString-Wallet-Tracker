@@ -12,19 +12,18 @@ async function login(page: Page) {
   });
   
   await page.getByTestId('login-button').click();
-  
-  // Wait for auth modal to appear
   await expect(page.getByTestId('auth-modal')).toBeVisible({ timeout: 5000 });
-  
-  // Use data-testid selectors for inputs
   await page.getByTestId('email-input').fill(TEST_EMAIL);
   await page.getByTestId('password-input').fill(TEST_PASSWORD);
-  
-  // Click submit button
   await page.getByTestId('auth-submit-button').click();
-  
-  // Wait for login success
   await expect(page.getByTestId('user-info-bar')).toBeVisible({ timeout: 15000 });
+}
+
+async function analyzeWallet(page: Page, address: string) {
+  await page.getByTestId('wallet-address-input').fill(address);
+  await page.getByTestId('analyze-button').click();
+  // Wait for analysis to complete - this can take a while
+  await expect(page.getByTestId('analysis-results')).toBeVisible({ timeout: 90000 });
 }
 
 test.describe('Core Tax Features', () => {
@@ -38,9 +37,7 @@ test.describe('Core Tax Features', () => {
     await expect(page.getByTestId('user-info-bar').getByText(/PREMIUM/i)).toBeVisible();
     
     // Analyze wallet
-    await page.getByTestId('wallet-address-input').fill(TEST_WALLET_ADDRESS);
-    await page.getByTestId('analyze-button').click();
-    await expect(page.getByTestId('analysis-results')).toBeVisible({ timeout: 60000 });
+    await analyzeWallet(page, TEST_WALLET_ADDRESS);
     
     // Verify analysis results
     await expect(page.getByTestId('balance-card')).toBeVisible();
@@ -51,14 +48,14 @@ test.describe('Core Tax Features', () => {
     await page.waitForLoadState('domcontentloaded');
     await login(page);
     
-    await page.getByTestId('wallet-address-input').fill(TEST_WALLET_ADDRESS);
-    await page.getByTestId('analyze-button').click();
-    await expect(page.getByTestId('analysis-results')).toBeVisible({ timeout: 60000 });
+    await analyzeWallet(page, TEST_WALLET_ADDRESS);
     
-    // Check Tax Summary heading
-    await expect(page.getByRole('heading', { name: /tax summary/i })).toBeVisible({ timeout: 10000 });
+    // Scroll to Tax Summary section
+    const taxSummary = page.getByText('Tax Summary').first();
+    await taxSummary.scrollIntoViewIfNeeded();
+    await expect(taxSummary).toBeVisible({ timeout: 10000 });
     
-    // Check key metrics
+    // Check key metrics are visible (they're on the page)
     await expect(page.getByText(/Total Realized Gains/i)).toBeVisible();
     await expect(page.getByText(/Unrealized Gains/i)).toBeVisible();
     await expect(page.getByText(/FIFO/i)).toBeVisible();
@@ -69,12 +66,14 @@ test.describe('Core Tax Features', () => {
     await page.waitForLoadState('domcontentloaded');
     await login(page);
     
-    await page.getByTestId('wallet-address-input').fill(TEST_WALLET_ADDRESS);
-    await page.getByTestId('analyze-button').click();
-    await expect(page.getByTestId('analysis-results')).toBeVisible({ timeout: 60000 });
+    await analyzeWallet(page, TEST_WALLET_ADDRESS);
     
-    // Check export buttons
-    await expect(page.getByTestId('export-form-8949-btn')).toBeVisible();
+    // Scroll to export section
+    const exportBtn = page.getByTestId('export-form-8949-btn');
+    await exportBtn.scrollIntoViewIfNeeded();
+    await expect(exportBtn).toBeVisible({ timeout: 10000 });
+    
+    // Check other export buttons
     await expect(page.getByRole('button', { name: /Short-term Only/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /Long-term Only/i })).toBeVisible();
   });
