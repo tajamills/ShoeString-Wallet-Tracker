@@ -91,8 +91,12 @@ Build a cryptocurrency wallet analyzer that:
 ### Tax Reports
 - POST `/api/tax/export-form-8949` - Generate Form 8949 CSV (Premium+)
 - POST `/api/tax/export-summary` - Generate tax summary CSV (Premium+)
+- POST `/api/tax/export-schedule-d` - Generate Schedule D summary (Premium+)
 - POST `/api/tax/save-categories` - Save transaction categories (Premium+)
 - GET `/api/tax/categories/{address}` - Get saved categories (Premium+)
+- POST `/api/tax/batch-categorize` - Batch categorize with rules (Premium+)
+- POST `/api/tax/auto-categorize` - Auto-categorize transactions (Premium+)
+- GET `/api/tax/supported-years` - Get supported tax years (Public)
 
 ### Payments
 - POST `/api/payments/create-upgrade` - Create Stripe checkout session
