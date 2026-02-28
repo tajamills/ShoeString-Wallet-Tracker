@@ -1375,6 +1375,275 @@ async def get_transaction_categories(
         logger.error(f"Error fetching categories: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to fetch categories")
 
+# Schedule D Export
+class ScheduleDRequest(BaseModel):
+    address: str
+    chain: str = "ethereum"
+    tax_year: int
+    format: str = "text"  # text or csv
+
+@api_router.post("/tax/export-schedule-d")
+async def export_schedule_d(
+    request: ScheduleDRequest,
+    user: dict = Depends(get_current_user)
+):
+    """Export Schedule D (Capital Gains Summary) for a specific tax year (Premium/Pro)"""
+    try:
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier == 'free':
+            raise HTTPException(
+                status_code=403,
+                detail="Schedule D export is a Premium feature."
+            )
+        
+        # Validate tax year
+        current_year = datetime.now().year
+        if request.tax_year < 2020 or request.tax_year > current_year:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Tax year must be between 2020 and {current_year}"
+            )
+        
+        address = request.address.strip()
+        chain = request.chain.lower()
+        
+        # Get wallet analysis with tax data
+        analysis_data = multi_chain_service.analyze_wallet(
+            address,
+            chain=chain,
+            user_tier=user_tier
+        )
+        
+        tax_data = analysis_data.get('tax_data')
+        if not tax_data:
+            raise HTTPException(
+                status_code=400,
+                detail="No tax data available for this wallet."
+            )
+        
+        realized_gains = tax_data.get('realized_gains', [])
+        
+        symbol_map = {
+            'ethereum': 'ETH',
+            'bitcoin': 'BTC',
+            'polygon': 'MATIC',
+            'arbitrum': 'ETH',
+            'bsc': 'BNB',
+            'solana': 'SOL'
+        }
+        symbol = symbol_map.get(chain, 'ETH')
+        
+        # Generate based on format
+        if request.format == 'csv':
+            content = tax_report_service.generate_schedule_d_csv(
+                realized_gains=realized_gains,
+                tax_year=request.tax_year,
+                symbol=symbol,
+                address=address
+            )
+            media_type = "text/csv"
+            filename = f"schedule-d-{address[:8]}-{request.tax_year}.csv"
+        else:
+            content = tax_report_service.generate_schedule_d_summary(
+                realized_gains=realized_gains,
+                tax_year=request.tax_year,
+                symbol=symbol,
+                address=address
+            )
+            media_type = "text/plain"
+            filename = f"schedule-d-{address[:8]}-{request.tax_year}.txt"
+        
+        return Response(
+            content=content,
+            media_type=media_type,
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"'
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error exporting Schedule D: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to export Schedule D: {str(e)}")
+
+# Batch categorization
+class BatchCategorizeRequest(BaseModel):
+    address: str
+    chain: str = "ethereum"
+    rules: List[Dict[str, Any]]
+
+@api_router.post("/tax/batch-categorize")
+async def batch_categorize_transactions(
+    request: BatchCategorizeRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Batch categorize transactions based on rules (Premium/Pro)
+    
+    Rules format:
+    - type: 'address' | 'amount_gt' | 'amount_lt' | 'tx_type' | 'asset'
+    - value: The value to match
+    - category: The category to assign
+    """
+    try:
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier == 'free':
+            raise HTTPException(
+                status_code=403,
+                detail="Batch categorization is a Premium feature."
+            )
+        
+        address = request.address.strip()
+        chain = request.chain.lower()
+        
+        # Get wallet analysis to get transactions
+        analysis_data = multi_chain_service.analyze_wallet(
+            address,
+            chain=chain,
+            user_tier=user_tier
+        )
+        
+        transactions = analysis_data.get('recentTransactions', [])
+        
+        if not transactions:
+            raise HTTPException(
+                status_code=400,
+                detail="No transactions found for this wallet."
+            )
+        
+        # Apply batch categorization
+        categories = tax_report_service.batch_categorize_transactions(
+            transactions=transactions,
+            rules=request.rules
+        )
+        
+        # Save to database
+        category_doc = {
+            "id": str(uuid.uuid4()),
+            "user_id": user["id"],
+            "address": address.lower(),
+            "chain": chain,
+            "categories": categories,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db.transaction_categories.update_one(
+            {
+                "user_id": user["id"],
+                "address": address.lower(),
+                "chain": chain
+            },
+            {"$set": category_doc},
+            upsert=True
+        )
+        
+        logger.info(f"Batch categorized {len(categories)} transactions for user {user['id']}")
+        
+        return {
+            "message": "Transactions categorized successfully",
+            "count": len(categories),
+            "categories": categories
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error batch categorizing: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to batch categorize transactions")
+
+# Auto-categorize transactions
+class AutoCategorizeRequest(BaseModel):
+    address: str
+    chain: str = "ethereum"
+    known_addresses: Optional[Dict[str, str]] = None
+
+@api_router.post("/tax/auto-categorize")
+async def auto_categorize_transactions(
+    request: AutoCategorizeRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Auto-categorize transactions using smart detection (Premium/Pro)
+    
+    known_addresses: Dict of address -> label ('self', 'exchange', 'staking', etc.)
+    """
+    try:
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier == 'free':
+            raise HTTPException(
+                status_code=403,
+                detail="Auto categorization is a Premium feature."
+            )
+        
+        address = request.address.strip()
+        chain = request.chain.lower()
+        
+        # Get wallet analysis
+        analysis_data = multi_chain_service.analyze_wallet(
+            address,
+            chain=chain,
+            user_tier=user_tier
+        )
+        
+        transactions = analysis_data.get('recentTransactions', [])
+        
+        if not transactions:
+            raise HTTPException(
+                status_code=400,
+                detail="No transactions found for this wallet."
+            )
+        
+        # Auto categorize
+        categories = tax_report_service.auto_categorize_transactions(
+            transactions=transactions,
+            known_addresses=request.known_addresses
+        )
+        
+        # Save to database
+        category_doc = {
+            "id": str(uuid.uuid4()),
+            "user_id": user["id"],
+            "address": address.lower(),
+            "chain": chain,
+            "categories": categories,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db.transaction_categories.update_one(
+            {
+                "user_id": user["id"],
+                "address": address.lower(),
+                "chain": chain
+            },
+            {"$set": category_doc},
+            upsert=True
+        )
+        
+        logger.info(f"Auto-categorized {len(categories)} transactions for user {user['id']}")
+        
+        return {
+            "message": "Transactions auto-categorized successfully",
+            "count": len(categories),
+            "categories": categories
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error auto-categorizing: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to auto-categorize transactions")
+
+# Get supported tax years
+@api_router.get("/tax/supported-years")
+async def get_supported_tax_years():
+    """Get list of supported tax years for reports"""
+    current_year = datetime.now().year
+    return {
+        "years": list(range(2020, current_year + 1)),
+        "current_year": current_year
+    }
+
 # Include the router in the main app
 app.include_router(api_router)
 
