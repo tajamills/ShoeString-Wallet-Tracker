@@ -1140,6 +1140,223 @@ async def request_chain(
         logger.error(f"Error submitting chain request: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to submit chain request")
 
+# Tax Report Routes
+class Form8949Request(BaseModel):
+    address: str
+    chain: str = "ethereum"
+    filter_type: str = "all"  # all, short-term, long-term
+
+@api_router.post("/tax/export-form-8949")
+async def export_form_8949(
+    request: Form8949Request,
+    user: dict = Depends(get_current_user)
+):
+    """Export IRS Form 8949 compatible CSV (Premium/Pro feature)"""
+    try:
+        # Check subscription tier
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier == 'free':
+            raise HTTPException(
+                status_code=403,
+                detail="Form 8949 export is a Premium feature. Upgrade to access tax reports."
+            )
+        
+        address = request.address.strip()
+        chain = request.chain.lower()
+        
+        # Get wallet analysis with tax data
+        analysis_data = multi_chain_service.analyze_wallet(
+            address,
+            chain=chain,
+            user_tier=user_tier
+        )
+        
+        # Check if tax data exists
+        tax_data = analysis_data.get('tax_data')
+        if not tax_data or not tax_data.get('realized_gains'):
+            raise HTTPException(
+                status_code=400,
+                detail="No tax data available. Analyze the wallet first to generate tax information."
+            )
+        
+        # Get chain symbol
+        symbol_map = {
+            'ethereum': 'ETH',
+            'bitcoin': 'BTC',
+            'polygon': 'MATIC',
+            'arbitrum': 'ETH',
+            'bsc': 'BNB',
+            'solana': 'SOL'
+        }
+        symbol = symbol_map.get(chain, 'ETH')
+        
+        # Generate Form 8949 CSV
+        csv_content = tax_report_service.generate_form_8949_csv(
+            realized_gains=tax_data['realized_gains'],
+            symbol=symbol,
+            address=address,
+            filter_type=request.filter_type
+        )
+        
+        # Return as downloadable CSV
+        filename = f"form-8949-{address[:8]}-{request.filter_type}-{datetime.now().strftime('%Y%m%d')}.csv"
+        
+        return Response(
+            content=csv_content,
+            media_type="text/csv",
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"'
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error exporting Form 8949: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to export Form 8949: {str(e)}")
+
+@api_router.post("/tax/export-summary")
+async def export_tax_summary(
+    request: Form8949Request,
+    user: dict = Depends(get_current_user)
+):
+    """Export comprehensive tax summary CSV (Premium/Pro feature)"""
+    try:
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier == 'free':
+            raise HTTPException(
+                status_code=403,
+                detail="Tax summary export is a Premium feature."
+            )
+        
+        address = request.address.strip()
+        chain = request.chain.lower()
+        
+        # Get wallet analysis with tax data
+        analysis_data = multi_chain_service.analyze_wallet(
+            address,
+            chain=chain,
+            user_tier=user_tier
+        )
+        
+        tax_data = analysis_data.get('tax_data')
+        if not tax_data:
+            raise HTTPException(
+                status_code=400,
+                detail="No tax data available."
+            )
+        
+        symbol_map = {
+            'ethereum': 'ETH',
+            'bitcoin': 'BTC',
+            'polygon': 'MATIC',
+            'arbitrum': 'ETH',
+            'bsc': 'BNB',
+            'solana': 'SOL'
+        }
+        symbol = symbol_map.get(chain, 'ETH')
+        
+        csv_content = tax_report_service.generate_tax_summary_csv(
+            tax_data=tax_data,
+            symbol=symbol,
+            address=address
+        )
+        
+        filename = f"tax-summary-{address[:8]}-{datetime.now().strftime('%Y%m%d')}.csv"
+        
+        return Response(
+            content=csv_content,
+            media_type="text/csv",
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"'
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error exporting tax summary: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to export tax summary: {str(e)}")
+
+class TransactionCategoryRequest(BaseModel):
+    address: str
+    chain: str = "ethereum"
+    categories: Dict[str, str]  # tx_hash -> category
+
+@api_router.post("/tax/save-categories")
+async def save_transaction_categories(
+    request: TransactionCategoryRequest,
+    user: dict = Depends(get_current_user)
+):
+    """Save transaction categories for tax purposes (Premium/Pro feature)"""
+    try:
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier == 'free':
+            raise HTTPException(
+                status_code=403,
+                detail="Transaction categorization is a Premium feature."
+            )
+        
+        # Store categories in database
+        category_doc = {
+            "id": str(uuid.uuid4()),
+            "user_id": user["id"],
+            "address": request.address.lower(),
+            "chain": request.chain.lower(),
+            "categories": request.categories,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        # Upsert - update if exists, insert if not
+        await db.transaction_categories.update_one(
+            {
+                "user_id": user["id"],
+                "address": request.address.lower(),
+                "chain": request.chain.lower()
+            },
+            {"$set": category_doc},
+            upsert=True
+        )
+        
+        logger.info(f"Saved {len(request.categories)} transaction categories for user {user['id']}")
+        
+        return {
+            "message": "Categories saved successfully",
+            "count": len(request.categories)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error saving categories: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to save categories")
+
+@api_router.get("/tax/categories/{address}")
+async def get_transaction_categories(
+    address: str,
+    chain: str = "ethereum",
+    user: dict = Depends(get_current_user)
+):
+    """Get saved transaction categories for a wallet"""
+    try:
+        categories_doc = await db.transaction_categories.find_one(
+            {
+                "user_id": user["id"],
+                "address": address.lower(),
+                "chain": chain.lower()
+            },
+            {"_id": 0}
+        )
+        
+        if not categories_doc:
+            return {"categories": {}}
+        
+        return {"categories": categories_doc.get("categories", {})}
+        
+    except Exception as e:
+        logger.error(f"Error fetching categories: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch categories")
+
 # Include the router in the main app
 app.include_router(api_router)
 
