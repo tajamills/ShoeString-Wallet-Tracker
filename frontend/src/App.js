@@ -16,6 +16,7 @@ import { ChainRequestModal } from '@/components/ChainRequestModal';
 import { ExportModal } from '@/components/ExportModal';
 import { TaxDashboard } from '@/components/TaxDashboard';
 import { TransactionCategorizer } from '@/components/TransactionCategorizer';
+import { ScheduleDExport, BatchCategorizationModal } from '@/components/TaxEnhancements';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
