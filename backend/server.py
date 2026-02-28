@@ -386,6 +386,12 @@ async def create_upgrade_payment(
 ):
     """Create Stripe subscription checkout session for upgrade"""
     try:
+        # Get Stripe Price IDs from environment (needed early for upgrades)
+        price_ids = {
+            "premium": os.environ.get('STRIPE_PRICE_ID_PREMIUM'),
+            "pro": os.environ.get('STRIPE_PRICE_ID_PRO')
+        }
+        
         # Check if user already has an active subscription
         current_tier = user.get('subscription_tier', 'free')
         subscription_status = user.get('subscription_status')
@@ -441,12 +447,6 @@ async def create_upgrade_payment(
                     status_code=400,
                     detail="Please use the downgrade option to switch to a lower tier"
                 )
-        
-        # Get Stripe Price IDs from environment
-        price_ids = {
-            "premium": os.environ.get('STRIPE_PRICE_ID_PREMIUM'),
-            "pro": os.environ.get('STRIPE_PRICE_ID_PRO')
-        }
         
         if checkout_request.tier not in price_ids:
             raise HTTPException(status_code=400, detail="Invalid subscription tier")
