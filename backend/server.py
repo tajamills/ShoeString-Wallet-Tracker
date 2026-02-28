@@ -73,6 +73,7 @@ class ChainRequest(BaseModel):
 class WalletAnalysisResponse(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     address: str
+    chain: Optional[str] = None
     totalEthSent: float
     totalEthReceived: float
     totalGasFees: float
@@ -85,6 +86,14 @@ class WalletAnalysisResponse(BaseModel):
     tokensReceived: Dict[str, float]
     recentTransactions: List[Dict[str, Any]]
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    # USD values
+    current_price_usd: Optional[float] = None
+    total_value_usd: Optional[float] = None
+    total_received_usd: Optional[float] = None
+    total_sent_usd: Optional[float] = None
+    total_gas_fees_usd: Optional[float] = None
+    # Tax data (Premium/Pro feature)
+    tax_data: Optional[Dict[str, Any]] = None
 
 # Initialize services
 wallet_service = WalletService()
