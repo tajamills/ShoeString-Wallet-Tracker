@@ -140,36 +140,68 @@ export const TaxDashboard = ({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-3">
-            <Button
-              onClick={() => onExportForm8949('all')}
-              className="bg-green-600 hover:bg-green-700"
-              data-testid="export-form-8949-btn"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Export Form 8949 (All)
-            </Button>
-            <Button
-              onClick={() => onExportForm8949('short-term')}
-              variant="outline"
-              className="border-slate-600 text-gray-300"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Short-term Only
-            </Button>
-            <Button
-              onClick={() => onExportForm8949('long-term')}
-              variant="outline"
-              className="border-slate-600 text-gray-300"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Long-term Only
-            </Button>
+          <div className="space-y-4">
+            {/* Form 8949 */}
+            <div>
+              <h4 className="text-sm font-medium text-gray-300 mb-2">Form 8949 (Sales & Dispositions)</h4>
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  onClick={() => onExportForm8949('all')}
+                  className="bg-green-600 hover:bg-green-700"
+                  data-testid="export-form-8949-btn"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Export Form 8949 (All)
+                </Button>
+                <Button
+                  onClick={() => onExportForm8949('short-term')}
+                  variant="outline"
+                  className="border-slate-600 text-gray-300"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Short-term Only
+                </Button>
+                <Button
+                  onClick={() => onExportForm8949('long-term')}
+                  variant="outline"
+                  className="border-slate-600 text-gray-300"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Long-term Only
+                </Button>
+              </div>
+            </div>
+
+            {/* Schedule D */}
+            <div>
+              <h4 className="text-sm font-medium text-gray-300 mb-2">Schedule D (Capital Gains Summary)</h4>
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  onClick={onExportScheduleD}
+                  variant="outline"
+                  className="border-green-600 text-green-300 hover:bg-green-900/30"
+                  data-testid="export-schedule-d-btn"
+                >
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Export Schedule D
+                </Button>
+                <Button
+                  onClick={onBatchCategorize}
+                  variant="outline"
+                  className="border-purple-600 text-purple-300 hover:bg-purple-900/30"
+                  data-testid="batch-categorize-btn"
+                >
+                  <Wand2 className="w-4 h-4 mr-2" />
+                  Batch Categorize
+                </Button>
+              </div>
+            </div>
           </div>
+
           <Alert className="mt-4 bg-blue-900/20 border-blue-700 text-blue-300">
             <Info className="h-4 w-4" />
             <AlertDescription className="text-sm">
-              Form 8949 is used to report sales and exchanges of capital assets. 
+              Form 8949 reports individual sales. Schedule D summarizes your total gains/losses.
               Consult a tax professional for advice specific to your situation.
             </AlertDescription>
           </Alert>
