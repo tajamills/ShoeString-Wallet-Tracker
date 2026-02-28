@@ -1012,6 +1012,8 @@ function App() {
                 formatUSD={formatUSD}
                 formatNumber={formatNumber}
                 onExportForm8949={exportForm8949}
+                onExportScheduleD={() => setShowScheduleD(true)}
+                onBatchCategorize={() => setShowBatchCategorize(true)}
               />
             )}
 
