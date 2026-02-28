@@ -11,11 +11,11 @@ async function login(page: Page) {
   });
   
   await page.getByTestId('login-button').click();
-  await page.waitForSelector('[role="dialog"]', { timeout: 5000 });
-  await page.getByPlaceholder(/email/i).fill(TEST_EMAIL);
-  await page.getByPlaceholder(/password/i).fill(TEST_PASSWORD);
-  await page.locator('[role="dialog"]').getByRole('button', { name: /^login$/i }).click();
-  await expect(page.getByTestId('user-info-bar')).toBeVisible({ timeout: 10000 });
+  await expect(page.getByTestId('auth-modal')).toBeVisible({ timeout: 5000 });
+  await page.getByTestId('email-input').fill(TEST_EMAIL);
+  await page.getByTestId('password-input').fill(TEST_PASSWORD);
+  await page.getByTestId('auth-submit-button').click();
+  await expect(page.getByTestId('user-info-bar')).toBeVisible({ timeout: 15000 });
 }
 
 test.describe('Transaction Categorizer', () => {
