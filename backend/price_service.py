@@ -28,11 +28,25 @@ class PriceService:
             'WBTC': 'wrapped-bitcoin',
             'ARB': 'arbitrum'
         }
+        
+        # Fallback prices (updated periodically) for when CoinGecko rate limits
+        self.fallback_prices = {
+            'ETH': 3500.0,
+            'BTC': 90000.0,
+            'MATIC': 0.50,
+            'BNB': 600.0,
+            'SOL': 150.0,
+            'USDT': 1.0,
+            'USDC': 1.0,
+            'DAI': 1.0,
+            'WETH': 3500.0,
+            'WBTC': 90000.0
+        }
     
     def get_current_price(self, symbol: str) -> Optional[float]:
         """Get current USD price for a cryptocurrency"""
         try:
-            # Check cache
+            # Check cache first
             cache_key = f"current_{symbol}"
             if cache_key in self.cache:
                 cached_data, cached_time = self.cache[cache_key]
@@ -43,7 +57,7 @@ class PriceService:
             coin_id = self.coin_ids.get(symbol.upper())
             if not coin_id:
                 logger.warning(f"No CoinGecko ID for symbol: {symbol}")
-                return None
+                return self.fallback_prices.get(symbol.upper())
             
             # Fetch from CoinGecko
             url = f"{self.base_url}/simple/price"
@@ -61,12 +75,15 @@ class PriceService:
             # Cache result
             if price:
                 self.cache[cache_key] = (price, time.time())
+                # Also update fallback price
+                self.fallback_prices[symbol.upper()] = price
             
             return price
             
         except Exception as e:
-            logger.error(f"Error fetching current price for {symbol}: {str(e)}")
-            return None
+            logger.warning(f"Error fetching current price for {symbol}: {str(e)}. Using fallback price.")
+            # Return fallback price on error (rate limiting, network issues, etc.)
+            return self.fallback_prices.get(symbol.upper())
     
     def get_historical_price(self, symbol: str, date: str) -> Optional[float]:
         """
