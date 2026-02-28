@@ -56,6 +56,15 @@ Build a cryptocurrency wallet analyzer that:
 - [x] Categories persistence in database
 - [x] Premium/Pro tier restrictions
 
+### Phase 3: Tax Reports Enhancements (Completed - Feb 28, 2026)
+- [x] Schedule D summary generation (text and CSV formats)
+- [x] Tax year filtering (2020-current year)
+- [x] Batch categorization with custom rules
+- [x] Auto-categorization with smart detection
+- [x] Schedule D export modal with year/format selection
+- [x] Batch categorization modal with rule builder
+- [x] Enhanced category options (staking, airdrop, mining)
+
 ### Core Features (Completed)
 - [x] User authentication (JWT)
 - [x] Stripe subscription management
