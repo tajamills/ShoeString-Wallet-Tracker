@@ -22,17 +22,20 @@ Build a cryptocurrency wallet analyzer that:
 - **Authentication**: Custom JWT-based auth
 
 ## Subscription Tiers
-| Feature | Free | Premium | Pro |
-|---------|------|---------|-----|
-| Ethereum Analysis | ✓ | ✓ | ✓ |
-| Multi-chain Analysis | - | ✓ | ✓ |
-| CSV Export | - | ✓ | ✓ |
-| USD Valuation | - | ✓ | ✓ |
-| Tax Calculation (FIFO) | - | ✓ | ✓ |
-| Form 8949 Export | - | ✓ | ✓ |
-| Transaction Categorization | - | ✓ | ✓ |
-| Analyze All Chains | - | - | ✓ |
-| Bitcoin xPub Support | - | - | ✓ |
+| Feature | Free | Unlimited ($99/year) |
+|---------|------|----------------------|
+| Wallet Analyses | 1 total | Unlimited |
+| All 6 Blockchains | - | ✓ |
+| CSV Export | - | ✓ |
+| USD Valuation | - | ✓ |
+| Tax Calculation (FIFO) | - | ✓ |
+| Form 8949 & Schedule D Export | - | ✓ |
+| Transaction Categorization | - | ✓ |
+| Analyze All Chains | - | ✓ |
+| Bitcoin xPub Support | - | ✓ |
+
+## Terms of Service
+All users must accept Terms of Service before using the platform. The TOS modal appears after login for new users and cannot be dismissed without accepting.
 
 ## Completed Features
 

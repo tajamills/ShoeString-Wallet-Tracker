@@ -59,12 +59,25 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  const acceptTerms = async () => {
+    try {
+      await axios.post(`${API}/auth/accept-terms`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setUser(prev => ({ ...prev, terms_accepted: true }));
+      return true;
+    } catch (error) {
+      console.error('Failed to accept terms:', error);
+      throw error;
+    }
+  };
+
   const getAuthHeader = () => {
     return token ? { Authorization: `Bearer ${token}` } : {};
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, register, login, logout, getAuthHeader, fetchUserProfile }}>
+    <AuthContext.Provider value={{ user, token, loading, register, login, logout, getAuthHeader, fetchUserProfile, acceptTerms }}>
       {children}
     </AuthContext.Provider>
   );

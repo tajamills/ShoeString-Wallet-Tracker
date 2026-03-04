@@ -109,13 +109,16 @@ class User(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     email: str
     password_hash: str
-    subscription_tier: str = "free"  # free, premium, pro
+    subscription_tier: str = "free"  # free, unlimited
     stripe_customer_id: Optional[str] = None
     stripe_subscription_id: Optional[str] = None
     subscription_status: Optional[str] = None  # active, canceled, past_due, etc.
     daily_usage_count: int = 0
+    analysis_count: int = 0  # Total analyses ever done
     last_usage_reset: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    terms_accepted: bool = False
+    terms_accepted_at: Optional[datetime] = None
 
 class UserRegister(BaseModel):
     email: EmailStr
@@ -130,7 +133,9 @@ class UserResponse(BaseModel):
     email: str
     subscription_tier: str
     daily_usage_count: int
+    analysis_count: int = 0
     created_at: datetime
+    terms_accepted: bool = False
 
 class TokenResponse(BaseModel):
     access_token: str
@@ -191,19 +196,18 @@ async def check_usage_limit(user: dict = Depends(get_current_user)) -> dict:
         )
         user["daily_usage_count"] = 0
     
-    # Check limits based on tier
+    # Check limits based on tier - FREE gets 1 total analysis, UNLIMITED gets unlimited
     tier = user.get("subscription_tier", "free")
-    daily_limit = {
-        "free": 1,
-        "premium": 999999,  # Unlimited
-        "pro": 999999  # Unlimited
-    }.get(tier, 1)
     
-    if user.get("daily_usage_count", 0) >= daily_limit:
-        raise HTTPException(
-            status_code=429,
-            detail=f"Daily limit reached. Upgrade to Premium for unlimited analyses."
-        )
+    if tier == "free":
+        # Free users get 1 analysis total (not daily)
+        total_analyses = user.get("analysis_count", 0)
+        if total_analyses >= 1:
+            raise HTTPException(
+                status_code=429,
+                detail="You've used your free analysis. Upgrade to Unlimited for unlimited analyses."
+            )
+    # Unlimited, premium, pro all get unlimited
     
     return user
 
@@ -251,7 +255,9 @@ async def register(user_data: UserRegister):
         email=user.email,
         subscription_tier=user.subscription_tier,
         daily_usage_count=user.daily_usage_count,
-        created_at=user.created_at
+        analysis_count=user.analysis_count,
+        created_at=user.created_at,
+        terms_accepted=user.terms_accepted
     )
     
     return TokenResponse(access_token=access_token, user=user_response)
@@ -280,10 +286,31 @@ async def login(user_data: UserLogin):
         email=user["email"],
         subscription_tier=user["subscription_tier"],
         daily_usage_count=user["daily_usage_count"],
-        created_at=created_at
+        analysis_count=user.get("analysis_count", 0),
+        created_at=created_at,
+        terms_accepted=user.get("terms_accepted", False)
     )
     
     return TokenResponse(access_token=access_token, user=user_response)
+
+@api_router.post("/auth/accept-terms")
+async def accept_terms(user: dict = Depends(get_current_user)):
+    """Accept Terms of Service"""
+    try:
+        await db.users.update_one(
+            {"id": user["id"]},
+            {"$set": {
+                "terms_accepted": True,
+                "terms_accepted_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        
+        logger.info(f"User {user['id']} accepted Terms of Service")
+        
+        return {"message": "Terms accepted successfully", "terms_accepted": True}
+    except Exception as e:
+        logger.error(f"Error accepting terms: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to accept terms")
 
 @api_router.get("/auth/me")
 async def get_current_user_info(user: dict = Depends(get_current_user)):
@@ -294,7 +321,9 @@ async def get_current_user_info(user: dict = Depends(get_current_user)):
         "subscription_tier": user.get("subscription_tier", "free"),
         "subscription_status": user.get("subscription_status"),
         "daily_usage_count": user.get("daily_usage_count", 0),
-        "created_at": user.get("created_at")
+        "analysis_count": user.get("analysis_count", 0),
+        "created_at": user.get("created_at"),
+        "terms_accepted": user.get("terms_accepted", False)
     }
     
     # Get subscription details from Stripe if exists
@@ -395,75 +424,26 @@ async def create_upgrade_payment(
 ):
     """Create Stripe subscription checkout session for upgrade"""
     try:
-        # Get Stripe Price IDs from environment (needed early for upgrades)
-        price_ids = {
-            "premium": os.environ.get('STRIPE_PRICE_ID_PREMIUM'),
-            "pro": os.environ.get('STRIPE_PRICE_ID_PRO')
-        }
+        # Get Stripe Price ID from environment - now just unlimited yearly
+        price_id = os.environ.get('STRIPE_PRICE_ID_UNLIMITED')
+        
+        # Fallback to old price IDs if unlimited not set
+        if not price_id:
+            price_id = os.environ.get('STRIPE_PRICE_ID_PRO') or os.environ.get('STRIPE_PRICE_ID_PREMIUM')
+        
+        if not price_id:
+            raise HTTPException(status_code=500, detail="Price ID not configured")
         
         # Check if user already has an active subscription
         current_tier = user.get('subscription_tier', 'free')
         subscription_status = user.get('subscription_status')
-        stripe_subscription_id = user.get('stripe_subscription_id')
         
         # Prevent duplicate subscription purchases
-        if stripe_subscription_id and subscription_status == 'active':
-            if current_tier == checkout_request.tier:
-                raise HTTPException(
-                    status_code=400, 
-                    detail=f"You already have an active {checkout_request.tier} subscription"
-                )
-            
-            # Handle tier upgrades (Premium → Pro)
-            if current_tier == 'premium' and checkout_request.tier == 'pro':
-                try:
-                    import stripe as stripe_lib
-                    stripe_lib.api_key = os.environ.get('STRIPE_API_KEY')
-                    
-                    # Get current subscription
-                    subscription = stripe_lib.Subscription.retrieve(stripe_subscription_id)
-                    
-                    # Update subscription to new price (with proration)
-                    stripe_lib.Subscription.modify(
-                        stripe_subscription_id,
-                        items=[{
-                            'id': subscription['items']['data'][0].id,
-                            'price': price_ids['pro'],
-                        }],
-                        proration_behavior='always_invoice'
-                    )
-                    
-                    # Update user tier immediately
-                    await db.users.update_one(
-                        {"id": user["id"]},
-                        {"$set": {"subscription_tier": "pro"}}
-                    )
-                    
-                    logger.info(f"User {user['id']} upgraded from Premium to Pro")
-                    
-                    return {
-                        "message": "Subscription upgraded successfully",
-                        "tier": "pro"
-                    }
-                    
-                except Exception as e:
-                    logger.error(f"Failed to upgrade subscription: {str(e)}")
-                    raise HTTPException(status_code=500, detail="Failed to upgrade subscription")
-            
-            # Can't downgrade via this endpoint
-            if current_tier == 'pro' and checkout_request.tier == 'premium':
-                raise HTTPException(
-                    status_code=400,
-                    detail="Please use the downgrade option to switch to a lower tier"
-                )
-        
-        if checkout_request.tier not in price_ids:
-            raise HTTPException(status_code=400, detail="Invalid subscription tier")
-        
-        price_id = price_ids[checkout_request.tier]
-        
-        if not price_id:
-            raise HTTPException(status_code=500, detail=f"Price ID not configured for {checkout_request.tier}")
+        if current_tier in ['unlimited', 'premium', 'pro'] and subscription_status == 'active':
+            raise HTTPException(
+                status_code=400, 
+                detail="You already have an active subscription"
+            )
         
         # Initialize Stripe checkout
         host_url = str(http_request.base_url)
@@ -476,7 +456,7 @@ async def create_upgrade_payment(
         # Create metadata for tracking
         metadata = {
             "user_id": user["id"],
-            "tier": checkout_request.tier,
+            "tier": "unlimited",
             "email": user["email"]
         }
         
@@ -490,15 +470,15 @@ async def create_upgrade_payment(
             metadata=metadata
         )
         
-        # Store payment transaction in database (MANDATORY)
+        # Store payment transaction in database
         payment = Payment(
             user_id=user["id"],
             session_id=session.session_id,
-            amount=0.0,  # Will be updated by webhook
+            amount=99.0,
             currency="usd",
             status="pending",
             payment_status="unpaid",
-            subscription_tier=checkout_request.tier
+            subscription_tier="unlimited"
         )
         
         doc = payment.model_dump()
@@ -515,6 +495,8 @@ async def create_upgrade_payment(
             "session_id": session.session_id
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to create Stripe checkout: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Payment creation failed: {str(e)}")
@@ -811,10 +793,10 @@ async def analyze_wallet(request: WalletAnalysisRequest, user: dict = Depends(ch
         doc['user_id'] = user['id']
         await db.wallet_analyses.insert_one(doc)
         
-        # Increment user's daily usage count
+        # Increment user's usage counts
         await db.users.update_one(
             {"id": user["id"]},
-            {"$inc": {"daily_usage_count": 1}}
+            {"$inc": {"daily_usage_count": 1, "analysis_count": 1}}
         )
         
         return analysis_response
@@ -827,14 +809,14 @@ async def analyze_wallet(request: WalletAnalysisRequest, user: dict = Depends(ch
 
 @api_router.post("/wallet/analyze-all")
 async def analyze_all_chains(request: WalletAnalysisRequest, user: dict = Depends(check_usage_limit)):
-    """Analyze wallet across all supported chains (Pro feature only)"""
+    """Analyze wallet across all supported chains (Unlimited feature)"""
     try:
-        # Check if user is Pro
+        # Check if user has Unlimited
         user_tier = user.get('subscription_tier', 'free')
-        if user_tier != 'pro':
+        if user_tier not in ['unlimited', 'pro']:
             raise HTTPException(
                 status_code=403, 
-                detail="Analyze All Chains is a Pro-only feature. Upgrade to Pro to analyze across all blockchains simultaneously."
+                detail="Analyze All Chains is an Unlimited feature. Upgrade to analyze across all blockchains simultaneously."
             )
         
         address = request.address.strip()

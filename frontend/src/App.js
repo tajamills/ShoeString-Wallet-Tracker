@@ -17,17 +17,19 @@ import { ExportModal } from '@/components/ExportModal';
 import { TaxDashboard } from '@/components/TaxDashboard';
 import { TransactionCategorizer } from '@/components/TransactionCategorizer';
 import { ScheduleDExport, BatchCategorizationModal } from '@/components/TaxEnhancements';
+import { TermsModal } from '@/components/TermsModal';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 function App() {
-  const { user, logout, getAuthHeader, loading: authLoading, fetchUserProfile } = useAuth();
+  const { user, logout, getAuthHeader, loading: authLoading, fetchUserProfile, acceptTerms } = useAuth();
   const [walletAddress, setWalletAddress] = useState('');
   const [loading, setLoading] = useState(false);
   const [analysis, setAnalysis] = useState(null);
   const [error, setError] = useState('');
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -54,6 +56,22 @@ function App() {
       pollPaymentStatus(sessionId);
     }
   }, [user]);
+
+  // Show terms modal if user is logged in but hasn't accepted terms
+  useEffect(() => {
+    if (user && !user.terms_accepted) {
+      setShowTermsModal(true);
+    }
+  }, [user]);
+
+  const handleAcceptTerms = async () => {
+    try {
+      await acceptTerms();
+      setShowTermsModal(false);
+    } catch (err) {
+      setError('Failed to accept terms. Please try again.');
+    }
+  };
 
   const pollPaymentStatus = async (sessionId, attempts = 0) => {
     const maxAttempts = 5;
@@ -379,15 +397,14 @@ function App() {
                     <div>
                       <p className="text-white font-medium">{user.email}</p>
                       <div className="flex items-center gap-2 mt-1">
-                        <Badge className={`${user.subscription_tier === 'free' ? 'bg-gray-600' : 'bg-purple-600'}`}>
-                          {user.subscription_tier === 'premium' && <Crown className="w-3 h-3 mr-1" />}
-                          {user.subscription_tier === 'pro' && <Crown className="w-3 h-3 mr-1" />}
-                          {user.subscription_tier.toUpperCase()}
+                        <Badge className={`${user.subscription_tier === 'free' ? 'bg-gray-600' : 'bg-gradient-to-r from-yellow-600 to-orange-600'}`}>
+                          {user.subscription_tier !== 'free' && <Crown className="w-3 h-3 mr-1" />}
+                          {user.subscription_tier === 'free' ? 'FREE' : 'UNLIMITED'}
                         </Badge>
                         <span className="text-sm text-gray-400">
                           {user.subscription_tier === 'free' 
-                            ? `${user.daily_usage_count}/1 analyses today` 
-                            : `${user.daily_usage_count} analyses today`}
+                            ? `${user.analysis_count || 0}/1 free analysis` 
+                            : 'Unlimited analyses'}
                         </span>
                         {user.subscription_tier !== 'free' && (
                           <button
@@ -401,14 +418,14 @@ function App() {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    {user.subscription_tier !== 'pro' && (
+                    {user.subscription_tier === 'free' && (
                       <Button 
                         onClick={() => setShowUpgradeModal(true)}
-                        className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                        className="bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700"
                         data-testid="upgrade-button"
                       >
                         <Crown className="w-4 h-4 mr-2" />
-                        {user.subscription_tier === 'free' ? 'Upgrade' : 'Upgrade to Pro'}
+                        Get Unlimited
                       </Button>
                     )}
                     <Button 
@@ -1208,6 +1225,10 @@ function App() {
           onCategorized={(categories) => {
             console.log('Batch categorized:', categories);
           }}
+        />
+        <TermsModal
+          isOpen={showTermsModal}
+          onAccept={handleAcceptTerms}
         />
       </div>
     </div>
