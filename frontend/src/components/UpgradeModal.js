@@ -77,7 +77,7 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
           <div className="p-6 rounded-lg border-2 border-yellow-500 bg-gradient-to-br from-yellow-900/20 to-orange-900/20">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-2xl font-bold text-white">Unlimited Access</h3>
-              <Badge className="bg-yellow-600 text-lg px-3 py-1">$99/year</Badge>
+              <Badge className="bg-yellow-600 text-lg px-3 py-1">$100.88/year</Badge>
             </div>
             <p className="text-gray-400 text-sm mb-4">
               One payment. Full year. Unlimited everything.
@@ -134,7 +134,7 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
               ) : (
                 <>
                   <Crown className="mr-2 h-5 w-5" />
-                  Get Unlimited Access - $99/year
+                  Get Unlimited Access - $100.88/year
                 </>
               )}
             </Button>
