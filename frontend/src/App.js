@@ -19,6 +19,8 @@ import { TransactionCategorizer } from '@/components/TransactionCategorizer';
 import { ScheduleDExport, BatchCategorizationModal } from '@/components/TaxEnhancements';
 import { TermsModal } from '@/components/TermsModal';
 import { AffiliateModal } from '@/components/AffiliateModal';
+import { ExchangeModal } from '@/components/ExchangeModal';
+import { Link2 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -33,6 +35,7 @@ function App() {
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showAffiliateModal, setShowAffiliateModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [showExchangeModal, setShowExchangeModal] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [paymentSuccess, setPaymentSuccess] = useState(false);
@@ -428,6 +431,17 @@ function App() {
                       >
                         <Crown className="w-4 h-4 mr-2" />
                         Get Unlimited
+                      </Button>
+                    )}
+                    {user.subscription_tier !== 'free' && (
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setShowExchangeModal(true)}
+                        className="border-blue-600 text-blue-300 hover:bg-blue-900/30"
+                        data-testid="exchange-button"
+                      >
+                        <Link2 className="w-4 h-4 mr-2" />
+                        Exchanges
                       </Button>
                     )}
                     <Button 
@@ -1244,6 +1258,11 @@ function App() {
         <AffiliateModal
           isOpen={showAffiliateModal}
           onClose={() => setShowAffiliateModal(false)}
+          getAuthHeader={getAuthHeader}
+        />
+        <ExchangeModal
+          isOpen={showExchangeModal}
+          onClose={() => setShowExchangeModal(false)}
           getAuthHeader={getAuthHeader}
         />
       </div>

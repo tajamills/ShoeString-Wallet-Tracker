@@ -2031,6 +2031,310 @@ async def mark_affiliates_paid(
         logger.error(f"Error marking affiliates paid: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to mark as paid")
 
+# ==================== EXCHANGE INTEGRATION ROUTES ====================
+
+from exchange_service import exchange_service, ExchangeType
+
+class ExchangeConnectRequest(BaseModel):
+    exchange: str  # "coinbase" or "binance"
+    access_token: Optional[str] = None  # For Coinbase OAuth
+    api_key: Optional[str] = None  # For Binance
+    api_secret: Optional[str] = None  # For Binance
+
+class ExchangeCredential(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    exchange: str
+    encrypted_credentials: str  # Encrypted JSON of credentials
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    last_sync: Optional[datetime] = None
+
+@api_router.get("/exchanges/supported")
+async def get_supported_exchanges():
+    """Get list of supported exchange integrations"""
+    return {
+        "exchanges": [
+            {
+                "id": "coinbase",
+                "name": "Coinbase",
+                "auth_type": "oauth2",
+                "description": "Connect your Coinbase account via OAuth",
+                "features": ["trades", "deposits", "withdrawals", "balances"]
+            },
+            {
+                "id": "binance",
+                "name": "Binance",
+                "auth_type": "api_key",
+                "description": "Connect with API Key and Secret",
+                "features": ["trades", "deposits", "withdrawals", "balances"]
+            }
+        ]
+    }
+
+@api_router.post("/exchanges/connect")
+async def connect_exchange(
+    request: ExchangeConnectRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Connect an exchange account
+    
+    For Coinbase: Provide access_token from OAuth flow
+    For Binance: Provide api_key and api_secret
+    """
+    try:
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier == 'free':
+            raise HTTPException(
+                status_code=403,
+                detail="Exchange integration is an Unlimited feature. Upgrade to connect exchanges."
+            )
+        
+        exchange = request.exchange.lower()
+        
+        if exchange == "coinbase":
+            if not request.access_token:
+                raise HTTPException(status_code=400, detail="Access token required for Coinbase")
+            
+            # Verify token by fetching accounts
+            try:
+                client = exchange_service.connect_coinbase(request.access_token)
+                accounts = client.get_accounts()
+                
+                # Store encrypted credentials
+                # In production, use proper encryption
+                credential_data = {"access_token": request.access_token}
+                
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"Invalid Coinbase token: {str(e)}")
+                
+        elif exchange == "binance":
+            if not request.api_key or not request.api_secret:
+                raise HTTPException(status_code=400, detail="API key and secret required for Binance")
+            
+            # Verify credentials
+            try:
+                client = exchange_service.connect_binance(request.api_key, request.api_secret)
+                account = client.get_account()
+                
+                credential_data = {
+                    "api_key": request.api_key,
+                    "api_secret": request.api_secret
+                }
+                
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"Invalid Binance credentials: {str(e)}")
+        else:
+            raise HTTPException(status_code=400, detail=f"Unsupported exchange: {exchange}")
+        
+        # Store credentials (in production, encrypt this!)
+        import json
+        credential = ExchangeCredential(
+            user_id=user["id"],
+            exchange=exchange,
+            encrypted_credentials=json.dumps(credential_data)  # TODO: Encrypt properly
+        )
+        
+        doc = credential.model_dump()
+        doc['created_at'] = doc['created_at'].isoformat()
+        if doc.get('last_sync'):
+            doc['last_sync'] = doc['last_sync'].isoformat()
+        
+        # Upsert - update if exists
+        await db.exchange_credentials.update_one(
+            {"user_id": user["id"], "exchange": exchange},
+            {"$set": doc},
+            upsert=True
+        )
+        
+        logger.info(f"User {user['id']} connected {exchange} exchange")
+        
+        return {
+            "message": f"Successfully connected to {exchange}",
+            "exchange": exchange
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error connecting exchange: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to connect exchange: {str(e)}")
+
+@api_router.get("/exchanges/connected")
+async def get_connected_exchanges(user: dict = Depends(get_current_user)):
+    """Get list of user's connected exchanges"""
+    try:
+        credentials = await db.exchange_credentials.find(
+            {"user_id": user["id"]},
+            {"_id": 0, "encrypted_credentials": 0}  # Don't return credentials
+        ).to_list(10)
+        
+        return {
+            "exchanges": [
+                {
+                    "exchange": cred["exchange"],
+                    "connected_at": cred["created_at"],
+                    "last_sync": cred.get("last_sync")
+                }
+                for cred in credentials
+            ]
+        }
+        
+    except Exception as e:
+        logger.error(f"Error fetching connected exchanges: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch connected exchanges")
+
+@api_router.delete("/exchanges/{exchange_id}")
+async def disconnect_exchange(
+    exchange_id: str,
+    user: dict = Depends(get_current_user)
+):
+    """Disconnect an exchange"""
+    try:
+        result = await db.exchange_credentials.delete_one({
+            "user_id": user["id"],
+            "exchange": exchange_id.lower()
+        })
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Exchange not connected")
+        
+        # Also delete any synced transactions
+        await db.exchange_transactions.delete_many({
+            "user_id": user["id"],
+            "exchange": exchange_id.lower()
+        })
+        
+        logger.info(f"User {user['id']} disconnected {exchange_id}")
+        
+        return {"message": f"Disconnected from {exchange_id}"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error disconnecting exchange: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to disconnect exchange")
+
+@api_router.post("/exchanges/{exchange_id}/sync")
+async def sync_exchange_data(
+    exchange_id: str,
+    user: dict = Depends(get_current_user)
+):
+    """Sync transaction data from an exchange"""
+    try:
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier == 'free':
+            raise HTTPException(
+                status_code=403,
+                detail="Exchange sync is an Unlimited feature."
+            )
+        
+        # Get credentials
+        credential = await db.exchange_credentials.find_one({
+            "user_id": user["id"],
+            "exchange": exchange_id.lower()
+        })
+        
+        if not credential:
+            raise HTTPException(status_code=404, detail=f"{exchange_id} is not connected")
+        
+        import json
+        creds = json.loads(credential["encrypted_credentials"])
+        
+        transactions = []
+        
+        if exchange_id.lower() == "coinbase":
+            client = exchange_service.connect_coinbase(creds["access_token"])
+            transactions = client.get_all_transactions()
+            
+        elif exchange_id.lower() == "binance":
+            client = exchange_service.connect_binance(creds["api_key"], creds["api_secret"])
+            transactions = client.get_all_transactions()
+        
+        # Store transactions in database
+        stored_count = 0
+        for tx in transactions:
+            tx_doc = tx.to_dict()
+            tx_doc["user_id"] = user["id"]
+            tx_doc["synced_at"] = datetime.now(timezone.utc).isoformat()
+            
+            # Upsert each transaction
+            await db.exchange_transactions.update_one(
+                {"user_id": user["id"], "exchange": exchange_id.lower(), "tx_id": tx.tx_id},
+                {"$set": tx_doc},
+                upsert=True
+            )
+            stored_count += 1
+        
+        # Update last sync time
+        await db.exchange_credentials.update_one(
+            {"user_id": user["id"], "exchange": exchange_id.lower()},
+            {"$set": {"last_sync": datetime.now(timezone.utc).isoformat()}}
+        )
+        
+        logger.info(f"Synced {stored_count} transactions from {exchange_id} for user {user['id']}")
+        
+        return {
+            "message": f"Synced {stored_count} transactions from {exchange_id}",
+            "transaction_count": stored_count,
+            "last_sync": datetime.now(timezone.utc).isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error syncing exchange: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to sync exchange: {str(e)}")
+
+@api_router.get("/exchanges/transactions")
+async def get_exchange_transactions(
+    exchange: Optional[str] = None,
+    tx_type: Optional[str] = None,
+    asset: Optional[str] = None,
+    limit: int = 100,
+    user: dict = Depends(get_current_user)
+):
+    """Get synced exchange transactions with filters"""
+    try:
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier == 'free':
+            raise HTTPException(
+                status_code=403,
+                detail="Exchange transactions require Unlimited subscription."
+            )
+        
+        # Build query
+        query = {"user_id": user["id"]}
+        
+        if exchange:
+            query["exchange"] = exchange.lower()
+        if tx_type:
+            query["tx_type"] = tx_type
+        if asset:
+            query["asset"] = asset.upper()
+        
+        transactions = await db.exchange_transactions.find(
+            query,
+            {"_id": 0}
+        ).sort("timestamp", -1).limit(limit).to_list(limit)
+        
+        # Calculate summary
+        summary = exchange_service.calculate_exchange_summary(transactions)
+        
+        return {
+            "transactions": transactions,
+            "count": len(transactions),
+            "summary": summary
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching exchange transactions: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch transactions")
+
 # Include the router in the main app
 app.include_router(api_router)
 
