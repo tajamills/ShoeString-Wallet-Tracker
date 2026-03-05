@@ -153,8 +153,46 @@ class Payment(BaseModel):
     status: str  # pending, paid, failed, expired
     payment_status: str  # Stripe payment_status
     subscription_tier: str
+    affiliate_code: Optional[str] = None  # Affiliate code used
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     confirmed_at: Optional[datetime] = None
+
+# Affiliate Models
+class Affiliate(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    affiliate_code: str  # Unique code like "JOHN10" or username
+    email: str
+    name: str
+    paypal_email: Optional[str] = None  # For payouts
+    total_earnings: float = 0.0
+    pending_earnings: float = 0.0  # Not yet paid out
+    referral_count: int = 0
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    is_active: bool = True
+
+class AffiliateReferral(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    affiliate_id: str
+    affiliate_code: str
+    customer_user_id: str
+    customer_email: str
+    amount_earned: float = 10.0  # $10 per referral
+    customer_discount: float = 10.0  # $10 off for customer
+    payment_id: str  # Link to payment
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    paid_out: bool = False
+    paid_out_date: Optional[datetime] = None
+    quarter: str  # e.g., "2026-Q1"
+
+class AffiliateRegisterRequest(BaseModel):
+    affiliate_code: str
+    name: str
+    paypal_email: Optional[str] = None
 
 class UpgradeRequest(BaseModel):
     tier: str  # "premium" or "pro"
@@ -415,6 +453,13 @@ async def downgrade_subscription(
 class CheckoutRequest(BaseModel):
     tier: str
     origin_url: str  # Frontend origin URL
+    affiliate_code: Optional[str] = None  # Optional affiliate code for discount
+
+def get_current_quarter():
+    """Get current quarter string like '2026-Q1'"""
+    now = datetime.now()
+    quarter = (now.month - 1) // 3 + 1
+    return f"{now.year}-Q{quarter}"
 
 @api_router.post("/payments/create-upgrade")
 async def create_upgrade_payment(
@@ -445,6 +490,39 @@ async def create_upgrade_payment(
                 detail="You already have an active subscription"
             )
         
+        # Validate affiliate code if provided
+        affiliate = None
+        coupon_id = None
+        if checkout_request.affiliate_code:
+            affiliate = await db.affiliates.find_one({
+                "affiliate_code": checkout_request.affiliate_code.upper(),
+                "is_active": True
+            })
+            if affiliate:
+                # Don't allow self-referral
+                if affiliate['user_id'] == user['id']:
+                    raise HTTPException(status_code=400, detail="You cannot use your own affiliate code")
+                
+                # Create or get Stripe coupon for $10 off
+                try:
+                    import stripe as stripe_lib
+                    stripe_lib.api_key = os.environ.get('STRIPE_API_KEY')
+                    
+                    # Try to retrieve existing coupon or create new one
+                    coupon_id = "AFFILIATE10"
+                    try:
+                        stripe_lib.Coupon.retrieve(coupon_id)
+                    except:
+                        stripe_lib.Coupon.create(
+                            id=coupon_id,
+                            amount_off=1000,  # $10.00 in cents
+                            currency="usd",
+                            duration="once",
+                            name="Affiliate Discount - $10 Off"
+                        )
+                except Exception as e:
+                    logger.warning(f"Could not create/get coupon: {str(e)}")
+        
         # Initialize Stripe checkout
         host_url = str(http_request.base_url)
         stripe_service.initialize_checkout(host_url)
@@ -460,25 +538,50 @@ async def create_upgrade_payment(
             "email": user["email"]
         }
         
-        # Create Stripe subscription checkout session
-        session = await stripe_service.create_checkout_session(
-            price_id=price_id,
-            customer_email=user["email"],
-            customer_id=user.get("stripe_customer_id"),
-            success_url=success_url,
-            cancel_url=cancel_url,
-            metadata=metadata
-        )
+        # Add affiliate code to metadata if present
+        if affiliate:
+            metadata["affiliate_code"] = checkout_request.affiliate_code.upper()
+            metadata["affiliate_id"] = affiliate["id"]
+        
+        # Create Stripe subscription checkout session with optional coupon
+        import stripe as stripe_lib
+        stripe_lib.api_key = os.environ.get('STRIPE_API_KEY')
+        
+        session_params = {
+            'payment_method_types': ['card'],
+            'line_items': [{
+                'price': price_id,
+                'quantity': 1,
+            }],
+            'mode': 'subscription',
+            'success_url': success_url,
+            'cancel_url': cancel_url,
+            'metadata': metadata,
+            'allow_promotion_codes': False if coupon_id else True,
+            'billing_address_collection': 'auto',
+        }
+        
+        if user.get("stripe_customer_id"):
+            session_params['customer'] = user["stripe_customer_id"]
+        else:
+            session_params['customer_email'] = user["email"]
+        
+        # Apply affiliate coupon if valid
+        if coupon_id and affiliate:
+            session_params['discounts'] = [{'coupon': coupon_id}]
+        
+        session = stripe_lib.checkout.Session.create(**session_params)
         
         # Store payment transaction in database
         payment = Payment(
             user_id=user["id"],
-            session_id=session.session_id,
-            amount=99.0,
+            session_id=session.id,
+            amount=100.88 if not affiliate else 90.88,  # $10 off with affiliate
             currency="usd",
             status="pending",
             payment_status="unpaid",
-            subscription_tier="unlimited"
+            subscription_tier="unlimited",
+            affiliate_code=checkout_request.affiliate_code.upper() if affiliate else None
         )
         
         doc = payment.model_dump()
@@ -488,11 +591,13 @@ async def create_upgrade_payment(
         
         await db.payment_transactions.insert_one(doc)
         
-        logger.info(f"Stripe subscription checkout created for user {user['id']}: {session.session_id}")
+        logger.info(f"Stripe subscription checkout created for user {user['id']}: {session.id}")
         
         return {
             "url": session.url,
-            "session_id": session.session_id
+            "session_id": session.id,
+            "affiliate_applied": affiliate is not None,
+            "discount": 10.0 if affiliate else 0
         }
         
     except HTTPException:
@@ -566,6 +671,44 @@ async def handle_stripe_webhook(request: Request):
                         }
                     }
                 )
+                
+                # Handle affiliate referral if present
+                affiliate_code = metadata.get('affiliate_code')
+                affiliate_id = metadata.get('affiliate_id')
+                
+                if affiliate_code and affiliate_id:
+                    # Get customer email
+                    customer_email = metadata.get('email', '')
+                    
+                    # Create referral record
+                    referral = AffiliateReferral(
+                        affiliate_id=affiliate_id,
+                        affiliate_code=affiliate_code,
+                        customer_user_id=user_id,
+                        customer_email=customer_email,
+                        amount_earned=10.0,
+                        customer_discount=10.0,
+                        payment_id=session_id,
+                        quarter=get_current_quarter()
+                    )
+                    
+                    ref_doc = referral.model_dump()
+                    ref_doc['created_at'] = ref_doc['created_at'].isoformat()
+                    await db.affiliate_referrals.insert_one(ref_doc)
+                    
+                    # Update affiliate earnings
+                    await db.affiliates.update_one(
+                        {"id": affiliate_id},
+                        {
+                            "$inc": {
+                                "total_earnings": 10.0,
+                                "pending_earnings": 10.0,
+                                "referral_count": 1
+                            }
+                        }
+                    )
+                    
+                    logger.info(f"Affiliate {affiliate_code} earned $10 for referral of user {user_id}")
                 
                 logger.info(f"User {user_id} subscribed to {tier} (subscription: {subscription_id})")
         
@@ -1625,6 +1768,268 @@ async def get_supported_tax_years():
         "years": list(range(2020, current_year + 1)),
         "current_year": current_year
     }
+
+# ==================== AFFILIATE ROUTES ====================
+
+@api_router.post("/affiliate/register")
+async def register_affiliate(
+    request: AffiliateRegisterRequest,
+    user: dict = Depends(get_current_user)
+):
+    """Register as an affiliate"""
+    try:
+        # Check if user already is an affiliate
+        existing = await db.affiliates.find_one({"user_id": user["id"]})
+        if existing:
+            raise HTTPException(status_code=400, detail="You are already registered as an affiliate")
+        
+        # Check if affiliate code is taken
+        code = request.affiliate_code.upper().strip()
+        if len(code) < 3 or len(code) > 20:
+            raise HTTPException(status_code=400, detail="Affiliate code must be 3-20 characters")
+        
+        code_exists = await db.affiliates.find_one({"affiliate_code": code})
+        if code_exists:
+            raise HTTPException(status_code=400, detail="This affiliate code is already taken")
+        
+        # Create affiliate
+        affiliate = Affiliate(
+            user_id=user["id"],
+            affiliate_code=code,
+            email=user["email"],
+            name=request.name,
+            paypal_email=request.paypal_email
+        )
+        
+        doc = affiliate.model_dump()
+        doc['created_at'] = doc['created_at'].isoformat()
+        await db.affiliates.insert_one(doc)
+        
+        logger.info(f"New affiliate registered: {code} by user {user['id']}")
+        
+        return {
+            "message": "Successfully registered as affiliate",
+            "affiliate_code": code,
+            "share_link": f"Use code '{code}' for $10 off!"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error registering affiliate: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to register as affiliate")
+
+@api_router.get("/affiliate/me")
+async def get_my_affiliate_info(user: dict = Depends(get_current_user)):
+    """Get current user's affiliate information"""
+    try:
+        affiliate = await db.affiliates.find_one(
+            {"user_id": user["id"]},
+            {"_id": 0}
+        )
+        
+        if not affiliate:
+            return {"is_affiliate": False}
+        
+        # Get recent referrals
+        referrals = await db.affiliate_referrals.find(
+            {"affiliate_id": affiliate["id"]},
+            {"_id": 0}
+        ).sort("created_at", -1).limit(10).to_list(10)
+        
+        return {
+            "is_affiliate": True,
+            "affiliate_code": affiliate["affiliate_code"],
+            "name": affiliate["name"],
+            "total_earnings": affiliate["total_earnings"],
+            "pending_earnings": affiliate["pending_earnings"],
+            "referral_count": affiliate["referral_count"],
+            "paypal_email": affiliate.get("paypal_email"),
+            "recent_referrals": referrals,
+            "created_at": affiliate["created_at"]
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting affiliate info: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get affiliate info")
+
+@api_router.get("/affiliate/validate/{code}")
+async def validate_affiliate_code(code: str):
+    """Validate an affiliate code (public endpoint)"""
+    try:
+        affiliate = await db.affiliates.find_one({
+            "affiliate_code": code.upper(),
+            "is_active": True
+        })
+        
+        if affiliate:
+            return {
+                "valid": True,
+                "discount": 10.0,
+                "message": f"Code '{code.upper()}' applied! You'll get $10 off."
+            }
+        else:
+            return {
+                "valid": False,
+                "discount": 0,
+                "message": "Invalid affiliate code"
+            }
+            
+    except Exception as e:
+        logger.error(f"Error validating affiliate code: {str(e)}")
+        return {"valid": False, "discount": 0, "message": "Error validating code"}
+
+@api_router.put("/affiliate/update")
+async def update_affiliate_info(
+    paypal_email: Optional[str] = None,
+    user: dict = Depends(get_current_user)
+):
+    """Update affiliate payment info"""
+    try:
+        result = await db.affiliates.update_one(
+            {"user_id": user["id"]},
+            {"$set": {"paypal_email": paypal_email}}
+        )
+        
+        if result.modified_count == 0:
+            raise HTTPException(status_code=404, detail="Affiliate not found")
+        
+        return {"message": "Affiliate info updated"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating affiliate: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to update affiliate info")
+
+# Admin endpoint for quarterly payout report
+@api_router.get("/affiliate/admin/report")
+async def get_affiliate_payout_report(
+    quarter: Optional[str] = None,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Get affiliate payout report for a quarter (Admin only)
+    Quarter format: '2026-Q1', '2026-Q2', etc.
+    """
+    try:
+        # Simple admin check - you may want to add proper admin role
+        admin_emails = os.environ.get('ADMIN_EMAILS', '').split(',')
+        if user['email'] not in admin_emails and user['email'] != 'admin@cryptobagtracker.io':
+            raise HTTPException(status_code=403, detail="Admin access required")
+        
+        # Default to current quarter
+        if not quarter:
+            quarter = get_current_quarter()
+        
+        # Get all unpaid referrals for the quarter
+        pipeline = [
+            {"$match": {"quarter": quarter, "paid_out": False}},
+            {"$group": {
+                "_id": "$affiliate_id",
+                "affiliate_code": {"$first": "$affiliate_code"},
+                "total_earned": {"$sum": "$amount_earned"},
+                "referral_count": {"$sum": 1},
+                "referral_ids": {"$push": "$id"}
+            }},
+            {"$sort": {"total_earned": -1}}
+        ]
+        
+        results = await db.affiliate_referrals.aggregate(pipeline).to_list(100)
+        
+        # Get affiliate details
+        report = []
+        total_payout = 0
+        
+        for item in results:
+            affiliate = await db.affiliates.find_one(
+                {"id": item["_id"]},
+                {"_id": 0, "email": 1, "name": 1, "paypal_email": 1, "affiliate_code": 1}
+            )
+            
+            if affiliate:
+                report.append({
+                    "affiliate_code": affiliate["affiliate_code"],
+                    "name": affiliate["name"],
+                    "email": affiliate["email"],
+                    "paypal_email": affiliate.get("paypal_email", "NOT SET"),
+                    "referral_count": item["referral_count"],
+                    "amount_owed": item["total_earned"],
+                    "referral_ids": item["referral_ids"]
+                })
+                total_payout += item["total_earned"]
+        
+        return {
+            "quarter": quarter,
+            "total_affiliates": len(report),
+            "total_payout": total_payout,
+            "affiliates": report,
+            "generated_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating payout report: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to generate report")
+
+@api_router.post("/affiliate/admin/mark-paid")
+async def mark_affiliates_paid(
+    quarter: str,
+    affiliate_ids: List[str],
+    user: dict = Depends(get_current_user)
+):
+    """Mark affiliate referrals as paid (Admin only)"""
+    try:
+        # Admin check
+        admin_emails = os.environ.get('ADMIN_EMAILS', '').split(',')
+        if user['email'] not in admin_emails and user['email'] != 'admin@cryptobagtracker.io':
+            raise HTTPException(status_code=403, detail="Admin access required")
+        
+        now = datetime.now(timezone.utc).isoformat()
+        
+        # Update referrals
+        result = await db.affiliate_referrals.update_many(
+            {
+                "quarter": quarter,
+                "affiliate_id": {"$in": affiliate_ids},
+                "paid_out": False
+            },
+            {
+                "$set": {
+                    "paid_out": True,
+                    "paid_out_date": now
+                }
+            }
+        )
+        
+        # Update affiliate pending earnings
+        for aff_id in affiliate_ids:
+            # Calculate paid amount
+            paid_amount = await db.affiliate_referrals.count_documents({
+                "affiliate_id": aff_id,
+                "quarter": quarter,
+                "paid_out": True,
+                "paid_out_date": now
+            }) * 10.0
+            
+            await db.affiliates.update_one(
+                {"id": aff_id},
+                {"$inc": {"pending_earnings": -paid_amount}}
+            )
+        
+        logger.info(f"Admin marked {result.modified_count} referrals as paid for {quarter}")
+        
+        return {
+            "message": f"Marked {result.modified_count} referrals as paid",
+            "quarter": quarter
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error marking affiliates paid: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to mark as paid")
 
 # Include the router in the main app
 app.include_router(api_router)

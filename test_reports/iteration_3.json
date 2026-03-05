@@ -1,0 +1,107 @@
+{
+  "summary": "Affiliate Program feature testing complete. All backend API tests pass (16/16). All frontend E2E tests pass (8/8). Affiliate registration, dashboard, code validation, and upgrade modal integration with affiliate codes all work correctly. $10 discount is properly displayed when valid affiliate code is applied.",
+  "mode": "generate",
+  "baseline_commit": "b8d3d64771ab77f6ceb316925df57d970235c362",
+  "head_commit": "1c7e07535b395a0ec8047d67507a2afe7aa79b58",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "regression_results": {
+    "total_specs": 8,
+    "passed": 8,
+    "failed": 0,
+    "skipped": 0
+  },
+  "specs_created": [
+    "/app/tests/e2e/affiliate.spec.ts",
+    "/app/backend/tests/test_affiliate.py"
+  ],
+  "specs_updated": [],
+  "quarantined_tests": [],
+  "test_report_links": [
+    "/app/backend/tests/test_affiliate.py",
+    "/app/test_reports/pytest/affiliate_results.xml",
+    "/app/tests/e2e/affiliate.spec.ts"
+  ],
+  "action_items": [],
+  "updated_files": [
+    "/app/frontend/src/components/AffiliateModal.js",
+    "/app/frontend/src/components/UpgradeModal.js"
+  ],
+  "success_rate": {
+    "backend": "100%",
+    "frontend": "100%"
+  },
+  "seed_data_creation": "Test users with TEST_ prefix created dynamically for each test. Affiliate codes with timestamp-based unique IDs created during tests.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Affiliate Program fully tested. Backend endpoints: POST /api/affiliate/register (requires auth, validates code length 3-20, uppercase conversion), GET /api/affiliate/me (returns is_affiliate status and dashboard data), GET /api/affiliate/validate/{code} (public, returns valid/discount/message). Frontend: AffiliateModal shows registration form for non-affiliates and dashboard for affiliates. UpgradeModal has affiliate code input with real-time validation showing $10 off message. Payment button updates to show discounted price $90.88/year. Added data-testid attributes to AffiliateModal.js for test automation.",
+  "tests_executed": {
+    "backend": {
+      "TestAffiliateValidation": {
+        "test_validate_invalid_code": "PASSED",
+        "test_validate_short_code": "PASSED",
+        "test_validate_code_case_insensitive": "PASSED"
+      },
+      "TestAffiliateRegistration": {
+        "test_register_requires_auth": "PASSED",
+        "test_register_affiliate_success": "PASSED",
+        "test_register_duplicate_user": "PASSED",
+        "test_register_code_too_short": "PASSED",
+        "test_register_duplicate_code": "PASSED"
+      },
+      "TestAffiliateDashboard": {
+        "test_dashboard_requires_auth": "PASSED",
+        "test_dashboard_non_affiliate_user": "PASSED",
+        "test_dashboard_affiliate_user": "PASSED"
+      },
+      "TestAffiliateCodeValidationAfterRegistration": {
+        "test_validate_registered_code": "PASSED"
+      },
+      "TestPaymentWithAffiliateCode": {
+        "test_payment_request_accepts_affiliate_code": "PASSED",
+        "test_user_cannot_use_own_code": "PASSED"
+      },
+      "TestAffiliateCodeFormats": {
+        "test_alphanumeric_code": "PASSED",
+        "test_code_converted_to_uppercase": "PASSED"
+      }
+    },
+    "frontend": {
+      "Affiliate Program - Basic Tests": {
+        "Homepage loads with Login button": "PASSED",
+        "Affiliate button visible when logged in": "PASSED",
+        "Affiliate modal opens with registration form": "PASSED",
+        "Affiliate registration form validation": "PASSED"
+      },
+      "Affiliate Registration": {
+        "User can register as affiliate": "PASSED"
+      },
+      "Upgrade Modal - Affiliate Code": {
+        "Upgrade modal has affiliate code input": "PASSED",
+        "Invalid affiliate code shows error": "PASSED",
+        "Valid affiliate code shows discount": "PASSED"
+      }
+    }
+  },
+  "data_testids_added": [
+    "affiliate-modal",
+    "affiliate-modal-title",
+    "affiliate-loading",
+    "affiliate-dashboard",
+    "affiliate-code-badge",
+    "affiliate-registration-form",
+    "affiliate-code-input",
+    "affiliate-name-input",
+    "affiliate-paypal-input",
+    "affiliate-register-button",
+    "upgrade-affiliate-code-input",
+    "affiliate-validation-status"
+  ]
+}

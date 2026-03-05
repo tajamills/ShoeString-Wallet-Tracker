@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Crown, Check, Zap, Shield, FileText, Globe } from 'lucide-react';
+import { Loader2, Crown, Check, Zap, Shield, FileText, Globe, Tag, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import axios from 'axios';
 
@@ -14,6 +15,9 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
   const { user, getAuthHeader } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [affiliateCode, setAffiliateCode] = useState('');
+  const [affiliateValid, setAffiliateValid] = useState(null);
+  const [validatingCode, setValidatingCode] = useState(false);
 
   const features = [
     { icon: Globe, text: 'Unlimited wallet analyses' },
@@ -27,6 +31,36 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
     { icon: Check, text: 'Priority support' },
   ];
 
+  const validateAffiliateCode = async (code) => {
+    if (!code || code.length < 3) {
+      setAffiliateValid(null);
+      return;
+    }
+
+    setValidatingCode(true);
+    try {
+      const response = await axios.get(`${API}/affiliate/validate/${code}`);
+      setAffiliateValid(response.data);
+    } catch (err) {
+      setAffiliateValid({ valid: false, message: 'Error validating code' });
+    } finally {
+      setValidatingCode(false);
+    }
+  };
+
+  const handleCodeChange = (e) => {
+    const code = e.target.value.toUpperCase();
+    setAffiliateCode(code);
+    
+    // Debounce validation
+    if (code.length >= 3) {
+      const timer = setTimeout(() => validateAffiliateCode(code), 500);
+      return () => clearTimeout(timer);
+    } else {
+      setAffiliateValid(null);
+    }
+  };
+
   const handleUpgrade = async () => {
     setError('');
     setLoading(true);
@@ -38,7 +72,8 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
         `${API}/payments/create-upgrade`,
         { 
           tier: 'unlimited',
-          origin_url: originUrl
+          origin_url: originUrl,
+          affiliate_code: affiliateValid?.valid ? affiliateCode : null
         },
         { headers: getAuthHeader() }
       );
@@ -59,6 +94,11 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
   // Check if user already has unlimited
   const hasUnlimited = user?.subscription_tier === 'unlimited' && user?.subscription_status === 'active';
 
+  // Calculate final price
+  const basePrice = 100.88;
+  const discount = affiliateValid?.valid ? 10 : 0;
+  const finalPrice = basePrice - discount;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-lg bg-slate-800 border-slate-700 max-h-[90vh] overflow-y-auto" data-testid="upgrade-modal">
@@ -77,7 +117,14 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
           <div className="p-6 rounded-lg border-2 border-yellow-500 bg-gradient-to-br from-yellow-900/20 to-orange-900/20">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-2xl font-bold text-white">Unlimited Access</h3>
-              <Badge className="bg-yellow-600 text-lg px-3 py-1">$100.88/year</Badge>
+              <div className="text-right">
+                {discount > 0 && (
+                  <span className="text-gray-400 line-through text-sm mr-2">${basePrice}/year</span>
+                )}
+                <Badge className="bg-yellow-600 text-lg px-3 py-1">
+                  ${finalPrice.toFixed(2)}/year
+                </Badge>
+              </div>
             </div>
             <p className="text-gray-400 text-sm mb-4">
               One payment. Full year. Unlimited everything.
@@ -91,6 +138,40 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
                 </li>
               ))}
             </ul>
+          </div>
+
+          {/* Affiliate Code Input */}
+          <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-300 mb-2">
+              <Tag className="w-4 h-4 text-purple-400" />
+              Have a referral code? Get $10 off!
+            </label>
+            <div className="flex gap-2">
+              <Input
+                value={affiliateCode}
+                onChange={handleCodeChange}
+                placeholder="Enter code (e.g., JOHN10)"
+                className="bg-slate-800 border-slate-600 text-white uppercase"
+                maxLength={20}
+                data-testid="upgrade-affiliate-code-input"
+              />
+              {validatingCode && (
+                <Loader2 className="w-5 h-5 animate-spin text-gray-400 my-auto" />
+              )}
+            </div>
+            
+            {affiliateValid && (
+              <div className={`mt-2 text-sm flex items-center gap-2 ${affiliateValid.valid ? 'text-green-400' : 'text-red-400'}`} data-testid="affiliate-validation-status">
+                {affiliateValid.valid ? (
+                  <>
+                    <CheckCircle className="w-4 h-4" />
+                    {affiliateValid.message}
+                  </>
+                ) : (
+                  affiliateValid.message
+                )}
+              </div>
+            )}
           </div>
 
           {/* Free tier info */}
@@ -134,7 +215,7 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
               ) : (
                 <>
                   <Crown className="mr-2 h-5 w-5" />
-                  Get Unlimited Access - $100.88/year
+                  Get Unlimited Access - ${finalPrice.toFixed(2)}/year
                 </>
               )}
             </Button>

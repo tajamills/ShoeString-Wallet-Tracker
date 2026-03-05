@@ -109,7 +109,7 @@ ALCHEMY_API_KEY="U2_F7nkCGFY73wbiIFpum"
 
 **Frontend (.env)**
 ```
-REACT_APP_BACKEND_URL=https://tax-analysis-phase2.preview.emergentagent.com
+REACT_APP_BACKEND_URL=https://wallet-tax-hub.preview.emergentagent.com
 ```
 
 ## How It Works

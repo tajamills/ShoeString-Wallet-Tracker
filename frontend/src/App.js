@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Wallet, TrendingUp, TrendingDown, DollarSign, Activity, LogOut, User, Crown, Download, Calculator, Tag } from 'lucide-react';
+import { Loader2, Wallet, TrendingUp, TrendingDown, DollarSign, Activity, LogOut, User, Crown, Download, Calculator, Tag, Users } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthModal } from '@/components/AuthModal';
@@ -18,6 +18,7 @@ import { TaxDashboard } from '@/components/TaxDashboard';
 import { TransactionCategorizer } from '@/components/TransactionCategorizer';
 import { ScheduleDExport, BatchCategorizationModal } from '@/components/TaxEnhancements';
 import { TermsModal } from '@/components/TermsModal';
+import { AffiliateModal } from '@/components/AffiliateModal';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -30,6 +31,7 @@ function App() {
   const [error, setError] = useState('');
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showAffiliateModal, setShowAffiliateModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -428,6 +430,15 @@ function App() {
                         Get Unlimited
                       </Button>
                     )}
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setShowAffiliateModal(true)}
+                      className="border-purple-600 text-purple-300 hover:bg-purple-900/30"
+                      data-testid="affiliate-button"
+                    >
+                      <Users className="w-4 h-4 mr-2" />
+                      Affiliate
+                    </Button>
                     <Button 
                       variant="outline" 
                       onClick={logout}
@@ -1229,6 +1240,11 @@ function App() {
         <TermsModal
           isOpen={showTermsModal}
           onAccept={handleAcceptTerms}
+        />
+        <AffiliateModal
+          isOpen={showAffiliateModal}
+          onClose={() => setShowAffiliateModal(false)}
+          getAuthHeader={getAuthHeader}
         />
       </div>
     </div>
