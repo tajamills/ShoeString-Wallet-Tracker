@@ -79,15 +79,14 @@ All users must accept Terms of Service before using the platform. The TOS modal 
 - [x] Discount application during checkout ($10 off)
 - [x] Admin reporting endpoints
 
-### Phase 5: Exchange API Integration (Completed - Mar 5, 2026)
-- [x] Coinbase OAuth2 integration framework
-- [x] Binance API key authentication
-- [x] Exchange connection management (connect/disconnect)
-- [x] Transaction sync from exchanges
-- [x] Unified transaction format across exchanges
-- [x] Exchange transactions listing with filters
-- [x] Transaction summary calculation
-- [x] ExchangeModal UI for managing connections
+### Phase 5: Exchange Integration - CSV Import (Completed - Mar 5, 2026)
+- [x] CSV parser service with auto-detection for 6 exchanges
+- [x] Support for: Coinbase, Binance, Kraken, Gemini, Crypto.com, KuCoin
+- [x] File upload endpoint with auto-format detection
+- [x] Step-by-step export instructions for each exchange
+- [x] ExchangeModal with drag-and-drop CSV upload UI
+- [x] Transaction storage and filtering
+- [x] Privacy-first approach - no API keys stored
 - [x] Free user restriction (Unlimited only)
 
 ### Phase 6: Code Refactoring (Completed - Mar 5, 2026)
