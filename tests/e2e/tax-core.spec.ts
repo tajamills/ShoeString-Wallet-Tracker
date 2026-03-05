@@ -33,8 +33,8 @@ test.describe('Core Tax Features', () => {
     await page.waitForLoadState('domcontentloaded');
     await login(page);
     
-    // Verify premium badge
-    await expect(page.getByTestId('user-info-bar').getByText(/PREMIUM/i)).toBeVisible();
+    // Verify unlimited badge (subscription tier)
+    await expect(page.getByTestId('user-info-bar').getByText('UNLIMITED', { exact: true })).toBeVisible();
     
     // Analyze wallet
     await analyzeWallet(page, TEST_WALLET_ADDRESS);

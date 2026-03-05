@@ -5,9 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Wallet, TrendingUp, TrendingDown, DollarSign, Activity, LogOut, User, Crown, Download, Calculator, Tag, Users } from 'lucide-react';
+import { Loader2, Wallet, TrendingUp, TrendingDown, DollarSign, Activity, LogOut, User, Crown, Download, Calculator, Tag, Users, Link2 } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAnalysis } from '@/hooks/useAnalysis';
+import { usePayment } from '@/hooks/usePayment';
 import { AuthModal } from '@/components/AuthModal';
 import { UpgradeModal } from '@/components/UpgradeModal';
 import { SavedWallets } from '@/components/SavedWallets';
@@ -20,17 +22,30 @@ import { ScheduleDExport, BatchCategorizationModal } from '@/components/TaxEnhan
 import { TermsModal } from '@/components/TermsModal';
 import { AffiliateModal } from '@/components/AffiliateModal';
 import { ExchangeModal } from '@/components/ExchangeModal';
-import { Link2 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 function App() {
   const { user, logout, getAuthHeader, loading: authLoading, fetchUserProfile, acceptTerms } = useAuth();
+  
+  // Use custom hooks for analysis and payment
+  const {
+    loading,
+    analysis,
+    error,
+    setError,
+    multiChainResults,
+    analyzingAll,
+    analyzeWallet: doAnalyzeWallet,
+    analyzeAllChains: doAnalyzeAllChains,
+    setAnalysis
+  } = useAnalysis(getAuthHeader, fetchUserProfile);
+  
+  const { paymentSuccess, setPaymentSuccess } = usePayment(user, getAuthHeader, fetchUserProfile);
+  
+  // Form state
   const [walletAddress, setWalletAddress] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [analysis, setAnalysis] = useState(null);
-  const [error, setError] = useState('');
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showAffiliateModal, setShowAffiliateModal] = useState(false);
@@ -38,29 +53,15 @@ function App() {
   const [showExchangeModal, setShowExchangeModal] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [selectedChain, setSelectedChain] = useState('ethereum');
   const [showSavedWallets, setShowSavedWallets] = useState(false);
   const [showDowngradeModal, setShowDowngradeModal] = useState(false);
   const [showChainRequestModal, setShowChainRequestModal] = useState(false);
-  const [multiChainResults, setMultiChainResults] = useState(null);
-  const [analyzingAll, setAnalyzingAll] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [showCategorizer, setShowCategorizer] = useState(false);
   const [showScheduleD, setShowScheduleD] = useState(false);
   const [showBatchCategorize, setShowBatchCategorize] = useState(false);
   const [exportingForm8949, setExportingForm8949] = useState(false);
-
-  // Check for payment success on component mount
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const sessionId = urlParams.get('session_id');
-    
-    if (sessionId && user) {
-      // Poll payment status
-      pollPaymentStatus(sessionId);
-    }
-  }, [user]);
 
   // Show terms modal if user is logged in but hasn't accepted terms
   useEffect(() => {
@@ -75,44 +76,6 @@ function App() {
       setShowTermsModal(false);
     } catch (err) {
       setError('Failed to accept terms. Please try again.');
-    }
-  };
-
-  const pollPaymentStatus = async (sessionId, attempts = 0) => {
-    const maxAttempts = 5;
-    
-    if (attempts >= maxAttempts) {
-      setError('Payment verification timed out. Please check your subscription status.');
-      return;
-    }
-
-    try {
-      const response = await axios.get(
-        `${API}/payments/status/${sessionId}`,
-        { headers: getAuthHeader() }
-      );
-
-      if (response.data.payment_status === 'paid') {
-        setPaymentSuccess(true);
-        setError('');
-        // Refresh user profile to get updated subscription tier
-        await fetchUserProfile();
-        // Remove session_id from URL
-        window.history.replaceState({}, document.title, window.location.pathname);
-        return;
-      }
-
-      // Continue polling if still pending
-      if (response.data.status !== 'expired') {
-        setTimeout(() => pollPaymentStatus(sessionId, attempts + 1), 2000);
-      } else {
-        setError('Payment session expired.');
-      }
-    } catch (err) {
-      console.error('Error checking payment status:', err);
-      if (attempts < maxAttempts) {
-        setTimeout(() => pollPaymentStatus(sessionId, attempts + 1), 2000);
-      }
     }
   };
 
@@ -140,63 +103,20 @@ function App() {
     return icons[chain] || '⟠';
   };
 
+  // Wrapper to use the hook's analyze functions
   const analyzeAllChains = async () => {
     if (!user) {
       setShowAuthModal(true);
       return;
     }
 
-    if (user.subscription_tier !== 'pro') {
-      setError('Analyze All Chains is a Pro-only feature. Upgrade to Pro to unlock this feature!');
+    if (user.subscription_tier !== 'pro' && user.subscription_tier !== 'unlimited') {
+      setError('Analyze All Chains requires Unlimited subscription!');
+      setShowUpgradeModal(true);
       return;
     }
 
-    const address = walletAddress;
-
-    if (!address) {
-      setError('Please enter a wallet address');
-      return;
-    }
-
-    if (!address.startsWith('0x') || address.length !== 42) {
-      setError('Please enter a valid EVM address (0x...) for multi-chain analysis');
-      return;
-    }
-
-    setAnalyzingAll(true);
-    setError('');
-    setAnalysis(null);
-    setMultiChainResults(null);
-
-    try {
-      const payload = { 
-        address: address,
-        chain: 'ethereum' // Not used but required by backend
-      };
-      
-      if (startDate) payload.start_date = startDate;
-      if (endDate) payload.end_date = endDate;
-      
-      const response = await axios.post(
-        `${API}/wallet/analyze-all`,
-        payload,
-        { headers: getAuthHeader() }
-      );
-      
-      setMultiChainResults(response.data);
-      await fetchUserProfile();
-    } catch (err) {
-      if (err.response?.status === 403) {
-        setError('Analyze All Chains is a Pro-only feature. Upgrade to Pro!');
-      } else if (err.response?.status === 401) {
-        setError('Please login to analyze wallets');
-        setShowAuthModal(true);
-      } else {
-        setError(err.response?.data?.detail || 'Failed to analyze wallet across all chains');
-      }
-    } finally {
-      setAnalyzingAll(false);
-    }
+    await doAnalyzeAllChains(walletAddress, startDate, endDate);
   };
 
   const analyzeWallet = async (addressOverride = null, chainOverride = null) => {
@@ -208,58 +128,8 @@ function App() {
     const address = addressOverride || walletAddress;
     const chain = chainOverride || selectedChain;
 
-    // Basic validation - chain-specific
-    if (!address) {
-      setError('Please enter a wallet address');
-      return;
-    }
-
-    if (chain === 'ethereum' || chain === 'arbitrum' || chain === 'bsc' || chain === 'polygon') {
-      if (!address.startsWith('0x') || address.length !== 42) {
-        setError('Please enter a valid address (0x...)');
-        return;
-      }
-    }
-
-    setLoading(true);
-    setError('');
-    setAnalysis(null);
-    setMultiChainResults(null);
-
-    try {
-      const payload = { 
-        address: address,
-        chain: chain
-      };
-      
-      // Add date range if provided
-      if (startDate) {
-        payload.start_date = startDate;
-      }
-      if (endDate) {
-        payload.end_date = endDate;
-      }
-      
-      const response = await axios.post(
-        `${API}/wallet/analyze`,
-        payload,
-        { headers: getAuthHeader() }
-      );
-      setAnalysis(response.data);
-      // Refresh user data to update usage count
-      await fetchUserProfile();
-    } catch (err) {
-      if (err.response?.status === 429) {
-        setError('Daily limit reached! Upgrade to Premium for unlimited wallet analyses.');
-      } else if (err.response?.status === 401) {
-        setError('Please login to continue');
-        setShowAuthModal(true);
-      } else {
-        setError(err.response?.data?.detail || 'Failed to analyze wallet. Please try again.');
-      }
-    } finally {
-      setLoading(false);
-    }
+    // Use the hook's analyze function
+    await doAnalyzeWallet(address, chain, startDate, endDate);
   };
 
   const loadHistory = async () => {

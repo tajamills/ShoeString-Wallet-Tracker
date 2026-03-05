@@ -15,6 +15,7 @@ from wallet_service import WalletService
 from auth_service import AuthService
 from stripe_service import StripeService
 from multi_chain_service import MultiChainService
+from multi_chain_service_v2 import multi_chain_service_v2  # New refactored service
 from tax_report_service import tax_report_service
 from fastapi.responses import Response
 
