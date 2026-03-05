@@ -22,7 +22,7 @@ Build a cryptocurrency wallet analyzer that:
 - **Authentication**: Custom JWT-based auth
 
 ## Subscription Tiers
-| Feature | Free | Unlimited ($99/year) |
+| Feature | Free | Unlimited ($100.88/year) |
 |---------|------|----------------------|
 | Wallet Analyses | 1 total | Unlimited |
 | All 6 Blockchains | - | ✓ |
@@ -33,6 +33,7 @@ Build a cryptocurrency wallet analyzer that:
 | Transaction Categorization | - | ✓ |
 | Analyze All Chains | - | ✓ |
 | Bitcoin xPub Support | - | ✓ |
+| Exchange API Integration | - | ✓ |
 
 ## Terms of Service
 All users must accept Terms of Service before using the platform. The TOS modal appears after login for new users and cannot be dismissed without accepting.
@@ -68,6 +69,27 @@ All users must accept Terms of Service before using the platform. The TOS modal 
 - [x] Batch categorization modal with rule builder
 - [x] Enhanced category options (staking, airdrop, mining)
 
+### Phase 4: Affiliate Program (Completed - Mar 5, 2026)
+- [x] Affiliate registration endpoint
+- [x] Unique affiliate codes generation
+- [x] Referral tracking system
+- [x] Commission calculation ($10 per referral)
+- [x] Affiliate dashboard modal
+- [x] Affiliate code validation endpoint
+- [x] Discount application during checkout ($10 off)
+- [x] Admin reporting endpoints
+
+### Phase 5: Exchange API Integration (Completed - Mar 5, 2026)
+- [x] Coinbase OAuth2 integration framework
+- [x] Binance API key authentication
+- [x] Exchange connection management (connect/disconnect)
+- [x] Transaction sync from exchanges
+- [x] Unified transaction format across exchanges
+- [x] Exchange transactions listing with filters
+- [x] Transaction summary calculation
+- [x] ExchangeModal UI for managing connections
+- [x] Free user restriction (Unlimited only)
+
 ### Core Features (Completed)
 - [x] User authentication (JWT)
 - [x] Stripe subscription management
@@ -100,6 +122,20 @@ All users must accept Terms of Service before using the platform. The TOS modal 
 - POST `/api/tax/batch-categorize` - Batch categorize with rules (Premium+)
 - POST `/api/tax/auto-categorize` - Auto-categorize transactions (Premium+)
 - GET `/api/tax/supported-years` - Get supported tax years (Public)
+
+### Exchange Integration
+- GET `/api/exchanges/supported` - List supported exchanges (public)
+- POST `/api/exchanges/connect` - Connect an exchange (Unlimited only)
+- GET `/api/exchanges/connected` - List connected exchanges
+- DELETE `/api/exchanges/{exchange_id}` - Disconnect an exchange
+- POST `/api/exchanges/{exchange_id}/sync` - Sync exchange data (Unlimited only)
+- GET `/api/exchanges/transactions` - Get synced transactions (Unlimited only)
+
+### Affiliate Program
+- POST `/api/affiliate/register` - Register as affiliate
+- GET `/api/affiliate/me` - Get affiliate dashboard data
+- GET `/api/affiliate/validate/{code}` - Validate affiliate code
+- GET `/api/affiliate/admin/report` - Admin affiliate report
 
 ### Payments
 - POST `/api/payments/create-upgrade` - Create Stripe checkout session
@@ -151,11 +187,12 @@ All users must accept Terms of Service before using the platform. The TOS modal 
 
 ### Future Features (P2-P5)
 - [ ] DeFi & NFT Integration (liquidity pools, staking, NFT valuations)
-- [ ] Exchange API Integration (Coinbase, Binance import)
 - [ ] Additional blockchains (Avalanche, Optimism, Base)
 - [ ] Data visualizations (charts, graphs)
 - [ ] Mobile responsiveness improvements
 - [ ] Tax loss harvesting suggestions
+- [ ] Refactor App.js into smaller components (useAnalysis hook created)
+- [ ] Refactor multi_chain_service.py into separate chain modules
 
 ## Deployment
 - **Platform**: Render
