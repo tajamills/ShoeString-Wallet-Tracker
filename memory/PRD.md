@@ -90,6 +90,18 @@ All users must accept Terms of Service before using the platform. The TOS modal 
 - [x] ExchangeModal UI for managing connections
 - [x] Free user restriction (Unlimited only)
 
+### Phase 6: Code Refactoring (Completed - Mar 5, 2026)
+- [x] Created useAnalysis hook for wallet analysis logic
+- [x] Created usePayment hook for payment/subscription logic
+- [x] Refactored App.js to use custom hooks (reduced complexity)
+- [x] Created chains/ package with modular analyzers:
+  - [x] base.py - BaseChainAnalyzer abstract class
+  - [x] evm.py - EVMChainAnalyzer for Ethereum, Polygon, Arbitrum, BSC
+  - [x] bitcoin.py - BitcoinAnalyzer with xPub support
+  - [x] solana.py - SolanaAnalyzer
+- [x] Created multi_chain_service_v2.py using modular analyzers
+- [x] Verified backward compatibility with original multi_chain_service.py
+
 ### Core Features (Completed)
 - [x] User authentication (JWT)
 - [x] Stripe subscription management
@@ -188,11 +200,11 @@ All users must accept Terms of Service before using the platform. The TOS modal 
 ### Future Features (P2-P5)
 - [ ] DeFi & NFT Integration (liquidity pools, staking, NFT valuations)
 - [ ] Additional blockchains (Avalanche, Optimism, Base)
-- [ ] Data visualizations (charts, graphs)
+- [ ] Data visualizations (charts, graphs for portfolio history)
 - [ ] Mobile responsiveness improvements
 - [ ] Tax loss harvesting suggestions
-- [ ] Refactor App.js into smaller components (useAnalysis hook created)
-- [ ] Refactor multi_chain_service.py into separate chain modules
+- [ ] Further component extraction from App.js (WalletInputCard, AnalysisResults)
+- [ ] Use multi_chain_service_v2 as the primary service (deprecate v1)
 
 ## Deployment
 - **Platform**: Render
