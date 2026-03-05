@@ -35,32 +35,46 @@ async function loginAsPremiumUser(page: any) {
   await acceptTermsIfVisible(page);
 }
 
-test.describe('Exchange API Tests', () => {
-  test('GET /api/exchanges/supported returns Coinbase and Binance', async ({ request }) => {
+test.describe('Exchange CSV Import API Tests', () => {
+  test('GET /api/exchanges/supported returns 6 supported exchanges', async ({ request }) => {
     const response = await request.get(`${API_URL}/api/exchanges/supported`);
     expect(response.status()).toBe(200);
     
     const data = await response.json();
     expect(data.exchanges).toBeDefined();
-    expect(data.exchanges.length).toBeGreaterThanOrEqual(2);
+    expect(data.exchanges.length).toBe(6);
     
     const exchangeIds = data.exchanges.map((ex: any) => ex.id);
     expect(exchangeIds).toContain('coinbase');
     expect(exchangeIds).toContain('binance');
+    expect(exchangeIds).toContain('kraken');
+    expect(exchangeIds).toContain('gemini');
+    expect(exchangeIds).toContain('crypto_com');
+    expect(exchangeIds).toContain('kucoin');
     
-    // Verify structure
+    // Verify structure - now has instructions instead of auth_type
     for (const exchange of data.exchanges) {
       expect(exchange.id).toBeDefined();
       expect(exchange.name).toBeDefined();
-      expect(exchange.auth_type).toBeDefined();
-      expect(exchange.description).toBeDefined();
-      expect(exchange.features).toBeDefined();
+      expect(exchange.instructions).toBeDefined();
     }
   });
 
-  test('Free user API request to connect exchange returns 403', async ({ request }) => {
+  test('GET /api/exchanges/export-instructions returns detailed steps', async ({ request }) => {
+    const response = await request.get(`${API_URL}/api/exchanges/export-instructions/coinbase`);
+    expect(response.status()).toBe(200);
+    
+    const data = await response.json();
+    expect(data.name).toBe('Coinbase');
+    expect(data.steps).toBeDefined();
+    expect(Array.isArray(data.steps)).toBe(true);
+    expect(data.steps.length).toBeGreaterThan(0);
+    expect(data.notes).toBeDefined();
+  });
+
+  test('Free user API request to import CSV returns 403', async ({ request }) => {
     const uniqueId = Date.now();
-    const testEmail = `TEST_exchange_api_${uniqueId}@test.com`;
+    const testEmail = `TEST_exchange_csv_${uniqueId}@test.com`;
     
     const registerResponse = await request.post(`${API_URL}/api/auth/register`, {
       data: { email: testEmail, password: 'TestPass123!' }
@@ -69,13 +83,24 @@ test.describe('Exchange API Tests', () => {
     expect(registerResponse.status()).toBe(200);
     const { access_token } = await registerResponse.json();
     
-    const connectResponse = await request.post(`${API_URL}/api/exchanges/connect`, {
+    // Create a mock CSV file
+    const csvContent = 'Timestamp,Transaction Type,Asset,Quantity Transacted\n2024-01-01,Buy,BTC,0.1';
+    const formData = new FormData();
+    formData.append('file', new Blob([csvContent], { type: 'text/csv' }), 'test.csv');
+    
+    const importResponse = await request.post(`${API_URL}/api/exchanges/import-csv`, {
       headers: { Authorization: `Bearer ${access_token}` },
-      data: { exchange: 'coinbase', access_token: 'fake_token' }
+      multipart: {
+        file: {
+          name: 'test.csv',
+          mimeType: 'text/csv',
+          buffer: Buffer.from(csvContent)
+        }
+      }
     });
     
-    expect(connectResponse.status()).toBe(403);
-    const errorData = await connectResponse.json();
+    expect(importResponse.status()).toBe(403);
+    const errorData = await importResponse.json();
     expect(errorData.detail).toContain('Unlimited');
   });
 
@@ -96,24 +121,6 @@ test.describe('Exchange API Tests', () => {
     
     expect(txResponse.status()).toBe(403);
   });
-
-  test('Free user API request to sync exchange returns 403', async ({ request }) => {
-    const uniqueId = Date.now();
-    const testEmail = `TEST_exchange_sync_${uniqueId}@test.com`;
-    
-    const registerResponse = await request.post(`${API_URL}/api/auth/register`, {
-      data: { email: testEmail, password: 'TestPass123!' }
-    });
-    
-    expect(registerResponse.status()).toBe(200);
-    const { access_token } = await registerResponse.json();
-    
-    const syncResponse = await request.post(`${API_URL}/api/exchanges/coinbase/sync`, {
-      headers: { Authorization: `Bearer ${access_token}` }
-    });
-    
-    expect(syncResponse.status()).toBe(403);
-  });
 });
 
 test.describe('Exchange UI Tests - Unlimited Users', () => {
@@ -125,61 +132,58 @@ test.describe('Exchange UI Tests - Unlimited Users', () => {
     await expect(page.getByTestId('exchange-button')).toBeVisible();
   });
 
-  test('Exchange modal opens and shows supported exchanges', async ({ page }) => {
+  test('Exchange modal opens and shows CSV upload interface', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
     await loginAsPremiumUser(page);
     
     // Open Exchange modal
     await page.getByTestId('exchange-button').click();
     await expect(page.getByTestId('exchange-modal')).toBeVisible({ timeout: 5000 });
-    await expect(page.getByTestId('exchange-modal-title')).toContainText('Exchange Integrations');
     
-    // Wait for loading to finish
-    await expect(page.getByTestId('exchange-loading')).not.toBeVisible({ timeout: 10000 });
+    // Modal should show CSV import title
+    await expect(page.locator('text=Import Exchange Data')).toBeVisible();
     
-    // Exchange cards should be visible
-    await expect(page.getByTestId('exchange-cards')).toBeVisible();
-    await expect(page.getByTestId('exchange-card-coinbase')).toBeVisible();
-    await expect(page.getByTestId('exchange-card-binance')).toBeVisible();
+    // Upload button should be visible
+    await expect(page.getByTestId('upload-csv-button')).toBeVisible();
     
-    // Connect buttons should be visible
-    await expect(page.getByTestId('connect-button-coinbase')).toBeVisible();
-    await expect(page.getByTestId('connect-button-binance')).toBeVisible();
+    // Privacy note about no API keys should be visible
+    await expect(page.locator('text=no API keys')).toBeVisible();
   });
 
-  test('Click Connect Coinbase shows token input form', async ({ page }) => {
+  test('Exchange modal shows all 6 supported exchanges', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
     await loginAsPremiumUser(page);
     
+    // Open Exchange modal
     await page.getByTestId('exchange-button').click();
     await expect(page.getByTestId('exchange-modal')).toBeVisible({ timeout: 5000 });
-    await expect(page.getByTestId('exchange-loading')).not.toBeVisible({ timeout: 10000 });
     
-    // Click Connect Coinbase
-    await page.getByTestId('connect-button-coinbase').click();
+    // All exchanges should be visible
+    await expect(page.locator('text=Coinbase')).toBeVisible();
+    await expect(page.locator('text=Binance')).toBeVisible();
+    await expect(page.locator('text=Kraken')).toBeVisible();
+    await expect(page.locator('text=Gemini')).toBeVisible();
+    await expect(page.locator('text=Crypto.com')).toBeVisible();
+    await expect(page.locator('text=KuCoin')).toBeVisible();
     
-    // Form should appear with token input
-    await expect(page.getByTestId('connect-form-coinbase')).toBeVisible();
-    await expect(page.getByTestId('coinbase-token-input')).toBeVisible();
-    await expect(page.getByTestId('connect-submit-coinbase')).toBeVisible();
+    // Each exchange should have "How to export" hint
+    const howToExportHints = page.locator('text=How to export');
+    await expect(howToExportHints).toHaveCount(6);
   });
 
-  test('Click Connect Binance shows API key/secret form', async ({ page }) => {
+  test('Click exchange card shows export instructions', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
     await loginAsPremiumUser(page);
     
+    // Open Exchange modal
     await page.getByTestId('exchange-button').click();
     await expect(page.getByTestId('exchange-modal')).toBeVisible({ timeout: 5000 });
-    await expect(page.getByTestId('exchange-loading')).not.toBeVisible({ timeout: 10000 });
     
-    // Click Connect Binance
-    await page.getByTestId('connect-button-binance').click();
+    // Click Coinbase card to show instructions
+    await page.locator('text=Coinbase').first().click();
     
-    // Form should appear with API key and secret inputs
-    await expect(page.getByTestId('connect-form-binance')).toBeVisible();
-    await expect(page.getByTestId('binance-api-key-input')).toBeVisible();
-    await expect(page.getByTestId('binance-api-secret-input')).toBeVisible();
-    await expect(page.getByTestId('connect-submit-binance')).toBeVisible();
+    // Instructions should expand and show steps
+    await expect(page.locator('text=Log in to Coinbase')).toBeVisible({ timeout: 3000 });
   });
 });
 

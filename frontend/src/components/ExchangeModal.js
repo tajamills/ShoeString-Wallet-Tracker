@@ -1,65 +1,71 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
   Loader2, 
-  Link2, 
-  RefreshCw, 
+  Upload, 
+  FileText, 
   Trash2, 
   Check,
   AlertCircle,
   ArrowUpRight,
   ArrowDownLeft,
-  Coins
+  HelpCircle,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import axios from 'axios';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-// Coinbase Logo SVG
-const CoinbaseLogo = () => (
-  <svg viewBox="0 0 1024 1024" className="w-8 h-8">
-    <circle cx="512" cy="512" r="512" fill="#0052FF"/>
-    <path d="M512 256c-141.4 0-256 114.6-256 256s114.6 256 256 256 256-114.6 256-256-114.6-256-256-256zm-62 334h124c8.8 0 16-7.2 16-16v-124c0-8.8-7.2-16-16-16H450c-8.8 0-16 7.2-16 16v124c0 8.8 7.2 16 16 16z" fill="white"/>
-  </svg>
-);
-
-// Binance Logo SVG
-const BinanceLogo = () => (
-  <svg viewBox="0 0 126.61 126.61" className="w-8 h-8">
-    <g fill="#F3BA2F">
-      <polygon points="38.73 53.98 63.3 29.4 87.89 53.99 102.22 39.66 63.3 0.73 24.39 39.64 38.73 53.98"/>
-      <polygon points="0.73 63.3 15.06 48.97 29.39 63.3 15.06 77.63 0.73 63.3"/>
-      <polygon points="38.73 72.63 63.3 97.21 87.88 72.62 102.22 86.93 63.3 125.88 24.4 86.97 24.38 86.95 38.73 72.63"/>
-      <polygon points="97.22 63.31 111.55 48.98 125.88 63.31 111.55 77.64 97.22 63.31"/>
-      <polygon points="77.83 63.3 63.3 48.77 52.42 59.64 51.09 60.98 48.78 63.29 63.3 77.82 77.83 63.3"/>
-    </g>
-  </svg>
-);
+// Exchange logos
+const ExchangeLogos = {
+  coinbase: (
+    <svg viewBox="0 0 1024 1024" className="w-8 h-8">
+      <circle cx="512" cy="512" r="512" fill="#0052FF"/>
+      <path d="M512 256c-141.4 0-256 114.6-256 256s114.6 256 256 256 256-114.6 256-256-114.6-256-256-256zm-62 334h124c8.8 0 16-7.2 16-16v-124c0-8.8-7.2-16-16-16H450c-8.8 0-16 7.2-16 16v124c0 8.8 7.2 16 16 16z" fill="white"/>
+    </svg>
+  ),
+  binance: (
+    <svg viewBox="0 0 126.61 126.61" className="w-8 h-8">
+      <g fill="#F3BA2F">
+        <polygon points="38.73 53.98 63.3 29.4 87.89 53.99 102.22 39.66 63.3 0.73 24.39 39.64 38.73 53.98"/>
+        <polygon points="0.73 63.3 15.06 48.97 29.39 63.3 15.06 77.63 0.73 63.3"/>
+        <polygon points="38.73 72.63 63.3 97.21 87.88 72.62 102.22 86.93 63.3 125.88 24.4 86.97 24.38 86.95 38.73 72.63"/>
+        <polygon points="97.22 63.31 111.55 48.98 125.88 63.31 111.55 77.64 97.22 63.31"/>
+        <polygon points="77.83 63.3 63.3 48.77 52.42 59.64 51.09 60.98 48.78 63.29 63.3 77.82 77.83 63.3"/>
+      </g>
+    </svg>
+  ),
+  kraken: (
+    <div className="w-8 h-8 bg-[#5741D9] rounded-full flex items-center justify-center text-white font-bold text-sm">K</div>
+  ),
+  gemini: (
+    <div className="w-8 h-8 bg-[#00DCFA] rounded-full flex items-center justify-center text-black font-bold text-sm">G</div>
+  ),
+  crypto_com: (
+    <div className="w-8 h-8 bg-[#103F68] rounded-full flex items-center justify-center text-white font-bold text-xs">CDC</div>
+  ),
+  kucoin: (
+    <div className="w-8 h-8 bg-[#24AE8F] rounded-full flex items-center justify-center text-white font-bold text-sm">KC</div>
+  )
+};
 
 export const ExchangeModal = ({ isOpen, onClose, getAuthHeader }) => {
   const [loading, setLoading] = useState(true);
-  const [connectedExchanges, setConnectedExchanges] = useState([]);
+  const [uploading, setUploading] = useState(false);
   const [supportedExchanges, setSupportedExchanges] = useState([]);
-  const [connecting, setConnecting] = useState(null);
-  const [syncing, setSyncing] = useState(null);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  
-  // Connection form state
-  const [showConnectForm, setShowConnectForm] = useState(null);
-  const [apiKey, setApiKey] = useState('');
-  const [apiSecret, setApiSecret] = useState('');
-  const [accessToken, setAccessToken] = useState('');
-  
-  // Transactions state
   const [transactions, setTransactions] = useState([]);
   const [transactionSummary, setTransactionSummary] = useState(null);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [showInstructions, setShowInstructions] = useState(null);
+  const [instructions, setInstructions] = useState(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -70,18 +76,14 @@ export const ExchangeModal = ({ isOpen, onClose, getAuthHeader }) => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [supportedRes, connectedRes] = await Promise.all([
+      const [supportedRes, transactionsRes] = await Promise.all([
         axios.get(`${API}/exchanges/supported`),
-        axios.get(`${API}/exchanges/connected`, { headers: getAuthHeader() })
+        axios.get(`${API}/exchanges/transactions`, { headers: getAuthHeader() }).catch(() => ({ data: { transactions: [], summary: null } }))
       ]);
       
       setSupportedExchanges(supportedRes.data.exchanges);
-      setConnectedExchanges(connectedRes.data.exchanges);
-      
-      // Fetch transactions if any exchanges connected
-      if (connectedRes.data.exchanges.length > 0) {
-        await fetchTransactions();
-      }
+      setTransactions(transactionsRes.data.transactions || []);
+      setTransactionSummary(transactionsRes.data.summary);
     } catch (err) {
       if (err.response?.status !== 403) {
         setError('Failed to load exchange data');
@@ -91,103 +93,79 @@ export const ExchangeModal = ({ isOpen, onClose, getAuthHeader }) => {
     }
   };
 
-  const fetchTransactions = async () => {
-    try {
-      const response = await axios.get(`${API}/exchanges/transactions`, {
-        headers: getAuthHeader(),
-        params: { limit: 50 }
-      });
-      setTransactions(response.data.transactions);
-      setTransactionSummary(response.data.summary);
-    } catch (err) {
-      console.error('Error fetching transactions:', err);
-    }
-  };
+  const handleFileSelect = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-  const handleConnect = async (exchangeId) => {
-    setConnecting(exchangeId);
-    setError('');
-    setSuccess('');
-
-    try {
-      const payload = { exchange: exchangeId };
-      
-      if (exchangeId === 'coinbase') {
-        payload.access_token = accessToken;
-      } else if (exchangeId === 'binance') {
-        payload.api_key = apiKey;
-        payload.api_secret = apiSecret;
-      }
-
-      await axios.post(`${API}/exchanges/connect`, payload, {
-        headers: getAuthHeader()
-      });
-
-      setSuccess(`Successfully connected to ${exchangeId}`);
-      setShowConnectForm(null);
-      setApiKey('');
-      setApiSecret('');
-      setAccessToken('');
-      
-      // Refresh data
-      await fetchData();
-      
-    } catch (err) {
-      setError(err.response?.data?.detail || `Failed to connect to ${exchangeId}`);
-    } finally {
-      setConnecting(null);
-    }
-  };
-
-  const handleSync = async (exchangeId) => {
-    setSyncing(exchangeId);
-    setError('');
-    setSuccess('');
-
-    try {
-      const response = await axios.post(
-        `${API}/exchanges/${exchangeId}/sync`,
-        {},
-        { headers: getAuthHeader() }
-      );
-
-      setSuccess(response.data.message);
-      await fetchTransactions();
-      await fetchData();
-      
-    } catch (err) {
-      setError(err.response?.data?.detail || `Failed to sync ${exchangeId}`);
-    } finally {
-      setSyncing(null);
-    }
-  };
-
-  const handleDisconnect = async (exchangeId) => {
-    if (!window.confirm(`Are you sure you want to disconnect ${exchangeId}?`)) {
+    if (!file.name.endsWith('.csv')) {
+      setError('Please upload a CSV file');
       return;
     }
 
+    setUploading(true);
+    setError('');
+    setSuccess('');
+
     try {
-      await axios.delete(`${API}/exchanges/${exchangeId}`, {
-        headers: getAuthHeader()
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await axios.post(`${API}/exchanges/import-csv`, formData, {
+        headers: {
+          ...getAuthHeader(),
+          'Content-Type': 'multipart/form-data'
+        }
       });
 
-      setSuccess(`Disconnected from ${exchangeId}`);
+      setSuccess(`${response.data.message}`);
       await fetchData();
-      
     } catch (err) {
-      setError(err.response?.data?.detail || `Failed to disconnect ${exchangeId}`);
+      setError(err.response?.data?.detail || 'Failed to import CSV');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
-  const getExchangeLogo = (exchangeId) => {
-    if (exchangeId === 'coinbase') return <CoinbaseLogo />;
-    if (exchangeId === 'binance') return <BinanceLogo />;
-    return <Coins className="w-8 h-8 text-gray-400" />;
+  const handleDeleteTransactions = async (exchange = null) => {
+    const confirmMsg = exchange 
+      ? `Delete all ${exchange} transactions?` 
+      : 'Delete ALL imported transactions?';
+    
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      const url = exchange 
+        ? `${API}/exchanges/transactions?exchange=${exchange}`
+        : `${API}/exchanges/transactions`;
+      
+      await axios.delete(url, { headers: getAuthHeader() });
+      setSuccess('Transactions deleted');
+      await fetchData();
+    } catch (err) {
+      setError('Failed to delete transactions');
+    }
+  };
+
+  const fetchInstructions = async (exchangeId) => {
+    if (showInstructions === exchangeId) {
+      setShowInstructions(null);
+      return;
+    }
+    
+    try {
+      const response = await axios.get(`${API}/exchanges/export-instructions/${exchangeId}`);
+      setInstructions(response.data);
+      setShowInstructions(exchangeId);
+    } catch (err) {
+      setError('Failed to load instructions');
+    }
   };
 
   const formatDate = (dateStr) => {
-    if (!dateStr) return 'Never';
+    if (!dateStr) return 'N/A';
     return new Date(dateStr).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -197,198 +175,152 @@ export const ExchangeModal = ({ isOpen, onClose, getAuthHeader }) => {
     });
   };
 
-  const isConnected = (exchangeId) => {
-    return connectedExchanges.some(e => e.exchange === exchangeId);
-  };
+  const getExchangeLogo = (id) => ExchangeLogos[id] || <FileText className="w-8 h-8 text-gray-400" />;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-3xl bg-slate-800 border-slate-700 max-h-[90vh] overflow-y-auto" data-testid="exchange-modal">
         <DialogHeader>
-          <DialogTitle className="text-white text-2xl flex items-center gap-2" data-testid="exchange-modal-title">
-            <Link2 className="w-6 h-6 text-purple-400" />
-            Exchange Integrations
+          <DialogTitle className="text-white text-2xl flex items-center gap-2">
+            <Upload className="w-6 h-6 text-purple-400" />
+            Import Exchange Data
           </DialogTitle>
           <DialogDescription className="text-gray-400">
-            Connect your exchange accounts to import trade history for tax tracking
+            Upload CSV exports from your exchanges - no API keys needed!
           </DialogDescription>
         </DialogHeader>
 
         {loading ? (
-          <div className="flex items-center justify-center py-12" data-testid="exchange-loading">
+          <div className="flex items-center justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-purple-400" />
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Error/Success Messages */}
+            {/* Messages */}
             {error && (
-              <Alert className="bg-red-900/20 border-red-700 text-red-300" data-testid="exchange-error">
+              <Alert className="bg-red-900/20 border-red-700 text-red-300">
                 <AlertCircle className="w-4 h-4" />
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
             
             {success && (
-              <Alert className="bg-green-900/20 border-green-700 text-green-300" data-testid="exchange-success">
+              <Alert className="bg-green-900/20 border-green-700 text-green-300">
                 <Check className="w-4 h-4" />
                 <AlertDescription>{success}</AlertDescription>
               </Alert>
             )}
 
-            {/* Exchange Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="exchange-cards">
-              {supportedExchanges.map((exchange) => {
-                const connected = isConnected(exchange.id);
-                const connectedData = connectedExchanges.find(e => e.exchange === exchange.id);
-                
-                return (
+            {/* Upload Section */}
+            <Card className="bg-slate-900/50 border-slate-700 border-dashed border-2">
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileSelect}
+                    accept=".csv"
+                    className="hidden"
+                    data-testid="csv-file-input"
+                  />
+                  <Button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="bg-purple-600 hover:bg-purple-700 px-8 py-6 text-lg"
+                    data-testid="upload-csv-button"
+                  >
+                    {uploading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                        Importing...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-5 h-5 mr-2" />
+                        Upload CSV File
+                      </>
+                    )}
+                  </Button>
+                  <p className="text-gray-400 text-sm mt-3">
+                    We auto-detect the exchange from your CSV columns
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Supported Exchanges */}
+            <div>
+              <h3 className="text-white font-semibold mb-3">Supported Exchanges</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {supportedExchanges.map((exchange) => (
                   <Card 
                     key={exchange.id} 
-                    className={`border-slate-700 ${connected ? 'bg-green-900/10 border-green-700/50' : 'bg-slate-900/50'}`}
-                    data-testid={`exchange-card-${exchange.id}`}
+                    className="bg-slate-900/30 border-slate-700 hover:border-purple-600/50 transition-colors cursor-pointer"
+                    onClick={() => fetchInstructions(exchange.id)}
                   >
-                    <CardHeader className="pb-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          {getExchangeLogo(exchange.id)}
-                          <div>
-                            <CardTitle className="text-white text-lg">{exchange.name}</CardTitle>
-                            {connected && (
-                              <Badge className="bg-green-900/50 text-green-300 text-xs mt-1">
-                                Connected
-                              </Badge>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        {getExchangeLogo(exchange.id)}
+                        <div className="flex-1">
+                          <div className="text-white font-medium">{exchange.name}</div>
+                          <div className="text-xs text-gray-500 flex items-center gap-1">
+                            <HelpCircle className="w-3 h-3" />
+                            How to export
+                            {showInstructions === exchange.id ? (
+                              <ChevronUp className="w-3 h-3" />
+                            ) : (
+                              <ChevronDown className="w-3 h-3" />
                             )}
                           </div>
                         </div>
                       </div>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-gray-400 mb-4">{exchange.description}</p>
                       
-                      {connected ? (
-                        <div className="space-y-3">
-                          <div className="text-xs text-gray-500">
-                            Last synced: {formatDate(connectedData?.last_sync)}
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              onClick={() => handleSync(exchange.id)}
-                              disabled={syncing === exchange.id}
-                              size="sm"
-                              className="flex-1 bg-purple-600 hover:bg-purple-700"
-                            >
-                              {syncing === exchange.id ? (
-                                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                              ) : (
-                                <RefreshCw className="w-4 h-4 mr-2" />
-                              )}
-                              Sync
-                            </Button>
-                            <Button
-                              onClick={() => handleDisconnect(exchange.id)}
-                              size="sm"
-                              variant="outline"
-                              className="border-red-700 text-red-400 hover:bg-red-900/30"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ) : showConnectForm === exchange.id ? (
-                        <div className="space-y-3" data-testid={`connect-form-${exchange.id}`}>
-                          {exchange.id === 'binance' && (
-                            <>
-                              <Input
-                                placeholder="API Key"
-                                value={apiKey}
-                                onChange={(e) => setApiKey(e.target.value)}
-                                className="bg-slate-800 border-slate-600 text-white"
-                                data-testid="binance-api-key-input"
-                              />
-                              <Input
-                                type="password"
-                                placeholder="API Secret"
-                                value={apiSecret}
-                                onChange={(e) => setApiSecret(e.target.value)}
-                                className="bg-slate-800 border-slate-600 text-white"
-                                data-testid="binance-api-secret-input"
-                              />
-                              <p className="text-xs text-gray-500">
-                                Create API keys in your Binance account settings. Only enable "Read" permissions.
-                              </p>
-                            </>
+                      {/* Expanded Instructions */}
+                      {showInstructions === exchange.id && instructions && (
+                        <div className="mt-3 pt-3 border-t border-slate-700">
+                          <ol className="text-xs text-gray-400 space-y-1">
+                            {instructions.steps.map((step, i) => (
+                              <li key={i}>{step}</li>
+                            ))}
+                          </ol>
+                          {instructions.notes && (
+                            <p className="text-xs text-yellow-400/70 mt-2 italic">
+                              Note: {instructions.notes}
+                            </p>
                           )}
-                          
-                          {exchange.id === 'coinbase' && (
-                            <>
-                              <Input
-                                placeholder="OAuth Access Token"
-                                value={accessToken}
-                                onChange={(e) => setAccessToken(e.target.value)}
-                                className="bg-slate-800 border-slate-600 text-white"
-                                data-testid="coinbase-token-input"
-                              />
-                              <p className="text-xs text-gray-500">
-                                Complete Coinbase OAuth flow to get your access token.
-                              </p>
-                            </>
-                          )}
-                          
-                          <div className="flex gap-2">
-                            <Button
-                              onClick={() => handleConnect(exchange.id)}
-                              disabled={connecting === exchange.id}
-                              size="sm"
-                              className="flex-1 bg-purple-600 hover:bg-purple-700"
-                              data-testid={`connect-submit-${exchange.id}`}
-                            >
-                              {connecting === exchange.id ? (
-                                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                              ) : (
-                                <Check className="w-4 h-4 mr-2" />
-                              )}
-                              Connect
-                            </Button>
-                            <Button
-                              onClick={() => setShowConnectForm(null)}
-                              size="sm"
-                              variant="outline"
-                              className="border-slate-600"
-                            >
-                              Cancel
-                            </Button>
-                          </div>
                         </div>
-                      ) : (
-                        <Button
-                          onClick={() => setShowConnectForm(exchange.id)}
-                          size="sm"
-                          className="w-full bg-slate-700 hover:bg-slate-600"
-                          data-testid={`connect-button-${exchange.id}`}
-                        >
-                          <Link2 className="w-4 h-4 mr-2" />
-                          Connect {exchange.name}
-                        </Button>
                       )}
                     </CardContent>
                   </Card>
-                );
-              })}
+                ))}
+              </div>
             </div>
 
             {/* Transaction Summary */}
             {transactionSummary && transactionSummary.total_transactions > 0 && (
-              <Card className="bg-slate-900/50 border-slate-700" data-testid="transaction-summary">
-                <CardHeader>
-                  <CardTitle className="text-white">Imported Transactions Summary</CardTitle>
+              <Card className="bg-slate-900/50 border-slate-700">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-white">Imported Transactions</CardTitle>
+                    <Button
+                      onClick={() => handleDeleteTransactions()}
+                      size="sm"
+                      variant="outline"
+                      className="border-red-700 text-red-400 hover:bg-red-900/30"
+                      data-testid="delete-all-transactions"
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      Clear All
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-white">
                         {transactionSummary.total_transactions}
                       </div>
-                      <div className="text-sm text-gray-400">Total Transactions</div>
+                      <div className="text-sm text-gray-400">Total</div>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-green-400">
@@ -403,24 +335,37 @@ export const ExchangeModal = ({ isOpen, onClose, getAuthHeader }) => {
                       <div className="text-sm text-gray-400">Sells</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-orange-400">
-                        ${transactionSummary.total_fees_usd?.toFixed(2) || '0.00'}
+                      <div className="text-2xl font-bold text-blue-400">
+                        {Object.keys(transactionSummary.by_exchange || {}).length}
                       </div>
-                      <div className="text-sm text-gray-400">Total Fees</div>
+                      <div className="text-sm text-gray-400">Exchanges</div>
                     </div>
                   </div>
                   
+                  {/* Exchange breakdown */}
+                  {Object.keys(transactionSummary.by_exchange || {}).length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {Object.entries(transactionSummary.by_exchange).map(([exc, count]) => (
+                        <Badge key={exc} className="bg-slate-700 text-gray-300">
+                          {exc}: {count}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                  
                   {/* Asset breakdown */}
                   {Object.keys(transactionSummary.by_asset || {}).length > 0 && (
-                    <div className="mt-4 pt-4 border-t border-slate-700">
-                      <div className="text-sm text-gray-400 mb-2">Assets Traded</div>
-                      <div className="flex flex-wrap gap-2">
-                        {Object.entries(transactionSummary.by_asset).map(([asset, data]) => (
-                          <Badge key={asset} className="bg-slate-700">
-                            {asset}: {data.total} trades
-                          </Badge>
-                        ))}
-                      </div>
+                    <div className="flex flex-wrap gap-2">
+                      {Object.entries(transactionSummary.by_asset).slice(0, 10).map(([asset, count]) => (
+                        <Badge key={asset} variant="outline" className="text-purple-300 border-purple-700">
+                          {asset}: {count}
+                        </Badge>
+                      ))}
+                      {Object.keys(transactionSummary.by_asset).length > 10 && (
+                        <Badge variant="outline" className="text-gray-400 border-gray-600">
+                          +{Object.keys(transactionSummary.by_asset).length - 10} more
+                        </Badge>
+                      )}
                     </div>
                   )}
                 </CardContent>
@@ -429,19 +374,19 @@ export const ExchangeModal = ({ isOpen, onClose, getAuthHeader }) => {
 
             {/* Recent Transactions */}
             {transactions.length > 0 && (
-              <Card className="bg-slate-900/50 border-slate-700" data-testid="exchange-transactions">
+              <Card className="bg-slate-900/50 border-slate-700">
                 <CardHeader>
-                  <CardTitle className="text-white">Recent Exchange Transactions</CardTitle>
+                  <CardTitle className="text-white text-lg">Recent Imports</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
                     {transactions.slice(0, 10).map((tx, idx) => (
                       <div 
                         key={idx}
                         className="flex items-center justify-between py-2 border-b border-slate-700 last:border-0"
                       >
                         <div className="flex items-center gap-3">
-                          {tx.tx_type === 'buy' || tx.tx_type === 'receive' ? (
+                          {tx.tx_type === 'buy' || tx.tx_type === 'receive' || tx.tx_type === 'deposit' ? (
                             <ArrowDownLeft className="w-4 h-4 text-green-400" />
                           ) : (
                             <ArrowUpRight className="w-4 h-4 text-red-400" />
@@ -468,12 +413,12 @@ export const ExchangeModal = ({ isOpen, onClose, getAuthHeader }) => {
               </Card>
             )}
 
-            {/* Info Note */}
+            {/* Info */}
             <Alert className="bg-blue-900/20 border-blue-700 text-blue-300">
               <AlertCircle className="w-4 h-4" />
               <AlertDescription>
-                Exchange data is synced on-demand. Click "Sync" to import your latest transactions.
-                This data will be combined with your on-chain analysis for comprehensive tax reporting.
+                <strong>Privacy first:</strong> Your data stays with you. We never store API keys - 
+                just upload your CSV exports and we parse them locally.
               </AlertDescription>
             </Alert>
           </div>

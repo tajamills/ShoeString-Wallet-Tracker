@@ -2032,262 +2032,126 @@ async def mark_affiliates_paid(
         logger.error(f"Error marking affiliates paid: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to mark as paid")
 
-# ==================== EXCHANGE INTEGRATION ROUTES ====================
+# ==================== EXCHANGE CSV IMPORT ROUTES ====================
 
-from exchange_service import exchange_service, ExchangeType
-
-class ExchangeConnectRequest(BaseModel):
-    exchange: str  # "coinbase" or "binance"
-    access_token: Optional[str] = None  # For Coinbase OAuth
-    api_key: Optional[str] = None  # For Binance
-    api_secret: Optional[str] = None  # For Binance
-
-class ExchangeCredential(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-    
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    user_id: str
-    exchange: str
-    encrypted_credentials: str  # Encrypted JSON of credentials
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    last_sync: Optional[datetime] = None
+from csv_parser_service import csv_parser_service
+from fastapi import UploadFile, File
 
 @api_router.get("/exchanges/supported")
 async def get_supported_exchanges():
-    """Get list of supported exchange integrations"""
-    return {
-        "exchanges": [
-            {
-                "id": "coinbase",
-                "name": "Coinbase",
-                "auth_type": "oauth2",
-                "description": "Connect your Coinbase account via OAuth",
-                "features": ["trades", "deposits", "withdrawals", "balances"]
-            },
-            {
-                "id": "binance",
-                "name": "Binance",
-                "auth_type": "api_key",
-                "description": "Connect with API Key and Secret",
-                "features": ["trades", "deposits", "withdrawals", "balances"]
-            }
-        ]
-    }
+    """Get list of supported exchange CSV formats with export instructions"""
+    exchanges = csv_parser_service.get_supported_exchanges()
+    return {"exchanges": exchanges}
 
-@api_router.post("/exchanges/connect")
-async def connect_exchange(
-    request: ExchangeConnectRequest,
+@api_router.post("/exchanges/import-csv")
+async def import_exchange_csv(
+    file: UploadFile = File(...),
+    exchange_hint: Optional[str] = None,
     user: dict = Depends(get_current_user)
 ):
     """
-    Connect an exchange account
+    Import transactions from exchange CSV file
     
-    For Coinbase: Provide access_token from OAuth flow
-    For Binance: Provide api_key and api_secret
+    - Auto-detects exchange format from column headers
+    - Supported: Coinbase, Binance, Kraken, Gemini, Crypto.com, KuCoin
+    - Optional exchange_hint to help detection
     """
     try:
         user_tier = user.get('subscription_tier', 'free')
         if user_tier == 'free':
             raise HTTPException(
                 status_code=403,
-                detail="Exchange integration is an Unlimited feature. Upgrade to connect exchanges."
+                detail="CSV import is an Unlimited feature. Upgrade to import exchange data."
             )
         
-        exchange = request.exchange.lower()
+        # Validate file type
+        if not file.filename.endswith('.csv'):
+            raise HTTPException(status_code=400, detail="Please upload a CSV file")
         
-        if exchange == "coinbase":
-            if not request.access_token:
-                raise HTTPException(status_code=400, detail="Access token required for Coinbase")
-            
-            # Verify token by fetching accounts
-            try:
-                client = exchange_service.connect_coinbase(request.access_token)
-                accounts = client.get_accounts()
-                
-                # Store encrypted credentials
-                # In production, use proper encryption
-                credential_data = {"access_token": request.access_token}
-                
-            except Exception as e:
-                raise HTTPException(status_code=400, detail=f"Invalid Coinbase token: {str(e)}")
-                
-        elif exchange == "binance":
-            if not request.api_key or not request.api_secret:
-                raise HTTPException(status_code=400, detail="API key and secret required for Binance")
-            
-            # Verify credentials
-            try:
-                client = exchange_service.connect_binance(request.api_key, request.api_secret)
-                account = client.get_account()
-                
-                credential_data = {
-                    "api_key": request.api_key,
-                    "api_secret": request.api_secret
-                }
-                
-            except Exception as e:
-                raise HTTPException(status_code=400, detail=f"Invalid Binance credentials: {str(e)}")
-        else:
-            raise HTTPException(status_code=400, detail=f"Unsupported exchange: {exchange}")
+        # Read file content
+        content = await file.read()
+        try:
+            content_str = content.decode('utf-8')
+        except UnicodeDecodeError:
+            content_str = content.decode('latin-1')
         
-        # Store credentials (in production, encrypt this!)
-        import json
-        credential = ExchangeCredential(
-            user_id=user["id"],
-            exchange=exchange,
-            encrypted_credentials=json.dumps(credential_data)  # TODO: Encrypt properly
+        # Parse CSV
+        detected_exchange, transactions = csv_parser_service.parse_csv(
+            content_str, 
+            exchange_hint
         )
-        
-        doc = credential.model_dump()
-        doc['created_at'] = doc['created_at'].isoformat()
-        if doc.get('last_sync'):
-            doc['last_sync'] = doc['last_sync'].isoformat()
-        
-        # Upsert - update if exists
-        await db.exchange_credentials.update_one(
-            {"user_id": user["id"], "exchange": exchange},
-            {"$set": doc},
-            upsert=True
-        )
-        
-        logger.info(f"User {user['id']} connected {exchange} exchange")
-        
-        return {
-            "message": f"Successfully connected to {exchange}",
-            "exchange": exchange
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error connecting exchange: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to connect exchange: {str(e)}")
-
-@api_router.get("/exchanges/connected")
-async def get_connected_exchanges(user: dict = Depends(get_current_user)):
-    """Get list of user's connected exchanges"""
-    try:
-        credentials = await db.exchange_credentials.find(
-            {"user_id": user["id"]},
-            {"_id": 0, "encrypted_credentials": 0}  # Don't return credentials
-        ).to_list(10)
-        
-        return {
-            "exchanges": [
-                {
-                    "exchange": cred["exchange"],
-                    "connected_at": cred["created_at"],
-                    "last_sync": cred.get("last_sync")
-                }
-                for cred in credentials
-            ]
-        }
-        
-    except Exception as e:
-        logger.error(f"Error fetching connected exchanges: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to fetch connected exchanges")
-
-@api_router.delete("/exchanges/{exchange_id}")
-async def disconnect_exchange(
-    exchange_id: str,
-    user: dict = Depends(get_current_user)
-):
-    """Disconnect an exchange"""
-    try:
-        result = await db.exchange_credentials.delete_one({
-            "user_id": user["id"],
-            "exchange": exchange_id.lower()
-        })
-        
-        if result.deleted_count == 0:
-            raise HTTPException(status_code=404, detail="Exchange not connected")
-        
-        # Also delete any synced transactions
-        await db.exchange_transactions.delete_many({
-            "user_id": user["id"],
-            "exchange": exchange_id.lower()
-        })
-        
-        logger.info(f"User {user['id']} disconnected {exchange_id}")
-        
-        return {"message": f"Disconnected from {exchange_id}"}
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error disconnecting exchange: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to disconnect exchange")
-
-@api_router.post("/exchanges/{exchange_id}/sync")
-async def sync_exchange_data(
-    exchange_id: str,
-    user: dict = Depends(get_current_user)
-):
-    """Sync transaction data from an exchange"""
-    try:
-        user_tier = user.get('subscription_tier', 'free')
-        if user_tier == 'free':
-            raise HTTPException(
-                status_code=403,
-                detail="Exchange sync is an Unlimited feature."
-            )
-        
-        # Get credentials
-        credential = await db.exchange_credentials.find_one({
-            "user_id": user["id"],
-            "exchange": exchange_id.lower()
-        })
-        
-        if not credential:
-            raise HTTPException(status_code=404, detail=f"{exchange_id} is not connected")
-        
-        import json
-        creds = json.loads(credential["encrypted_credentials"])
-        
-        transactions = []
-        
-        if exchange_id.lower() == "coinbase":
-            client = exchange_service.connect_coinbase(creds["access_token"])
-            transactions = client.get_all_transactions()
-            
-        elif exchange_id.lower() == "binance":
-            client = exchange_service.connect_binance(creds["api_key"], creds["api_secret"])
-            transactions = client.get_all_transactions()
         
         # Store transactions in database
         stored_count = 0
         for tx in transactions:
             tx_doc = tx.to_dict()
             tx_doc["user_id"] = user["id"]
-            tx_doc["synced_at"] = datetime.now(timezone.utc).isoformat()
+            tx_doc["imported_at"] = datetime.now(timezone.utc).isoformat()
+            tx_doc["source"] = "csv_import"
             
-            # Upsert each transaction
+            # Upsert each transaction (avoid duplicates)
             await db.exchange_transactions.update_one(
-                {"user_id": user["id"], "exchange": exchange_id.lower(), "tx_id": tx.tx_id},
+                {
+                    "user_id": user["id"], 
+                    "exchange": tx.exchange, 
+                    "tx_id": tx.tx_id,
+                    "timestamp": tx_doc["timestamp"]
+                },
                 {"$set": tx_doc},
                 upsert=True
             )
             stored_count += 1
         
-        # Update last sync time
-        await db.exchange_credentials.update_one(
-            {"user_id": user["id"], "exchange": exchange_id.lower()},
-            {"$set": {"last_sync": datetime.now(timezone.utc).isoformat()}}
-        )
+        logger.info(f"User {user['id']} imported {stored_count} transactions from {detected_exchange}")
         
-        logger.info(f"Synced {stored_count} transactions from {exchange_id} for user {user['id']}")
+        # Calculate summary
+        summary = _calculate_import_summary(transactions)
         
         return {
-            "message": f"Synced {stored_count} transactions from {exchange_id}",
+            "message": f"Successfully imported {stored_count} transactions from {detected_exchange.value}",
+            "exchange_detected": detected_exchange.value,
             "transaction_count": stored_count,
-            "last_sync": datetime.now(timezone.utc).isoformat()
+            "summary": summary
         }
         
     except HTTPException:
         raise
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Error syncing exchange: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to sync exchange: {str(e)}")
+        logger.error(f"Error importing CSV: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to import CSV: {str(e)}")
+
+def _calculate_import_summary(transactions) -> Dict[str, Any]:
+    """Calculate summary statistics from imported transactions"""
+    summary = {
+        "total_transactions": len(transactions),
+        "by_type": {},
+        "by_asset": {},
+        "date_range": {"earliest": None, "latest": None}
+    }
+    
+    for tx in transactions:
+        # By type
+        tx_type = tx.tx_type
+        summary["by_type"][tx_type] = summary["by_type"].get(tx_type, 0) + 1
+        
+        # By asset
+        asset = tx.asset
+        if asset not in summary["by_asset"]:
+            summary["by_asset"][asset] = {"count": 0, "total_amount": 0}
+        summary["by_asset"][asset]["count"] += 1
+        summary["by_asset"][asset]["total_amount"] += tx.amount
+        
+        # Date range
+        if tx.timestamp:
+            ts = tx.timestamp.isoformat()
+            if not summary["date_range"]["earliest"] or ts < summary["date_range"]["earliest"]:
+                summary["date_range"]["earliest"] = ts
+            if not summary["date_range"]["latest"] or ts > summary["date_range"]["latest"]:
+                summary["date_range"]["latest"] = ts
+    
+    return summary
 
 @api_router.get("/exchanges/transactions")
 async def get_exchange_transactions(
@@ -2297,7 +2161,7 @@ async def get_exchange_transactions(
     limit: int = 100,
     user: dict = Depends(get_current_user)
 ):
-    """Get synced exchange transactions with filters"""
+    """Get imported exchange transactions with filters"""
     try:
         user_tier = user.get('subscription_tier', 'free')
         if user_tier == 'free':
@@ -2322,7 +2186,22 @@ async def get_exchange_transactions(
         ).sort("timestamp", -1).limit(limit).to_list(limit)
         
         # Calculate summary
-        summary = exchange_service.calculate_exchange_summary(transactions)
+        summary = {
+            "total_transactions": len(transactions),
+            "by_exchange": {},
+            "by_type": {},
+            "by_asset": {}
+        }
+        
+        for tx in transactions:
+            exc = tx.get("exchange", "unknown")
+            summary["by_exchange"][exc] = summary["by_exchange"].get(exc, 0) + 1
+            
+            t = tx.get("tx_type", "unknown")
+            summary["by_type"][t] = summary["by_type"].get(t, 0) + 1
+            
+            a = tx.get("asset", "unknown")
+            summary["by_asset"][a] = summary["by_asset"].get(a, 0) + 1
         
         return {
             "transactions": transactions,
@@ -2335,6 +2214,112 @@ async def get_exchange_transactions(
     except Exception as e:
         logger.error(f"Error fetching exchange transactions: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to fetch transactions")
+
+@api_router.delete("/exchanges/transactions")
+async def delete_exchange_transactions(
+    exchange: Optional[str] = None,
+    user: dict = Depends(get_current_user)
+):
+    """Delete imported exchange transactions"""
+    try:
+        query = {"user_id": user["id"]}
+        if exchange:
+            query["exchange"] = exchange.lower()
+        
+        result = await db.exchange_transactions.delete_many(query)
+        
+        return {
+            "message": f"Deleted {result.deleted_count} transactions",
+            "deleted_count": result.deleted_count
+        }
+        
+    except Exception as e:
+        logger.error(f"Error deleting transactions: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to delete transactions")
+
+@api_router.get("/exchanges/export-instructions/{exchange_id}")
+async def get_export_instructions(exchange_id: str):
+    """Get detailed CSV export instructions for a specific exchange"""
+    instructions = {
+        "coinbase": {
+            "name": "Coinbase",
+            "steps": [
+                "1. Log in to Coinbase (coinbase.com)",
+                "2. Click on your profile icon → Settings",
+                "3. Go to 'Statements' or 'Reports'",
+                "4. Click 'Generate Report'",
+                "5. Select 'Transaction History'",
+                "6. Choose your date range (or 'All time')",
+                "7. Click 'Generate Report'",
+                "8. Download the CSV file when ready"
+            ],
+            "notes": "Coinbase Pro has a separate export. Use the main Coinbase app/site for this."
+        },
+        "binance": {
+            "name": "Binance",
+            "steps": [
+                "1. Log in to Binance (binance.com)",
+                "2. Go to 'Orders' → 'Trade History'",
+                "3. Click 'Export' in the top right",
+                "4. Select 'Export Complete Trade History'",
+                "5. Choose your date range",
+                "6. Click 'Generate' and wait for the file",
+                "7. Download the CSV when ready"
+            ],
+            "notes": "For deposits/withdrawals, export separately from 'Wallet' → 'Transaction History'"
+        },
+        "kraken": {
+            "name": "Kraken",
+            "steps": [
+                "1. Log in to Kraken (kraken.com)",
+                "2. Go to 'History' in the top menu",
+                "3. Click 'Export'",
+                "4. Select 'Ledgers' for all transactions or 'Trades' for trades only",
+                "5. Choose your date range",
+                "6. Click 'Submit' and download the CSV"
+            ],
+            "notes": "Ledgers export includes all activity. Trades export is just buy/sell."
+        },
+        "gemini": {
+            "name": "Gemini",
+            "steps": [
+                "1. Log in to Gemini (gemini.com)",
+                "2. Go to 'Account' → 'Statements'",
+                "3. Click 'Download' next to Trade History",
+                "4. Select your date range",
+                "5. Download the CSV file"
+            ],
+            "notes": "ActiveTrader interface has a separate export option."
+        },
+        "crypto_com": {
+            "name": "Crypto.com",
+            "steps": [
+                "1. Open Crypto.com App",
+                "2. Go to 'Accounts' tab",
+                "3. Tap 'Transaction History'",
+                "4. Tap the export icon (top right)",
+                "5. Select date range and export",
+                "6. The CSV will be emailed to you"
+            ],
+            "notes": "Export from the app, not the exchange. Exchange has separate export."
+        },
+        "kucoin": {
+            "name": "KuCoin",
+            "steps": [
+                "1. Log in to KuCoin (kucoin.com)",
+                "2. Go to 'Orders' → 'Trade History'",
+                "3. Click 'Export' button",
+                "4. Select date range (max 3 months at a time)",
+                "5. Download the CSV file"
+            ],
+            "notes": "KuCoin limits exports to 3 months. Export multiple files if needed."
+        }
+    }
+    
+    if exchange_id.lower() not in instructions:
+        raise HTTPException(status_code=404, detail=f"Instructions not found for {exchange_id}")
+    
+    return instructions[exchange_id.lower()]
 
 # Include the router in the main app
 app.include_router(api_router)
