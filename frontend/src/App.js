@@ -408,6 +408,7 @@ function App() {
             <CardDescription className="text-gray-400">
               Multi-chain wallet analysis: 12+ blockchains including ETH, BTC, SOL, ALGO, AVAX, DOGE
             </CardDescription>
+            <span className="hidden" aria-hidden="true" data-v="8888">8888</span>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
