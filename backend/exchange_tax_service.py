@@ -137,6 +137,11 @@ class ExchangeTaxService:
     
     def _normalize_transaction(self, tx: Dict) -> Dict:
         """Normalize exchange transaction to standard format"""
+        # Check for acquisition date override (for transfers from external wallets)
+        acquisition_date_override = tx.get('acquisition_date_override')
+        cost_basis_override = tx.get('cost_basis_override')
+        is_transfer = tx.get('is_transfer', False)
+        
         timestamp_str = tx.get('timestamp', '')
         try:
             if isinstance(timestamp_str, str):
@@ -146,9 +151,26 @@ class ExchangeTaxService:
         except:
             dt = datetime.now(timezone.utc)
         
+        # Use acquisition date override if available (for transfers)
+        acquisition_date = dt
+        if acquisition_date_override:
+            try:
+                if isinstance(acquisition_date_override, str):
+                    acquisition_date = datetime.fromisoformat(acquisition_date_override.replace('Z', '+00:00'))
+                else:
+                    acquisition_date = acquisition_date_override
+            except:
+                pass
+        
         amount = abs(float(tx.get('amount', 0)))
         price_usd = tx.get('price_usd')
         total_usd = tx.get('total_usd') or tx.get('value_usd')
+        
+        # Use cost basis override if available
+        if cost_basis_override is not None:
+            total_usd = cost_basis_override
+            if amount > 0:
+                price_usd = cost_basis_override / amount
         
         # Calculate price if we have total but not price
         if not price_usd and total_usd and amount > 0:
@@ -164,8 +186,11 @@ class ExchangeTaxService:
             'total_usd': float(total_usd) if total_usd else 0,
             'fee': float(tx.get('fee', 0)),
             'fee_asset': tx.get('fee_asset', 'USD'),
-            'timestamp': dt,
-            'date': dt.strftime('%Y-%m-%d')
+            'timestamp': dt,  # Original transaction timestamp
+            'acquisition_date': acquisition_date,  # Date for holding period calculation
+            'date': acquisition_date.strftime('%Y-%m-%d'),  # Use acquisition date for tax purposes
+            'is_transfer': is_transfer,
+            'manually_adjusted': tx.get('manually_adjusted', False)
         }
     
     def _calculate_fifo_gains(
@@ -185,10 +210,13 @@ class ExchangeTaxService:
                 'exchange': buy['exchange'],
                 'date': buy['date'],
                 'timestamp': buy['timestamp'],
+                'acquisition_date': buy.get('acquisition_date', buy['timestamp']),  # Use override if available
                 'amount': buy['amount'],
                 'remaining': buy['amount'],
                 'price_usd': buy['price_usd'],
-                'asset': buy['asset']
+                'asset': buy['asset'],
+                'is_transfer': buy.get('is_transfer', False),
+                'manually_adjusted': buy.get('manually_adjusted', False)
             })
         
         # Process sells
@@ -215,7 +243,9 @@ class ExchangeTaxService:
                 cost_basis = matched * lot['price_usd']
                 gain_loss = proceeds - cost_basis
                 
-                holding_period = self._get_holding_period(lot['timestamp'], sell['timestamp'])
+                # Use acquisition_date for holding period calculation (handles transfers correctly)
+                buy_date_for_holding = lot.get('acquisition_date') or lot['timestamp']
+                holding_period = self._get_holding_period(buy_date_for_holding, sell['timestamp'])
                 
                 realized.append({
                     'asset': sell['asset'],
@@ -229,7 +259,10 @@ class ExchangeTaxService:
                     'cost_basis': cost_basis,
                     'proceeds': proceeds,
                     'gain_loss': gain_loss,
-                    'holding_period': holding_period
+                    'holding_period': holding_period,
+                    'is_transfer': lot.get('is_transfer', False),
+                    'manually_adjusted': lot.get('manually_adjusted', False),
+                    'acquisition_date': buy_date_for_holding.strftime('%Y-%m-%d') if hasattr(buy_date_for_holding, 'strftime') else str(buy_date_for_holding)
                 })
                 
                 lot['remaining'] -= matched

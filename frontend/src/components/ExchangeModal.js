@@ -27,10 +27,12 @@ import {
   HelpCircle,
   ChevronDown,
   ChevronUp,
-  Calculator
+  Calculator,
+  Edit2
 } from 'lucide-react';
 import axios from 'axios';
 import { ExchangeTaxCalculator } from './ExchangeTaxCalculator';
+import { TransactionEditor } from './TransactionEditor';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -79,6 +81,7 @@ export const ExchangeModal = ({ isOpen, onClose, getAuthHeader }) => {
   const [success, setSuccess] = useState('');
   const [showInstructions, setShowInstructions] = useState(null);
   const [instructions, setInstructions] = useState(null);
+  const [showTransactionEditor, setShowTransactionEditor] = useState(false);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -247,7 +250,26 @@ export const ExchangeModal = ({ isOpen, onClose, getAuthHeader }) => {
             <Calculator className="w-4 h-4 inline mr-2" />
             Tax Calculator
           </button>
+          <button
+            onClick={() => setShowTransactionEditor(true)}
+            className="px-4 py-2 font-medium text-gray-400 hover:text-orange-400 transition-colors"
+            data-testid="tab-adjust"
+          >
+            <Edit2 className="w-4 h-4 inline mr-2" />
+            Adjust Cost Basis
+          </button>
         </div>
+
+        {/* Transaction Editor Modal */}
+        <TransactionEditor
+          isOpen={showTransactionEditor}
+          onClose={() => setShowTransactionEditor(false)}
+          getAuthHeader={getAuthHeader}
+          onUpdate={() => {
+            // Refresh transactions after update
+            fetchTransactions();
+          }}
+        />
 
         {/* Tax Calculator Tab */}
         {activeTab === 'tax' && (

@@ -2441,6 +2441,145 @@ async def delete_exchange_transactions(
         logger.error(f"Error deleting transactions: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to delete transactions")
 
+
+class CostBasisUpdate(BaseModel):
+    tx_id: str
+    original_purchase_date: Optional[str] = None  # ISO format date
+    original_cost_basis: Optional[float] = None
+    is_transfer: bool = False  # Mark as transfer from another wallet
+    notes: Optional[str] = None
+
+@api_router.put("/exchanges/transactions/{tx_id}/cost-basis")
+async def update_transaction_cost_basis(
+    tx_id: str,
+    update: CostBasisUpdate,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Update cost basis and original purchase date for a transaction.
+    Use this for transfers from cold wallets where the original purchase
+    date differs from the receive date.
+    """
+    try:
+        # Find the transaction
+        tx = await db.exchange_transactions.find_one({
+            "user_id": user["id"],
+            "tx_id": tx_id
+        })
+        
+        if not tx:
+            raise HTTPException(status_code=404, detail="Transaction not found")
+        
+        # Build update
+        update_data = {}
+        
+        if update.is_transfer:
+            update_data["is_transfer"] = True
+            update_data["transfer_notes"] = update.notes or "Transfer from external wallet"
+        
+        if update.original_purchase_date:
+            # Parse the date and use it as the acquisition date for tax purposes
+            try:
+                original_date = datetime.fromisoformat(update.original_purchase_date.replace("Z", "+00:00"))
+                update_data["original_purchase_date"] = original_date
+                update_data["acquisition_date_override"] = original_date
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid date format. Use ISO format (YYYY-MM-DD)")
+        
+        if update.original_cost_basis is not None:
+            update_data["original_cost_basis"] = update.original_cost_basis
+            update_data["cost_basis_override"] = update.original_cost_basis
+        
+        if update.notes:
+            update_data["user_notes"] = update.notes
+        
+        update_data["manually_adjusted"] = True
+        update_data["adjusted_at"] = datetime.now(timezone.utc)
+        
+        # Update the transaction
+        await db.exchange_transactions.update_one(
+            {"user_id": user["id"], "tx_id": tx_id},
+            {"$set": update_data}
+        )
+        
+        return {
+            "message": "Transaction cost basis updated successfully",
+            "tx_id": tx_id,
+            "updates_applied": list(update_data.keys())
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating cost basis: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to update transaction")
+
+@api_router.get("/exchanges/transactions/transfers")
+async def get_potential_transfers(
+    user: dict = Depends(get_current_user)
+):
+    """
+    Identify potential transfers (receives that might be from external wallets).
+    Returns receive transactions that happen shortly before sells of the same asset.
+    """
+    try:
+        # Get all transactions
+        transactions = await db.exchange_transactions.find(
+            {"user_id": user["id"]},
+            {"_id": 0}
+        ).sort("timestamp", 1).to_list(5000)
+        
+        potential_transfers = []
+        receives_by_asset = {}
+        
+        # Group receives by asset
+        for tx in transactions:
+            if tx.get("tx_type") in ["receive", "deposit"]:
+                asset = tx.get("asset", "")
+                if asset not in receives_by_asset:
+                    receives_by_asset[asset] = []
+                receives_by_asset[asset].append(tx)
+        
+        # Find receives followed by sells within 30 days
+        for tx in transactions:
+            if tx.get("tx_type") in ["sell", "send"]:
+                asset = tx.get("asset", "")
+                sell_time = tx.get("timestamp")
+                
+                if asset in receives_by_asset:
+                    for receive in receives_by_asset[asset]:
+                        receive_time = receive.get("timestamp")
+                        if receive_time and sell_time:
+                            # Check if receive was within 30 days before sell
+                            if isinstance(receive_time, str):
+                                receive_time = datetime.fromisoformat(receive_time.replace("Z", "+00:00"))
+                            if isinstance(sell_time, str):
+                                sell_time = datetime.fromisoformat(sell_time.replace("Z", "+00:00"))
+                            
+                            days_diff = (sell_time - receive_time).days
+                            if 0 <= days_diff <= 30:
+                                # Check if not already marked
+                                if not receive.get("is_transfer") and not receive.get("manually_adjusted"):
+                                    potential_transfers.append({
+                                        "receive_tx": receive,
+                                        "sell_tx": tx,
+                                        "days_between": days_diff,
+                                        "asset": asset,
+                                        "suggestion": f"This {asset} was received {days_diff} days before being sold. If transferred from your own wallet, set the original purchase date."
+                                    })
+        
+        return {
+            "potential_transfers": potential_transfers[:50],  # Limit to 50
+            "count": len(potential_transfers),
+            "message": "These receives may be transfers from your own wallets. Update the original purchase date if so."
+        }
+        
+    except Exception as e:
+        logger.error(f"Error finding potential transfers: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to analyze transactions")
+
+
+
 @api_router.get("/exchanges/export-instructions/{exchange_id}")
 async def get_export_instructions(exchange_id: str):
     """Get detailed CSV export instructions for a specific exchange"""

@@ -225,6 +225,15 @@ All users must accept Terms of Service before using the platform. The TOS modal 
 - [x] CPA disclaimer added to all tax-related components
 - [ ] Generate Form 8949 with both on-chain and exchange transactions (partially complete - needs unified export)
 
+### Phase 6: Cost Basis Adjustment for Transfers (Completed - Mar 6, 2026)
+- [x] Backend endpoint: PUT `/api/exchanges/transactions/{tx_id}/cost-basis`
+- [x] Backend endpoint: GET `/api/exchanges/transactions/transfers` (detect potential transfers)
+- [x] Support for `acquisition_date_override` and `cost_basis_override` fields
+- [x] Tax calculations use overridden dates for holding period (short vs long-term)
+- [x] TransactionEditor component to edit transfer details
+- [x] "Adjust Cost Basis" tab in ExchangeModal
+- [x] Auto-detect receive→sell patterns within 30 days as potential transfers
+
 ### Future Features (P2-P5)
 - [ ] DeFi & NFT Integration (liquidity pools, staking, NFT valuations)
 - [ ] Additional blockchains (Avalanche, Optimism, Base)
