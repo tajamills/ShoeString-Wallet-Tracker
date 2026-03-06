@@ -408,15 +408,16 @@ class TestAffiliateCodeFormats:
         
         token = reg_response.json()["access_token"]
         
-        # Test alphanumeric code
+        # Test alphanumeric code - use unique code based on unique_id
+        affiliate_code = f"ABC{unique_id.upper()}"
         response = api_client.post(
             f"{BASE_URL}/api/affiliate/register",
-            json={"affiliate_code": "ABC123XYZ", "name": "Alpha Test"},
+            json={"affiliate_code": affiliate_code, "name": "Alpha Test"},
             headers={"Authorization": f"Bearer {token}"}
         )
         
         assert response.status_code == 200
-        assert response.json()["affiliate_code"] == "ABC123XYZ"
+        assert response.json()["affiliate_code"] == affiliate_code.upper()
     
     def test_code_converted_to_uppercase(self, api_client):
         """Affiliate codes are converted to uppercase"""
@@ -434,13 +435,14 @@ class TestAffiliateCodeFormats:
         
         token = reg_response.json()["access_token"]
         
-        # Submit lowercase code
+        # Submit lowercase code - use unique code
+        lowercase_code = f"low{unique_id}"
         response = api_client.post(
             f"{BASE_URL}/api/affiliate/register",
-            json={"affiliate_code": "lowercase123", "name": "Upper Test"},
+            json={"affiliate_code": lowercase_code, "name": "Upper Test"},
             headers={"Authorization": f"Bearer {token}"}
         )
         
         assert response.status_code == 200
         # Code should be stored as uppercase
-        assert response.json()["affiliate_code"] == "LOWERCASE123"
+        assert response.json()["affiliate_code"] == lowercase_code.upper()

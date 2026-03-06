@@ -88,6 +88,13 @@ All users must accept Terms of Service before using the platform. The TOS modal 
 - [x] Transaction storage and filtering
 - [x] Privacy-first approach - no API keys stored
 - [x] Free user restriction (Unlimited only)
+- [x] **Multi-format Coinbase CSV support** (Mar 6, 2026):
+  - Classic format: Timestamp, Transaction Type, Asset, Quantity Transacted
+  - Modern format: Transaction ID, Date & time, Asset Acquired/Sold, Quantity Acquired/Sold, USD Value
+  - Smart buy/sell detection based on crypto vs stablecoin assets
+  - Heuristic detection for non-standard formats
+- [x] Accepted CSV columns displayed in UI for each exchange
+- [x] Detailed export instructions endpoint with format documentation
 
 ### Phase 5b: Exchange-Only Tax Calculator (Completed - Mar 5, 2026)
 - [x] Standalone tax calculator from exchange CSVs (no wallet needed)
@@ -205,6 +212,12 @@ All users must accept Terms of Service before using the platform. The TOS modal 
 ```
 
 ## Upcoming Tasks
+
+### Next Priority: Integrate Exchange CSV with Tax Calculations
+- [ ] Merge on-chain wallet transactions + imported CSV data into unified tax report
+- [ ] Update `unified_tax_service.py` to combine data sources
+- [ ] Update `TaxDashboard` to display combined data
+- [ ] Generate Form 8949 with both on-chain and exchange transactions
 
 ### Future Features (P2-P5)
 - [ ] DeFi & NFT Integration (liquidity pools, staking, NFT valuations)
