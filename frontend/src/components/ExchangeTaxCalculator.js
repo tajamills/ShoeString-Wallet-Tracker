@@ -163,22 +163,22 @@ export const ExchangeTaxCalculator = ({ getAuthHeader, isVisible }) => {
   if (!isVisible) return null;
 
   return (
-    <div className="space-y-6" data-testid="exchange-tax-calculator">
+    <div className="space-y-4 sm:space-y-6" data-testid="exchange-tax-calculator">
       {/* Header */}
       <Card className="bg-gradient-to-br from-green-900/40 to-emerald-900/30 border-green-700">
-        <CardHeader>
-          <div className="flex items-center justify-between flex-wrap gap-4">
+        <CardHeader className="px-3 sm:px-6 py-3 sm:py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <CardTitle className="text-white text-2xl flex items-center gap-2">
-                <Calculator className="w-7 h-7 text-green-400" />
+              <CardTitle className="text-white text-lg sm:text-2xl flex items-center gap-2">
+                <Calculator className="w-5 h-5 sm:w-7 sm:h-7 text-green-400" />
                 Exchange Tax Calculator
               </CardTitle>
-              <CardDescription className="text-gray-400 mt-1">
-                Upload your exchange CSVs → Get instant cost basis & capital gains
+              <CardDescription className="text-gray-400 text-xs sm:text-sm mt-1">
+                Upload CSVs → Get cost basis & gains
               </CardDescription>
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 flex-wrap">
               {/* Upload Button */}
               <input
                 type="file"
@@ -190,21 +190,23 @@ export const ExchangeTaxCalculator = ({ getAuthHeader, isVisible }) => {
               <Button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
-                className="bg-green-600 hover:bg-green-700"
+                size="sm"
+                className="bg-green-600 hover:bg-green-700 text-xs sm:text-sm"
               >
                 {uploading ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin mr-1 sm:mr-2" />
                 ) : (
-                  <Upload className="w-4 h-4 mr-2" />
+                  <Upload className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                 )}
-                Upload CSV
+                <span className="hidden sm:inline">Upload CSV</span>
+                <span className="sm:hidden">Upload</span>
               </Button>
               
               {/* Year Filter */}
               <select
                 value={selectedYear || ''}
                 onChange={(e) => setSelectedYear(e.target.value ? parseInt(e.target.value) : null)}
-                className="bg-slate-800 border border-slate-600 text-white rounded-md px-3 py-2 text-sm"
+                className="bg-slate-800 border border-slate-600 text-white rounded-md px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm"
               >
                 <option value="">All Years</option>
                 {taxYears.map(year => (
@@ -217,7 +219,7 @@ export const ExchangeTaxCalculator = ({ getAuthHeader, isVisible }) => {
                 <select
                   value={selectedAsset || ''}
                   onChange={(e) => setSelectedAsset(e.target.value || null)}
-                  className="bg-slate-800 border border-slate-600 text-white rounded-md px-3 py-2 text-sm"
+                  className="bg-slate-800 border border-slate-600 text-white rounded-md px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm max-w-[80px] sm:max-w-none"
                 >
                   <option value="">All Assets</option>
                   {taxData.tax_data.asset_summary.map(a => (
@@ -241,20 +243,12 @@ export const ExchangeTaxCalculator = ({ getAuthHeader, isVisible }) => {
       </Card>
 
       {/* CPA DISCLAIMER - Important Legal Notice */}
-      <Alert className="bg-amber-900/30 border-amber-600 text-amber-200">
-        <AlertTriangle className="w-5 h-5 text-amber-400" />
-        <AlertTitle className="text-amber-300 font-semibold">Important Tax Disclaimer</AlertTitle>
-        <AlertDescription className="text-amber-200/90 mt-1">
-          <p>
-            <strong>This tool provides estimates for informational purposes only.</strong> Tax calculations 
-            are complex and depend on your individual circumstances. The data shown here should be 
-            <strong> verified by a qualified CPA or tax professional</strong> before filing.
-          </p>
-          <p className="mt-2 text-sm text-amber-300/80">
-            <Shield className="w-3 h-3 inline mr-1" />
-            <strong>Calculation Method:</strong> FIFO (First In, First Out) • Stablecoins (USDC, USDT, etc.) 
-            are excluded from cost basis • Historical prices use data available at time of calculation
-          </p>
+      <Alert className="bg-amber-900/30 border-amber-600 text-amber-200 px-3 sm:px-4 py-2 sm:py-3">
+        <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 flex-shrink-0" />
+        <AlertTitle className="text-amber-300 font-semibold text-xs sm:text-sm">Tax Disclaimer</AlertTitle>
+        <AlertDescription className="text-amber-200/90 text-[10px] sm:text-sm mt-1">
+          Estimates only. <strong>Verify with a CPA</strong> before filing.
+          <span className="hidden sm:inline"> • FIFO method • Stablecoins excluded</span>
         </AlertDescription>
       </Alert>
 

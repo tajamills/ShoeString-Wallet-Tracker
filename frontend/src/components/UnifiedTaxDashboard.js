@@ -103,30 +103,27 @@ export const UnifiedTaxDashboard = ({
   return (
     <div className="space-y-6" data-testid="unified-tax-dashboard">
       {/* CPA Disclaimer */}
-      <Alert className="bg-amber-900/30 border-amber-600 text-amber-200">
-        <AlertTriangle className="w-5 h-5 text-amber-400" />
-        <AlertTitle className="text-amber-300 font-semibold">Important Tax Disclaimer</AlertTitle>
-        <AlertDescription className="text-amber-200/90 mt-1">
-          <p>
-            <strong>This tool provides estimates for informational purposes only.</strong> Tax calculations 
-            should be <strong>verified by a qualified CPA or tax professional</strong> before filing.
-          </p>
+      <Alert className="bg-amber-900/30 border-amber-600 text-amber-200 px-3 sm:px-4 py-2 sm:py-3">
+        <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 flex-shrink-0" />
+        <AlertTitle className="text-amber-300 font-semibold text-xs sm:text-sm">Tax Disclaimer</AlertTitle>
+        <AlertDescription className="text-amber-200/90 text-[10px] sm:text-sm mt-1">
+          Estimates only. <strong>Verify with a CPA</strong> before filing.
         </AlertDescription>
       </Alert>
 
       {/* Data Source Selector */}
       <Card className="bg-slate-800/50 border-slate-700">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-white text-lg flex items-center gap-2">
-            <Layers className="w-5 h-5 text-purple-400" />
+        <CardHeader className="pb-3 px-3 sm:px-6">
+          <CardTitle className="text-white text-base sm:text-lg flex items-center gap-2">
+            <Layers className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
             Select Data Source
           </CardTitle>
-          <CardDescription className="text-gray-400">
-            Choose which transaction data to include in tax calculations
+          <CardDescription className="text-gray-400 text-xs sm:text-sm">
+            Choose which transaction data to include
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2">
+        <CardContent className="px-3 sm:px-6">
+          <div className="grid grid-cols-3 gap-1 sm:flex sm:flex-wrap sm:gap-2">
             {dataSourceOptions.map((option) => {
               const Icon = option.icon;
               const isActive = dataSource === option.id;
@@ -136,7 +133,9 @@ export const UnifiedTaxDashboard = ({
                   onClick={() => setDataSource(option.id)}
                   disabled={option.disabled}
                   variant={isActive ? "default" : "outline"}
+                  size="sm"
                   className={`
+                    text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2
                     ${isActive 
                       ? 'bg-purple-600 hover:bg-purple-700 text-white' 
                       : 'border-slate-600 text-gray-300 hover:bg-slate-700'
@@ -145,23 +144,25 @@ export const UnifiedTaxDashboard = ({
                   `}
                   data-testid={`data-source-${option.id}`}
                 >
-                  <Icon className="w-4 h-4 mr-2" />
-                  {option.label}
+                  <Icon className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">{option.label}</span>
+                  <span className="sm:hidden">{option.label.split(' ')[0]}</span>
                 </Button>
               );
             })}
           </div>
           
-          {/* Selected source description */}
-          <p className="mt-3 text-sm text-gray-400">
+          {/* Selected source description - hidden on mobile */}
+          <p className="hidden sm:block mt-3 text-sm text-gray-400">
             {dataSourceOptions.find(o => o.id === dataSource)?.desc}
           </p>
           
           {/* Calculation Method Info */}
-          <div className="mt-3 p-3 bg-slate-900/50 rounded border border-slate-700">
-            <p className="text-xs text-gray-400 flex items-center gap-1">
-              <Shield className="w-3 h-3 text-purple-400" />
-              <strong className="text-gray-300">FIFO Method</strong> • Stablecoins (USDC, USDT, etc.) excluded from calculations
+          <div className="mt-2 sm:mt-3 p-2 sm:p-3 bg-slate-900/50 rounded border border-slate-700">
+            <p className="text-[10px] sm:text-xs text-gray-400 flex items-center gap-1 flex-wrap">
+              <Shield className="w-3 h-3 text-purple-400 flex-shrink-0" />
+              <strong className="text-gray-300">FIFO</strong> 
+              <span className="hidden sm:inline">• Stablecoins excluded</span>
             </p>
           </div>
         </CardContent>
@@ -169,14 +170,14 @@ export const UnifiedTaxDashboard = ({
 
       {/* Header with Filters */}
       <Card className="bg-gradient-to-br from-purple-900/40 to-indigo-900/30 border-purple-700">
-        <CardHeader>
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div>
-              <CardTitle className="text-white flex items-center gap-2">
-                <Calculator className="w-6 h-6 text-purple-400" />
-                Tax Calculator
-                <Badge className="bg-purple-600 ml-2">FIFO</Badge>
-                <Badge className={`ml-1 ${
+        <CardHeader className="px-3 sm:px-6 py-3 sm:py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="min-w-0">
+              <CardTitle className="text-white text-sm sm:text-base flex items-center gap-1 sm:gap-2 flex-wrap">
+                <Calculator className="w-4 h-4 sm:w-6 sm:h-6 text-purple-400 flex-shrink-0" />
+                <span>Tax Calculator</span>
+                <Badge className="bg-purple-600 text-[10px] sm:text-xs">FIFO</Badge>
+                <Badge className={`text-[10px] sm:text-xs ${
                   dataSource === 'combined' ? 'bg-green-600' : 
                   dataSource === 'wallet_only' ? 'bg-blue-600' : 'bg-orange-600'
                 }`}>
@@ -184,19 +185,19 @@ export const UnifiedTaxDashboard = ({
                    dataSource === 'wallet_only' ? 'Wallet' : 'Exchange'}
                 </Badge>
               </CardTitle>
-              <CardDescription className="text-gray-400 mt-1">
-                {dataSource === 'combined' && 'Combined on-chain wallet + exchange CSV imports'}
-                {dataSource === 'wallet_only' && 'On-chain wallet transactions only'}
-                {dataSource === 'exchange_only' && 'Imported exchange CSV transactions only'}
+              <CardDescription className="text-gray-400 text-xs sm:text-sm mt-1 truncate">
+                {dataSource === 'combined' && 'Wallet + Exchange combined'}
+                {dataSource === 'wallet_only' && 'On-chain only'}
+                {dataSource === 'exchange_only' && 'Exchange CSV only'}
               </CardDescription>
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 flex-wrap">
               {/* Year Filter */}
               <select
                 value={selectedYear || ''}
                 onChange={(e) => setSelectedYear(e.target.value ? parseInt(e.target.value) : null)}
-                className="bg-slate-800 border border-slate-600 text-white rounded-md px-3 py-2 text-sm"
+                className="bg-slate-800 border border-slate-600 text-white rounded-md px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm"
                 data-testid="tax-year-filter"
               >
                 <option value="">All Years</option>
@@ -210,7 +211,7 @@ export const UnifiedTaxDashboard = ({
                 <select
                   value={selectedAsset || ''}
                   onChange={(e) => setSelectedAsset(e.target.value || null)}
-                  className="bg-slate-800 border border-slate-600 text-white rounded-md px-3 py-2 text-sm"
+                  className="bg-slate-800 border border-slate-600 text-white rounded-md px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm max-w-[100px] sm:max-w-none"
                   data-testid="asset-filter"
                 >
                   <option value="">All Assets</option>
@@ -224,12 +225,12 @@ export const UnifiedTaxDashboard = ({
                 onClick={fetchUnifiedTaxData}
                 disabled={loading}
                 size="sm"
-                className="bg-purple-600 hover:bg-purple-700"
+                className="bg-purple-600 hover:bg-purple-700 px-2 sm:px-3"
               >
                 {loading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
                 ) : (
-                  <RefreshCw className="w-4 h-4" />
+                  <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4" />
                 )}
               </Button>
             </div>
@@ -326,62 +327,62 @@ export const UnifiedTaxDashboard = ({
           </Card>
 
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
             <Card className="bg-slate-800/50 border-slate-700">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-2 text-sm text-gray-400 mb-2">
-                  <TrendingUp className="w-4 h-4" />
-                  Total Realized Gains
+              <CardContent className="p-3 sm:pt-6 sm:px-6">
+                <div className="flex items-center gap-1 sm:gap-2 text-[10px] sm:text-sm text-gray-400 mb-1 sm:mb-2">
+                  <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="truncate">Realized Gains</span>
                 </div>
-                <div className="text-2xl font-bold">
+                <div className="text-lg sm:text-2xl font-bold">
                   {formatGainLoss(taxData.summary?.total_realized_gain)}
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  {selectedYear ? `Tax Year ${selectedYear}` : 'All time'}
+                <div className="text-[9px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1">
+                  {selectedYear ? `${selectedYear}` : 'All time'}
                 </div>
               </CardContent>
             </Card>
 
             <Card className="bg-slate-800/50 border-slate-700">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-2 text-sm text-gray-400 mb-2">
-                  <TrendingDown className="w-4 h-4 text-orange-400" />
-                  Short-term Gains
+              <CardContent className="p-3 sm:pt-6 sm:px-6">
+                <div className="flex items-center gap-1 sm:gap-2 text-[10px] sm:text-sm text-gray-400 mb-1 sm:mb-2">
+                  <TrendingDown className="w-3 h-3 sm:w-4 sm:h-4 text-orange-400" />
+                  <span className="truncate">Short-term</span>
                 </div>
-                <div className="text-2xl font-bold">
+                <div className="text-lg sm:text-2xl font-bold">
                   {formatGainLoss(taxData.summary?.short_term_gains)}
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  Held &lt; 1 year (ordinary income rates)
+                <div className="text-[9px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1">
+                  &lt;1 year
                 </div>
               </CardContent>
             </Card>
 
             <Card className="bg-slate-800/50 border-slate-700">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-2 text-sm text-gray-400 mb-2">
-                  <TrendingUp className="w-4 h-4 text-green-400" />
-                  Long-term Gains
+              <CardContent className="p-3 sm:pt-6 sm:px-6">
+                <div className="flex items-center gap-1 sm:gap-2 text-[10px] sm:text-sm text-gray-400 mb-1 sm:mb-2">
+                  <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-green-400" />
+                  <span className="truncate">Long-term</span>
                 </div>
-                <div className="text-2xl font-bold">
+                <div className="text-lg sm:text-2xl font-bold">
                   {formatGainLoss(taxData.summary?.long_term_gains)}
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  Held ≥ 1 year (preferential rates)
+                <div className="text-[9px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1">
+                  ≥1 year
                 </div>
               </CardContent>
             </Card>
 
             <Card className="bg-slate-800/50 border-slate-700">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-2 text-sm text-gray-400 mb-2">
-                  <Calculator className="w-4 h-4 text-blue-400" />
-                  Unrealized Gains
+              <CardContent className="p-3 sm:pt-6 sm:px-6">
+                <div className="flex items-center gap-1 sm:gap-2 text-[10px] sm:text-sm text-gray-400 mb-1 sm:mb-2">
+                  <Calculator className="w-3 h-3 sm:w-4 sm:h-4 text-blue-400" />
+                  <span className="truncate">Unrealized</span>
                 </div>
-                <div className="text-2xl font-bold">
+                <div className="text-lg sm:text-2xl font-bold">
                   {formatGainLoss(taxData.summary?.total_unrealized_gain)}
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
+                <div className="text-[9px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1">
                   Current holdings
                 </div>
               </CardContent>
