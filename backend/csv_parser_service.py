@@ -40,6 +40,8 @@ EXCHANGE_SIGNATURES = {
             ["Transaction ID", "Date & time", "Asset Acquired", "Quantity Acquired (a)"],
             # Format 4: Simpler variation
             ["Date", "Transaction Type", "Asset", "Quantity"],
+            # Format 5: Comprehensive format with both Acquired and Disposed columns (RAW TX export)
+            ["Transaction ID", "Transaction Type", "Date & time", "Asset Acquired", "Asset Disposed"],
         ]
     },
     ExchangeFormat.BINANCE: {
@@ -215,11 +217,17 @@ class CSVParserService:
         """Parse Coinbase CSV format - supports multiple export formats"""
         transactions = []
         
+        # Check if this is the comprehensive RAW TX format (has both Asset Acquired AND Asset Disposed columns)
+        headers_set = set(h.lower() for h in headers)
+        is_comprehensive = "asset disposed" in ' '.join(headers_set) or any("asset disposed" in h.lower() for h in headers)
+        
         for i, row in enumerate(rows):
             try:
-                # Try to detect format based on available columns
+                # Format 5: Comprehensive RAW TX format (has both acquired and disposed in same row)
+                if is_comprehensive or any(k for k in row.keys() if "asset disposed" in k.lower()):
+                    tx = self._parse_coinbase_comprehensive(row, i)
                 # Format 1: Classic Coinbase (Timestamp, Transaction Type, Asset, Quantity Transacted)
-                if "Timestamp" in row or "timestamp" in [k.lower() for k in row.keys()]:
+                elif "Timestamp" in row or "timestamp" in [k.lower() for k in row.keys()]:
                     tx = self._parse_coinbase_classic(row, i)
                 # Format 2: Newer Coinbase (Date & time, Asset Acquired/Sold, Quantity Acquired/Sold)
                 elif any(k for k in row.keys() if "date & time" in k.lower() or "date &amp; time" in k.lower()):
@@ -231,8 +239,8 @@ class CSVParserService:
                 elif "Date" in row:
                     tx = self._parse_coinbase_simple(row, i)
                 else:
-                    # Try modern format as fallback (most common new export)
-                    tx = self._parse_coinbase_modern(row, i)
+                    # Try comprehensive format as fallback
+                    tx = self._parse_coinbase_comprehensive(row, i)
                 
                 if tx:
                     transactions.append(tx)
@@ -448,6 +456,137 @@ class CSVParserService:
             price_usd=price if price else None,
             total_usd=abs(total) if total else None,
             fee=abs(fees),
+            fee_asset="USD",
+            timestamp=timestamp or datetime.now(timezone.utc),
+            raw_data=row
+        )
+    
+    def _parse_coinbase_comprehensive(self, row: Dict, idx: int) -> Optional[ExchangeTransaction]:
+        """
+        Parse comprehensive Coinbase RAW TX format
+        Headers: Transaction ID, Transaction Type, Date & time, Asset Acquired, 
+                 Quantity Acquired (Bought, Received, etc), Cost Basis (incl. fees and/or spread) (USD),
+                 Data Source, Asset Disposed (Sold, Sent, etc), Quantity Disposed, Proceeds (USD)
+        """
+        def get_val(keys):
+            for k in keys:
+                if k in row:
+                    return row[k]
+                for row_key in row.keys():
+                    if k.lower() in row_key.lower():
+                        return row[row_key]
+            return ""
+        
+        # Get timestamp
+        timestamp_str = get_val(["Date & time", "Date &amp; time", "Timestamp"])
+        timestamp = self._parse_timestamp(timestamp_str)
+        
+        # Get transaction ID
+        tx_id = get_val(["Transaction ID"]) or f"cb_{idx}"
+        
+        # Get transaction type
+        tx_type_raw = get_val(["Transaction Type"]).lower()
+        
+        # Get acquired asset info
+        asset_acquired = get_val(["Asset Acquired"])
+        qty_acquired = self._parse_float(get_val(["Quantity Acquired", "Quantity Acquired (Bought"]))
+        cost_basis = self._parse_float(get_val(["Cost Basis"]))
+        
+        # Get disposed asset info
+        asset_disposed = get_val(["Asset Disposed", "Asset Disposed (Sold"])
+        qty_disposed = self._parse_float(get_val(["Quantity Disposed"]))
+        proceeds = self._parse_float(get_val(["Proceeds"]))
+        
+        # Stablecoins - we want to focus on crypto, not stablecoin movements
+        stablecoins = {"USD", "USDC", "USDT", "BUSD", "DAI", "GUSD", "PAX", "TUSD", "USDP"}
+        
+        # Map transaction types
+        type_map = {
+            "buy": "buy",
+            "sell": "sell",
+            "send": "send",
+            "receive": "receive",
+            "converted from": "sell",  # Selling one crypto
+            "converted to": "buy",      # Buying another crypto
+            "convert": "trade",
+            "rewards": "reward",
+            "reward": "reward",
+            "staking income": "staking",
+            "learning reward": "reward",
+            "stake": "stake",
+            "unstake": "unstake",
+            "deposit": "receive",
+            "withdrawal": "send",
+        }
+        
+        std_type = type_map.get(tx_type_raw, tx_type_raw)
+        
+        # Determine primary asset and amount based on transaction type
+        # For "Converted from" - the disposed asset is being sold
+        # For "Converted to" - the acquired asset is being bought
+        # For "Buy" - asset acquired is the main one
+        # For "Sell/Send" - asset disposed is the main one
+        
+        if tx_type_raw in ["sell", "send", "converted from", "withdrawal"]:
+            # Focus on what's being disposed/sold
+            if asset_disposed and asset_disposed.upper() not in stablecoins:
+                asset = asset_disposed
+                amount = qty_disposed
+                price_usd = proceeds / qty_disposed if qty_disposed > 0 and proceeds else None
+                total_usd = proceeds
+            elif asset_acquired and asset_acquired.upper() not in stablecoins:
+                # Fallback to acquired if disposed is stablecoin
+                asset = asset_acquired
+                amount = qty_acquired
+                price_usd = cost_basis / qty_acquired if qty_acquired > 0 and cost_basis else None
+                total_usd = cost_basis
+            else:
+                return None  # Skip pure stablecoin transactions
+                
+        elif tx_type_raw in ["buy", "receive", "converted to", "rewards", "reward", "deposit", "staking income", "unstake"]:
+            # Focus on what's being acquired
+            if asset_acquired and asset_acquired.upper() not in stablecoins:
+                asset = asset_acquired
+                amount = qty_acquired
+                price_usd = cost_basis / qty_acquired if qty_acquired > 0 and cost_basis else None
+                total_usd = cost_basis
+            elif asset_disposed and asset_disposed.upper() not in stablecoins:
+                # Fallback to disposed if acquired is stablecoin
+                asset = asset_disposed
+                amount = qty_disposed
+                std_type = "sell"  # If we're using disposed, it's actually a sell
+                price_usd = proceeds / qty_disposed if qty_disposed > 0 and proceeds else None
+                total_usd = proceeds
+            else:
+                return None  # Skip pure stablecoin transactions
+        else:
+            # For other types, try to find the crypto asset
+            if asset_acquired and asset_acquired.upper() not in stablecoins:
+                asset = asset_acquired
+                amount = qty_acquired
+                price_usd = cost_basis / qty_acquired if qty_acquired > 0 and cost_basis else None
+                total_usd = cost_basis
+            elif asset_disposed and asset_disposed.upper() not in stablecoins:
+                asset = asset_disposed
+                amount = qty_disposed
+                price_usd = proceeds / qty_disposed if qty_disposed > 0 and proceeds else None
+                total_usd = proceeds
+            else:
+                return None
+        
+        # Skip if no meaningful data
+        if not asset or amount == 0:
+            return None
+        
+        return ExchangeTransaction(
+            exchange="coinbase",
+            tx_id=tx_id,
+            tx_type=std_type,
+            asset=asset.upper(),
+            amount=abs(amount),
+            price_usd=price_usd,
+            total_usd=abs(total_usd) if total_usd else None,
+            fee=0,  # Fees are included in cost basis
             fee_asset="USD",
             timestamp=timestamp or datetime.now(timezone.utc),
             raw_data=row
