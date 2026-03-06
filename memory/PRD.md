@@ -217,10 +217,13 @@ All users must accept Terms of Service before using the platform. The TOS modal 
 ## Upcoming Tasks
 
 ### Next Priority: Integrate Exchange CSV with Tax Calculations
-- [ ] Merge on-chain wallet transactions + imported CSV data into unified tax report
-- [ ] Update `unified_tax_service.py` to combine data sources
-- [ ] Update `TaxDashboard` to display combined data
-- [ ] Generate Form 8949 with both on-chain and exchange transactions
+- [x] Add data source toggle to Unified Tax Dashboard ("Wallet Only", "Exchange Only", "Combined")
+- [x] Backend `/api/tax/unified` endpoint accepts `data_source` parameter
+- [x] Response includes `data_sources_used` showing which sources were included
+- [x] Merge on-chain wallet transactions + imported CSV data into unified tax report
+- [x] Update `UnifiedTaxDashboard` with source selector and transaction count badges
+- [x] CPA disclaimer added to all tax-related components
+- [ ] Generate Form 8949 with both on-chain and exchange transactions (partially complete - needs unified export)
 
 ### Future Features (P2-P5)
 - [ ] DeFi & NFT Integration (liquidity pools, staking, NFT valuations)
