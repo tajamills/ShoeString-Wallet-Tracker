@@ -14,7 +14,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { 
   Calculator,
   Upload,
@@ -28,7 +28,9 @@ import {
   ChevronDown,
   ChevronUp,
   DollarSign,
-  PieChart
+  PieChart,
+  AlertTriangle,
+  Shield
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -237,6 +239,24 @@ export const ExchangeTaxCalculator = ({ getAuthHeader, isVisible }) => {
           </div>
         </CardHeader>
       </Card>
+
+      {/* CPA DISCLAIMER - Important Legal Notice */}
+      <Alert className="bg-amber-900/30 border-amber-600 text-amber-200">
+        <AlertTriangle className="w-5 h-5 text-amber-400" />
+        <AlertTitle className="text-amber-300 font-semibold">Important Tax Disclaimer</AlertTitle>
+        <AlertDescription className="text-amber-200/90 mt-1">
+          <p>
+            <strong>This tool provides estimates for informational purposes only.</strong> Tax calculations 
+            are complex and depend on your individual circumstances. The data shown here should be 
+            <strong> verified by a qualified CPA or tax professional</strong> before filing.
+          </p>
+          <p className="mt-2 text-sm text-amber-300/80">
+            <Shield className="w-3 h-3 inline mr-1" />
+            <strong>Calculation Method:</strong> FIFO (First In, First Out) • Stablecoins (USDC, USDT, etc.) 
+            are excluded from cost basis • Historical prices use data available at time of calculation
+          </p>
+        </AlertDescription>
+      </Alert>
 
       {/* Messages */}
       {error && (
@@ -506,6 +526,23 @@ export const ExchangeTaxCalculator = ({ getAuthHeader, isVisible }) => {
                   across all uploaded exchanges. Upload more CSVs to get a complete picture.
                 </AlertDescription>
               </Alert>
+
+              {/* Calculation Transparency */}
+              <div className="mt-4 p-4 bg-slate-900/50 rounded-lg border border-slate-700">
+                <h4 className="text-sm font-semibold text-white mb-2 flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-purple-400" />
+                  What's Included in These Calculations
+                </h4>
+                <ul className="text-xs text-gray-400 space-y-1">
+                  <li>• <strong className="text-gray-300">Crypto purchases/sales</strong> (BTC, ETH, etc.) - tracked for cost basis</li>
+                  <li>• <strong className="text-gray-300">Stablecoins EXCLUDED</strong> (USDC, USDT, BUSD, DAI) - not taxable events</li>
+                  <li>• <strong className="text-gray-300">Current prices</strong> from CoinGecko API for unrealized gains</li>
+                  <li>• <strong className="text-gray-300">Holding period</strong>: &gt;365 days = long-term, ≤365 days = short-term</li>
+                </ul>
+                <p className="text-xs text-amber-400/80 mt-3">
+                  ⚠️ Always verify these figures against your exchange statements and consult a tax professional.
+                </p>
+              </div>
             </CardContent>
           </Card>
         </>

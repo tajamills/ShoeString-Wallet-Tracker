@@ -105,6 +105,9 @@ All users must accept Terms of Service before using the platform. The TOS modal 
 - [x] Tax year filtering
 - [x] Asset filtering
 - [x] ExchangeModal tabs: Import CSVs / Tax Calculator
+- [x] **Stablecoin exclusion** (Mar 6, 2026): USDC, USDT, BUSD, DAI, etc. excluded from cost basis (not taxable events)
+- [x] **CPA Disclaimer** (Mar 6, 2026): Prominent warning that calculations are estimates and should be verified by a tax professional
+- [x] **Calculation Transparency** (Mar 6, 2026): Clear documentation of what's included/excluded in calculations
 
 ### Phase 6: Code Refactoring (Completed - Mar 5, 2026)
 - [x] Created useAnalysis hook for wallet analysis logic
