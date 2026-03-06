@@ -87,7 +87,8 @@ function App() {
       polygon: 'MATIC',
       arbitrum: 'ETH',
       bsc: 'BNB',
-      solana: 'SOL'
+      solana: 'SOL',
+      algorand: 'ALGO'
     };
     return symbols[chain] || 'ETH';
   };
@@ -99,7 +100,8 @@ function App() {
       polygon: '🔺',
       arbitrum: '🔷',
       bsc: '🟡',
-      solana: '◎'
+      solana: '◎',
+      algorand: '🔷'
     };
     return icons[chain] || '⟠';
   };
@@ -437,6 +439,9 @@ function App() {
                   <option value="solana" disabled={user?.subscription_tier === 'free'}>
                     ◎ Solana {user?.subscription_tier === 'free' ? '🔒' : ''}
                   </option>
+                  <option value="algorand" disabled={user?.subscription_tier === 'free'}>
+                    🔷 Algorand {user?.subscription_tier === 'free' ? '🔒' : ''}
+                  </option>
                 </select>
                 {user?.subscription_tier === 'pro' && (
                   <button
@@ -460,7 +465,9 @@ function App() {
                           ? (user?.subscription_tier === 'pro' ? 'Address or xPub/yPub/zPub (Pro)' : 'Bitcoin address (e.g., 1A1z...)')
                           : selectedChain === 'solana'
                             ? 'Solana address (base58)'
-                            : 'Wallet address'
+                            : selectedChain === 'algorand'
+                              ? 'Algorand address (58 chars)'
+                              : 'Wallet address'
                     }
                     value={walletAddress}
                     onChange={(e) => setWalletAddress(e.target.value)}
@@ -1017,6 +1024,7 @@ function App() {
                                     analysis.chain === 'arbitrum' ? `https://arbiscan.io/tx/${tx.hash}` :
                                     analysis.chain === 'bsc' ? `https://bscscan.com/tx/${tx.hash}` :
                                     analysis.chain === 'solana' ? `https://solscan.io/tx/${tx.hash}` :
+                                    analysis.chain === 'algorand' ? `https://algoexplorer.io/tx/${tx.hash}` :
                                     `#`
                                   }
                                   target="_blank"

@@ -243,6 +243,15 @@ All users must accept Terms of Service before using the platform. The TOS modal 
 - [x] Linked transactions use wallet's original acquisition date for holding period
 - [x] Combined data source auto-matches when both wallet + exchange data present
 
+### Phase 8: Algorand Chain Support (Completed - Mar 6, 2026)
+- [x] AlgorandAnalyzer class in `/app/backend/chains/algorand.py`
+- [x] Uses public Algonode indexer API (no API key required)
+- [x] Supports ALGO transfers and ASA (Algorand Standard Assets)
+- [x] Address validation (58-char base32 format)
+- [x] Added to multi_chain_service routing
+- [x] Frontend chain dropdown includes Algorand option
+- [x] Explorer links to algoexplorer.io
+
 ### Future Features (P2-P5)
 - [ ] DeFi & NFT Integration (liquidity pools, staking, NFT valuations)
 - [ ] Additional blockchains (Avalanche, Optimism, Base)

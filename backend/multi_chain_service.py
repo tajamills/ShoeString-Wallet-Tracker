@@ -57,6 +57,13 @@ class MultiChainService:
                 "decimals": 18,
                 "symbol": "MATIC",
                 "explorer": "https://polygonscan.com"
+            },
+            "algorand": {
+                "name": "Algorand",
+                "api_url": "https://mainnet-idx.algonode.cloud",
+                "decimals": 6,
+                "symbol": "ALGO",
+                "explorer": "https://algoexplorer.io"
             }
         }
     
@@ -155,13 +162,18 @@ class MultiChainService:
         # Provide helpful error if wrong chain selected for address type
         if chain in ["ethereum", "polygon", "arbitrum", "bsc"]:
             if not address.startswith('0x'):
-                raise ValueError(f"This appears to be a non-EVM address. For {chain}, use an address starting with 0x. Try selecting Bitcoin or Solana instead.")
+                raise ValueError(f"This appears to be a non-EVM address. For {chain}, use an address starting with 0x. Try selecting Bitcoin, Solana, or Algorand instead.")
         elif chain == "bitcoin":
             if address.startswith('0x'):
                 raise ValueError(f"This appears to be an EVM address (starts with 0x). Try selecting Ethereum, Polygon, Arbitrum, or BSC instead.")
         elif chain == "solana":
             if address.startswith('0x'):
                 raise ValueError(f"This appears to be an EVM address (starts with 0x). Try selecting Ethereum, Polygon, Arbitrum, or BSC instead.")
+        elif chain == "algorand":
+            if address.startswith('0x'):
+                raise ValueError(f"This appears to be an EVM address (starts with 0x). Algorand addresses are 58-character base32 strings.")
+            if len(address) != 58:
+                raise ValueError(f"Invalid Algorand address. Expected 58 characters, got {len(address)}.")
         
         # Get analysis data
         if chain == "bitcoin":
@@ -170,6 +182,9 @@ class MultiChainService:
         elif chain == "solana":
             analysis = self._analyze_solana_wallet(address, start_date, end_date)
             symbol = 'SOL'
+        elif chain == "algorand":
+            analysis = self._analyze_algorand_wallet(address, start_date, end_date)
+            symbol = 'ALGO'
         else:
             # EVM chains (ethereum, polygon, arbitrum, bsc)
             analysis = self._analyze_evm_wallet(address, chain, start_date, end_date)
@@ -689,6 +704,41 @@ class MultiChainService:
         except Exception as e:
             logger.error(f"Error analyzing Solana wallet: {str(e)}")
             raise Exception(f"Failed to analyze Solana wallet: {str(e)}")
+    
+    def _analyze_algorand_wallet(
+        self,
+        address: str,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Analyze Algorand wallet using public indexer API"""
+        try:
+            from chains.algorand import create_algorand_analyzer
+            
+            analyzer = create_algorand_analyzer()
+            result = analyzer.analyze_wallet(address, start_date, end_date)
+            
+            # Convert to standard format
+            return {
+                'address': address,
+                'chain': 'algorand',
+                'totalSent': result.get('total_sent', 0),
+                'totalReceived': result.get('total_received', 0),
+                'currentBalance': result.get('current_balance', 0),
+                'gasFees': result.get('gas_fees', 0),
+                'transactionCount': result.get('outgoing_count', 0) + result.get('incoming_count', 0),
+                'outgoingCount': result.get('outgoing_count', 0),
+                'incomingCount': result.get('incoming_count', 0),
+                'firstTransaction': result.get('first_transaction'),
+                'lastTransaction': result.get('last_transaction'),
+                'tokensSent': {},
+                'tokensReceived': {},
+                'recentTransactions': result.get('recent_transactions', [])
+            }
+            
+        except Exception as e:
+            logger.error(f"Error analyzing Algorand wallet: {str(e)}")
+            raise Exception(f"Failed to analyze Algorand wallet: {str(e)}")
     
     def get_supported_chains(self) -> List[Dict[str, str]]:
         """Get list of supported chains"""
