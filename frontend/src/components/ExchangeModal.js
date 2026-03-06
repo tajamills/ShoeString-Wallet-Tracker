@@ -1,3 +1,14 @@
+/**
+ * ExchangeModal - CSV Import and Tax Calculator
+ * 
+ * Features:
+ * - Upload CSV exports from exchanges (Coinbase, Binance, Kraken, Gemini, Crypto.com, KuCoin)
+ * - Auto-detect exchange format from CSV columns
+ * - Calculate FIFO cost basis and capital gains
+ * - Export Form 8949 for tax filing
+ * 
+ * Updated: March 2026
+ */
 import React, { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';

@@ -1,3 +1,15 @@
+/**
+ * ExchangeTaxCalculator - Standalone tax calculator from exchange CSV imports
+ * 
+ * Features:
+ * - FIFO cost basis calculation
+ * - Realized/unrealized capital gains
+ * - Form 8949 export (CSV)
+ * - Filter by tax year and asset
+ * 
+ * No wallet required - works purely from imported exchange data.
+ * Updated: March 2026
+ */
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
