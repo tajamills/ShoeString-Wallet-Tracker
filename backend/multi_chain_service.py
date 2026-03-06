@@ -756,22 +756,22 @@ class MultiChainService:
             analyzer = create_algorand_analyzer()
             result = analyzer.analyze_wallet(address, start_date, end_date)
             
-            # Convert to standard format
+            # Convert to standard format - format_analysis_result uses camelCase
             return {
                 'address': address,
                 'chain': 'algorand',
-                'totalSent': result.get('total_sent', 0),
-                'totalReceived': result.get('total_received', 0),
-                'currentBalance': result.get('current_balance', 0),
-                'gasFees': result.get('gas_fees', 0),
-                'transactionCount': result.get('outgoing_count', 0) + result.get('incoming_count', 0),
-                'outgoingCount': result.get('outgoing_count', 0),
-                'incomingCount': result.get('incoming_count', 0),
+                'totalSent': result.get('totalEthSent', 0),
+                'totalReceived': result.get('totalEthReceived', 0),
+                'currentBalance': result.get('currentBalance', 0),
+                'gasFees': result.get('totalGasFees', 0),
+                'transactionCount': result.get('outgoingTransactionCount', 0) + result.get('incomingTransactionCount', 0),
+                'outgoingCount': result.get('outgoingTransactionCount', 0),
+                'incomingCount': result.get('incomingTransactionCount', 0),
                 'firstTransaction': result.get('first_transaction'),
                 'lastTransaction': result.get('last_transaction'),
-                'tokensSent': {},
-                'tokensReceived': {},
-                'recentTransactions': result.get('recent_transactions', [])
+                'tokensSent': result.get('tokensSent', {}),
+                'tokensReceived': result.get('tokensReceived', {}),
+                'recentTransactions': result.get('recentTransactions', [])
             }
             
         except Exception as e:
@@ -791,21 +791,22 @@ class MultiChainService:
             analyzer = create_dogecoin_analyzer()
             result = analyzer.analyze_wallet(address, start_date, end_date)
             
+            # Convert to standard format - format_analysis_result uses camelCase
             return {
                 'address': address,
                 'chain': 'dogecoin',
-                'totalSent': result.get('total_sent', 0),
-                'totalReceived': result.get('total_received', 0),
-                'currentBalance': result.get('current_balance', 0),
-                'gasFees': result.get('gas_fees', 0),
-                'transactionCount': result.get('outgoing_count', 0) + result.get('incoming_count', 0),
-                'outgoingCount': result.get('outgoing_count', 0),
-                'incomingCount': result.get('incoming_count', 0),
+                'totalSent': result.get('totalEthSent', 0),
+                'totalReceived': result.get('totalEthReceived', 0),
+                'currentBalance': result.get('currentBalance', 0),
+                'gasFees': result.get('totalGasFees', 0),
+                'transactionCount': result.get('outgoingTransactionCount', 0) + result.get('incomingTransactionCount', 0),
+                'outgoingCount': result.get('outgoingTransactionCount', 0),
+                'incomingCount': result.get('incomingTransactionCount', 0),
                 'firstTransaction': result.get('first_transaction'),
                 'lastTransaction': result.get('last_transaction'),
-                'tokensSent': {},
-                'tokensReceived': {},
-                'recentTransactions': result.get('recent_transactions', [])
+                'tokensSent': result.get('tokensSent', {}),
+                'tokensReceived': result.get('tokensReceived', {}),
+                'recentTransactions': result.get('recentTransactions', [])
             }
             
         except Exception as e:

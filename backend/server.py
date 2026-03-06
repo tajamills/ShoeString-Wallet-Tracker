@@ -883,7 +883,7 @@ async def analyze_wallet(request: WalletAnalysisRequest, user: dict = Depends(ch
         if chain != 'ethereum' and user_tier == 'free':
             raise HTTPException(
                 status_code=403, 
-                detail="Multi-chain analysis is a Premium feature. Upgrade to analyze Bitcoin, Polygon, Arbitrum, BSC, and Solana wallets."
+                detail="Multi-chain analysis is a Premium feature. Upgrade to analyze 10+ chains including Bitcoin, Solana, Algorand, Avalanche, and Dogecoin."
             )
         
         # Basic validation
