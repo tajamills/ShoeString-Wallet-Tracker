@@ -366,12 +366,14 @@ class TestUnifiedTaxInputValidation:
         assert response.status_code in [200, 400, 500], f"Unexpected status: {response.status_code}"
     
     def test_unified_tax_missing_address(self):
-        """Test unified tax with missing address field"""
+        """Test unified tax with missing address field for wallet_only or combined"""
         response = self.client.post(
             f"{BASE_URL}/api/tax/unified",
             headers=self.get_headers(self.premium_token),
             json={
-                "chain": "ethereum"
+                "chain": "ethereum",
+                "data_source": "combined"  # Combined requires address
             }
         )
-        assert response.status_code == 422, f"Expected 422, got {response.status_code}"
+        # Should return 400 for missing address (combined/wallet_only requires address)
+        assert response.status_code == 400, f"Expected 400, got {response.status_code}"

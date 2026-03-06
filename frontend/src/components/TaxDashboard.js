@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -15,7 +15,12 @@ import {
   ChevronUp,
   Clock,
   Calendar,
-  Wand2
+  Wand2,
+  Wallet,
+  ArrowRightLeft,
+  Layers,
+  AlertTriangle,
+  Shield
 } from 'lucide-react';
 
 export const TaxDashboard = ({ 
@@ -25,7 +30,12 @@ export const TaxDashboard = ({
   formatNumber, 
   onExportForm8949,
   onExportScheduleD,
-  onBatchCategorize 
+  onBatchCategorize,
+  dataSource = "wallet_only",
+  onDataSourceChange,
+  dataSourcesUsed,
+  hasWalletData = false,
+  hasExchangeData = false
 }) => {
   const [showRealizedDetails, setShowRealizedDetails] = useState(false);
   const [showUnrealizedDetails, setShowUnrealizedDetails] = useState(false);
@@ -45,8 +55,97 @@ export const TaxDashboard = ({
     return <span className="text-red-400">-{formatted}</span>;
   };
 
+  const dataSourceOptions = [
+    { id: 'wallet_only', label: 'Wallet Only', icon: Wallet, disabled: !hasWalletData },
+    { id: 'exchange_only', label: 'Exchange Only', icon: ArrowRightLeft, disabled: !hasExchangeData },
+    { id: 'combined', label: 'Combined', icon: Layers, disabled: !hasWalletData && !hasExchangeData }
+  ];
+
   return (
     <div className="space-y-6">
+      {/* CPA Disclaimer */}
+      <Alert className="bg-amber-900/30 border-amber-600 text-amber-200">
+        <AlertTriangle className="w-5 h-5 text-amber-400" />
+        <AlertTitle className="text-amber-300 font-semibold">Important Tax Disclaimer</AlertTitle>
+        <AlertDescription className="text-amber-200/90 mt-1">
+          <p>
+            <strong>This tool provides estimates for informational purposes only.</strong> Tax calculations 
+            should be <strong>verified by a qualified CPA or tax professional</strong> before filing.
+          </p>
+        </AlertDescription>
+      </Alert>
+
+      {/* Data Source Selector */}
+      {onDataSourceChange && (
+        <Card className="bg-slate-800/50 border-slate-700">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-white text-lg flex items-center gap-2">
+              <Layers className="w-5 h-5 text-purple-400" />
+              Data Source
+            </CardTitle>
+            <CardDescription className="text-gray-400">
+              Choose which transaction data to include in tax calculations
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {dataSourceOptions.map((option) => {
+                const Icon = option.icon;
+                const isActive = dataSource === option.id;
+                return (
+                  <Button
+                    key={option.id}
+                    onClick={() => onDataSourceChange(option.id)}
+                    disabled={option.disabled}
+                    variant={isActive ? "default" : "outline"}
+                    className={`
+                      ${isActive 
+                        ? 'bg-purple-600 hover:bg-purple-700 text-white' 
+                        : 'border-slate-600 text-gray-300 hover:bg-slate-700'
+                      }
+                      ${option.disabled ? 'opacity-50 cursor-not-allowed' : ''}
+                    `}
+                    data-testid={`data-source-${option.id}`}
+                  >
+                    <Icon className="w-4 h-4 mr-2" />
+                    {option.label}
+                  </Button>
+                );
+              })}
+            </div>
+            
+            {/* Data Source Info */}
+            {dataSourcesUsed && (
+              <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                {dataSourcesUsed.wallet && (
+                  <Badge className="bg-blue-900/50 text-blue-300">
+                    <Wallet className="w-3 h-3 mr-1" />
+                    {dataSourcesUsed.wallet_tx_count || 0} wallet txns
+                  </Badge>
+                )}
+                {dataSourcesUsed.exchange && (
+                  <Badge className="bg-green-900/50 text-green-300">
+                    <ArrowRightLeft className="w-3 h-3 mr-1" />
+                    {dataSourcesUsed.exchange_tx_count || 0} exchange txns
+                  </Badge>
+                )}
+              </div>
+            )}
+
+            {/* Calculation Info */}
+            <div className="mt-3 p-3 bg-slate-900/50 rounded border border-slate-700">
+              <p className="text-xs text-gray-400 flex items-center gap-1">
+                <Shield className="w-3 h-3 text-purple-400" />
+                <strong className="text-gray-300">FIFO Method</strong> • Stablecoins excluded • 
+                {dataSource === 'combined' && ' Transactions merged chronologically'}
+                {dataSource === 'wallet_only' && ' On-chain transactions only'}
+                {dataSource === 'exchange_only' && ' Exchange CSV transactions only'}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Tax Summary Header */}
       <Card className="bg-gradient-to-br from-indigo-900/40 to-purple-900/30 border-indigo-700">
         <CardHeader>

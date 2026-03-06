@@ -940,6 +940,7 @@ function App() {
                 formatNumber={formatNumber}
                 onExportForm8949={exportForm8949}
                 onExportScheduleD={() => setShowScheduleD(true)}
+                hasExchangeData={true}
               />
             )}
 

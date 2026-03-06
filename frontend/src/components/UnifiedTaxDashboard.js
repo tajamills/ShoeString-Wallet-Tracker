@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { 
   Calculator,
   Wallet,
@@ -16,7 +16,10 @@ import {
   Info,
   ChevronDown,
   ChevronUp,
-  Filter
+  Filter,
+  Layers,
+  AlertTriangle,
+  Shield
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -30,7 +33,8 @@ export const UnifiedTaxDashboard = ({
   formatUSD, 
   formatNumber,
   onExportForm8949,
-  onExportScheduleD
+  onExportScheduleD,
+  hasExchangeData = false
 }) => {
   const [loading, setLoading] = useState(false);
   const [taxData, setTaxData] = useState(null);
@@ -40,27 +44,33 @@ export const UnifiedTaxDashboard = ({
   const [selectedYear, setSelectedYear] = useState(null);
   const [showSources, setShowSources] = useState(false);
   const [showRealizedDetails, setShowRealizedDetails] = useState(false);
+  const [dataSource, setDataSource] = useState('combined');
+  const [dataSourcesUsed, setDataSourcesUsed] = useState(null);
 
   const currentYear = new Date().getFullYear();
   const taxYears = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
+  const hasWalletData = !!walletAddress;
+
   const fetchUnifiedTaxData = async () => {
-    if (!walletAddress) return;
+    // For exchange_only, we don't need a wallet address
+    if (dataSource !== 'exchange_only' && !walletAddress) return;
     
     setLoading(true);
     setError('');
     
     try {
       const response = await axios.post(`${API}/tax/unified`, {
-        address: walletAddress,
+        address: walletAddress || null,
         chain: chain,
-        include_exchanges: true,
+        data_source: dataSource,
         asset_filter: selectedAsset,
         tax_year: selectedYear
       }, { headers: getAuthHeader() });
       
       setTaxData(response.data.tax_data);
       setAssetsSummary(response.data.assets_summary || []);
+      setDataSourcesUsed(response.data.data_sources_used);
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to calculate unified tax data');
     } finally {
@@ -69,10 +79,11 @@ export const UnifiedTaxDashboard = ({
   };
 
   useEffect(() => {
-    if (walletAddress) {
+    // Only fetch if we have the required data for the selected source
+    if (dataSource === 'exchange_only' || walletAddress) {
       fetchUnifiedTaxData();
     }
-  }, [walletAddress, chain, selectedAsset, selectedYear]);
+  }, [walletAddress, chain, selectedAsset, selectedYear, dataSource]);
 
   const formatGainLoss = (value) => {
     if (value === undefined || value === null) return '$0.00';
@@ -83,12 +94,79 @@ export const UnifiedTaxDashboard = ({
     return <span className="text-red-400">-{formatted}</span>;
   };
 
-  if (!walletAddress) {
-    return null;
-  }
+  const dataSourceOptions = [
+    { id: 'wallet_only', label: 'Wallet Only', icon: Wallet, disabled: !hasWalletData, desc: 'On-chain transactions only' },
+    { id: 'exchange_only', label: 'Exchange Only', icon: ArrowLeftRight, disabled: !hasExchangeData, desc: 'Imported CSV transactions' },
+    { id: 'combined', label: 'Combined', icon: Layers, disabled: false, desc: 'All sources merged' }
+  ];
 
   return (
     <div className="space-y-6" data-testid="unified-tax-dashboard">
+      {/* CPA Disclaimer */}
+      <Alert className="bg-amber-900/30 border-amber-600 text-amber-200">
+        <AlertTriangle className="w-5 h-5 text-amber-400" />
+        <AlertTitle className="text-amber-300 font-semibold">Important Tax Disclaimer</AlertTitle>
+        <AlertDescription className="text-amber-200/90 mt-1">
+          <p>
+            <strong>This tool provides estimates for informational purposes only.</strong> Tax calculations 
+            should be <strong>verified by a qualified CPA or tax professional</strong> before filing.
+          </p>
+        </AlertDescription>
+      </Alert>
+
+      {/* Data Source Selector */}
+      <Card className="bg-slate-800/50 border-slate-700">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-white text-lg flex items-center gap-2">
+            <Layers className="w-5 h-5 text-purple-400" />
+            Select Data Source
+          </CardTitle>
+          <CardDescription className="text-gray-400">
+            Choose which transaction data to include in tax calculations
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            {dataSourceOptions.map((option) => {
+              const Icon = option.icon;
+              const isActive = dataSource === option.id;
+              return (
+                <Button
+                  key={option.id}
+                  onClick={() => setDataSource(option.id)}
+                  disabled={option.disabled}
+                  variant={isActive ? "default" : "outline"}
+                  className={`
+                    ${isActive 
+                      ? 'bg-purple-600 hover:bg-purple-700 text-white' 
+                      : 'border-slate-600 text-gray-300 hover:bg-slate-700'
+                    }
+                    ${option.disabled ? 'opacity-50 cursor-not-allowed' : ''}
+                  `}
+                  data-testid={`data-source-${option.id}`}
+                >
+                  <Icon className="w-4 h-4 mr-2" />
+                  {option.label}
+                </Button>
+              );
+            })}
+          </div>
+          
+          {/* Selected source description */}
+          <p className="mt-3 text-sm text-gray-400">
+            {dataSourceOptions.find(o => o.id === dataSource)?.desc}
+          </p>
+          
+          {/* Calculation Method Info */}
+          <div className="mt-3 p-3 bg-slate-900/50 rounded border border-slate-700">
+            <p className="text-xs text-gray-400 flex items-center gap-1">
+              <Shield className="w-3 h-3 text-purple-400" />
+              <strong className="text-gray-300">FIFO Method</strong> • Stablecoins (USDC, USDT, etc.) excluded from calculations
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Header with Filters */}
       <Card className="bg-gradient-to-br from-purple-900/40 to-indigo-900/30 border-purple-700">
         <CardHeader>
@@ -96,11 +174,20 @@ export const UnifiedTaxDashboard = ({
             <div>
               <CardTitle className="text-white flex items-center gap-2">
                 <Calculator className="w-6 h-6 text-purple-400" />
-                Unified Tax Calculator
+                Tax Calculator
                 <Badge className="bg-purple-600 ml-2">FIFO</Badge>
+                <Badge className={`ml-1 ${
+                  dataSource === 'combined' ? 'bg-green-600' : 
+                  dataSource === 'wallet_only' ? 'bg-blue-600' : 'bg-orange-600'
+                }`}>
+                  {dataSource === 'combined' ? 'Combined' : 
+                   dataSource === 'wallet_only' ? 'Wallet' : 'Exchange'}
+                </Badge>
               </CardTitle>
               <CardDescription className="text-gray-400 mt-1">
-                Combined on-chain wallet + exchange CSV imports
+                {dataSource === 'combined' && 'Combined on-chain wallet + exchange CSV imports'}
+                {dataSource === 'wallet_only' && 'On-chain wallet transactions only'}
+                {dataSource === 'exchange_only' && 'Imported exchange CSV transactions only'}
               </CardDescription>
             </div>
             
@@ -172,18 +259,25 @@ export const UnifiedTaxDashboard = ({
               <div className="flex items-center justify-between">
                 <CardTitle className="text-white text-lg flex items-center gap-2">
                   <ArrowLeftRight className="w-5 h-5 text-blue-400" />
-                  Data Sources
+                  Data Sources Used
                 </CardTitle>
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
-                    <Badge className="bg-blue-900/50 text-blue-300">
-                      <Wallet className="w-3 h-3 mr-1" />
-                      {taxData.sources?.wallet_count || 0} on-chain
-                    </Badge>
-                    <Badge className="bg-green-900/50 text-green-300">
-                      <FileText className="w-3 h-3 mr-1" />
-                      {taxData.sources?.exchange_count || 0} exchange
-                    </Badge>
+                    {dataSourcesUsed?.wallet && (
+                      <Badge className="bg-blue-900/50 text-blue-300">
+                        <Wallet className="w-3 h-3 mr-1" />
+                        {dataSourcesUsed.wallet_tx_count || 0} on-chain
+                      </Badge>
+                    )}
+                    {dataSourcesUsed?.exchange && (
+                      <Badge className="bg-green-900/50 text-green-300">
+                        <FileText className="w-3 h-3 mr-1" />
+                        {dataSourcesUsed.exchange_tx_count || 0} exchange
+                      </Badge>
+                    )}
+                    {!dataSourcesUsed?.wallet && !dataSourcesUsed?.exchange && (
+                      <Badge className="bg-gray-700 text-gray-300">No data</Badge>
+                    )}
                   </div>
                   {showSources ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
                 </div>

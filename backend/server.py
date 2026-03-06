@@ -1775,9 +1775,9 @@ async def get_supported_tax_years():
 from unified_tax_service import unified_tax_service
 
 class UnifiedTaxRequest(BaseModel):
-    address: str
+    address: Optional[str] = None  # Optional when data_source is "exchange_only"
     chain: str = "ethereum"
-    include_exchanges: bool = True
+    data_source: str = "combined"  # "wallet_only", "exchange_only", "combined"
     asset_filter: Optional[str] = None  # Filter to specific asset (e.g., "BTC", "ETH")
     tax_year: Optional[int] = None
 
@@ -1787,12 +1787,12 @@ async def get_unified_tax_data(
     user: dict = Depends(get_current_user)
 ):
     """
-    Get unified tax data combining on-chain wallet + exchange CSV imports
+    Get unified tax data with flexible data source selection
     
-    - Merges all transaction sources
-    - Calculates FIFO cost basis across both
-    - Returns realized/unrealized gains
-    - Supports filtering by asset and tax year
+    data_source options:
+    - "wallet_only": Only on-chain wallet transactions
+    - "exchange_only": Only imported exchange CSV transactions
+    - "combined": Merge both sources for comprehensive tax calculation
     """
     try:
         user_tier = user.get('subscription_tier', 'free')
@@ -1802,36 +1802,58 @@ async def get_unified_tax_data(
                 detail="Unified tax calculation requires Unlimited subscription."
             )
         
-        address = request.address.lower()
+        data_source = request.data_source
+        wallet_transactions = []
+        exchange_transactions = []
+        current_balance = 0
+        current_price = 0
+        symbol = 'USD'
+        address = request.address.lower() if request.address else None
         chain = request.chain
         
-        # Get wallet analysis data
-        analysis_data = multi_chain_service.analyze_wallet(
-            address=address,
-            chain=chain,
-            user_tier=user_tier
-        )
+        # Get wallet data if needed
+        if data_source in ["wallet_only", "combined"]:
+            if not address:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Wallet address required for wallet_only or combined data source"
+                )
+            
+            analysis_data = multi_chain_service.analyze_wallet(
+                address=address,
+                chain=chain,
+                user_tier=user_tier
+            )
+            
+            wallet_transactions = analysis_data.get('recentTransactions', [])
+            current_balance = analysis_data.get('currentBalance', 0)
+            current_price = analysis_data.get('current_price_usd', 0)
+            symbol = {
+                'ethereum': 'ETH',
+                'bitcoin': 'BTC',
+                'polygon': 'MATIC',
+                'arbitrum': 'ETH',
+                'bsc': 'BNB',
+                'solana': 'SOL'
+            }.get(chain, 'ETH')
         
-        wallet_transactions = analysis_data.get('recentTransactions', [])
-        current_balance = analysis_data.get('currentBalance', 0)
-        current_price = analysis_data.get('current_price_usd', 0)
-        symbol = {
-            'ethereum': 'ETH',
-            'bitcoin': 'BTC',
-            'polygon': 'MATIC',
-            'arbitrum': 'ETH',
-            'bsc': 'BNB',
-            'solana': 'SOL'
-        }.get(chain, 'ETH')
-        
-        # Get exchange transactions if requested
-        exchange_transactions = []
-        if request.include_exchanges:
+        # Get exchange transactions if needed
+        if data_source in ["exchange_only", "combined"]:
             exchange_txs = await db.exchange_transactions.find(
                 {"user_id": user["id"]},
                 {"_id": 0}
-            ).to_list(1000)
+            ).to_list(5000)
             exchange_transactions = exchange_txs
+            
+            # If exchange_only, we need to determine prices from the data
+            if data_source == "exchange_only" and exchange_transactions:
+                # Get unique assets
+                assets = set(tx.get('asset', '') for tx in exchange_transactions)
+                # Use a generic symbol for mixed assets
+                if len(assets) == 1:
+                    symbol = list(assets)[0]
+                else:
+                    symbol = "MULTI"
         
         # Calculate unified tax data
         tax_data = unified_tax_service.calculate_unified_tax_data(
@@ -1875,9 +1897,16 @@ async def get_unified_tax_data(
             "symbol": symbol,
             "current_price": current_price,
             "tax_year": request.tax_year,
+            "data_source": data_source,
+            "data_sources_used": {
+                "wallet": len(wallet_transactions) > 0,
+                "wallet_tx_count": len(wallet_transactions),
+                "exchange": len(exchange_transactions) > 0,
+                "exchange_tx_count": len(exchange_transactions)
+            },
             "tax_data": tax_data,
             "assets_summary": assets_summary,
-            "message": "Unified tax data calculated successfully"
+            "message": f"Tax data calculated using {data_source} source(s)"
         }
         
     except HTTPException:
