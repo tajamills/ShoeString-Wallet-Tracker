@@ -17,6 +17,7 @@ import { DowngradeModal } from '@/components/DowngradeModal';
 import { ChainRequestModal } from '@/components/ChainRequestModal';
 import { ExportModal } from '@/components/ExportModal';
 import { TaxDashboard } from '@/components/TaxDashboard';
+import { UnifiedTaxDashboard } from '@/components/UnifiedTaxDashboard';
 import { TransactionCategorizer } from '@/components/TransactionCategorizer';
 import { ScheduleDExport, BatchCategorizationModal } from '@/components/TaxEnhancements';
 import { TermsModal } from '@/components/TermsModal';
@@ -926,6 +927,19 @@ function App() {
                 onExportForm8949={exportForm8949}
                 onExportScheduleD={() => setShowScheduleD(true)}
                 onBatchCategorize={() => setShowBatchCategorize(true)}
+              />
+            )}
+
+            {/* Unified Tax Dashboard - Combines wallet + exchange data */}
+            {user?.subscription_tier !== 'free' && analysis && (
+              <UnifiedTaxDashboard
+                walletAddress={analysis.address}
+                chain={analysis.chain || selectedChain}
+                getAuthHeader={getAuthHeader}
+                formatUSD={formatUSD}
+                formatNumber={formatNumber}
+                onExportForm8949={exportForm8949}
+                onExportScheduleD={() => setShowScheduleD(true)}
               />
             )}
 

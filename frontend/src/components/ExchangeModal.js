@@ -15,9 +15,11 @@ import {
   ArrowDownLeft,
   HelpCircle,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Calculator
 } from 'lucide-react';
 import axios from 'axios';
+import { ExchangeTaxCalculator } from './ExchangeTaxCalculator';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -56,6 +58,7 @@ const ExchangeLogos = {
 };
 
 export const ExchangeModal = ({ isOpen, onClose, getAuthHeader }) => {
+  const [activeTab, setActiveTab] = useState('import'); // 'import' or 'tax'
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [supportedExchanges, setSupportedExchanges] = useState([]);
@@ -179,18 +182,67 @@ export const ExchangeModal = ({ isOpen, onClose, getAuthHeader }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-3xl bg-slate-800 border-slate-700 max-h-[90vh] overflow-y-auto" data-testid="exchange-modal">
+      <DialogContent className="sm:max-w-4xl bg-slate-800 border-slate-700 max-h-[90vh] overflow-y-auto" data-testid="exchange-modal">
         <DialogHeader>
           <DialogTitle className="text-white text-2xl flex items-center gap-2">
-            <Upload className="w-6 h-6 text-purple-400" />
-            Import Exchange Data
+            {activeTab === 'import' ? (
+              <>
+                <Upload className="w-6 h-6 text-purple-400" />
+                Exchange Data
+              </>
+            ) : (
+              <>
+                <Calculator className="w-6 h-6 text-green-400" />
+                Tax Calculator
+              </>
+            )}
           </DialogTitle>
           <DialogDescription className="text-gray-400">
-            Upload CSV exports from your exchanges - no API keys needed!
+            {activeTab === 'import' 
+              ? 'Upload CSV exports from your exchanges - no API keys needed!'
+              : 'Calculate cost basis and capital gains from your imported data'
+            }
           </DialogDescription>
         </DialogHeader>
 
-        {loading ? (
+        {/* Tab Navigation */}
+        <div className="flex border-b border-slate-700 mb-4">
+          <button
+            onClick={() => setActiveTab('import')}
+            className={`px-4 py-2 font-medium transition-colors ${
+              activeTab === 'import'
+                ? 'text-purple-400 border-b-2 border-purple-400'
+                : 'text-gray-400 hover:text-white'
+            }`}
+            data-testid="tab-import"
+          >
+            <Upload className="w-4 h-4 inline mr-2" />
+            Import CSVs
+          </button>
+          <button
+            onClick={() => setActiveTab('tax')}
+            className={`px-4 py-2 font-medium transition-colors ${
+              activeTab === 'tax'
+                ? 'text-green-400 border-b-2 border-green-400'
+                : 'text-gray-400 hover:text-white'
+            }`}
+            data-testid="tab-tax"
+          >
+            <Calculator className="w-4 h-4 inline mr-2" />
+            Tax Calculator
+          </button>
+        </div>
+
+        {/* Tax Calculator Tab */}
+        {activeTab === 'tax' && (
+          <ExchangeTaxCalculator 
+            getAuthHeader={getAuthHeader} 
+            isVisible={activeTab === 'tax'}
+          />
+        )}
+
+        {/* Import Tab */}
+        {activeTab === 'import' && (loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-purple-400" />
           </div>
@@ -422,7 +474,7 @@ export const ExchangeModal = ({ isOpen, onClose, getAuthHeader }) => {
               </AlertDescription>
             </Alert>
           </div>
-        )}
+        ))}
       </DialogContent>
     </Dialog>
   );

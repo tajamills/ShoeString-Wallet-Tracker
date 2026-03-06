@@ -132,7 +132,7 @@ test.describe('Exchange UI Tests - Unlimited Users', () => {
     await expect(page.getByTestId('exchange-button')).toBeVisible();
   });
 
-  test('Exchange modal opens and shows CSV upload interface', async ({ page }) => {
+  test('Exchange modal opens with Import and Tax Calculator tabs', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
     await loginAsPremiumUser(page);
     
@@ -140,10 +140,14 @@ test.describe('Exchange UI Tests - Unlimited Users', () => {
     await page.getByTestId('exchange-button').click();
     await expect(page.getByTestId('exchange-modal')).toBeVisible({ timeout: 5000 });
     
-    // Modal should show CSV import title
-    await expect(page.locator('text=Import Exchange Data')).toBeVisible();
+    // Modal should show "Exchange Data" title
+    await expect(page.locator('text=Exchange Data')).toBeVisible();
     
-    // Upload button should be visible
+    // Should have two tabs: Import CSVs and Tax Calculator
+    await expect(page.getByTestId('tab-import')).toBeVisible();
+    await expect(page.getByTestId('tab-tax')).toBeVisible();
+    
+    // Upload button should be visible (Import tab is active by default)
     await expect(page.getByTestId('upload-csv-button')).toBeVisible();
     
     // Privacy note about no API keys should be visible
@@ -221,5 +225,168 @@ test.describe('Exchange UI Tests - Free Users', () => {
     
     // Free user should see Upgrade button
     await expect(page.getByTestId('upgrade-button')).toBeVisible();
+  });
+});
+
+test.describe('Exchange Tax Calculator Tab Tests', () => {
+  test('Tax Calculator tab shows when clicked', async ({ page }) => {
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await loginAsPremiumUser(page);
+    
+    // Open Exchange modal
+    await page.getByTestId('exchange-button').click();
+    await expect(page.getByTestId('exchange-modal')).toBeVisible({ timeout: 5000 });
+    
+    // Click Tax Calculator tab
+    await page.getByTestId('tab-tax').click();
+    
+    // Exchange Tax Calculator component should be visible
+    await expect(page.getByTestId('exchange-tax-calculator')).toBeVisible({ timeout: 5000 });
+    
+    // Tax Calculator title should be visible
+    await expect(page.locator('text=Exchange Tax Calculator')).toBeVisible();
+  });
+
+  test('Tax Calculator shows no data message when empty', async ({ page }) => {
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await loginAsPremiumUser(page);
+    
+    // Open Exchange modal
+    await page.getByTestId('exchange-button').click();
+    await expect(page.getByTestId('exchange-modal')).toBeVisible({ timeout: 5000 });
+    
+    // Click Tax Calculator tab
+    await page.getByTestId('tab-tax').click();
+    await expect(page.getByTestId('exchange-tax-calculator')).toBeVisible({ timeout: 5000 });
+    
+    // Should either show data cards OR "No Exchange Data Yet" message
+    const noDataMessage = page.locator('text=No Exchange Data Yet');
+    const dataCards = page.locator('text=Total Realized Gains');
+    
+    // Wait for either to appear
+    await expect(noDataMessage.or(dataCards)).toBeVisible({ timeout: 5000 });
+  });
+
+  test('Tax Calculator has year and asset filters', async ({ page }) => {
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await loginAsPremiumUser(page);
+    
+    // Open Exchange modal
+    await page.getByTestId('exchange-button').click();
+    await expect(page.getByTestId('exchange-modal')).toBeVisible({ timeout: 5000 });
+    
+    // Click Tax Calculator tab
+    await page.getByTestId('tab-tax').click();
+    await expect(page.getByTestId('exchange-tax-calculator')).toBeVisible({ timeout: 5000 });
+    
+    // Year filter should be visible - it's a select dropdown with years
+    const yearSelect = page.locator('select').filter({ hasText: /All Years|2026|2025|2024/ }).first();
+    await expect(yearSelect).toBeVisible();
+    
+    // Refresh button should be visible
+    const refreshButton = page.locator('button').filter({ has: page.locator('[class*="refresh"]').or(page.locator('svg')) }).first();
+    await expect(refreshButton).toBeVisible();
+  });
+
+  test('Switching between Import and Tax Calculator tabs works', async ({ page }) => {
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await loginAsPremiumUser(page);
+    
+    // Open Exchange modal
+    await page.getByTestId('exchange-button').click();
+    await expect(page.getByTestId('exchange-modal')).toBeVisible({ timeout: 5000 });
+    
+    // Verify Import tab content
+    await expect(page.getByTestId('upload-csv-button')).toBeVisible();
+    await expect(page.locator('text=Supported Exchanges')).toBeVisible();
+    
+    // Switch to Tax Calculator tab
+    await page.getByTestId('tab-tax').click();
+    await expect(page.getByTestId('exchange-tax-calculator')).toBeVisible({ timeout: 5000 });
+    
+    // Import content should be hidden now
+    await expect(page.getByTestId('upload-csv-button')).not.toBeVisible();
+    
+    // Switch back to Import tab
+    await page.getByTestId('tab-import').click();
+    
+    // Import content should be visible again
+    await expect(page.getByTestId('upload-csv-button')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('text=Supported Exchanges')).toBeVisible();
+  });
+});
+
+test.describe('Exchange Tax API Tests', () => {
+  test('POST /api/exchanges/tax/calculate requires auth', async ({ request }) => {
+    const response = await request.post(`${API_URL}/api/exchanges/tax/calculate`, {
+      data: {}
+    });
+    expect(response.status()).toBe(403);
+  });
+
+  test('GET /api/exchanges/tax/form-8949 requires auth', async ({ request }) => {
+    const response = await request.get(`${API_URL}/api/exchanges/tax/form-8949`);
+    expect(response.status()).toBe(403);
+  });
+
+  test('Free user gets 403 on tax/calculate endpoint', async ({ request }) => {
+    const uniqueId = Date.now();
+    const testEmail = `TEST_exchange_taxcalc_${uniqueId}@test.com`;
+    
+    const registerResponse = await request.post(`${API_URL}/api/auth/register`, {
+      data: { email: testEmail, password: 'TestPass123!' }
+    });
+    
+    expect(registerResponse.status()).toBe(200);
+    const { access_token } = await registerResponse.json();
+    
+    const taxResponse = await request.post(`${API_URL}/api/exchanges/tax/calculate`, {
+      headers: { Authorization: `Bearer ${access_token}` },
+      data: {}
+    });
+    
+    expect(taxResponse.status()).toBe(403);
+    const errorData = await taxResponse.json();
+    expect(errorData.detail).toContain('Unlimited');
+  });
+
+  test('Free user gets 403 on form-8949 endpoint', async ({ request }) => {
+    const uniqueId = Date.now();
+    const testEmail = `TEST_exchange_form8949_${uniqueId}@test.com`;
+    
+    const registerResponse = await request.post(`${API_URL}/api/auth/register`, {
+      data: { email: testEmail, password: 'TestPass123!' }
+    });
+    
+    expect(registerResponse.status()).toBe(200);
+    const { access_token } = await registerResponse.json();
+    
+    const formResponse = await request.get(`${API_URL}/api/exchanges/tax/form-8949`, {
+      headers: { Authorization: `Bearer ${access_token}` }
+    });
+    
+    expect(formResponse.status()).toBe(403);
+    const errorData = await formResponse.json();
+    expect(errorData.detail).toContain('Unlimited');
+  });
+
+  test('Free user gets 403 on form-8949/csv endpoint', async ({ request }) => {
+    const uniqueId = Date.now();
+    const testEmail = `TEST_exchange_csv_${uniqueId}@test.com`;
+    
+    const registerResponse = await request.post(`${API_URL}/api/auth/register`, {
+      data: { email: testEmail, password: 'TestPass123!' }
+    });
+    
+    expect(registerResponse.status()).toBe(200);
+    const { access_token } = await registerResponse.json();
+    
+    const csvResponse = await request.get(`${API_URL}/api/exchanges/tax/form-8949/csv`, {
+      headers: { Authorization: `Bearer ${access_token}` }
+    });
+    
+    expect(csvResponse.status()).toBe(403);
+    const errorData = await csvResponse.json();
+    expect(errorData.detail).toContain('Unlimited');
   });
 });

@@ -1770,6 +1770,181 @@ async def get_supported_tax_years():
         "current_year": current_year
     }
 
+# ==================== UNIFIED TAX CALCULATION ====================
+
+from unified_tax_service import unified_tax_service
+
+class UnifiedTaxRequest(BaseModel):
+    address: str
+    chain: str = "ethereum"
+    include_exchanges: bool = True
+    asset_filter: Optional[str] = None  # Filter to specific asset (e.g., "BTC", "ETH")
+    tax_year: Optional[int] = None
+
+@api_router.post("/tax/unified")
+async def get_unified_tax_data(
+    request: UnifiedTaxRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Get unified tax data combining on-chain wallet + exchange CSV imports
+    
+    - Merges all transaction sources
+    - Calculates FIFO cost basis across both
+    - Returns realized/unrealized gains
+    - Supports filtering by asset and tax year
+    """
+    try:
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier == 'free':
+            raise HTTPException(
+                status_code=403,
+                detail="Unified tax calculation requires Unlimited subscription."
+            )
+        
+        address = request.address.lower()
+        chain = request.chain
+        
+        # Get wallet analysis data
+        analysis_data = multi_chain_service.analyze_wallet(
+            address=address,
+            chain=chain,
+            user_tier=user_tier
+        )
+        
+        wallet_transactions = analysis_data.get('recentTransactions', [])
+        current_balance = analysis_data.get('currentBalance', 0)
+        current_price = analysis_data.get('current_price_usd', 0)
+        symbol = {
+            'ethereum': 'ETH',
+            'bitcoin': 'BTC',
+            'polygon': 'MATIC',
+            'arbitrum': 'ETH',
+            'bsc': 'BNB',
+            'solana': 'SOL'
+        }.get(chain, 'ETH')
+        
+        # Get exchange transactions if requested
+        exchange_transactions = []
+        if request.include_exchanges:
+            exchange_txs = await db.exchange_transactions.find(
+                {"user_id": user["id"]},
+                {"_id": 0}
+            ).to_list(1000)
+            exchange_transactions = exchange_txs
+        
+        # Calculate unified tax data
+        tax_data = unified_tax_service.calculate_unified_tax_data(
+            wallet_transactions=wallet_transactions,
+            exchange_transactions=exchange_transactions,
+            symbol=symbol,
+            current_price=current_price,
+            current_balance=current_balance,
+            asset_filter=request.asset_filter
+        )
+        
+        # Filter by tax year if specified
+        if request.tax_year:
+            tax_data['realized_gains'] = [
+                g for g in tax_data['realized_gains']
+                if g.get('sell_date', '').startswith(str(request.tax_year))
+            ]
+            # Recalculate summary
+            tax_data['summary']['total_realized_gain'] = sum(
+                g['gain_loss'] for g in tax_data['realized_gains']
+            )
+            tax_data['summary']['short_term_gains'] = sum(
+                g['gain_loss'] for g in tax_data['realized_gains'] 
+                if g['holding_period'] == 'short-term'
+            )
+            tax_data['summary']['long_term_gains'] = sum(
+                g['gain_loss'] for g in tax_data['realized_gains'] 
+                if g['holding_period'] == 'long-term'
+            )
+        
+        # Get asset summary
+        assets_summary = unified_tax_service.get_assets_summary(
+            wallet_transactions,
+            exchange_transactions,
+            symbol
+        )
+        
+        return {
+            "wallet_address": address,
+            "chain": chain,
+            "symbol": symbol,
+            "current_price": current_price,
+            "tax_year": request.tax_year,
+            "tax_data": tax_data,
+            "assets_summary": assets_summary,
+            "message": "Unified tax data calculated successfully"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error calculating unified tax: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to calculate unified tax data: {str(e)}")
+
+@api_router.get("/tax/unified/assets")
+async def get_unified_assets_summary(user: dict = Depends(get_current_user)):
+    """
+    Get summary of all assets across wallet analyses and exchange imports
+    """
+    try:
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier == 'free':
+            raise HTTPException(
+                status_code=403,
+                detail="Asset summary requires Unlimited subscription."
+            )
+        
+        # Get all exchange transactions for this user
+        exchange_txs = await db.exchange_transactions.find(
+            {"user_id": user["id"]},
+            {"_id": 0}
+        ).to_list(5000)
+        
+        # Get unique assets from exchanges
+        assets = {}
+        for tx in exchange_txs:
+            asset = tx.get('asset', 'UNKNOWN')
+            if asset not in assets:
+                assets[asset] = {
+                    'asset': asset,
+                    'exchange_txs': 0,
+                    'total_bought': 0,
+                    'total_sold': 0,
+                    'exchanges': set()
+                }
+            
+            assets[asset]['exchange_txs'] += 1
+            assets[asset]['exchanges'].add(tx.get('exchange', 'unknown'))
+            
+            amount = float(tx.get('amount', 0))
+            tx_type = tx.get('tx_type', '').lower()
+            if tx_type in ['buy', 'receive', 'deposit', 'reward']:
+                assets[asset]['total_bought'] += amount
+            elif tx_type in ['sell', 'send', 'withdrawal']:
+                assets[asset]['total_sold'] += amount
+        
+        # Convert sets to lists for JSON serialization
+        for asset in assets.values():
+            asset['exchanges'] = list(asset['exchanges'])
+            asset['net_position'] = asset['total_bought'] - asset['total_sold']
+        
+        return {
+            "assets": list(assets.values()),
+            "total_assets": len(assets),
+            "total_exchange_txs": len(exchange_txs)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting assets summary: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get assets summary")
+
 # ==================== AFFILIATE ROUTES ====================
 
 @api_router.post("/affiliate/register")
@@ -2320,6 +2495,241 @@ async def get_export_instructions(exchange_id: str):
         raise HTTPException(status_code=404, detail=f"Instructions not found for {exchange_id}")
     
     return instructions[exchange_id.lower()]
+
+# ==================== EXCHANGE-ONLY TAX CALCULATION ====================
+
+from exchange_tax_service import exchange_tax_service
+
+class ExchangeTaxRequest(BaseModel):
+    asset_filter: Optional[str] = None
+    tax_year: Optional[int] = None
+
+@api_router.post("/exchanges/tax/calculate")
+async def calculate_exchange_tax(
+    request: ExchangeTaxRequest = ExchangeTaxRequest(),
+    user: dict = Depends(get_current_user)
+):
+    """
+    Calculate tax data from imported exchange CSVs only.
+    No wallet analysis required - works purely from your uploaded data.
+    
+    Returns:
+        - FIFO cost basis for all assets
+        - Realized capital gains/losses
+        - Unrealized gains on open positions
+        - Form 8949 compatible data
+    """
+    try:
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier == 'free':
+            raise HTTPException(
+                status_code=403,
+                detail="Exchange tax calculation requires Unlimited subscription."
+            )
+        
+        # Get all exchange transactions for this user
+        transactions = await db.exchange_transactions.find(
+            {"user_id": user["id"]},
+            {"_id": 0}
+        ).to_list(10000)
+        
+        if not transactions:
+            return {
+                "message": "No exchange data found. Upload your exchange CSVs first.",
+                "has_data": False,
+                "tax_data": exchange_tax_service._empty_result()
+            }
+        
+        # Calculate tax data
+        tax_data = exchange_tax_service.calculate_from_transactions(
+            transactions=transactions,
+            asset_filter=request.asset_filter,
+            tax_year=request.tax_year
+        )
+        
+        return {
+            "message": "Tax calculation complete",
+            "has_data": True,
+            "tax_data": tax_data
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error calculating exchange tax: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to calculate tax: {str(e)}")
+
+@api_router.get("/exchanges/tax/form-8949")
+async def get_exchange_form_8949(
+    tax_year: Optional[int] = None,
+    holding_period: Optional[str] = None,  # 'short-term' or 'long-term'
+    user: dict = Depends(get_current_user)
+):
+    """
+    Generate Form 8949 data from exchange transactions only.
+    
+    Args:
+        tax_year: Filter for specific tax year
+        holding_period: Filter for 'short-term' or 'long-term'
+    
+    Returns:
+        Form 8949 line items ready for tax filing
+    """
+    try:
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier == 'free':
+            raise HTTPException(
+                status_code=403,
+                detail="Form 8949 export requires Unlimited subscription."
+            )
+        
+        # Get transactions
+        transactions = await db.exchange_transactions.find(
+            {"user_id": user["id"]},
+            {"_id": 0}
+        ).to_list(10000)
+        
+        if not transactions:
+            return {
+                "message": "No exchange data found",
+                "line_items": [],
+                "totals": {}
+            }
+        
+        # Calculate tax data
+        tax_data = exchange_tax_service.calculate_from_transactions(
+            transactions=transactions,
+            tax_year=tax_year
+        )
+        
+        # Generate Form 8949 data
+        form_data = exchange_tax_service.generate_form_8949_data(
+            realized_gains=tax_data['realized_gains'],
+            holding_period_filter=holding_period
+        )
+        
+        # Calculate totals
+        totals = {
+            'total_proceeds': sum(item['proceeds'] for item in form_data),
+            'total_cost_basis': sum(item['cost_basis'] for item in form_data),
+            'total_gain_loss': sum(item['gain_or_loss'] for item in form_data),
+            'line_count': len(form_data)
+        }
+        
+        return {
+            "tax_year": tax_year or "All Years",
+            "holding_period": holding_period or "All",
+            "line_items": form_data,
+            "totals": totals
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating Form 8949: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to generate Form 8949")
+
+@api_router.get("/exchanges/tax/form-8949/csv")
+async def export_exchange_form_8949_csv(
+    tax_year: Optional[int] = None,
+    holding_period: Optional[str] = None,
+    user: dict = Depends(get_current_user)
+):
+    """Export Form 8949 data as CSV file"""
+    try:
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier == 'free':
+            raise HTTPException(
+                status_code=403,
+                detail="CSV export requires Unlimited subscription."
+            )
+        
+        # Get transactions
+        transactions = await db.exchange_transactions.find(
+            {"user_id": user["id"]},
+            {"_id": 0}
+        ).to_list(10000)
+        
+        if not transactions:
+            raise HTTPException(status_code=404, detail="No exchange data found")
+        
+        # Calculate and generate form data
+        tax_data = exchange_tax_service.calculate_from_transactions(
+            transactions=transactions,
+            tax_year=tax_year
+        )
+        
+        form_data = exchange_tax_service.generate_form_8949_data(
+            realized_gains=tax_data['realized_gains'],
+            holding_period_filter=holding_period
+        )
+        
+        # Generate CSV
+        import io
+        import csv
+        
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # Header
+        writer.writerow([
+            'Description of Property',
+            'Date Acquired',
+            'Date Sold',
+            'Proceeds',
+            'Cost Basis',
+            'Adjustment Code',
+            'Adjustment Amount',
+            'Gain or Loss',
+            'Holding Period',
+            'Exchange'
+        ])
+        
+        # Data rows
+        for item in form_data:
+            writer.writerow([
+                item['description'],
+                item['date_acquired'],
+                item['date_sold'],
+                f"${item['proceeds']:.2f}",
+                f"${item['cost_basis']:.2f}",
+                item['adjustment_code'],
+                f"${item['adjustment_amount']:.2f}",
+                f"${item['gain_or_loss']:.2f}",
+                item['holding_period'],
+                item['exchange']
+            ])
+        
+        # Totals row
+        writer.writerow([])
+        writer.writerow([
+            'TOTALS',
+            '',
+            '',
+            f"${sum(item['proceeds'] for item in form_data):.2f}",
+            f"${sum(item['cost_basis'] for item in form_data):.2f}",
+            '',
+            '',
+            f"${sum(item['gain_or_loss'] for item in form_data):.2f}",
+            '',
+            ''
+        ])
+        
+        csv_content = output.getvalue()
+        
+        filename = f"Form_8949_Exchanges_{tax_year or 'All'}_{holding_period or 'All'}.csv"
+        
+        return Response(
+            content=csv_content,
+            media_type="text/csv",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error exporting CSV: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to export CSV")
 
 # Include the router in the main app
 app.include_router(api_router)

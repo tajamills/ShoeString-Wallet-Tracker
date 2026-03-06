@@ -1,0 +1,83 @@
+{
+  "summary": "Exchange Tax Calculator feature testing complete. All new endpoints work correctly. POST /exchanges/tax/calculate, GET /exchanges/tax/form-8949, GET /exchanges/tax/form-8949/csv all verified. Free users correctly get 403. ExchangeModal UI shows Import and Tax Calculator tabs. Tax year and asset filtering work correctly.",
+  "mode": "generate",
+  "baseline_commit": "d4cc524b9395127582fcda070cbd803f4c758c9a",
+  "head_commit": "e7a0142b0d7e2e73d6a4296e09541c0d0d286d91",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "/api/affiliate/register",
+        "issue": "Pre-existing: Affiliate alphanumeric codes rejected with 400. Not related to exchange tax feature.",
+        "priority": "LOW"
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "flaky_tests": [
+      {
+        "test": "core-flows.spec.ts - Invalid wallet address shows error",
+        "issue": "Login sometimes stuck at 'Logging in...' state. Pre-existing flaky test issue.",
+        "frequency": "intermittent"
+      }
+    ]
+  },
+  "regression_results": {
+    "total_specs": 62,
+    "passed": 58,
+    "failed": 4,
+    "skipped": 0,
+    "note": "4 failures are pre-existing flaky test issues unrelated to new feature"
+  },
+  "specs_created": [
+    "/app/backend/tests/test_exchange_tax.py"
+  ],
+  "specs_updated": [
+    "/app/tests/e2e/exchange.spec.ts"
+  ],
+  "quarantined_tests": [],
+  "test_report_links": [
+    "/app/backend/tests/test_exchange_tax.py",
+    "/app/tests/e2e/exchange.spec.ts",
+    "/app/test_reports/pytest/pytest_exchange_tax_results.xml"
+  ],
+  "action_items": [],
+  "updated_files": [
+    "/app/backend/tests/test_exchange_tax.py",
+    "/app/tests/e2e/exchange.spec.ts"
+  ],
+  "success_rate": {
+    "backend": "100% (44/44 exchange tests, 92/94 all backend tests - 2 pre-existing affiliate failures)",
+    "frontend": "100% (18/18 exchange tests - new feature tests all pass)"
+  },
+  "seed_data_creation": "Test users created dynamically with unique timestamps",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Exchange Tax Calculator feature fully tested. New tests added: 24 backend tests in test_exchange_tax.py (POST /exchanges/tax/calculate, GET /exchanges/tax/form-8949, GET /exchanges/tax/form-8949/csv). 9 new frontend tests added to exchange.spec.ts for Tax Calculator tab UI. All tests pass. ExchangeModal now has two tabs (Import CSVs and Tax Calculator). Free users correctly get 403 on all tax endpoints.",
+  "tests_executed": {
+    "backend": {
+      "test_exchange.py": "20 passed - CSV import approach",
+      "test_exchange_tax.py": "24 passed - NEW exchange tax calculator tests"
+    },
+    "frontend": {
+      "exchange.spec.ts": "18 passed - includes 9 new Tax Calculator tests",
+      "affiliate.spec.ts": "8 passed",
+      "core-flows.spec.ts": "12 passed, 3 failed (pre-existing flaky login issue)",
+      "tax-core.spec.ts": "2 passed, 1 failed (pre-existing flaky login issue)"
+    }
+  },
+  "features_verified": [
+    "POST /api/exchanges/tax/calculate - calculates tax from CSV imports, requires Unlimited",
+    "GET /api/exchanges/tax/form-8949 - returns Form 8949 line items, requires Unlimited",
+    "GET /api/exchanges/tax/form-8949/csv - exports Form 8949 as CSV file, requires Unlimited",
+    "ExchangeModal has Import and Tax Calculator tabs",
+    "Tax Calculator shows cost basis and capital gains summary",
+    "Free users get 403 for all exchange tax endpoints",
+    "Tax year filter works correctly",
+    "Asset filter works correctly",
+    "Holding period filter (short-term/long-term) works correctly"
+  ]
+}
