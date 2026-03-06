@@ -351,6 +351,16 @@ export const ExchangeModal = ({ isOpen, onClose, getAuthHeader }) => {
                               <li key={i}>{step}</li>
                             ))}
                           </ol>
+                          {instructions.accepted_columns && instructions.accepted_columns.length > 0 && (
+                            <div className="mt-2 pt-2 border-t border-slate-600">
+                              <p className="text-xs text-purple-400 font-medium mb-1">Accepted CSV Formats:</p>
+                              <ul className="text-xs text-gray-500 space-y-0.5">
+                                {instructions.accepted_columns.map((col, i) => (
+                                  <li key={i} className="truncate">• {col}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
                           {instructions.notes && (
                             <p className="text-xs text-yellow-400/70 mt-2 italic">
                               Note: {instructions.notes}

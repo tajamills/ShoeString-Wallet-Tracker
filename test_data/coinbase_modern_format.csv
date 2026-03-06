@@ -1,0 +1,5 @@
+Transaction ID,Date & time,Asset Acquired,Quantity Acquired (a),Asset Sold,Quantity Sold (s),USD Value
+abc123,2024-01-15 10:30:00,BTC,0.05,USD,5000,5000
+def456,2024-02-20 14:45:00,ETH,2.5,USD,7500,7500
+ghi789,2024-03-10 09:15:00,USD,3000,BTC,0.03,3000
+jkl012,2024-04-05 16:20:00,SOL,100,USD,15000,15000

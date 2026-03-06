@@ -26,10 +26,21 @@ class ExchangeFormat(str, Enum):
 
 
 # Column signatures for auto-detection
+# Each exchange can have multiple signature sets to handle format variations
 EXCHANGE_SIGNATURES = {
     ExchangeFormat.COINBASE: {
+        # Classic Coinbase format
         "required": ["Timestamp", "Transaction Type", "Asset", "Quantity Transacted"],
-        "optional": ["Spot Price at Transaction", "USD Subtotal"]
+        "optional": ["Spot Price at Transaction", "USD Subtotal"],
+        # Alternative Coinbase formats (newer exports have different column names)
+        "alt_signatures": [
+            # Format 2: Transaction ID based
+            ["Transaction ID", "Transaction Type", "Asset Acquired", "Quantity Acquired"],
+            # Format 3: Date & time based (user reported)
+            ["Transaction ID", "Date & time", "Asset Acquired", "Quantity Acquired (a)"],
+            # Format 4: Simpler variation
+            ["Date", "Transaction Type", "Asset", "Quantity"],
+        ]
     },
     ExchangeFormat.BINANCE: {
         "required": ["Date(UTC)", "Pair", "Side", "Price", "Executed", "Amount"],
@@ -101,27 +112,48 @@ class ExchangeTransaction:
 class CSVParserService:
     """Service for parsing exchange CSV files"""
     
-    def detect_exchange(self, headers: List[str]) -> ExchangeFormat:
-        """Auto-detect exchange based on CSV column headers"""
+    def detect_exchange(self, headers: List[str]) -> Tuple[ExchangeFormat, str]:
+        """
+        Auto-detect exchange based on CSV column headers
+        
+        Returns:
+            Tuple of (ExchangeFormat, format_variant)
+            format_variant can be: 'primary', 'alt_1', 'alt_2', etc.
+        """
         headers_lower = [h.lower().strip() for h in headers]
-        headers_set = set(headers)
         
         for exchange, signature in EXCHANGE_SIGNATURES.items():
-            required = signature["required"]
-            # Check if all required columns are present
-            if all(col in headers for col in required):
-                return exchange
-            # Also check lowercase
-            if all(col.lower() in headers_lower for col in required):
-                return exchange
+            # Check primary required columns
+            required = signature.get("required", [])
+            if required:
+                if all(col in headers for col in required):
+                    return exchange, "primary"
+                # Also check lowercase
+                if all(col.lower() in headers_lower for col in required):
+                    return exchange, "primary"
+            
+            # Check alternative signatures
+            alt_signatures = signature.get("alt_signatures", [])
+            for idx, alt_required in enumerate(alt_signatures):
+                if all(col in headers for col in alt_required):
+                    return exchange, f"alt_{idx + 1}"
+                # Also check lowercase
+                if all(col.lower() in headers_lower for col in alt_required):
+                    return exchange, f"alt_{idx + 1}"
         
         # Additional heuristics for common variations
+        # Look for exchange-specific markers in headers
         if any("coinbase" in h.lower() for h in headers):
-            return ExchangeFormat.COINBASE
+            return ExchangeFormat.COINBASE, "heuristic"
         if any("binance" in h.lower() for h in headers):
-            return ExchangeFormat.BINANCE
+            return ExchangeFormat.BINANCE, "heuristic"
         
-        return ExchangeFormat.UNKNOWN
+        # Coinbase often has these columns in various formats
+        coinbase_markers = ["asset acquired", "asset sold", "quantity acquired", "quantity sold", "usd value"]
+        if sum(1 for marker in coinbase_markers if any(marker in h.lower() for h in headers)) >= 2:
+            return ExchangeFormat.COINBASE, "heuristic"
+        
+        return ExchangeFormat.UNKNOWN, ""
     
     def parse_csv(self, content: str, exchange_hint: Optional[str] = None) -> Tuple[ExchangeFormat, List[ExchangeTransaction]]:
         """
@@ -141,19 +173,22 @@ class CSVParserService:
         if not headers:
             raise ValueError("CSV file appears to be empty or malformed")
         
-        # Detect exchange
+        # Detect exchange and format variant
+        format_variant = "primary"
         if exchange_hint:
             try:
                 exchange = ExchangeFormat(exchange_hint.lower())
             except ValueError:
-                exchange = self.detect_exchange(headers)
+                exchange, format_variant = self.detect_exchange(headers)
         else:
-            exchange = self.detect_exchange(headers)
+            exchange, format_variant = self.detect_exchange(headers)
         
         if exchange == ExchangeFormat.UNKNOWN:
+            # Provide helpful error with actual headers for debugging
             raise ValueError(
-                f"Could not detect exchange format. Headers found: {', '.join(headers[:5])}... "
-                "Supported exchanges: Coinbase, Binance, Kraken, Gemini, Crypto.com, KuCoin"
+                f"Could not detect exchange format. Headers found: {', '.join(headers[:10])}... "
+                "Supported exchanges: Coinbase, Binance, Kraken, Gemini, Crypto.com, KuCoin. "
+                "Please ensure your CSV export is from one of these exchanges."
             )
         
         # Parse based on detected exchange
@@ -172,63 +207,253 @@ class CSVParserService:
         if not parser:
             raise ValueError(f"No parser available for {exchange}")
         
-        transactions = parser(rows, headers)
+        # Pass format_variant to parser for exchanges with multiple formats
+        transactions = parser(rows, headers, format_variant)
         return exchange, transactions
     
-    def _parse_coinbase(self, rows: List[Dict], headers: List[str]) -> List[ExchangeTransaction]:
-        """Parse Coinbase CSV format"""
+    def _parse_coinbase(self, rows: List[Dict], headers: List[str], format_variant: str = "primary") -> List[ExchangeTransaction]:
+        """Parse Coinbase CSV format - supports multiple export formats"""
         transactions = []
         
         for i, row in enumerate(rows):
             try:
-                # Coinbase format: Timestamp, Transaction Type, Asset, Quantity Transacted, Spot Price, Subtotal
-                timestamp_str = row.get("Timestamp", "")
-                tx_type = row.get("Transaction Type", "").lower()
-                asset = row.get("Asset", "")
-                amount = self._parse_float(row.get("Quantity Transacted", "0"))
-                spot_price = self._parse_float(row.get("Spot Price at Transaction", "0"))
-                subtotal = self._parse_float(row.get("USD Subtotal", "") or row.get("Subtotal", "0"))
-                fees = self._parse_float(row.get("Fees and/or Spread", "") or row.get("Fees", "0"))
+                # Try to detect format based on available columns
+                # Format 1: Classic Coinbase (Timestamp, Transaction Type, Asset, Quantity Transacted)
+                if "Timestamp" in row or "timestamp" in [k.lower() for k in row.keys()]:
+                    tx = self._parse_coinbase_classic(row, i)
+                # Format 2: Newer Coinbase (Date & time, Asset Acquired/Sold, Quantity Acquired/Sold)
+                elif any(k for k in row.keys() if "date & time" in k.lower() or "date &amp; time" in k.lower()):
+                    tx = self._parse_coinbase_modern(row, i)
+                # Format 3: Alternative format with Transaction ID
+                elif "Transaction ID" in row or any("transaction id" in k.lower() for k in row.keys()):
+                    tx = self._parse_coinbase_txid_format(row, i)
+                # Format 4: Simple date format
+                elif "Date" in row:
+                    tx = self._parse_coinbase_simple(row, i)
+                else:
+                    # Try modern format as fallback (most common new export)
+                    tx = self._parse_coinbase_modern(row, i)
                 
-                # Parse timestamp
-                timestamp = self._parse_timestamp(timestamp_str)
-                
-                # Map transaction types
-                type_map = {
-                    "buy": "buy",
-                    "sell": "sell",
-                    "send": "send",
-                    "receive": "receive",
-                    "convert": "trade",
-                    "rewards income": "reward",
-                    "coinbase earn": "reward",
-                    "staking income": "staking"
-                }
-                std_type = type_map.get(tx_type, tx_type)
-                
-                if not asset or amount == 0:
-                    continue
-                
-                transactions.append(ExchangeTransaction(
-                    exchange="coinbase",
-                    tx_id=f"cb_{i}_{timestamp.timestamp() if timestamp else i}",
-                    tx_type=std_type,
-                    asset=asset,
-                    amount=abs(amount),
-                    price_usd=spot_price if spot_price else None,
-                    total_usd=abs(subtotal) if subtotal else None,
-                    fee=abs(fees),
-                    fee_asset="USD",
-                    timestamp=timestamp or datetime.now(timezone.utc),
-                    raw_data=row
-                ))
+                if tx:
+                    transactions.append(tx)
+                    
             except Exception as e:
                 logger.warning(f"Error parsing Coinbase row {i}: {e}")
                 continue
         
         return transactions
     
-    def _parse_binance(self, rows: List[Dict], headers: List[str]) -> List[ExchangeTransaction]:
+    def _parse_coinbase_classic(self, row: Dict, idx: int) -> Optional[ExchangeTransaction]:
+        """Parse classic Coinbase format (Timestamp, Transaction Type, Asset, Quantity Transacted)"""
+        # Get values with case-insensitive key lookup
+        def get_val(keys):
+            for k in keys:
+                if k in row:
+                    return row[k]
+                for row_key in row.keys():
+                    if row_key.lower() == k.lower():
+                        return row[row_key]
+            return ""
+        
+        timestamp_str = get_val(["Timestamp", "timestamp"])
+        tx_type = get_val(["Transaction Type", "transaction type"]).lower()
+        asset = get_val(["Asset", "asset"])
+        amount = self._parse_float(get_val(["Quantity Transacted", "quantity transacted"]))
+        spot_price = self._parse_float(get_val(["Spot Price at Transaction", "spot price at transaction", "Spot Price Currency", "USD Spot Price at Transaction"]))
+        subtotal = self._parse_float(get_val(["USD Subtotal", "Subtotal", "subtotal"]))
+        fees = self._parse_float(get_val(["Fees and/or Spread", "Fees", "fees"]))
+        
+        timestamp = self._parse_timestamp(timestamp_str)
+        
+        # Map transaction types
+        type_map = {
+            "buy": "buy",
+            "sell": "sell",
+            "send": "send",
+            "receive": "receive",
+            "convert": "trade",
+            "rewards income": "reward",
+            "coinbase earn": "reward",
+            "staking income": "staking",
+            "learning reward": "reward",
+            "advanced trade buy": "buy",
+            "advanced trade sell": "sell",
+        }
+        std_type = type_map.get(tx_type, tx_type)
+        
+        if not asset or amount == 0:
+            return None
+        
+        return ExchangeTransaction(
+            exchange="coinbase",
+            tx_id=f"cb_{idx}_{timestamp.timestamp() if timestamp else idx}",
+            tx_type=std_type,
+            asset=asset,
+            amount=abs(amount),
+            price_usd=spot_price if spot_price else None,
+            total_usd=abs(subtotal) if subtotal else None,
+            fee=abs(fees),
+            fee_asset="USD",
+            timestamp=timestamp or datetime.now(timezone.utc),
+            raw_data=row
+        )
+    
+    def _parse_coinbase_modern(self, row: Dict, idx: int) -> Optional[ExchangeTransaction]:
+        """
+        Parse modern Coinbase format with Asset Acquired/Sold columns
+        Headers like: Transaction ID, Date & time, Asset Acquired, Quantity Acquired (a), 
+                      Asset Sold, Quantity Sold (s), USD Value
+        """
+        def get_val(keys):
+            for k in keys:
+                if k in row:
+                    return row[k]
+                for row_key in row.keys():
+                    if k.lower() in row_key.lower():
+                        return row[row_key]
+            return ""
+        
+        # Get timestamp
+        timestamp_str = get_val(["Date & time", "Date &amp; time", "Date", "Timestamp"])
+        timestamp = self._parse_timestamp(timestamp_str)
+        
+        # Get transaction ID
+        tx_id = get_val(["Transaction ID", "ID"]) or f"cb_{idx}_{timestamp.timestamp() if timestamp else idx}"
+        
+        # Determine if this is a buy or sell based on which columns have values
+        asset_acquired = get_val(["Asset Acquired", "Asset acquired"])
+        qty_acquired = self._parse_float(get_val(["Quantity Acquired (a)", "Quantity Acquired", "Qty Acquired"]))
+        asset_sold = get_val(["Asset Sold", "Asset sold"])
+        qty_sold = self._parse_float(get_val(["Quantity Sold (s)", "Quantity Sold", "Qty Sold"]))
+        
+        # USD value
+        usd_value = self._parse_float(get_val(["USD Value", "Value", "USD", "Total"]))
+        
+        # Transaction type hint
+        tx_type_hint = get_val(["Transaction Type", "Type", "transaction type"]).lower()
+        
+        # Fees
+        fees = self._parse_float(get_val(["Fees", "Fee", "Fees and/or Spread"]))
+        
+        # Normalize asset names for comparison
+        asset_acquired_upper = asset_acquired.upper() if asset_acquired else ""
+        asset_sold_upper = asset_sold.upper() if asset_sold else ""
+        
+        # Priority: Focus on the crypto asset, not USD/stablecoins
+        stablecoins = ["USD", "USDC", "USDT", "BUSD", "DAI", "GUSD", "PAX", "TUSD"]
+        
+        # Determine transaction type and primary asset
+        # Rule: If selling crypto for USD/stablecoin = SELL
+        #       If buying crypto with USD/stablecoin = BUY
+        #       If swapping crypto for crypto = TRADE (track the sold asset)
+        
+        if qty_sold > 0 and asset_sold_upper and asset_sold_upper not in stablecoins:
+            # Selling a crypto asset (not a stablecoin) - this is a SELL
+            asset = asset_sold
+            amount = qty_sold
+            
+            if tx_type_hint in ["send"]:
+                tx_type = "send"
+            else:
+                tx_type = "sell"
+            
+            price_usd = usd_value / amount if amount > 0 and usd_value else None
+            
+        elif qty_acquired > 0 and asset_acquired_upper and asset_acquired_upper not in stablecoins:
+            # Acquiring a crypto asset (not a stablecoin) - this is a BUY
+            asset = asset_acquired
+            amount = qty_acquired
+            
+            if tx_type_hint in ["receive", "reward", "staking income", "learning reward", "staking_income", "learning_reward"]:
+                tx_type = tx_type_hint.replace(" ", "_")
+            else:
+                tx_type = "buy"
+            
+            price_usd = usd_value / amount if amount > 0 and usd_value else None
+            
+        elif qty_acquired > 0 and asset_acquired:
+            # Fallback: acquiring something (could be stablecoin)
+            asset = asset_acquired
+            amount = qty_acquired
+            tx_type = "buy"
+            price_usd = usd_value / amount if amount > 0 and usd_value else None
+            
+        elif qty_sold > 0 and asset_sold:
+            # Fallback: selling something
+            asset = asset_sold
+            amount = qty_sold
+            tx_type = "sell"
+            price_usd = usd_value / amount if amount > 0 and usd_value else None
+            
+        else:
+            # Try fallback parsing
+            asset = get_val(["Asset", "Currency", "Crypto"])
+            amount = self._parse_float(get_val(["Quantity", "Amount", "Qty"]))
+            tx_type = tx_type_hint or "unknown"
+            price_usd = None
+            
+            if not asset or amount == 0:
+                return None
+        
+        # Skip if no meaningful data
+        if not asset or amount == 0:
+            return None
+        
+        return ExchangeTransaction(
+            exchange="coinbase",
+            tx_id=tx_id,
+            tx_type=tx_type,
+            asset=asset.upper() if asset else "",
+            amount=abs(amount),
+            price_usd=price_usd,
+            total_usd=abs(usd_value) if usd_value else None,
+            fee=abs(fees),
+            fee_asset="USD",
+            timestamp=timestamp or datetime.now(timezone.utc),
+            raw_data=row
+        )
+    
+    def _parse_coinbase_txid_format(self, row: Dict, idx: int) -> Optional[ExchangeTransaction]:
+        """Parse Coinbase format with Transaction ID as primary identifier"""
+        # This format overlaps with modern, delegate to modern parser
+        return self._parse_coinbase_modern(row, idx)
+    
+    def _parse_coinbase_simple(self, row: Dict, idx: int) -> Optional[ExchangeTransaction]:
+        """Parse simple Coinbase format with just Date column"""
+        def get_val(keys):
+            for k in keys:
+                if k in row:
+                    return row[k]
+            return ""
+        
+        timestamp_str = get_val(["Date"])
+        tx_type = get_val(["Transaction Type", "Type"]).lower()
+        asset = get_val(["Asset", "Currency"])
+        amount = self._parse_float(get_val(["Quantity", "Amount"]))
+        price = self._parse_float(get_val(["Price", "Spot Price"]))
+        total = self._parse_float(get_val(["Total", "Subtotal", "USD"]))
+        fees = self._parse_float(get_val(["Fee", "Fees"]))
+        
+        timestamp = self._parse_timestamp(timestamp_str)
+        
+        if not asset or amount == 0:
+            return None
+        
+        return ExchangeTransaction(
+            exchange="coinbase",
+            tx_id=f"cb_{idx}_{timestamp.timestamp() if timestamp else idx}",
+            tx_type=tx_type or "unknown",
+            asset=asset,
+            amount=abs(amount),
+            price_usd=price if price else None,
+            total_usd=abs(total) if total else None,
+            fee=abs(fees),
+            fee_asset="USD",
+            timestamp=timestamp or datetime.now(timezone.utc),
+            raw_data=row
+        )
+    
+    def _parse_binance(self, rows: List[Dict], headers: List[str], format_variant: str = "primary") -> List[ExchangeTransaction]:
         """Parse Binance CSV format"""
         transactions = []
         
@@ -271,7 +496,7 @@ class CSVParserService:
         
         return transactions
     
-    def _parse_kraken(self, rows: List[Dict], headers: List[str]) -> List[ExchangeTransaction]:
+    def _parse_kraken(self, rows: List[Dict], headers: List[str], format_variant: str = "primary") -> List[ExchangeTransaction]:
         """Parse Kraken CSV format"""
         transactions = []
         
@@ -322,7 +547,7 @@ class CSVParserService:
         
         return transactions
     
-    def _parse_gemini(self, rows: List[Dict], headers: List[str]) -> List[ExchangeTransaction]:
+    def _parse_gemini(self, rows: List[Dict], headers: List[str], format_variant: str = "primary") -> List[ExchangeTransaction]:
         """Parse Gemini CSV format"""
         transactions = []
         
@@ -372,7 +597,7 @@ class CSVParserService:
         
         return transactions
     
-    def _parse_crypto_com(self, rows: List[Dict], headers: List[str]) -> List[ExchangeTransaction]:
+    def _parse_crypto_com(self, rows: List[Dict], headers: List[str], format_variant: str = "primary") -> List[ExchangeTransaction]:
         """Parse Crypto.com CSV format"""
         transactions = []
         
@@ -425,7 +650,7 @@ class CSVParserService:
         
         return transactions
     
-    def _parse_kucoin(self, rows: List[Dict], headers: List[str]) -> List[ExchangeTransaction]:
+    def _parse_kucoin(self, rows: List[Dict], headers: List[str], format_variant: str = "primary") -> List[ExchangeTransaction]:
         """Parse KuCoin CSV format"""
         transactions = []
         
@@ -514,38 +739,53 @@ class CSVParserService:
         
         return None
     
-    def get_supported_exchanges(self) -> List[Dict[str, str]]:
-        """Return list of supported exchanges with export instructions"""
+    def get_supported_exchanges(self) -> List[Dict[str, Any]]:
+        """Return list of supported exchanges with export instructions and accepted columns"""
         return [
             {
                 "id": "coinbase",
                 "name": "Coinbase",
-                "instructions": "Go to Coinbase → Settings → Statements → Generate Report → Transaction History CSV"
+                "instructions": "Go to Coinbase → Settings → Statements → Generate Report → Transaction History CSV",
+                "accepted_columns": [
+                    "Timestamp, Transaction Type, Asset, Quantity Transacted (Classic format)",
+                    "Transaction ID, Date & time, Asset Acquired/Sold, Quantity Acquired/Sold, USD Value (Modern format)"
+                ],
+                "notes": "We support multiple Coinbase CSV export formats. Both classic and modern exports are accepted."
             },
             {
                 "id": "binance",
                 "name": "Binance",
-                "instructions": "Go to Binance → Orders → Trade History → Export Complete Trade History"
+                "instructions": "Go to Binance → Orders → Trade History → Export Complete Trade History",
+                "accepted_columns": ["Date(UTC), Pair, Side, Price, Executed, Amount, Fee"],
+                "notes": "Export your complete trade history as CSV"
             },
             {
                 "id": "kraken",
                 "name": "Kraken",
-                "instructions": "Go to Kraken → History → Export → Select Ledgers or Trades"
+                "instructions": "Go to Kraken → History → Export → Select Ledgers or Trades",
+                "accepted_columns": ["txid, refid, time, type, asset, amount, fee"],
+                "notes": "Select 'Ledgers' for best results"
             },
             {
                 "id": "gemini",
                 "name": "Gemini",
-                "instructions": "Go to Gemini → Account → Statements → Download Trade History CSV"
+                "instructions": "Go to Gemini → Account → Statements → Download Trade History CSV",
+                "accepted_columns": ["Date, Time (UTC), Type, Symbol, Amount, Fee, USD Amount"],
+                "notes": None
             },
             {
                 "id": "crypto_com",
                 "name": "Crypto.com",
-                "instructions": "Go to Crypto.com App → Accounts → Transaction History → Export"
+                "instructions": "Go to Crypto.com App → Accounts → Transaction History → Export",
+                "accepted_columns": ["Timestamp (UTC), Transaction Description, Currency, Amount, Native Amount"],
+                "notes": "Export from the mobile app or web interface"
             },
             {
                 "id": "kucoin",
                 "name": "KuCoin",
-                "instructions": "Go to KuCoin → Orders → Trade History → Export"
+                "instructions": "Go to KuCoin → Orders → Trade History → Export",
+                "accepted_columns": ["tradeCreatedAt, symbol, side, price, size, fee"],
+                "notes": None
             }
         ]
 

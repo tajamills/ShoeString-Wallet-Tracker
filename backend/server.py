@@ -2428,7 +2428,11 @@ async def get_export_instructions(exchange_id: str):
                 "7. Click 'Generate Report'",
                 "8. Download the CSV file when ready"
             ],
-            "notes": "Coinbase Pro has a separate export. Use the main Coinbase app/site for this."
+            "notes": "We support multiple Coinbase CSV formats including classic and modern exports. Coinbase Pro has a separate export.",
+            "accepted_columns": [
+                "Classic: Timestamp, Transaction Type, Asset, Quantity Transacted, Spot Price, Subtotal",
+                "Modern: Transaction ID, Date & time, Asset Acquired, Quantity Acquired, Asset Sold, Quantity Sold, USD Value"
+            ]
         },
         "binance": {
             "name": "Binance",

@@ -11,7 +11,7 @@ from datetime import datetime
 import sys
 
 # Configuration
-BASE_URL = "https://wallet-tax-hub.preview.emergentagent.com/api"
+BASE_URL = "https://fifo-calculator-1.preview.emergentagent.com/api"
 TIMEOUT = 30
 
 class BackendTester:
@@ -335,7 +335,7 @@ class BackendTester:
             headers = {"Authorization": f"Bearer {self.access_token}"}
             payload = {
                 "tier": "premium",
-                "origin_url": "https://wallet-tax-hub.preview.emergentagent.com"
+                "origin_url": "https://fifo-calculator-1.preview.emergentagent.com"
             }
             
             response = self.session.post(f"{BASE_URL}/payments/create-upgrade", json=payload, headers=headers)
@@ -850,7 +850,7 @@ class BackendTester:
             print(f"\n💳 Attempting to create Premium upgrade checkout session...")
             upgrade_payload = {
                 "tier": "premium",
-                "origin_url": "https://wallet-tax-hub.preview.emergentagent.com"
+                "origin_url": "https://fifo-calculator-1.preview.emergentagent.com"
             }
             
             upgrade_response = self.session.post(f"{BASE_URL}/payments/create-upgrade", json=upgrade_payload, headers=headers)

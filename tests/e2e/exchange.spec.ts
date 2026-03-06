@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL || 'https://wallet-tax-hub.preview.emergentagent.com';
+const API_URL = process.env.REACT_APP_BACKEND_URL || 'https://fifo-calculator-1.preview.emergentagent.com';
 
 /**
  * Helper function to accept Terms of Service modal if it appears
@@ -70,6 +70,44 @@ test.describe('Exchange CSV Import API Tests', () => {
     expect(Array.isArray(data.steps)).toBe(true);
     expect(data.steps.length).toBeGreaterThan(0);
     expect(data.notes).toBeDefined();
+  });
+
+  test('GET /api/exchanges/supported returns accepted_columns for each exchange', async ({ request }) => {
+    const response = await request.get(`${API_URL}/api/exchanges/supported`);
+    expect(response.status()).toBe(200);
+    
+    const data = await response.json();
+    expect(data.exchanges).toBeDefined();
+    
+    // Each exchange should have accepted_columns field
+    for (const exchange of data.exchanges) {
+      expect(exchange.accepted_columns).toBeDefined();
+      expect(Array.isArray(exchange.accepted_columns)).toBe(true);
+    }
+    
+    // Coinbase specifically should show multiple formats
+    const coinbase = data.exchanges.find((ex: any) => ex.id === 'coinbase');
+    expect(coinbase).toBeDefined();
+    expect(coinbase.accepted_columns.length).toBeGreaterThanOrEqual(2);
+    
+    // Should mention both classic and modern formats
+    const columnText = coinbase.accepted_columns.join(' ').toLowerCase();
+    expect(columnText).toContain('classic');
+    expect(columnText).toContain('modern');
+  });
+
+  test('GET /api/exchanges/export-instructions/coinbase returns accepted_columns', async ({ request }) => {
+    const response = await request.get(`${API_URL}/api/exchanges/export-instructions/coinbase`);
+    expect(response.status()).toBe(200);
+    
+    const data = await response.json();
+    expect(data.accepted_columns).toBeDefined();
+    expect(Array.isArray(data.accepted_columns)).toBe(true);
+    expect(data.accepted_columns.length).toBeGreaterThan(0);
+    
+    // Should describe expected CSV column formats
+    const columnsText = data.accepted_columns.join(' ').toLowerCase();
+    expect(columnsText).toMatch(/timestamp|transaction/i);
   });
 
   test('Free user API request to import CSV returns 403', async ({ request }) => {
