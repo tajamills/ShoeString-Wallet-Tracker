@@ -88,7 +88,12 @@ function App() {
       arbitrum: 'ETH',
       bsc: 'BNB',
       solana: 'SOL',
-      algorand: 'ALGO'
+      algorand: 'ALGO',
+      avalanche: 'AVAX',
+      optimism: 'ETH',
+      base: 'ETH',
+      fantom: 'FTM',
+      dogecoin: 'DOGE'
     };
     return symbols[chain] || 'ETH';
   };
@@ -101,7 +106,12 @@ function App() {
       arbitrum: '🔷',
       bsc: '🟡',
       solana: '◎',
-      algorand: '🔷'
+      algorand: '🔷',
+      avalanche: '🔺',
+      optimism: '🔴',
+      base: '🔵',
+      fantom: '👻',
+      dogecoin: '🐕'
     };
     return icons[chain] || '⟠';
   };
@@ -396,7 +406,7 @@ function App() {
           <CardHeader>
             <CardTitle className="text-white">Analyze Wallet</CardTitle>
             <CardDescription className="text-gray-400">
-              Multi-chain wallet analysis: Ethereum, Bitcoin, Polygon, Arbitrum, BSC, and Solana
+              Multi-chain wallet analysis: 12+ blockchains including ETH, BTC, SOL, ALGO, AVAX, DOGE
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -442,13 +452,28 @@ function App() {
                   <option value="algorand" disabled={user?.subscription_tier === 'free'}>
                     🔷 Algorand {user?.subscription_tier === 'free' ? '🔒' : ''}
                   </option>
+                  <option value="avalanche" disabled={user?.subscription_tier === 'free'}>
+                    🔺 Avalanche {user?.subscription_tier === 'free' ? '🔒' : ''}
+                  </option>
+                  <option value="optimism" disabled={user?.subscription_tier === 'free'}>
+                    🔴 Optimism {user?.subscription_tier === 'free' ? '🔒' : ''}
+                  </option>
+                  <option value="base" disabled={user?.subscription_tier === 'free'}>
+                    🔵 Base {user?.subscription_tier === 'free' ? '🔒' : ''}
+                  </option>
+                  <option value="fantom" disabled={user?.subscription_tier === 'free'}>
+                    👻 Fantom {user?.subscription_tier === 'free' ? '🔒' : ''}
+                  </option>
+                  <option value="dogecoin" disabled={user?.subscription_tier === 'free'}>
+                    🐕 Dogecoin {user?.subscription_tier === 'free' ? '🔒' : ''}
+                  </option>
                 </select>
-                {user?.subscription_tier === 'pro' && (
+                {(user?.subscription_tier === 'pro' || user?.subscription_tier === 'unlimited') && (
                   <button
                     onClick={() => setShowChainRequestModal(true)}
                     className="text-xs text-purple-400 hover:text-purple-300 underline mt-2"
                   >
-                    Need a different chain? Request it here
+                    Need a different chain? Request it (48hr turnaround)
                   </button>
                 )}
               </div>
@@ -1025,6 +1050,11 @@ function App() {
                                     analysis.chain === 'bsc' ? `https://bscscan.com/tx/${tx.hash}` :
                                     analysis.chain === 'solana' ? `https://solscan.io/tx/${tx.hash}` :
                                     analysis.chain === 'algorand' ? `https://algoexplorer.io/tx/${tx.hash}` :
+                                    analysis.chain === 'avalanche' ? `https://snowtrace.io/tx/${tx.hash}` :
+                                    analysis.chain === 'optimism' ? `https://optimistic.etherscan.io/tx/${tx.hash}` :
+                                    analysis.chain === 'base' ? `https://basescan.org/tx/${tx.hash}` :
+                                    analysis.chain === 'fantom' ? `https://ftmscan.com/tx/${tx.hash}` :
+                                    analysis.chain === 'dogecoin' ? `https://dogechain.info/tx/${tx.hash}` :
                                     `#`
                                   }
                                   target="_blank"

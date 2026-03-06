@@ -64,6 +64,41 @@ class MultiChainService:
                 "decimals": 6,
                 "symbol": "ALGO",
                 "explorer": "https://algoexplorer.io"
+            },
+            "avalanche": {
+                "name": "Avalanche C-Chain",
+                "alchemy_url": f"https://avax-mainnet.g.alchemy.com/v2/{self.alchemy_api_key}",
+                "decimals": 18,
+                "symbol": "AVAX",
+                "explorer": "https://snowtrace.io"
+            },
+            "optimism": {
+                "name": "Optimism",
+                "alchemy_url": f"https://opt-mainnet.g.alchemy.com/v2/{self.alchemy_api_key}",
+                "decimals": 18,
+                "symbol": "ETH",
+                "explorer": "https://optimistic.etherscan.io"
+            },
+            "base": {
+                "name": "Base",
+                "alchemy_url": f"https://base-mainnet.g.alchemy.com/v2/{self.alchemy_api_key}",
+                "decimals": 18,
+                "symbol": "ETH",
+                "explorer": "https://basescan.org"
+            },
+            "fantom": {
+                "name": "Fantom",
+                "alchemy_url": f"https://fantom-mainnet.g.alchemy.com/v2/{self.alchemy_api_key}",
+                "decimals": 18,
+                "symbol": "FTM",
+                "explorer": "https://ftmscan.com"
+            },
+            "dogecoin": {
+                "name": "Dogecoin",
+                "api_url": "https://dogechain.info/api/v1",
+                "decimals": 8,
+                "symbol": "DOGE",
+                "explorer": "https://dogechain.info"
             }
         }
     
@@ -185,6 +220,9 @@ class MultiChainService:
         elif chain == "algorand":
             analysis = self._analyze_algorand_wallet(address, start_date, end_date)
             symbol = 'ALGO'
+        elif chain == "dogecoin":
+            analysis = self._analyze_dogecoin_wallet(address, start_date, end_date)
+            symbol = 'DOGE'
         else:
             # EVM chains (ethereum, polygon, arbitrum, bsc)
             analysis = self._analyze_evm_wallet(address, chain, start_date, end_date)
@@ -739,6 +777,40 @@ class MultiChainService:
         except Exception as e:
             logger.error(f"Error analyzing Algorand wallet: {str(e)}")
             raise Exception(f"Failed to analyze Algorand wallet: {str(e)}")
+    
+    def _analyze_dogecoin_wallet(
+        self,
+        address: str,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Analyze Dogecoin wallet using public API"""
+        try:
+            from chains.dogecoin import create_dogecoin_analyzer
+            
+            analyzer = create_dogecoin_analyzer()
+            result = analyzer.analyze_wallet(address, start_date, end_date)
+            
+            return {
+                'address': address,
+                'chain': 'dogecoin',
+                'totalSent': result.get('total_sent', 0),
+                'totalReceived': result.get('total_received', 0),
+                'currentBalance': result.get('current_balance', 0),
+                'gasFees': result.get('gas_fees', 0),
+                'transactionCount': result.get('outgoing_count', 0) + result.get('incoming_count', 0),
+                'outgoingCount': result.get('outgoing_count', 0),
+                'incomingCount': result.get('incoming_count', 0),
+                'firstTransaction': result.get('first_transaction'),
+                'lastTransaction': result.get('last_transaction'),
+                'tokensSent': {},
+                'tokensReceived': {},
+                'recentTransactions': result.get('recent_transactions', [])
+            }
+            
+        except Exception as e:
+            logger.error(f"Error analyzing Dogecoin wallet: {str(e)}")
+            raise Exception(f"Failed to analyze Dogecoin wallet: {str(e)}")
     
     def get_supported_chains(self) -> List[Dict[str, str]]:
         """Get list of supported chains"""

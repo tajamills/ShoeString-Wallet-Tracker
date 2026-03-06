@@ -257,3 +257,48 @@ def create_bsc_analyzer():
         'alchemy_url': f"https://bnb-mainnet.g.alchemy.com/v2/{api_key}",
         'explorer': 'https://bscscan.com'
     })
+
+def create_avalanche_analyzer():
+    api_key = os.environ.get('ALCHEMY_API_KEY', '')
+    return EVMChainAnalyzer({
+        'chain_id': 'avalanche',
+        'name': 'Avalanche C-Chain',
+        'symbol': 'AVAX',
+        'decimals': 18,
+        'alchemy_url': f"https://avax-mainnet.g.alchemy.com/v2/{api_key}",
+        'explorer': 'https://snowtrace.io'
+    })
+
+def create_optimism_analyzer():
+    api_key = os.environ.get('ALCHEMY_API_KEY', '')
+    return EVMChainAnalyzer({
+        'chain_id': 'optimism',
+        'name': 'Optimism',
+        'symbol': 'ETH',
+        'decimals': 18,
+        'alchemy_url': f"https://opt-mainnet.g.alchemy.com/v2/{api_key}",
+        'explorer': 'https://optimistic.etherscan.io'
+    })
+
+def create_base_analyzer():
+    api_key = os.environ.get('ALCHEMY_API_KEY', '')
+    return EVMChainAnalyzer({
+        'chain_id': 'base',
+        'name': 'Base',
+        'symbol': 'ETH',
+        'decimals': 18,
+        'alchemy_url': f"https://base-mainnet.g.alchemy.com/v2/{api_key}",
+        'explorer': 'https://basescan.org'
+    })
+
+def create_fantom_analyzer():
+    api_key = os.environ.get('ALCHEMY_API_KEY', '')
+    return EVMChainAnalyzer({
+        'chain_id': 'fantom',
+        'name': 'Fantom',
+        'symbol': 'FTM',
+        'decimals': 18,
+        'alchemy_url': f"https://fantom-mainnet.g.alchemy.com/v2/{api_key}",
+        'explorer': 'https://ftmscan.com'
+    })
+

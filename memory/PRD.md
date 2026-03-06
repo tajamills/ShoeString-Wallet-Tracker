@@ -243,14 +243,31 @@ All users must accept Terms of Service before using the platform. The TOS modal 
 - [x] Linked transactions use wallet's original acquisition date for holding period
 - [x] Combined data source auto-matches when both wallet + exchange data present
 
-### Phase 8: Algorand Chain Support (Completed - Mar 6, 2026)
-- [x] AlgorandAnalyzer class in `/app/backend/chains/algorand.py`
-- [x] Uses public Algonode indexer API (no API key required)
-- [x] Supports ALGO transfers and ASA (Algorand Standard Assets)
-- [x] Address validation (58-char base32 format)
-- [x] Added to multi_chain_service routing
-- [x] Frontend chain dropdown includes Algorand option
-- [x] Explorer links to algoexplorer.io
+### Phase 8: Expanded Chain Support (Completed - Mar 6, 2026)
+- [x] **Algorand (ALGO)** - Algonode indexer API
+- [x] **Avalanche (AVAX)** - Alchemy EVM
+- [x] **Optimism (ETH)** - Alchemy EVM  
+- [x] **Base (ETH)** - Alchemy EVM
+- [x] **Fantom (FTM)** - Alchemy EVM
+- [x] **Dogecoin (DOGE)** - BlockCypher + Dogechain API
+- [x] **Request a Chain** feature for Unlimited users (48hr turnaround)
+- [x] Chain request stored in MongoDB, status tracking
+- [x] Quick-select popular chains (Cardano, XRP, Tron, etc.)
+- [x] Total: 12 supported blockchains
+
+**Currently Supported Chains:**
+1. Ethereum (ETH) - Free tier
+2. Bitcoin (BTC) - Free tier  
+3. Polygon (MATIC)
+4. Arbitrum (ETH)
+5. BNB Smart Chain (BNB)
+6. Solana (SOL)
+7. Algorand (ALGO)
+8. Avalanche (AVAX)
+9. Optimism (ETH)
+10. Base (ETH)
+11. Fantom (FTM)
+12. Dogecoin (DOGE)
 
 ### Future Features (P2-P5)
 - [ ] DeFi & NFT Integration (liquidity pools, staking, NFT valuations)

@@ -1170,6 +1170,77 @@ async def get_supported_chains():
         logger.error(f"Error fetching supported chains: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to fetch supported chains")
 
+
+class ChainRequest(BaseModel):
+    chain_name: str
+    chain_symbol: Optional[str] = None
+    reason: Optional[str] = None
+    sample_address: Optional[str] = None
+
+@api_router.post("/chains/request")
+async def request_chain(
+    request: ChainRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Request a new blockchain to be added.
+    Available for Unlimited users only.
+    Requests are reviewed and typically added within 48 hours.
+    """
+    try:
+        # Check subscription
+        if user.get('subscription_tier') == 'free':
+            raise HTTPException(
+                status_code=403,
+                detail="Chain requests are available for Unlimited users only. Upgrade to request new chains."
+            )
+        
+        # Store the request
+        chain_request = {
+            "user_id": user["id"],
+            "user_email": user.get("email", ""),
+            "chain_name": request.chain_name,
+            "chain_symbol": request.chain_symbol,
+            "reason": request.reason,
+            "sample_address": request.sample_address,
+            "status": "pending",
+            "created_at": datetime.now(timezone.utc)
+        }
+        
+        await db.chain_requests.insert_one(chain_request)
+        
+        logger.info(f"Chain request received: {request.chain_name} from user {user.get('email')}")
+        
+        return {
+            "message": f"Thank you! Your request for {request.chain_name} has been submitted.",
+            "chain_name": request.chain_name,
+            "status": "pending",
+            "estimated_response": "48 hours",
+            "note": "We'll notify you by email when the chain is added."
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error submitting chain request: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to submit chain request")
+
+@api_router.get("/chains/requests")
+async def get_my_chain_requests(user: dict = Depends(get_current_user)):
+    """Get user's chain requests and their status"""
+    try:
+        requests = await db.chain_requests.find(
+            {"user_id": user["id"]},
+            {"_id": 0}
+        ).sort("created_at", -1).to_list(20)
+        
+        return {"requests": requests}
+    except Exception as e:
+        logger.error(f"Error fetching chain requests: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch chain requests")
+
+
+
 # Saved Wallets Routes
 @api_router.post("/wallets/save")
 async def save_wallet(
