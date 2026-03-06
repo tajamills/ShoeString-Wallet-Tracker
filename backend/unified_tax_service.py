@@ -64,8 +64,82 @@ class UnifiedTaxService:
             'fee_asset': symbol,
             'timestamp': dt,
             'date': dt.strftime('%Y-%m-%d'),
+            'from_address': tx.get('from', ''),
+            'to_address': tx.get('to', ''),
             'raw': tx
         }
+    
+    def detect_transfers_between_sources(
+        self,
+        wallet_transactions: List[Dict],
+        exchange_transactions: List[Dict],
+        tolerance_hours: int = 24
+    ) -> List[Dict]:
+        """
+        Detect transfers from wallet to exchange.
+        
+        When a wallet "send" matches an exchange "receive" by:
+        - Same asset
+        - Similar amount (within 1%)
+        - Similar time (within tolerance_hours)
+        
+        We can link them and use the wallet's original acquisition date
+        for the exchange transaction.
+        
+        Returns list of matched transfer pairs.
+        """
+        matches = []
+        
+        # Get wallet sends
+        wallet_sends = [tx for tx in wallet_transactions if tx.get('tx_type') == 'sell']
+        
+        # Get exchange receives
+        exchange_receives = [tx for tx in exchange_transactions 
+                           if tx.get('tx_type') in ['receive', 'deposit', 'buy'] 
+                           and tx.get('source', '').startswith('exchange:')]
+        
+        for send in wallet_sends:
+            send_amount = send.get('amount', 0)
+            send_asset = send.get('asset', '').upper()
+            send_time = send.get('timestamp')
+            
+            for receive in exchange_receives:
+                receive_amount = receive.get('amount', 0)
+                receive_asset = receive.get('asset', '').upper()
+                receive_time = receive.get('timestamp')
+                
+                # Check asset match
+                if send_asset != receive_asset:
+                    continue
+                
+                # Check amount match (within 1% to account for fees)
+                if send_amount > 0 and receive_amount > 0:
+                    amount_diff = abs(send_amount - receive_amount) / send_amount
+                    if amount_diff > 0.01:  # More than 1% difference
+                        continue
+                
+                # Check time match
+                if send_time and receive_time:
+                    time_diff = abs((receive_time - send_time).total_seconds())
+                    if time_diff > tolerance_hours * 3600:
+                        continue
+                    
+                    # Found a match!
+                    matches.append({
+                        'wallet_send': send,
+                        'exchange_receive': receive,
+                        'asset': send_asset,
+                        'amount': send_amount,
+                        'wallet_send_time': send_time.isoformat() if hasattr(send_time, 'isoformat') else str(send_time),
+                        'exchange_receive_time': receive_time.isoformat() if hasattr(receive_time, 'isoformat') else str(receive_time),
+                        'time_diff_hours': time_diff / 3600,
+                        'from_wallet_address': send.get('from_address', ''),
+                        'to_exchange_address': send.get('to_address', ''),
+                        'is_transfer': True
+                    })
+                    break  # One match per send
+        
+        return matches
     
     def normalize_exchange_transaction(self, tx: Dict) -> Dict:
         """Convert exchange CSV transaction to unified format"""
@@ -99,8 +173,9 @@ class UnifiedTaxService:
         wallet_transactions: List[Dict],
         exchange_transactions: List[Dict],
         symbol: str,
-        asset_filter: Optional[str] = None
-    ) -> List[Dict]:
+        asset_filter: Optional[str] = None,
+        detect_transfers: bool = True
+    ) -> tuple:
         """
         Merge and sort transactions from all sources
         
@@ -109,30 +184,70 @@ class UnifiedTaxService:
             exchange_transactions: Imported exchange transactions
             symbol: Symbol for wallet transactions (ETH, BTC, etc.)
             asset_filter: Optional filter to include only specific asset
+            detect_transfers: Whether to detect wallet→exchange transfers
         
         Returns:
-            Unified list sorted by timestamp (oldest first for FIFO)
+            Tuple of (unified_transactions, detected_transfers)
         """
         unified = []
+        detected_transfers = []
         
-        # Normalize wallet transactions
+        # First normalize all transactions
+        normalized_wallet = []
         for tx in wallet_transactions:
             normalized = self.normalize_wallet_transaction(tx, symbol)
             if asset_filter and normalized['asset'].upper() != asset_filter.upper():
                 continue
-            unified.append(normalized)
+            normalized_wallet.append(normalized)
         
-        # Normalize exchange transactions
+        normalized_exchange = []
         for tx in exchange_transactions:
             normalized = self.normalize_exchange_transaction(tx)
             if asset_filter and normalized['asset'].upper() != asset_filter.upper():
                 continue
-            unified.append(normalized)
+            normalized_exchange.append(normalized)
+        
+        # Detect transfers between wallet and exchange
+        if detect_transfers and normalized_wallet and normalized_exchange:
+            detected_transfers = self.detect_transfers_between_sources(
+                normalized_wallet, normalized_exchange
+            )
+            
+            # Mark matched exchange receives as transfers and set original acquisition date
+            transfer_exchange_ids = set()
+            wallet_acquisition_dates = {}
+            
+            for match in detected_transfers:
+                exchange_tx_id = match['exchange_receive'].get('tx_id')
+                wallet_send_time = match['wallet_send'].get('timestamp')
+                from_address = match.get('from_wallet_address', '')
+                
+                transfer_exchange_ids.add(exchange_tx_id)
+                
+                # Find the original acquisition date from wallet history
+                # (when the wallet first received this asset)
+                wallet_acquisition_dates[exchange_tx_id] = {
+                    'is_transfer': True,
+                    'transfer_from_wallet': from_address,
+                    'wallet_send_time': wallet_send_time
+                }
+            
+            # Update exchange transactions with transfer info
+            for tx in normalized_exchange:
+                tx_id = tx.get('tx_id')
+                if tx_id in wallet_acquisition_dates:
+                    tx['is_transfer'] = True
+                    tx['transfer_from_wallet'] = wallet_acquisition_dates[tx_id].get('transfer_from_wallet')
+                    tx['linked_wallet_send_time'] = wallet_acquisition_dates[tx_id].get('wallet_send_time')
+        
+        # Combine all transactions
+        unified.extend(normalized_wallet)
+        unified.extend(normalized_exchange)
         
         # Sort by timestamp (oldest first for FIFO)
         unified.sort(key=lambda x: x['timestamp'])
         
-        return unified
+        return unified, detected_transfers
     
     def calculate_unified_tax_data(
         self,
@@ -158,8 +273,8 @@ class UnifiedTaxService:
             Comprehensive tax data with realized/unrealized gains
         """
         try:
-            # Merge all transactions
-            all_transactions = self.merge_transactions(
+            # Merge all transactions and detect transfers
+            all_transactions, detected_transfers = self.merge_transactions(
                 wallet_transactions,
                 exchange_transactions,
                 symbol,
@@ -200,11 +315,20 @@ class UnifiedTaxService:
             short_term = sum(g['gain_loss'] for g in realized_gains if g['holding_period'] == 'short-term')
             long_term = sum(g['gain_loss'] for g in realized_gains if g['holding_period'] == 'long-term')
             
+            # Count transfers detected
+            transfers_count = len(detected_transfers)
+            transfer_assets = list(set(t.get('asset', '') for t in detected_transfers))
+            
             return {
                 'method': self.method,
                 'sources': {
                     'wallet_count': len([t for t in all_transactions if t['source'] == 'wallet']),
                     'exchange_count': len([t for t in all_transactions if t['source'].startswith('exchange:')])
+                },
+                'detected_transfers': {
+                    'count': transfers_count,
+                    'assets': transfer_assets,
+                    'details': detected_transfers[:20]  # Limit to 20 for response size
                 },
                 'realized_gains': realized_gains,
                 'unrealized_gains': unrealized_gains,
@@ -217,7 +341,8 @@ class UnifiedTaxService:
                     'long_term_gains': long_term,
                     'total_transactions': len(all_transactions),
                     'buy_count': len(buys),
-                    'sell_count': len(sells)
+                    'sell_count': len(sells),
+                    'transfers_detected': transfers_count
                 },
                 'all_transactions': all_transactions
             }

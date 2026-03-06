@@ -46,6 +46,7 @@ export const UnifiedTaxDashboard = ({
   const [showRealizedDetails, setShowRealizedDetails] = useState(false);
   const [dataSource, setDataSource] = useState('combined');
   const [dataSourcesUsed, setDataSourcesUsed] = useState(null);
+  const [detectedTransfers, setDetectedTransfers] = useState(null);
 
   const currentYear = new Date().getFullYear();
   const taxYears = Array.from({ length: 5 }, (_, i) => currentYear - i);
@@ -71,6 +72,11 @@ export const UnifiedTaxDashboard = ({
       setTaxData(response.data.tax_data);
       setAssetsSummary(response.data.assets_summary || []);
       setDataSourcesUsed(response.data.data_sources_used);
+      
+      // Store detected transfers info if available
+      if (response.data.tax_data?.detected_transfers) {
+        setDetectedTransfers(response.data.tax_data.detected_transfers);
+      }
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to calculate unified tax data');
     } finally {
@@ -325,6 +331,23 @@ export const UnifiedTaxDashboard = ({
               </CardContent>
             )}
           </Card>
+
+          {/* Detected Transfers Notification */}
+          {detectedTransfers && detectedTransfers.count > 0 && dataSource === 'combined' && (
+            <Alert className="bg-blue-900/30 border-blue-600 text-blue-200">
+              <Info className="w-4 h-4 text-blue-400" />
+              <AlertDescription className="text-sm">
+                <strong className="text-blue-300">Auto-detected {detectedTransfers.count} transfer(s)</strong> from your wallet to exchange.
+                {detectedTransfers.assets?.length > 0 && (
+                  <span> Assets: {detectedTransfers.assets.join(', ')}</span>
+                )}
+                <p className="text-xs text-blue-400/80 mt-1">
+                  We matched wallet sends with exchange receives by amount and timestamp. 
+                  The original wallet acquisition date is used for holding period calculations.
+                </p>
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* Summary Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">

@@ -234,6 +234,15 @@ All users must accept Terms of Service before using the platform. The TOS modal 
 - [x] "Adjust Cost Basis" tab in ExchangeModal
 - [x] Auto-detect receive→sell patterns within 30 days as potential transfers
 
+### Phase 7: Auto-Match Wallet→Exchange Transfers (Completed - Mar 6, 2026)
+- [x] `detect_transfers_between_sources()` in unified_tax_service.py
+- [x] Matches wallet sends to exchange receives by: same asset, similar amount (±1%), time within 48hrs
+- [x] Backend endpoint: POST `/api/tax/detect-transfers` 
+- [x] Captures `from_address` and `to_address` from wallet transactions
+- [x] Detected transfers shown in UnifiedTaxDashboard with count and assets
+- [x] Linked transactions use wallet's original acquisition date for holding period
+- [x] Combined data source auto-matches when both wallet + exchange data present
+
 ### Future Features (P2-P5)
 - [ ] DeFi & NFT Integration (liquidity pools, staking, NFT valuations)
 - [ ] Additional blockchains (Avalanche, Optimism, Base)

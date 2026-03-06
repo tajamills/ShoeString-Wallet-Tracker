@@ -1915,6 +1915,88 @@ async def get_unified_tax_data(
         logger.error(f"Error calculating unified tax: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to calculate unified tax data: {str(e)}")
 
+@api_router.post("/tax/detect-transfers")
+async def detect_wallet_exchange_transfers(
+    request: UnifiedTaxRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Detect transfers between wallet and exchange.
+    
+    When you send crypto from a cold wallet to an exchange:
+    - The wallet shows a "send" transaction
+    - The exchange shows a "receive" transaction
+    
+    This endpoint matches them so we can use the correct holding period.
+    """
+    try:
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier == 'free':
+            raise HTTPException(
+                status_code=403,
+                detail="Transfer detection requires Unlimited subscription."
+            )
+        
+        address = request.address.lower() if request.address else None
+        chain = request.chain
+        
+        if not address:
+            raise HTTPException(status_code=400, detail="Wallet address required")
+        
+        # Get wallet analysis
+        analysis_data = multi_chain_service.analyze_wallet(
+            address=address,
+            chain=chain,
+            user_tier=user_tier
+        )
+        
+        wallet_transactions = analysis_data.get('recentTransactions', [])
+        symbol = {
+            'ethereum': 'ETH',
+            'bitcoin': 'BTC',
+            'polygon': 'MATIC',
+            'arbitrum': 'ETH',
+            'bsc': 'BNB',
+            'solana': 'SOL'
+        }.get(chain, 'ETH')
+        
+        # Get exchange transactions
+        exchange_txs = await db.exchange_transactions.find(
+            {"user_id": user["id"]},
+            {"_id": 0}
+        ).to_list(5000)
+        
+        # Normalize transactions
+        normalized_wallet = []
+        for tx in wallet_transactions:
+            normalized_wallet.append(unified_tax_service.normalize_wallet_transaction(tx, symbol))
+        
+        normalized_exchange = []
+        for tx in exchange_txs:
+            normalized_exchange.append(unified_tax_service.normalize_exchange_transaction(tx))
+        
+        # Detect transfers
+        detected = unified_tax_service.detect_transfers_between_sources(
+            normalized_wallet, 
+            normalized_exchange,
+            tolerance_hours=48  # Allow 48 hour window for matching
+        )
+        
+        return {
+            "wallet_address": address,
+            "chain": chain,
+            "symbol": symbol,
+            "transfers_detected": len(detected),
+            "transfers": detected,
+            "message": f"Found {len(detected)} potential transfers from wallet to exchange"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error detecting transfers: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to detect transfers: {str(e)}")
+
 @api_router.get("/tax/unified/assets")
 async def get_unified_assets_summary(user: dict = Depends(get_current_user)):
     """
