@@ -88,8 +88,13 @@ export const ExchangeModal = ({ isOpen, onClose, getAuthHeader }) => {
       setTransactions(transactionsRes.data.transactions || []);
       setTransactionSummary(transactionsRes.data.summary);
     } catch (err) {
+      // Don't show error for 403 (free users) - just show empty state
       if (err.response?.status !== 403) {
-        setError('Failed to load exchange data');
+        console.error('Exchange data load error:', err);
+        // Only show error if it's not a permission issue
+        if (err.response?.status !== 401) {
+          setError('Failed to load exchange data. Please try again.');
+        }
       }
     } finally {
       setLoading(false);
