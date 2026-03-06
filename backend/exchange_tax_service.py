@@ -19,8 +19,15 @@ class ExchangeTaxService:
     Works entirely from imported CSV data.
     """
     
+    # Stablecoins pegged to USD - these are essentially USD equivalents
+    STABLECOINS = {'USDC', 'USDT', 'BUSD', 'DAI', 'GUSD', 'PAX', 'TUSD', 'USDP', 'UST', 'FRAX'}
+    
     def __init__(self):
         self.method = "FIFO"
+    
+    def _is_stablecoin(self, asset: str) -> bool:
+        """Check if an asset is a stablecoin"""
+        return asset.upper() in self.STABLECOINS
     
     def calculate_from_transactions(
         self,
@@ -44,8 +51,16 @@ class ExchangeTaxService:
         
         # Normalize and filter transactions
         normalized = []
+        excluded_stablecoin_count = 0
+        
         for tx in transactions:
             norm = self._normalize_transaction(tx)
+            
+            # Skip pure stablecoin <-> USD transactions (not taxable)
+            # e.g., buying USDC with USD, selling USDC for USD
+            if self._is_stablecoin(norm['asset']):
+                excluded_stablecoin_count += 1
+                continue
             
             # Apply asset filter
             if asset_filter and norm['asset'].upper() != asset_filter.upper():
@@ -55,6 +70,8 @@ class ExchangeTaxService:
         
         if not normalized:
             return self._empty_result()
+        
+        logger.info(f"Processing {len(normalized)} crypto transactions (excluded {excluded_stablecoin_count} stablecoin transactions)")
         
         # Sort by timestamp (oldest first for FIFO)
         normalized.sort(key=lambda x: x['timestamp'])
