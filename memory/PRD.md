@@ -89,6 +89,16 @@ All users must accept Terms of Service before using the platform. The TOS modal 
 - [x] Privacy-first approach - no API keys stored
 - [x] Free user restriction (Unlimited only)
 
+### Phase 5b: Exchange-Only Tax Calculator (Completed - Mar 5, 2026)
+- [x] Standalone tax calculator from exchange CSVs (no wallet needed)
+- [x] FIFO cost basis calculation across all imported exchanges
+- [x] Realized/unrealized capital gains calculation
+- [x] Form 8949 generation with short-term/long-term split
+- [x] CSV export for Form 8949
+- [x] Tax year filtering
+- [x] Asset filtering
+- [x] ExchangeModal tabs: Import CSVs / Tax Calculator
+
 ### Phase 6: Code Refactoring (Completed - Mar 5, 2026)
 - [x] Created useAnalysis hook for wallet analysis logic
 - [x] Created usePayment hook for payment/subscription logic
