@@ -15,6 +15,9 @@ from wallet_service import WalletService
 from auth_service import AuthService
 from stripe_service import StripeService
 from multi_chain_service import MultiChainService
+from multi_chain_service_v2 import multi_chain_service_v2  # New refactored service
+from tax_report_service import tax_report_service
+from fastapi.responses import Response
 
 
 ROOT_DIR = Path(__file__).parent
@@ -71,6 +74,7 @@ class ChainRequest(BaseModel):
 class WalletAnalysisResponse(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     address: str
+    chain: Optional[str] = None
     totalEthSent: float
     totalEthReceived: float
     totalGasFees: float
@@ -83,6 +87,14 @@ class WalletAnalysisResponse(BaseModel):
     tokensReceived: Dict[str, float]
     recentTransactions: List[Dict[str, Any]]
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    # USD values
+    current_price_usd: Optional[float] = None
+    total_value_usd: Optional[float] = None
+    total_received_usd: Optional[float] = None
+    total_sent_usd: Optional[float] = None
+    total_gas_fees_usd: Optional[float] = None
+    # Tax data (Premium/Pro feature)
+    tax_data: Optional[Dict[str, Any]] = None
 
 # Initialize services
 wallet_service = WalletService()
@@ -98,13 +110,16 @@ class User(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     email: str
     password_hash: str
-    subscription_tier: str = "free"  # free, premium, pro
+    subscription_tier: str = "free"  # free, unlimited
     stripe_customer_id: Optional[str] = None
     stripe_subscription_id: Optional[str] = None
     subscription_status: Optional[str] = None  # active, canceled, past_due, etc.
     daily_usage_count: int = 0
+    analysis_count: int = 0  # Total analyses ever done
     last_usage_reset: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    terms_accepted: bool = False
+    terms_accepted_at: Optional[datetime] = None
 
 class UserRegister(BaseModel):
     email: EmailStr
@@ -119,7 +134,9 @@ class UserResponse(BaseModel):
     email: str
     subscription_tier: str
     daily_usage_count: int
+    analysis_count: int = 0
     created_at: datetime
+    terms_accepted: bool = False
 
 class TokenResponse(BaseModel):
     access_token: str
@@ -137,8 +154,46 @@ class Payment(BaseModel):
     status: str  # pending, paid, failed, expired
     payment_status: str  # Stripe payment_status
     subscription_tier: str
+    affiliate_code: Optional[str] = None  # Affiliate code used
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     confirmed_at: Optional[datetime] = None
+
+# Affiliate Models
+class Affiliate(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    affiliate_code: str  # Unique code like "JOHN10" or username
+    email: str
+    name: str
+    paypal_email: Optional[str] = None  # For payouts
+    total_earnings: float = 0.0
+    pending_earnings: float = 0.0  # Not yet paid out
+    referral_count: int = 0
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    is_active: bool = True
+
+class AffiliateReferral(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    affiliate_id: str
+    affiliate_code: str
+    customer_user_id: str
+    customer_email: str
+    amount_earned: float = 10.0  # $10 per referral
+    customer_discount: float = 10.0  # $10 off for customer
+    payment_id: str  # Link to payment
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    paid_out: bool = False
+    paid_out_date: Optional[datetime] = None
+    quarter: str  # e.g., "2026-Q1"
+
+class AffiliateRegisterRequest(BaseModel):
+    affiliate_code: str
+    name: str
+    paypal_email: Optional[str] = None
 
 class UpgradeRequest(BaseModel):
     tier: str  # "premium" or "pro"
@@ -180,19 +235,18 @@ async def check_usage_limit(user: dict = Depends(get_current_user)) -> dict:
         )
         user["daily_usage_count"] = 0
     
-    # Check limits based on tier
+    # Check limits based on tier - FREE gets 1 total analysis, UNLIMITED gets unlimited
     tier = user.get("subscription_tier", "free")
-    daily_limit = {
-        "free": 1,
-        "premium": 999999,  # Unlimited
-        "pro": 999999  # Unlimited
-    }.get(tier, 1)
     
-    if user.get("daily_usage_count", 0) >= daily_limit:
-        raise HTTPException(
-            status_code=429,
-            detail=f"Daily limit reached. Upgrade to Premium for unlimited analyses."
-        )
+    if tier == "free":
+        # Free users get 1 analysis total (not daily)
+        total_analyses = user.get("analysis_count", 0)
+        if total_analyses >= 1:
+            raise HTTPException(
+                status_code=429,
+                detail="You've used your free analysis. Upgrade to Unlimited for unlimited analyses."
+            )
+    # Unlimited, premium, pro all get unlimited
     
     return user
 
@@ -240,7 +294,9 @@ async def register(user_data: UserRegister):
         email=user.email,
         subscription_tier=user.subscription_tier,
         daily_usage_count=user.daily_usage_count,
-        created_at=user.created_at
+        analysis_count=user.analysis_count,
+        created_at=user.created_at,
+        terms_accepted=user.terms_accepted
     )
     
     return TokenResponse(access_token=access_token, user=user_response)
@@ -269,10 +325,31 @@ async def login(user_data: UserLogin):
         email=user["email"],
         subscription_tier=user["subscription_tier"],
         daily_usage_count=user["daily_usage_count"],
-        created_at=created_at
+        analysis_count=user.get("analysis_count", 0),
+        created_at=created_at,
+        terms_accepted=user.get("terms_accepted", False)
     )
     
     return TokenResponse(access_token=access_token, user=user_response)
+
+@api_router.post("/auth/accept-terms")
+async def accept_terms(user: dict = Depends(get_current_user)):
+    """Accept Terms of Service"""
+    try:
+        await db.users.update_one(
+            {"id": user["id"]},
+            {"$set": {
+                "terms_accepted": True,
+                "terms_accepted_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        
+        logger.info(f"User {user['id']} accepted Terms of Service")
+        
+        return {"message": "Terms accepted successfully", "terms_accepted": True}
+    except Exception as e:
+        logger.error(f"Error accepting terms: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to accept terms")
 
 @api_router.get("/auth/me")
 async def get_current_user_info(user: dict = Depends(get_current_user)):
@@ -283,7 +360,9 @@ async def get_current_user_info(user: dict = Depends(get_current_user)):
         "subscription_tier": user.get("subscription_tier", "free"),
         "subscription_status": user.get("subscription_status"),
         "daily_usage_count": user.get("daily_usage_count", 0),
-        "created_at": user.get("created_at")
+        "analysis_count": user.get("analysis_count", 0),
+        "created_at": user.get("created_at"),
+        "terms_accepted": user.get("terms_accepted", False)
     }
     
     # Get subscription details from Stripe if exists
@@ -375,6 +454,13 @@ async def downgrade_subscription(
 class CheckoutRequest(BaseModel):
     tier: str
     origin_url: str  # Frontend origin URL
+    affiliate_code: Optional[str] = None  # Optional affiliate code for discount
+
+def get_current_quarter():
+    """Get current quarter string like '2026-Q1'"""
+    now = datetime.now()
+    quarter = (now.month - 1) // 3 + 1
+    return f"{now.year}-Q{quarter}"
 
 @api_router.post("/payments/create-upgrade")
 async def create_upgrade_payment(
@@ -384,75 +470,59 @@ async def create_upgrade_payment(
 ):
     """Create Stripe subscription checkout session for upgrade"""
     try:
+        # Get Stripe Price ID from environment - now just unlimited yearly
+        price_id = os.environ.get('STRIPE_PRICE_ID_UNLIMITED')
+        
+        # Fallback to old price IDs if unlimited not set
+        if not price_id:
+            price_id = os.environ.get('STRIPE_PRICE_ID_PRO') or os.environ.get('STRIPE_PRICE_ID_PREMIUM')
+        
+        if not price_id:
+            raise HTTPException(status_code=500, detail="Price ID not configured")
+        
         # Check if user already has an active subscription
         current_tier = user.get('subscription_tier', 'free')
         subscription_status = user.get('subscription_status')
-        stripe_subscription_id = user.get('stripe_subscription_id')
         
         # Prevent duplicate subscription purchases
-        if stripe_subscription_id and subscription_status == 'active':
-            if current_tier == checkout_request.tier:
-                raise HTTPException(
-                    status_code=400, 
-                    detail=f"You already have an active {checkout_request.tier} subscription"
-                )
-            
-            # Handle tier upgrades (Premium → Pro)
-            if current_tier == 'premium' and checkout_request.tier == 'pro':
+        if current_tier in ['unlimited', 'premium', 'pro'] and subscription_status == 'active':
+            raise HTTPException(
+                status_code=400, 
+                detail="You already have an active subscription"
+            )
+        
+        # Validate affiliate code if provided
+        affiliate = None
+        coupon_id = None
+        if checkout_request.affiliate_code:
+            affiliate = await db.affiliates.find_one({
+                "affiliate_code": checkout_request.affiliate_code.upper(),
+                "is_active": True
+            })
+            if affiliate:
+                # Don't allow self-referral
+                if affiliate['user_id'] == user['id']:
+                    raise HTTPException(status_code=400, detail="You cannot use your own affiliate code")
+                
+                # Create or get Stripe coupon for $10 off
                 try:
                     import stripe as stripe_lib
                     stripe_lib.api_key = os.environ.get('STRIPE_API_KEY')
                     
-                    # Get current subscription
-                    subscription = stripe_lib.Subscription.retrieve(stripe_subscription_id)
-                    
-                    # Update subscription to new price (with proration)
-                    stripe_lib.Subscription.modify(
-                        stripe_subscription_id,
-                        items=[{
-                            'id': subscription['items']['data'][0].id,
-                            'price': price_ids['pro'],
-                        }],
-                        proration_behavior='always_invoice'
-                    )
-                    
-                    # Update user tier immediately
-                    await db.users.update_one(
-                        {"id": user["id"]},
-                        {"$set": {"subscription_tier": "pro"}}
-                    )
-                    
-                    logger.info(f"User {user['id']} upgraded from Premium to Pro")
-                    
-                    return {
-                        "message": "Subscription upgraded successfully",
-                        "tier": "pro"
-                    }
-                    
+                    # Try to retrieve existing coupon or create new one
+                    coupon_id = "AFFILIATE10"
+                    try:
+                        stripe_lib.Coupon.retrieve(coupon_id)
+                    except:
+                        stripe_lib.Coupon.create(
+                            id=coupon_id,
+                            amount_off=1000,  # $10.00 in cents
+                            currency="usd",
+                            duration="once",
+                            name="Affiliate Discount - $10 Off"
+                        )
                 except Exception as e:
-                    logger.error(f"Failed to upgrade subscription: {str(e)}")
-                    raise HTTPException(status_code=500, detail="Failed to upgrade subscription")
-            
-            # Can't downgrade via this endpoint
-            if current_tier == 'pro' and checkout_request.tier == 'premium':
-                raise HTTPException(
-                    status_code=400,
-                    detail="Please use the downgrade option to switch to a lower tier"
-                )
-        
-        # Get Stripe Price IDs from environment
-        price_ids = {
-            "premium": os.environ.get('STRIPE_PRICE_ID_PREMIUM'),
-            "pro": os.environ.get('STRIPE_PRICE_ID_PRO')
-        }
-        
-        if checkout_request.tier not in price_ids:
-            raise HTTPException(status_code=400, detail="Invalid subscription tier")
-        
-        price_id = price_ids[checkout_request.tier]
-        
-        if not price_id:
-            raise HTTPException(status_code=500, detail=f"Price ID not configured for {checkout_request.tier}")
+                    logger.warning(f"Could not create/get coupon: {str(e)}")
         
         # Initialize Stripe checkout
         host_url = str(http_request.base_url)
@@ -465,29 +535,54 @@ async def create_upgrade_payment(
         # Create metadata for tracking
         metadata = {
             "user_id": user["id"],
-            "tier": checkout_request.tier,
+            "tier": "unlimited",
             "email": user["email"]
         }
         
-        # Create Stripe subscription checkout session
-        session = await stripe_service.create_checkout_session(
-            price_id=price_id,
-            customer_email=user["email"],
-            customer_id=user.get("stripe_customer_id"),
-            success_url=success_url,
-            cancel_url=cancel_url,
-            metadata=metadata
-        )
+        # Add affiliate code to metadata if present
+        if affiliate:
+            metadata["affiliate_code"] = checkout_request.affiliate_code.upper()
+            metadata["affiliate_id"] = affiliate["id"]
         
-        # Store payment transaction in database (MANDATORY)
+        # Create Stripe subscription checkout session with optional coupon
+        import stripe as stripe_lib
+        stripe_lib.api_key = os.environ.get('STRIPE_API_KEY')
+        
+        session_params = {
+            'payment_method_types': ['card'],
+            'line_items': [{
+                'price': price_id,
+                'quantity': 1,
+            }],
+            'mode': 'subscription',
+            'success_url': success_url,
+            'cancel_url': cancel_url,
+            'metadata': metadata,
+            'allow_promotion_codes': False if coupon_id else True,
+            'billing_address_collection': 'auto',
+        }
+        
+        if user.get("stripe_customer_id"):
+            session_params['customer'] = user["stripe_customer_id"]
+        else:
+            session_params['customer_email'] = user["email"]
+        
+        # Apply affiliate coupon if valid
+        if coupon_id and affiliate:
+            session_params['discounts'] = [{'coupon': coupon_id}]
+        
+        session = stripe_lib.checkout.Session.create(**session_params)
+        
+        # Store payment transaction in database
         payment = Payment(
             user_id=user["id"],
-            session_id=session.session_id,
-            amount=0.0,  # Will be updated by webhook
+            session_id=session.id,
+            amount=100.88 if not affiliate else 90.88,  # $10 off with affiliate
             currency="usd",
             status="pending",
             payment_status="unpaid",
-            subscription_tier=checkout_request.tier
+            subscription_tier="unlimited",
+            affiliate_code=checkout_request.affiliate_code.upper() if affiliate else None
         )
         
         doc = payment.model_dump()
@@ -497,13 +592,17 @@ async def create_upgrade_payment(
         
         await db.payment_transactions.insert_one(doc)
         
-        logger.info(f"Stripe subscription checkout created for user {user['id']}: {session.session_id}")
+        logger.info(f"Stripe subscription checkout created for user {user['id']}: {session.id}")
         
         return {
             "url": session.url,
-            "session_id": session.session_id
+            "session_id": session.id,
+            "affiliate_applied": affiliate is not None,
+            "discount": 10.0 if affiliate else 0
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to create Stripe checkout: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Payment creation failed: {str(e)}")
@@ -573,6 +672,44 @@ async def handle_stripe_webhook(request: Request):
                         }
                     }
                 )
+                
+                # Handle affiliate referral if present
+                affiliate_code = metadata.get('affiliate_code')
+                affiliate_id = metadata.get('affiliate_id')
+                
+                if affiliate_code and affiliate_id:
+                    # Get customer email
+                    customer_email = metadata.get('email', '')
+                    
+                    # Create referral record
+                    referral = AffiliateReferral(
+                        affiliate_id=affiliate_id,
+                        affiliate_code=affiliate_code,
+                        customer_user_id=user_id,
+                        customer_email=customer_email,
+                        amount_earned=10.0,
+                        customer_discount=10.0,
+                        payment_id=session_id,
+                        quarter=get_current_quarter()
+                    )
+                    
+                    ref_doc = referral.model_dump()
+                    ref_doc['created_at'] = ref_doc['created_at'].isoformat()
+                    await db.affiliate_referrals.insert_one(ref_doc)
+                    
+                    # Update affiliate earnings
+                    await db.affiliates.update_one(
+                        {"id": affiliate_id},
+                        {
+                            "$inc": {
+                                "total_earnings": 10.0,
+                                "pending_earnings": 10.0,
+                                "referral_count": 1
+                            }
+                        }
+                    )
+                    
+                    logger.info(f"Affiliate {affiliate_code} earned $10 for referral of user {user_id}")
                 
                 logger.info(f"User {user_id} subscribed to {tier} (subscription: {subscription_id})")
         
@@ -746,7 +883,7 @@ async def analyze_wallet(request: WalletAnalysisRequest, user: dict = Depends(ch
         if chain != 'ethereum' and user_tier == 'free':
             raise HTTPException(
                 status_code=403, 
-                detail="Multi-chain analysis is a Premium feature. Upgrade to analyze Bitcoin, Polygon, Arbitrum, BSC, and Solana wallets."
+                detail="Multi-chain analysis is a Premium feature. Upgrade to analyze 10+ chains including Bitcoin, Solana, Algorand, Avalanche, and Dogecoin."
             )
         
         # Basic validation
@@ -772,6 +909,7 @@ async def analyze_wallet(request: WalletAnalysisRequest, user: dict = Depends(ch
         # Create response object
         analysis_response = WalletAnalysisResponse(
             address=analysis_data['address'],
+            chain=analysis_data.get('chain'),
             totalEthSent=analysis_data['totalEthSent'],
             totalEthReceived=analysis_data['totalEthReceived'],
             totalGasFees=analysis_data['totalGasFees'],
@@ -782,7 +920,15 @@ async def analyze_wallet(request: WalletAnalysisRequest, user: dict = Depends(ch
             incomingTransactionCount=analysis_data['incomingTransactionCount'],
             tokensSent=analysis_data['tokensSent'],
             tokensReceived=analysis_data['tokensReceived'],
-            recentTransactions=analysis_data['recentTransactions']
+            recentTransactions=analysis_data['recentTransactions'],
+            # USD values
+            current_price_usd=analysis_data.get('current_price_usd'),
+            total_value_usd=analysis_data.get('total_value_usd'),
+            total_received_usd=analysis_data.get('total_received_usd'),
+            total_sent_usd=analysis_data.get('total_sent_usd'),
+            total_gas_fees_usd=analysis_data.get('total_gas_fees_usd'),
+            # Tax data
+            tax_data=analysis_data.get('tax_data')
         )
         
         # Store in database with user info
@@ -791,10 +937,10 @@ async def analyze_wallet(request: WalletAnalysisRequest, user: dict = Depends(ch
         doc['user_id'] = user['id']
         await db.wallet_analyses.insert_one(doc)
         
-        # Increment user's daily usage count
+        # Increment user's usage counts
         await db.users.update_one(
             {"id": user["id"]},
-            {"$inc": {"daily_usage_count": 1}}
+            {"$inc": {"daily_usage_count": 1, "analysis_count": 1}}
         )
         
         return analysis_response
@@ -807,14 +953,14 @@ async def analyze_wallet(request: WalletAnalysisRequest, user: dict = Depends(ch
 
 @api_router.post("/wallet/analyze-all")
 async def analyze_all_chains(request: WalletAnalysisRequest, user: dict = Depends(check_usage_limit)):
-    """Analyze wallet across all supported chains (Pro feature only)"""
+    """Analyze wallet across all supported chains (Unlimited feature)"""
     try:
-        # Check if user is Pro
+        # Check if user has Unlimited
         user_tier = user.get('subscription_tier', 'free')
-        if user_tier != 'pro':
+        if user_tier not in ['unlimited', 'pro']:
             raise HTTPException(
                 status_code=403, 
-                detail="Analyze All Chains is a Pro-only feature. Upgrade to Pro to analyze across all blockchains simultaneously."
+                detail="Analyze All Chains is an Unlimited feature. Upgrade to analyze across all blockchains simultaneously."
             )
         
         address = request.address.strip()
@@ -1024,6 +1170,77 @@ async def get_supported_chains():
         logger.error(f"Error fetching supported chains: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to fetch supported chains")
 
+
+class ChainRequest(BaseModel):
+    chain_name: str
+    chain_symbol: Optional[str] = None
+    reason: Optional[str] = None
+    sample_address: Optional[str] = None
+
+@api_router.post("/chains/request")
+async def request_chain(
+    request: ChainRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Request a new blockchain to be added.
+    Available for Unlimited users only.
+    Requests are reviewed and typically added within 48 hours.
+    """
+    try:
+        # Check subscription
+        if user.get('subscription_tier') == 'free':
+            raise HTTPException(
+                status_code=403,
+                detail="Chain requests are available for Unlimited users only. Upgrade to request new chains."
+            )
+        
+        # Store the request
+        chain_request = {
+            "user_id": user["id"],
+            "user_email": user.get("email", ""),
+            "chain_name": request.chain_name,
+            "chain_symbol": request.chain_symbol,
+            "reason": request.reason,
+            "sample_address": request.sample_address,
+            "status": "pending",
+            "created_at": datetime.now(timezone.utc)
+        }
+        
+        await db.chain_requests.insert_one(chain_request)
+        
+        logger.info(f"Chain request received: {request.chain_name} from user {user.get('email')}")
+        
+        return {
+            "message": f"Thank you! Your request for {request.chain_name} has been submitted.",
+            "chain_name": request.chain_name,
+            "status": "pending",
+            "estimated_response": "48 hours",
+            "note": "We'll notify you by email when the chain is added."
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error submitting chain request: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to submit chain request")
+
+@api_router.get("/chains/requests")
+async def get_my_chain_requests(user: dict = Depends(get_current_user)):
+    """Get user's chain requests and their status"""
+    try:
+        requests = await db.chain_requests.find(
+            {"user_id": user["id"]},
+            {"_id": 0}
+        ).sort("created_at", -1).to_list(20)
+        
+        return {"requests": requests}
+    except Exception as e:
+        logger.error(f"Error fetching chain requests: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch chain requests")
+
+
+
 # Saved Wallets Routes
 @api_router.post("/wallets/save")
 async def save_wallet(
@@ -1137,6 +1354,1707 @@ async def request_chain(
     except Exception as e:
         logger.error(f"Error submitting chain request: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to submit chain request")
+
+# Tax Report Routes
+class Form8949Request(BaseModel):
+    address: str
+    chain: str = "ethereum"
+    filter_type: str = "all"  # all, short-term, long-term
+
+@api_router.post("/tax/export-form-8949")
+async def export_form_8949(
+    request: Form8949Request,
+    user: dict = Depends(get_current_user)
+):
+    """Export IRS Form 8949 compatible CSV (Premium/Pro feature)"""
+    try:
+        # Check subscription tier
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier == 'free':
+            raise HTTPException(
+                status_code=403,
+                detail="Form 8949 export is a Premium feature. Upgrade to access tax reports."
+            )
+        
+        address = request.address.strip()
+        chain = request.chain.lower()
+        
+        # Get wallet analysis with tax data
+        analysis_data = multi_chain_service.analyze_wallet(
+            address,
+            chain=chain,
+            user_tier=user_tier
+        )
+        
+        # Check if tax data exists
+        tax_data = analysis_data.get('tax_data')
+        if not tax_data or not tax_data.get('realized_gains'):
+            raise HTTPException(
+                status_code=400,
+                detail="No tax data available. Analyze the wallet first to generate tax information."
+            )
+        
+        # Get chain symbol
+        symbol_map = {
+            'ethereum': 'ETH',
+            'bitcoin': 'BTC',
+            'polygon': 'MATIC',
+            'arbitrum': 'ETH',
+            'bsc': 'BNB',
+            'solana': 'SOL'
+        }
+        symbol = symbol_map.get(chain, 'ETH')
+        
+        # Generate Form 8949 CSV
+        csv_content = tax_report_service.generate_form_8949_csv(
+            realized_gains=tax_data['realized_gains'],
+            symbol=symbol,
+            address=address,
+            filter_type=request.filter_type
+        )
+        
+        # Return as downloadable CSV
+        filename = f"form-8949-{address[:8]}-{request.filter_type}-{datetime.now().strftime('%Y%m%d')}.csv"
+        
+        return Response(
+            content=csv_content,
+            media_type="text/csv",
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"'
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error exporting Form 8949: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to export Form 8949: {str(e)}")
+
+@api_router.post("/tax/export-summary")
+async def export_tax_summary(
+    request: Form8949Request,
+    user: dict = Depends(get_current_user)
+):
+    """Export comprehensive tax summary CSV (Premium/Pro feature)"""
+    try:
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier == 'free':
+            raise HTTPException(
+                status_code=403,
+                detail="Tax summary export is a Premium feature."
+            )
+        
+        address = request.address.strip()
+        chain = request.chain.lower()
+        
+        # Get wallet analysis with tax data
+        analysis_data = multi_chain_service.analyze_wallet(
+            address,
+            chain=chain,
+            user_tier=user_tier
+        )
+        
+        tax_data = analysis_data.get('tax_data')
+        if not tax_data:
+            raise HTTPException(
+                status_code=400,
+                detail="No tax data available."
+            )
+        
+        symbol_map = {
+            'ethereum': 'ETH',
+            'bitcoin': 'BTC',
+            'polygon': 'MATIC',
+            'arbitrum': 'ETH',
+            'bsc': 'BNB',
+            'solana': 'SOL'
+        }
+        symbol = symbol_map.get(chain, 'ETH')
+        
+        csv_content = tax_report_service.generate_tax_summary_csv(
+            tax_data=tax_data,
+            symbol=symbol,
+            address=address
+        )
+        
+        filename = f"tax-summary-{address[:8]}-{datetime.now().strftime('%Y%m%d')}.csv"
+        
+        return Response(
+            content=csv_content,
+            media_type="text/csv",
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"'
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error exporting tax summary: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to export tax summary: {str(e)}")
+
+class TransactionCategoryRequest(BaseModel):
+    address: str
+    chain: str = "ethereum"
+    categories: Dict[str, str]  # tx_hash -> category
+
+@api_router.post("/tax/save-categories")
+async def save_transaction_categories(
+    request: TransactionCategoryRequest,
+    user: dict = Depends(get_current_user)
+):
+    """Save transaction categories for tax purposes (Premium/Pro feature)"""
+    try:
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier == 'free':
+            raise HTTPException(
+                status_code=403,
+                detail="Transaction categorization is a Premium feature."
+            )
+        
+        # Store categories in database
+        category_doc = {
+            "id": str(uuid.uuid4()),
+            "user_id": user["id"],
+            "address": request.address.lower(),
+            "chain": request.chain.lower(),
+            "categories": request.categories,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        # Upsert - update if exists, insert if not
+        await db.transaction_categories.update_one(
+            {
+                "user_id": user["id"],
+                "address": request.address.lower(),
+                "chain": request.chain.lower()
+            },
+            {"$set": category_doc},
+            upsert=True
+        )
+        
+        logger.info(f"Saved {len(request.categories)} transaction categories for user {user['id']}")
+        
+        return {
+            "message": "Categories saved successfully",
+            "count": len(request.categories)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error saving categories: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to save categories")
+
+@api_router.get("/tax/categories/{address}")
+async def get_transaction_categories(
+    address: str,
+    chain: str = "ethereum",
+    user: dict = Depends(get_current_user)
+):
+    """Get saved transaction categories for a wallet"""
+    try:
+        categories_doc = await db.transaction_categories.find_one(
+            {
+                "user_id": user["id"],
+                "address": address.lower(),
+                "chain": chain.lower()
+            },
+            {"_id": 0}
+        )
+        
+        if not categories_doc:
+            return {"categories": {}}
+        
+        return {"categories": categories_doc.get("categories", {})}
+        
+    except Exception as e:
+        logger.error(f"Error fetching categories: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch categories")
+
+# Schedule D Export
+class ScheduleDRequest(BaseModel):
+    address: str
+    chain: str = "ethereum"
+    tax_year: int
+    format: str = "text"  # text or csv
+
+@api_router.post("/tax/export-schedule-d")
+async def export_schedule_d(
+    request: ScheduleDRequest,
+    user: dict = Depends(get_current_user)
+):
+    """Export Schedule D (Capital Gains Summary) for a specific tax year (Premium/Pro)"""
+    try:
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier == 'free':
+            raise HTTPException(
+                status_code=403,
+                detail="Schedule D export is a Premium feature."
+            )
+        
+        # Validate tax year
+        current_year = datetime.now().year
+        if request.tax_year < 2020 or request.tax_year > current_year:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Tax year must be between 2020 and {current_year}"
+            )
+        
+        address = request.address.strip()
+        chain = request.chain.lower()
+        
+        # Get wallet analysis with tax data
+        analysis_data = multi_chain_service.analyze_wallet(
+            address,
+            chain=chain,
+            user_tier=user_tier
+        )
+        
+        tax_data = analysis_data.get('tax_data')
+        if not tax_data:
+            raise HTTPException(
+                status_code=400,
+                detail="No tax data available for this wallet."
+            )
+        
+        realized_gains = tax_data.get('realized_gains', [])
+        
+        symbol_map = {
+            'ethereum': 'ETH',
+            'bitcoin': 'BTC',
+            'polygon': 'MATIC',
+            'arbitrum': 'ETH',
+            'bsc': 'BNB',
+            'solana': 'SOL'
+        }
+        symbol = symbol_map.get(chain, 'ETH')
+        
+        # Generate based on format
+        if request.format == 'csv':
+            content = tax_report_service.generate_schedule_d_csv(
+                realized_gains=realized_gains,
+                tax_year=request.tax_year,
+                symbol=symbol,
+                address=address
+            )
+            media_type = "text/csv"
+            filename = f"schedule-d-{address[:8]}-{request.tax_year}.csv"
+        else:
+            content = tax_report_service.generate_schedule_d_summary(
+                realized_gains=realized_gains,
+                tax_year=request.tax_year,
+                symbol=symbol,
+                address=address
+            )
+            media_type = "text/plain"
+            filename = f"schedule-d-{address[:8]}-{request.tax_year}.txt"
+        
+        return Response(
+            content=content,
+            media_type=media_type,
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"'
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error exporting Schedule D: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to export Schedule D: {str(e)}")
+
+# Batch categorization
+class BatchCategorizeRequest(BaseModel):
+    address: str
+    chain: str = "ethereum"
+    rules: List[Dict[str, Any]]
+
+@api_router.post("/tax/batch-categorize")
+async def batch_categorize_transactions(
+    request: BatchCategorizeRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Batch categorize transactions based on rules (Premium/Pro)
+    
+    Rules format:
+    - type: 'address' | 'amount_gt' | 'amount_lt' | 'tx_type' | 'asset'
+    - value: The value to match
+    - category: The category to assign
+    """
+    try:
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier == 'free':
+            raise HTTPException(
+                status_code=403,
+                detail="Batch categorization is a Premium feature."
+            )
+        
+        address = request.address.strip()
+        chain = request.chain.lower()
+        
+        # Get wallet analysis to get transactions
+        analysis_data = multi_chain_service.analyze_wallet(
+            address,
+            chain=chain,
+            user_tier=user_tier
+        )
+        
+        transactions = analysis_data.get('recentTransactions', [])
+        
+        if not transactions:
+            raise HTTPException(
+                status_code=400,
+                detail="No transactions found for this wallet."
+            )
+        
+        # Apply batch categorization
+        categories = tax_report_service.batch_categorize_transactions(
+            transactions=transactions,
+            rules=request.rules
+        )
+        
+        # Save to database
+        category_doc = {
+            "id": str(uuid.uuid4()),
+            "user_id": user["id"],
+            "address": address.lower(),
+            "chain": chain,
+            "categories": categories,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db.transaction_categories.update_one(
+            {
+                "user_id": user["id"],
+                "address": address.lower(),
+                "chain": chain
+            },
+            {"$set": category_doc},
+            upsert=True
+        )
+        
+        logger.info(f"Batch categorized {len(categories)} transactions for user {user['id']}")
+        
+        return {
+            "message": "Transactions categorized successfully",
+            "count": len(categories),
+            "categories": categories
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error batch categorizing: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to batch categorize transactions")
+
+# Auto-categorize transactions
+class AutoCategorizeRequest(BaseModel):
+    address: str
+    chain: str = "ethereum"
+    known_addresses: Optional[Dict[str, str]] = None
+
+@api_router.post("/tax/auto-categorize")
+async def auto_categorize_transactions(
+    request: AutoCategorizeRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Auto-categorize transactions using smart detection (Premium/Pro)
+    
+    known_addresses: Dict of address -> label ('self', 'exchange', 'staking', etc.)
+    """
+    try:
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier == 'free':
+            raise HTTPException(
+                status_code=403,
+                detail="Auto categorization is a Premium feature."
+            )
+        
+        address = request.address.strip()
+        chain = request.chain.lower()
+        
+        # Get wallet analysis
+        analysis_data = multi_chain_service.analyze_wallet(
+            address,
+            chain=chain,
+            user_tier=user_tier
+        )
+        
+        transactions = analysis_data.get('recentTransactions', [])
+        
+        if not transactions:
+            raise HTTPException(
+                status_code=400,
+                detail="No transactions found for this wallet."
+            )
+        
+        # Auto categorize
+        categories = tax_report_service.auto_categorize_transactions(
+            transactions=transactions,
+            known_addresses=request.known_addresses
+        )
+        
+        # Save to database
+        category_doc = {
+            "id": str(uuid.uuid4()),
+            "user_id": user["id"],
+            "address": address.lower(),
+            "chain": chain,
+            "categories": categories,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db.transaction_categories.update_one(
+            {
+                "user_id": user["id"],
+                "address": address.lower(),
+                "chain": chain
+            },
+            {"$set": category_doc},
+            upsert=True
+        )
+        
+        logger.info(f"Auto-categorized {len(categories)} transactions for user {user['id']}")
+        
+        return {
+            "message": "Transactions auto-categorized successfully",
+            "count": len(categories),
+            "categories": categories
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error auto-categorizing: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to auto-categorize transactions")
+
+# Get supported tax years
+@api_router.get("/tax/supported-years")
+async def get_supported_tax_years():
+    """Get list of supported tax years for reports"""
+    current_year = datetime.now().year
+    return {
+        "years": list(range(2020, current_year + 1)),
+        "current_year": current_year
+    }
+
+# ==================== UNIFIED TAX CALCULATION ====================
+
+from unified_tax_service import unified_tax_service
+
+class UnifiedTaxRequest(BaseModel):
+    address: Optional[str] = None  # Optional when data_source is "exchange_only"
+    chain: str = "ethereum"
+    data_source: str = "combined"  # "wallet_only", "exchange_only", "combined"
+    asset_filter: Optional[str] = None  # Filter to specific asset (e.g., "BTC", "ETH")
+    tax_year: Optional[int] = None
+
+@api_router.post("/tax/unified")
+async def get_unified_tax_data(
+    request: UnifiedTaxRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Get unified tax data with flexible data source selection
+    
+    data_source options:
+    - "wallet_only": Only on-chain wallet transactions
+    - "exchange_only": Only imported exchange CSV transactions
+    - "combined": Merge both sources for comprehensive tax calculation
+    """
+    try:
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier == 'free':
+            raise HTTPException(
+                status_code=403,
+                detail="Unified tax calculation requires Unlimited subscription."
+            )
+        
+        data_source = request.data_source
+        wallet_transactions = []
+        exchange_transactions = []
+        current_balance = 0
+        current_price = 0
+        symbol = 'USD'
+        address = request.address.lower() if request.address else None
+        chain = request.chain
+        
+        # Get wallet data if needed
+        if data_source in ["wallet_only", "combined"]:
+            if not address:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Wallet address required for wallet_only or combined data source"
+                )
+            
+            analysis_data = multi_chain_service.analyze_wallet(
+                address=address,
+                chain=chain,
+                user_tier=user_tier
+            )
+            
+            wallet_transactions = analysis_data.get('recentTransactions', [])
+            current_balance = analysis_data.get('currentBalance', 0)
+            current_price = analysis_data.get('current_price_usd', 0)
+            symbol = {
+                'ethereum': 'ETH',
+                'bitcoin': 'BTC',
+                'polygon': 'MATIC',
+                'arbitrum': 'ETH',
+                'bsc': 'BNB',
+                'solana': 'SOL'
+            }.get(chain, 'ETH')
+        
+        # Get exchange transactions if needed
+        if data_source in ["exchange_only", "combined"]:
+            exchange_txs = await db.exchange_transactions.find(
+                {"user_id": user["id"]},
+                {"_id": 0}
+            ).to_list(5000)
+            exchange_transactions = exchange_txs
+            
+            # If exchange_only, we need to determine prices from the data
+            if data_source == "exchange_only" and exchange_transactions:
+                # Get unique assets
+                assets = set(tx.get('asset', '') for tx in exchange_transactions)
+                # Use a generic symbol for mixed assets
+                if len(assets) == 1:
+                    symbol = list(assets)[0]
+                else:
+                    symbol = "MULTI"
+        
+        # Calculate unified tax data
+        tax_data = unified_tax_service.calculate_unified_tax_data(
+            wallet_transactions=wallet_transactions,
+            exchange_transactions=exchange_transactions,
+            symbol=symbol,
+            current_price=current_price,
+            current_balance=current_balance,
+            asset_filter=request.asset_filter
+        )
+        
+        # Filter by tax year if specified
+        if request.tax_year:
+            tax_data['realized_gains'] = [
+                g for g in tax_data['realized_gains']
+                if g.get('sell_date', '').startswith(str(request.tax_year))
+            ]
+            # Recalculate summary
+            tax_data['summary']['total_realized_gain'] = sum(
+                g['gain_loss'] for g in tax_data['realized_gains']
+            )
+            tax_data['summary']['short_term_gains'] = sum(
+                g['gain_loss'] for g in tax_data['realized_gains'] 
+                if g['holding_period'] == 'short-term'
+            )
+            tax_data['summary']['long_term_gains'] = sum(
+                g['gain_loss'] for g in tax_data['realized_gains'] 
+                if g['holding_period'] == 'long-term'
+            )
+        
+        # Get asset summary
+        assets_summary = unified_tax_service.get_assets_summary(
+            wallet_transactions,
+            exchange_transactions,
+            symbol
+        )
+        
+        return {
+            "wallet_address": address,
+            "chain": chain,
+            "symbol": symbol,
+            "current_price": current_price,
+            "tax_year": request.tax_year,
+            "data_source": data_source,
+            "data_sources_used": {
+                "wallet": len(wallet_transactions) > 0,
+                "wallet_tx_count": len(wallet_transactions),
+                "exchange": len(exchange_transactions) > 0,
+                "exchange_tx_count": len(exchange_transactions)
+            },
+            "tax_data": tax_data,
+            "assets_summary": assets_summary,
+            "message": f"Tax data calculated using {data_source} source(s)"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error calculating unified tax: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to calculate unified tax data: {str(e)}")
+
+@api_router.post("/tax/detect-transfers")
+async def detect_wallet_exchange_transfers(
+    request: UnifiedTaxRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Detect transfers between wallet and exchange.
+    
+    When you send crypto from a cold wallet to an exchange:
+    - The wallet shows a "send" transaction
+    - The exchange shows a "receive" transaction
+    
+    This endpoint matches them so we can use the correct holding period.
+    """
+    try:
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier == 'free':
+            raise HTTPException(
+                status_code=403,
+                detail="Transfer detection requires Unlimited subscription."
+            )
+        
+        address = request.address.lower() if request.address else None
+        chain = request.chain
+        
+        if not address:
+            raise HTTPException(status_code=400, detail="Wallet address required")
+        
+        # Get wallet analysis
+        analysis_data = multi_chain_service.analyze_wallet(
+            address=address,
+            chain=chain,
+            user_tier=user_tier
+        )
+        
+        wallet_transactions = analysis_data.get('recentTransactions', [])
+        symbol = {
+            'ethereum': 'ETH',
+            'bitcoin': 'BTC',
+            'polygon': 'MATIC',
+            'arbitrum': 'ETH',
+            'bsc': 'BNB',
+            'solana': 'SOL'
+        }.get(chain, 'ETH')
+        
+        # Get exchange transactions
+        exchange_txs = await db.exchange_transactions.find(
+            {"user_id": user["id"]},
+            {"_id": 0}
+        ).to_list(5000)
+        
+        # Normalize transactions
+        normalized_wallet = []
+        for tx in wallet_transactions:
+            normalized_wallet.append(unified_tax_service.normalize_wallet_transaction(tx, symbol))
+        
+        normalized_exchange = []
+        for tx in exchange_txs:
+            normalized_exchange.append(unified_tax_service.normalize_exchange_transaction(tx))
+        
+        # Detect transfers
+        detected = unified_tax_service.detect_transfers_between_sources(
+            normalized_wallet, 
+            normalized_exchange,
+            tolerance_hours=48  # Allow 48 hour window for matching
+        )
+        
+        return {
+            "wallet_address": address,
+            "chain": chain,
+            "symbol": symbol,
+            "transfers_detected": len(detected),
+            "transfers": detected,
+            "message": f"Found {len(detected)} potential transfers from wallet to exchange"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error detecting transfers: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to detect transfers: {str(e)}")
+
+@api_router.get("/tax/unified/assets")
+async def get_unified_assets_summary(user: dict = Depends(get_current_user)):
+    """
+    Get summary of all assets across wallet analyses and exchange imports
+    """
+    try:
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier == 'free':
+            raise HTTPException(
+                status_code=403,
+                detail="Asset summary requires Unlimited subscription."
+            )
+        
+        # Get all exchange transactions for this user
+        exchange_txs = await db.exchange_transactions.find(
+            {"user_id": user["id"]},
+            {"_id": 0}
+        ).to_list(5000)
+        
+        # Get unique assets from exchanges
+        assets = {}
+        for tx in exchange_txs:
+            asset = tx.get('asset', 'UNKNOWN')
+            if asset not in assets:
+                assets[asset] = {
+                    'asset': asset,
+                    'exchange_txs': 0,
+                    'total_bought': 0,
+                    'total_sold': 0,
+                    'exchanges': set()
+                }
+            
+            assets[asset]['exchange_txs'] += 1
+            assets[asset]['exchanges'].add(tx.get('exchange', 'unknown'))
+            
+            amount = float(tx.get('amount', 0))
+            tx_type = tx.get('tx_type', '').lower()
+            if tx_type in ['buy', 'receive', 'deposit', 'reward']:
+                assets[asset]['total_bought'] += amount
+            elif tx_type in ['sell', 'send', 'withdrawal']:
+                assets[asset]['total_sold'] += amount
+        
+        # Convert sets to lists for JSON serialization
+        for asset in assets.values():
+            asset['exchanges'] = list(asset['exchanges'])
+            asset['net_position'] = asset['total_bought'] - asset['total_sold']
+        
+        return {
+            "assets": list(assets.values()),
+            "total_assets": len(assets),
+            "total_exchange_txs": len(exchange_txs)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting assets summary: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get assets summary")
+
+# ==================== AFFILIATE ROUTES ====================
+
+@api_router.post("/affiliate/register")
+async def register_affiliate(
+    request: AffiliateRegisterRequest,
+    user: dict = Depends(get_current_user)
+):
+    """Register as an affiliate"""
+    try:
+        # Check if user already is an affiliate
+        existing = await db.affiliates.find_one({"user_id": user["id"]})
+        if existing:
+            raise HTTPException(status_code=400, detail="You are already registered as an affiliate")
+        
+        # Check if affiliate code is taken
+        code = request.affiliate_code.upper().strip()
+        if len(code) < 3 or len(code) > 20:
+            raise HTTPException(status_code=400, detail="Affiliate code must be 3-20 characters")
+        
+        code_exists = await db.affiliates.find_one({"affiliate_code": code})
+        if code_exists:
+            raise HTTPException(status_code=400, detail="This affiliate code is already taken")
+        
+        # Create affiliate
+        affiliate = Affiliate(
+            user_id=user["id"],
+            affiliate_code=code,
+            email=user["email"],
+            name=request.name,
+            paypal_email=request.paypal_email
+        )
+        
+        doc = affiliate.model_dump()
+        doc['created_at'] = doc['created_at'].isoformat()
+        await db.affiliates.insert_one(doc)
+        
+        logger.info(f"New affiliate registered: {code} by user {user['id']}")
+        
+        return {
+            "message": "Successfully registered as affiliate",
+            "affiliate_code": code,
+            "share_link": f"Use code '{code}' for $10 off!"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error registering affiliate: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to register as affiliate")
+
+@api_router.get("/affiliate/me")
+async def get_my_affiliate_info(user: dict = Depends(get_current_user)):
+    """Get current user's affiliate information"""
+    try:
+        affiliate = await db.affiliates.find_one(
+            {"user_id": user["id"]},
+            {"_id": 0}
+        )
+        
+        if not affiliate:
+            return {"is_affiliate": False}
+        
+        # Get recent referrals
+        referrals = await db.affiliate_referrals.find(
+            {"affiliate_id": affiliate["id"]},
+            {"_id": 0}
+        ).sort("created_at", -1).limit(10).to_list(10)
+        
+        return {
+            "is_affiliate": True,
+            "affiliate_code": affiliate["affiliate_code"],
+            "name": affiliate["name"],
+            "total_earnings": affiliate["total_earnings"],
+            "pending_earnings": affiliate["pending_earnings"],
+            "referral_count": affiliate["referral_count"],
+            "paypal_email": affiliate.get("paypal_email"),
+            "recent_referrals": referrals,
+            "created_at": affiliate["created_at"]
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting affiliate info: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get affiliate info")
+
+@api_router.get("/affiliate/validate/{code}")
+async def validate_affiliate_code(code: str):
+    """Validate an affiliate code (public endpoint)"""
+    try:
+        affiliate = await db.affiliates.find_one({
+            "affiliate_code": code.upper(),
+            "is_active": True
+        })
+        
+        if affiliate:
+            return {
+                "valid": True,
+                "discount": 10.0,
+                "message": f"Code '{code.upper()}' applied! You'll get $10 off."
+            }
+        else:
+            return {
+                "valid": False,
+                "discount": 0,
+                "message": "Invalid affiliate code"
+            }
+            
+    except Exception as e:
+        logger.error(f"Error validating affiliate code: {str(e)}")
+        return {"valid": False, "discount": 0, "message": "Error validating code"}
+
+@api_router.put("/affiliate/update")
+async def update_affiliate_info(
+    paypal_email: Optional[str] = None,
+    user: dict = Depends(get_current_user)
+):
+    """Update affiliate payment info"""
+    try:
+        result = await db.affiliates.update_one(
+            {"user_id": user["id"]},
+            {"$set": {"paypal_email": paypal_email}}
+        )
+        
+        if result.modified_count == 0:
+            raise HTTPException(status_code=404, detail="Affiliate not found")
+        
+        return {"message": "Affiliate info updated"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating affiliate: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to update affiliate info")
+
+# Admin endpoint for quarterly payout report
+@api_router.get("/affiliate/admin/report")
+async def get_affiliate_payout_report(
+    quarter: Optional[str] = None,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Get affiliate payout report for a quarter (Admin only)
+    Quarter format: '2026-Q1', '2026-Q2', etc.
+    """
+    try:
+        # Simple admin check - you may want to add proper admin role
+        admin_emails = os.environ.get('ADMIN_EMAILS', '').split(',')
+        if user['email'] not in admin_emails and user['email'] != 'admin@cryptobagtracker.io':
+            raise HTTPException(status_code=403, detail="Admin access required")
+        
+        # Default to current quarter
+        if not quarter:
+            quarter = get_current_quarter()
+        
+        # Get all unpaid referrals for the quarter
+        pipeline = [
+            {"$match": {"quarter": quarter, "paid_out": False}},
+            {"$group": {
+                "_id": "$affiliate_id",
+                "affiliate_code": {"$first": "$affiliate_code"},
+                "total_earned": {"$sum": "$amount_earned"},
+                "referral_count": {"$sum": 1},
+                "referral_ids": {"$push": "$id"}
+            }},
+            {"$sort": {"total_earned": -1}}
+        ]
+        
+        results = await db.affiliate_referrals.aggregate(pipeline).to_list(100)
+        
+        # Get affiliate details
+        report = []
+        total_payout = 0
+        
+        for item in results:
+            affiliate = await db.affiliates.find_one(
+                {"id": item["_id"]},
+                {"_id": 0, "email": 1, "name": 1, "paypal_email": 1, "affiliate_code": 1}
+            )
+            
+            if affiliate:
+                report.append({
+                    "affiliate_code": affiliate["affiliate_code"],
+                    "name": affiliate["name"],
+                    "email": affiliate["email"],
+                    "paypal_email": affiliate.get("paypal_email", "NOT SET"),
+                    "referral_count": item["referral_count"],
+                    "amount_owed": item["total_earned"],
+                    "referral_ids": item["referral_ids"]
+                })
+                total_payout += item["total_earned"]
+        
+        return {
+            "quarter": quarter,
+            "total_affiliates": len(report),
+            "total_payout": total_payout,
+            "affiliates": report,
+            "generated_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating payout report: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to generate report")
+
+@api_router.post("/affiliate/admin/mark-paid")
+async def mark_affiliates_paid(
+    quarter: str,
+    affiliate_ids: List[str],
+    user: dict = Depends(get_current_user)
+):
+    """Mark affiliate referrals as paid (Admin only)"""
+    try:
+        # Admin check
+        admin_emails = os.environ.get('ADMIN_EMAILS', '').split(',')
+        if user['email'] not in admin_emails and user['email'] != 'admin@cryptobagtracker.io':
+            raise HTTPException(status_code=403, detail="Admin access required")
+        
+        now = datetime.now(timezone.utc).isoformat()
+        
+        # Update referrals
+        result = await db.affiliate_referrals.update_many(
+            {
+                "quarter": quarter,
+                "affiliate_id": {"$in": affiliate_ids},
+                "paid_out": False
+            },
+            {
+                "$set": {
+                    "paid_out": True,
+                    "paid_out_date": now
+                }
+            }
+        )
+        
+        # Update affiliate pending earnings
+        for aff_id in affiliate_ids:
+            # Calculate paid amount
+            paid_amount = await db.affiliate_referrals.count_documents({
+                "affiliate_id": aff_id,
+                "quarter": quarter,
+                "paid_out": True,
+                "paid_out_date": now
+            }) * 10.0
+            
+            await db.affiliates.update_one(
+                {"id": aff_id},
+                {"$inc": {"pending_earnings": -paid_amount}}
+            )
+        
+        logger.info(f"Admin marked {result.modified_count} referrals as paid for {quarter}")
+        
+        return {
+            "message": f"Marked {result.modified_count} referrals as paid",
+            "quarter": quarter
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error marking affiliates paid: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to mark as paid")
+
+# ==================== EXCHANGE CSV IMPORT ROUTES ====================
+
+from csv_parser_service import csv_parser_service
+from fastapi import UploadFile, File
+
+@api_router.get("/exchanges/supported")
+async def get_supported_exchanges():
+    """Get list of supported exchange CSV formats with export instructions"""
+    exchanges = csv_parser_service.get_supported_exchanges()
+    return {"exchanges": exchanges}
+
+@api_router.post("/exchanges/import-csv")
+async def import_exchange_csv(
+    file: UploadFile = File(...),
+    exchange_hint: Optional[str] = None,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Import transactions from exchange CSV file
+    
+    - Auto-detects exchange format from column headers
+    - Supported: Coinbase, Binance, Kraken, Gemini, Crypto.com, KuCoin
+    - Optional exchange_hint to help detection
+    """
+    try:
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier == 'free':
+            raise HTTPException(
+                status_code=403,
+                detail="CSV import is an Unlimited feature. Upgrade to import exchange data."
+            )
+        
+        # Validate file type
+        if not file.filename.endswith('.csv'):
+            raise HTTPException(status_code=400, detail="Please upload a CSV file")
+        
+        # Read file content
+        content = await file.read()
+        try:
+            content_str = content.decode('utf-8')
+        except UnicodeDecodeError:
+            content_str = content.decode('latin-1')
+        
+        # Parse CSV
+        detected_exchange, transactions = csv_parser_service.parse_csv(
+            content_str, 
+            exchange_hint
+        )
+        
+        # Store transactions in database
+        stored_count = 0
+        for tx in transactions:
+            tx_doc = tx.to_dict()
+            tx_doc["user_id"] = user["id"]
+            tx_doc["imported_at"] = datetime.now(timezone.utc).isoformat()
+            tx_doc["source"] = "csv_import"
+            
+            # Upsert each transaction (avoid duplicates)
+            await db.exchange_transactions.update_one(
+                {
+                    "user_id": user["id"], 
+                    "exchange": tx.exchange, 
+                    "tx_id": tx.tx_id,
+                    "timestamp": tx_doc["timestamp"]
+                },
+                {"$set": tx_doc},
+                upsert=True
+            )
+            stored_count += 1
+        
+        logger.info(f"User {user['id']} imported {stored_count} transactions from {detected_exchange}")
+        
+        # Calculate summary
+        summary = _calculate_import_summary(transactions)
+        
+        return {
+            "message": f"Successfully imported {stored_count} transactions from {detected_exchange.value}",
+            "exchange_detected": detected_exchange.value,
+            "transaction_count": stored_count,
+            "summary": summary
+        }
+        
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error importing CSV: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to import CSV: {str(e)}")
+
+def _calculate_import_summary(transactions) -> Dict[str, Any]:
+    """Calculate summary statistics from imported transactions"""
+    summary = {
+        "total_transactions": len(transactions),
+        "by_type": {},
+        "by_asset": {},
+        "date_range": {"earliest": None, "latest": None}
+    }
+    
+    for tx in transactions:
+        # By type
+        tx_type = tx.tx_type
+        summary["by_type"][tx_type] = summary["by_type"].get(tx_type, 0) + 1
+        
+        # By asset
+        asset = tx.asset
+        if asset not in summary["by_asset"]:
+            summary["by_asset"][asset] = {"count": 0, "total_amount": 0}
+        summary["by_asset"][asset]["count"] += 1
+        summary["by_asset"][asset]["total_amount"] += tx.amount
+        
+        # Date range
+        if tx.timestamp:
+            ts = tx.timestamp.isoformat()
+            if not summary["date_range"]["earliest"] or ts < summary["date_range"]["earliest"]:
+                summary["date_range"]["earliest"] = ts
+            if not summary["date_range"]["latest"] or ts > summary["date_range"]["latest"]:
+                summary["date_range"]["latest"] = ts
+    
+    return summary
+
+@api_router.get("/exchanges/transactions")
+async def get_exchange_transactions(
+    exchange: Optional[str] = None,
+    tx_type: Optional[str] = None,
+    asset: Optional[str] = None,
+    limit: int = 100,
+    user: dict = Depends(get_current_user)
+):
+    """Get imported exchange transactions with filters"""
+    try:
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier == 'free':
+            raise HTTPException(
+                status_code=403,
+                detail="Exchange transactions require Unlimited subscription."
+            )
+        
+        # Build query
+        query = {"user_id": user["id"]}
+        
+        if exchange:
+            query["exchange"] = exchange.lower()
+        if tx_type:
+            query["tx_type"] = tx_type
+        if asset:
+            query["asset"] = asset.upper()
+        
+        transactions = await db.exchange_transactions.find(
+            query,
+            {"_id": 0}
+        ).sort("timestamp", -1).limit(limit).to_list(limit)
+        
+        # Calculate summary
+        summary = {
+            "total_transactions": len(transactions),
+            "by_exchange": {},
+            "by_type": {},
+            "by_asset": {}
+        }
+        
+        for tx in transactions:
+            exc = tx.get("exchange", "unknown")
+            summary["by_exchange"][exc] = summary["by_exchange"].get(exc, 0) + 1
+            
+            t = tx.get("tx_type", "unknown")
+            summary["by_type"][t] = summary["by_type"].get(t, 0) + 1
+            
+            a = tx.get("asset", "unknown")
+            summary["by_asset"][a] = summary["by_asset"].get(a, 0) + 1
+        
+        return {
+            "transactions": transactions,
+            "count": len(transactions),
+            "summary": summary
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching exchange transactions: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch transactions")
+
+@api_router.delete("/exchanges/transactions")
+async def delete_exchange_transactions(
+    exchange: Optional[str] = None,
+    user: dict = Depends(get_current_user)
+):
+    """Delete imported exchange transactions"""
+    try:
+        query = {"user_id": user["id"]}
+        if exchange:
+            query["exchange"] = exchange.lower()
+        
+        result = await db.exchange_transactions.delete_many(query)
+        
+        return {
+            "message": f"Deleted {result.deleted_count} transactions",
+            "deleted_count": result.deleted_count
+        }
+        
+    except Exception as e:
+        logger.error(f"Error deleting transactions: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to delete transactions")
+
+
+class CostBasisUpdate(BaseModel):
+    tx_id: str
+    original_purchase_date: Optional[str] = None  # ISO format date
+    original_cost_basis: Optional[float] = None
+    is_transfer: bool = False  # Mark as transfer from another wallet
+    notes: Optional[str] = None
+
+@api_router.put("/exchanges/transactions/{tx_id}/cost-basis")
+async def update_transaction_cost_basis(
+    tx_id: str,
+    update: CostBasisUpdate,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Update cost basis and original purchase date for a transaction.
+    Use this for transfers from cold wallets where the original purchase
+    date differs from the receive date.
+    """
+    try:
+        # Find the transaction
+        tx = await db.exchange_transactions.find_one({
+            "user_id": user["id"],
+            "tx_id": tx_id
+        })
+        
+        if not tx:
+            raise HTTPException(status_code=404, detail="Transaction not found")
+        
+        # Build update
+        update_data = {}
+        
+        if update.is_transfer:
+            update_data["is_transfer"] = True
+            update_data["transfer_notes"] = update.notes or "Transfer from external wallet"
+        
+        if update.original_purchase_date:
+            # Parse the date and use it as the acquisition date for tax purposes
+            try:
+                original_date = datetime.fromisoformat(update.original_purchase_date.replace("Z", "+00:00"))
+                update_data["original_purchase_date"] = original_date
+                update_data["acquisition_date_override"] = original_date
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid date format. Use ISO format (YYYY-MM-DD)")
+        
+        if update.original_cost_basis is not None:
+            update_data["original_cost_basis"] = update.original_cost_basis
+            update_data["cost_basis_override"] = update.original_cost_basis
+        
+        if update.notes:
+            update_data["user_notes"] = update.notes
+        
+        update_data["manually_adjusted"] = True
+        update_data["adjusted_at"] = datetime.now(timezone.utc)
+        
+        # Update the transaction
+        await db.exchange_transactions.update_one(
+            {"user_id": user["id"], "tx_id": tx_id},
+            {"$set": update_data}
+        )
+        
+        return {
+            "message": "Transaction cost basis updated successfully",
+            "tx_id": tx_id,
+            "updates_applied": list(update_data.keys())
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating cost basis: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to update transaction")
+
+@api_router.get("/exchanges/transactions/transfers")
+async def get_potential_transfers(
+    user: dict = Depends(get_current_user)
+):
+    """
+    Identify potential transfers (receives that might be from external wallets).
+    Returns receive transactions that happen shortly before sells of the same asset.
+    """
+    try:
+        # Get all transactions
+        transactions = await db.exchange_transactions.find(
+            {"user_id": user["id"]},
+            {"_id": 0}
+        ).sort("timestamp", 1).to_list(5000)
+        
+        potential_transfers = []
+        receives_by_asset = {}
+        
+        # Group receives by asset
+        for tx in transactions:
+            if tx.get("tx_type") in ["receive", "deposit"]:
+                asset = tx.get("asset", "")
+                if asset not in receives_by_asset:
+                    receives_by_asset[asset] = []
+                receives_by_asset[asset].append(tx)
+        
+        # Find receives followed by sells within 30 days
+        for tx in transactions:
+            if tx.get("tx_type") in ["sell", "send"]:
+                asset = tx.get("asset", "")
+                sell_time = tx.get("timestamp")
+                
+                if asset in receives_by_asset:
+                    for receive in receives_by_asset[asset]:
+                        receive_time = receive.get("timestamp")
+                        if receive_time and sell_time:
+                            # Check if receive was within 30 days before sell
+                            if isinstance(receive_time, str):
+                                receive_time = datetime.fromisoformat(receive_time.replace("Z", "+00:00"))
+                            if isinstance(sell_time, str):
+                                sell_time = datetime.fromisoformat(sell_time.replace("Z", "+00:00"))
+                            
+                            days_diff = (sell_time - receive_time).days
+                            if 0 <= days_diff <= 30:
+                                # Check if not already marked
+                                if not receive.get("is_transfer") and not receive.get("manually_adjusted"):
+                                    potential_transfers.append({
+                                        "receive_tx": receive,
+                                        "sell_tx": tx,
+                                        "days_between": days_diff,
+                                        "asset": asset,
+                                        "suggestion": f"This {asset} was received {days_diff} days before being sold. If transferred from your own wallet, set the original purchase date."
+                                    })
+        
+        return {
+            "potential_transfers": potential_transfers[:50],  # Limit to 50
+            "count": len(potential_transfers),
+            "message": "These receives may be transfers from your own wallets. Update the original purchase date if so."
+        }
+        
+    except Exception as e:
+        logger.error(f"Error finding potential transfers: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to analyze transactions")
+
+
+
+@api_router.get("/exchanges/export-instructions/{exchange_id}")
+async def get_export_instructions(exchange_id: str):
+    """Get detailed CSV export instructions for a specific exchange"""
+    instructions = {
+        "coinbase": {
+            "name": "Coinbase",
+            "steps": [
+                "1. Log in to Coinbase (coinbase.com)",
+                "2. Click on your profile icon → Settings",
+                "3. Go to 'Statements' or 'Reports'",
+                "4. Click 'Generate Report'",
+                "5. Select 'Transaction History'",
+                "6. Choose your date range (or 'All time')",
+                "7. Click 'Generate Report'",
+                "8. Download the CSV file when ready"
+            ],
+            "notes": "We support multiple Coinbase CSV formats including classic and modern exports. Coinbase Pro has a separate export.",
+            "accepted_columns": [
+                "Classic: Timestamp, Transaction Type, Asset, Quantity Transacted, Spot Price, Subtotal",
+                "Modern: Transaction ID, Date & time, Asset Acquired, Quantity Acquired, Asset Sold, Quantity Sold, USD Value"
+            ]
+        },
+        "binance": {
+            "name": "Binance",
+            "steps": [
+                "1. Log in to Binance (binance.com)",
+                "2. Go to 'Orders' → 'Trade History'",
+                "3. Click 'Export' in the top right",
+                "4. Select 'Export Complete Trade History'",
+                "5. Choose your date range",
+                "6. Click 'Generate' and wait for the file",
+                "7. Download the CSV when ready"
+            ],
+            "notes": "For deposits/withdrawals, export separately from 'Wallet' → 'Transaction History'"
+        },
+        "kraken": {
+            "name": "Kraken",
+            "steps": [
+                "1. Log in to Kraken (kraken.com)",
+                "2. Go to 'History' in the top menu",
+                "3. Click 'Export'",
+                "4. Select 'Ledgers' for all transactions or 'Trades' for trades only",
+                "5. Choose your date range",
+                "6. Click 'Submit' and download the CSV"
+            ],
+            "notes": "Ledgers export includes all activity. Trades export is just buy/sell."
+        },
+        "gemini": {
+            "name": "Gemini",
+            "steps": [
+                "1. Log in to Gemini (gemini.com)",
+                "2. Go to 'Account' → 'Statements'",
+                "3. Click 'Download' next to Trade History",
+                "4. Select your date range",
+                "5. Download the CSV file"
+            ],
+            "notes": "ActiveTrader interface has a separate export option."
+        },
+        "crypto_com": {
+            "name": "Crypto.com",
+            "steps": [
+                "1. Open Crypto.com App",
+                "2. Go to 'Accounts' tab",
+                "3. Tap 'Transaction History'",
+                "4. Tap the export icon (top right)",
+                "5. Select date range and export",
+                "6. The CSV will be emailed to you"
+            ],
+            "notes": "Export from the app, not the exchange. Exchange has separate export."
+        },
+        "kucoin": {
+            "name": "KuCoin",
+            "steps": [
+                "1. Log in to KuCoin (kucoin.com)",
+                "2. Go to 'Orders' → 'Trade History'",
+                "3. Click 'Export' button",
+                "4. Select date range (max 3 months at a time)",
+                "5. Download the CSV file"
+            ],
+            "notes": "KuCoin limits exports to 3 months. Export multiple files if needed."
+        }
+    }
+    
+    if exchange_id.lower() not in instructions:
+        raise HTTPException(status_code=404, detail=f"Instructions not found for {exchange_id}")
+    
+    return instructions[exchange_id.lower()]
+
+# ==================== EXCHANGE-ONLY TAX CALCULATION ====================
+
+from exchange_tax_service import exchange_tax_service
+
+class ExchangeTaxRequest(BaseModel):
+    asset_filter: Optional[str] = None
+    tax_year: Optional[int] = None
+
+@api_router.post("/exchanges/tax/calculate")
+async def calculate_exchange_tax(
+    request: ExchangeTaxRequest = ExchangeTaxRequest(),
+    user: dict = Depends(get_current_user)
+):
+    """
+    Calculate tax data from imported exchange CSVs only.
+    No wallet analysis required - works purely from your uploaded data.
+    
+    Returns:
+        - FIFO cost basis for all assets
+        - Realized capital gains/losses
+        - Unrealized gains on open positions
+        - Form 8949 compatible data
+    """
+    try:
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier == 'free':
+            raise HTTPException(
+                status_code=403,
+                detail="Exchange tax calculation requires Unlimited subscription."
+            )
+        
+        # Get all exchange transactions for this user
+        transactions = await db.exchange_transactions.find(
+            {"user_id": user["id"]},
+            {"_id": 0}
+        ).to_list(10000)
+        
+        if not transactions:
+            return {
+                "message": "No exchange data found. Upload your exchange CSVs first.",
+                "has_data": False,
+                "tax_data": exchange_tax_service._empty_result()
+            }
+        
+        # Calculate tax data
+        tax_data = exchange_tax_service.calculate_from_transactions(
+            transactions=transactions,
+            asset_filter=request.asset_filter,
+            tax_year=request.tax_year
+        )
+        
+        return {
+            "message": "Tax calculation complete",
+            "has_data": True,
+            "tax_data": tax_data
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error calculating exchange tax: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to calculate tax: {str(e)}")
+
+@api_router.get("/exchanges/tax/form-8949")
+async def get_exchange_form_8949(
+    tax_year: Optional[int] = None,
+    holding_period: Optional[str] = None,  # 'short-term' or 'long-term'
+    user: dict = Depends(get_current_user)
+):
+    """
+    Generate Form 8949 data from exchange transactions only.
+    
+    Args:
+        tax_year: Filter for specific tax year
+        holding_period: Filter for 'short-term' or 'long-term'
+    
+    Returns:
+        Form 8949 line items ready for tax filing
+    """
+    try:
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier == 'free':
+            raise HTTPException(
+                status_code=403,
+                detail="Form 8949 export requires Unlimited subscription."
+            )
+        
+        # Get transactions
+        transactions = await db.exchange_transactions.find(
+            {"user_id": user["id"]},
+            {"_id": 0}
+        ).to_list(10000)
+        
+        if not transactions:
+            return {
+                "message": "No exchange data found",
+                "line_items": [],
+                "totals": {}
+            }
+        
+        # Calculate tax data
+        tax_data = exchange_tax_service.calculate_from_transactions(
+            transactions=transactions,
+            tax_year=tax_year
+        )
+        
+        # Generate Form 8949 data
+        form_data = exchange_tax_service.generate_form_8949_data(
+            realized_gains=tax_data['realized_gains'],
+            holding_period_filter=holding_period
+        )
+        
+        # Calculate totals
+        totals = {
+            'total_proceeds': sum(item['proceeds'] for item in form_data),
+            'total_cost_basis': sum(item['cost_basis'] for item in form_data),
+            'total_gain_loss': sum(item['gain_or_loss'] for item in form_data),
+            'line_count': len(form_data)
+        }
+        
+        return {
+            "tax_year": tax_year or "All Years",
+            "holding_period": holding_period or "All",
+            "line_items": form_data,
+            "totals": totals
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating Form 8949: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to generate Form 8949")
+
+@api_router.get("/exchanges/tax/form-8949/csv")
+async def export_exchange_form_8949_csv(
+    tax_year: Optional[int] = None,
+    holding_period: Optional[str] = None,
+    user: dict = Depends(get_current_user)
+):
+    """Export Form 8949 data as CSV file"""
+    try:
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier == 'free':
+            raise HTTPException(
+                status_code=403,
+                detail="CSV export requires Unlimited subscription."
+            )
+        
+        # Get transactions
+        transactions = await db.exchange_transactions.find(
+            {"user_id": user["id"]},
+            {"_id": 0}
+        ).to_list(10000)
+        
+        if not transactions:
+            raise HTTPException(status_code=404, detail="No exchange data found")
+        
+        # Calculate and generate form data
+        tax_data = exchange_tax_service.calculate_from_transactions(
+            transactions=transactions,
+            tax_year=tax_year
+        )
+        
+        form_data = exchange_tax_service.generate_form_8949_data(
+            realized_gains=tax_data['realized_gains'],
+            holding_period_filter=holding_period
+        )
+        
+        # Generate CSV
+        import io
+        import csv
+        
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # Header
+        writer.writerow([
+            'Description of Property',
+            'Date Acquired',
+            'Date Sold',
+            'Proceeds',
+            'Cost Basis',
+            'Adjustment Code',
+            'Adjustment Amount',
+            'Gain or Loss',
+            'Holding Period',
+            'Exchange'
+        ])
+        
+        # Data rows
+        for item in form_data:
+            writer.writerow([
+                item['description'],
+                item['date_acquired'],
+                item['date_sold'],
+                f"${item['proceeds']:.2f}",
+                f"${item['cost_basis']:.2f}",
+                item['adjustment_code'],
+                f"${item['adjustment_amount']:.2f}",
+                f"${item['gain_or_loss']:.2f}",
+                item['holding_period'],
+                item['exchange']
+            ])
+        
+        # Totals row
+        writer.writerow([])
+        writer.writerow([
+            'TOTALS',
+            '',
+            '',
+            f"${sum(item['proceeds'] for item in form_data):.2f}",
+            f"${sum(item['cost_basis'] for item in form_data):.2f}",
+            '',
+            '',
+            f"${sum(item['gain_or_loss'] for item in form_data):.2f}",
+            '',
+            ''
+        ])
+        
+        csv_content = output.getvalue()
+        
+        filename = f"Form_8949_Exchanges_{tax_year or 'All'}_{holding_period or 'All'}.csv"
+        
+        return Response(
+            content=csv_content,
+            media_type="text/csv",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error exporting CSV: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to export CSV")
 
 # Include the router in the main app
 app.include_router(api_router)

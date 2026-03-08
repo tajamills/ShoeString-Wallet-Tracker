@@ -57,6 +57,48 @@ class MultiChainService:
                 "decimals": 18,
                 "symbol": "MATIC",
                 "explorer": "https://polygonscan.com"
+            },
+            "algorand": {
+                "name": "Algorand",
+                "api_url": "https://mainnet-idx.algonode.cloud",
+                "decimals": 6,
+                "symbol": "ALGO",
+                "explorer": "https://algoexplorer.io"
+            },
+            "avalanche": {
+                "name": "Avalanche C-Chain",
+                "alchemy_url": f"https://avax-mainnet.g.alchemy.com/v2/{self.alchemy_api_key}",
+                "decimals": 18,
+                "symbol": "AVAX",
+                "explorer": "https://snowtrace.io"
+            },
+            "optimism": {
+                "name": "Optimism",
+                "alchemy_url": f"https://opt-mainnet.g.alchemy.com/v2/{self.alchemy_api_key}",
+                "decimals": 18,
+                "symbol": "ETH",
+                "explorer": "https://optimistic.etherscan.io"
+            },
+            "base": {
+                "name": "Base",
+                "alchemy_url": f"https://base-mainnet.g.alchemy.com/v2/{self.alchemy_api_key}",
+                "decimals": 18,
+                "symbol": "ETH",
+                "explorer": "https://basescan.org"
+            },
+            "fantom": {
+                "name": "Fantom",
+                "alchemy_url": f"https://fantom-mainnet.g.alchemy.com/v2/{self.alchemy_api_key}",
+                "decimals": 18,
+                "symbol": "FTM",
+                "explorer": "https://ftmscan.com"
+            },
+            "dogecoin": {
+                "name": "Dogecoin",
+                "api_url": "https://dogechain.info/api/v1",
+                "decimals": 8,
+                "symbol": "DOGE",
+                "explorer": "https://dogechain.info"
             }
         }
     
@@ -91,14 +133,15 @@ class MultiChainService:
         try:
             # Get current price
             current_price = price_service.get_current_price(symbol)
+            logger.info(f"Price for {symbol}: {current_price}")
             
             if current_price:
                 analysis['current_price_usd'] = current_price
-                analysis['total_value_usd'] = analysis.get('netEth', 0) * current_price
-                analysis['net_balance_usd'] = analysis.get('netEth', 0) * current_price
+                analysis['total_value_usd'] = analysis.get('currentBalance', analysis.get('netEth', 0)) * current_price
+                analysis['net_balance_usd'] = analysis.get('currentBalance', analysis.get('netEth', 0)) * current_price
                 analysis['total_received_usd'] = analysis.get('totalEthReceived', 0) * current_price
                 analysis['total_sent_usd'] = analysis.get('totalEthSent', 0) * current_price
-                analysis['gas_fees_usd'] = analysis.get('totalGasFees', 0) * current_price
+                analysis['total_gas_fees_usd'] = analysis.get('totalGasFees', 0) * current_price
             
             # Add USD value to each transaction (if we have timestamp)
             for tx in analysis.get('recentTransactions', []):
@@ -154,13 +197,18 @@ class MultiChainService:
         # Provide helpful error if wrong chain selected for address type
         if chain in ["ethereum", "polygon", "arbitrum", "bsc"]:
             if not address.startswith('0x'):
-                raise ValueError(f"This appears to be a non-EVM address. For {chain}, use an address starting with 0x. Try selecting Bitcoin or Solana instead.")
+                raise ValueError(f"This appears to be a non-EVM address. For {chain}, use an address starting with 0x. Try selecting Bitcoin, Solana, or Algorand instead.")
         elif chain == "bitcoin":
             if address.startswith('0x'):
                 raise ValueError(f"This appears to be an EVM address (starts with 0x). Try selecting Ethereum, Polygon, Arbitrum, or BSC instead.")
         elif chain == "solana":
             if address.startswith('0x'):
                 raise ValueError(f"This appears to be an EVM address (starts with 0x). Try selecting Ethereum, Polygon, Arbitrum, or BSC instead.")
+        elif chain == "algorand":
+            if address.startswith('0x'):
+                raise ValueError(f"This appears to be an EVM address (starts with 0x). Algorand addresses are 58-character base32 strings.")
+            if len(address) != 58:
+                raise ValueError(f"Invalid Algorand address. Expected 58 characters, got {len(address)}.")
         
         # Get analysis data
         if chain == "bitcoin":
@@ -169,6 +217,12 @@ class MultiChainService:
         elif chain == "solana":
             analysis = self._analyze_solana_wallet(address, start_date, end_date)
             symbol = 'SOL'
+        elif chain == "algorand":
+            analysis = self._analyze_algorand_wallet(address, start_date, end_date)
+            symbol = 'ALGO'
+        elif chain == "dogecoin":
+            analysis = self._analyze_dogecoin_wallet(address, start_date, end_date)
+            symbol = 'DOGE'
         else:
             # EVM chains (ethereum, polygon, arbitrum, bsc)
             analysis = self._analyze_evm_wallet(address, chain, start_date, end_date)
@@ -688,6 +742,76 @@ class MultiChainService:
         except Exception as e:
             logger.error(f"Error analyzing Solana wallet: {str(e)}")
             raise Exception(f"Failed to analyze Solana wallet: {str(e)}")
+    
+    def _analyze_algorand_wallet(
+        self,
+        address: str,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Analyze Algorand wallet using public indexer API"""
+        try:
+            from chains.algorand import create_algorand_analyzer
+            
+            analyzer = create_algorand_analyzer()
+            result = analyzer.analyze_wallet(address, start_date, end_date)
+            
+            # Convert to standard format - format_analysis_result uses camelCase
+            return {
+                'address': address,
+                'chain': 'algorand',
+                'totalSent': result.get('totalEthSent', 0),
+                'totalReceived': result.get('totalEthReceived', 0),
+                'currentBalance': result.get('currentBalance', 0),
+                'gasFees': result.get('totalGasFees', 0),
+                'transactionCount': result.get('outgoingTransactionCount', 0) + result.get('incomingTransactionCount', 0),
+                'outgoingCount': result.get('outgoingTransactionCount', 0),
+                'incomingCount': result.get('incomingTransactionCount', 0),
+                'firstTransaction': result.get('first_transaction'),
+                'lastTransaction': result.get('last_transaction'),
+                'tokensSent': result.get('tokensSent', {}),
+                'tokensReceived': result.get('tokensReceived', {}),
+                'recentTransactions': result.get('recentTransactions', [])
+            }
+            
+        except Exception as e:
+            logger.error(f"Error analyzing Algorand wallet: {str(e)}")
+            raise Exception(f"Failed to analyze Algorand wallet: {str(e)}")
+    
+    def _analyze_dogecoin_wallet(
+        self,
+        address: str,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Analyze Dogecoin wallet using public API"""
+        try:
+            from chains.dogecoin import create_dogecoin_analyzer
+            
+            analyzer = create_dogecoin_analyzer()
+            result = analyzer.analyze_wallet(address, start_date, end_date)
+            
+            # Convert to standard format - format_analysis_result uses camelCase
+            return {
+                'address': address,
+                'chain': 'dogecoin',
+                'totalSent': result.get('totalEthSent', 0),
+                'totalReceived': result.get('totalEthReceived', 0),
+                'currentBalance': result.get('currentBalance', 0),
+                'gasFees': result.get('totalGasFees', 0),
+                'transactionCount': result.get('outgoingTransactionCount', 0) + result.get('incomingTransactionCount', 0),
+                'outgoingCount': result.get('outgoingTransactionCount', 0),
+                'incomingCount': result.get('incomingTransactionCount', 0),
+                'firstTransaction': result.get('first_transaction'),
+                'lastTransaction': result.get('last_transaction'),
+                'tokensSent': result.get('tokensSent', {}),
+                'tokensReceived': result.get('tokensReceived', {}),
+                'recentTransactions': result.get('recentTransactions', [])
+            }
+            
+        except Exception as e:
+            logger.error(f"Error analyzing Dogecoin wallet: {str(e)}")
+            raise Exception(f"Failed to analyze Dogecoin wallet: {str(e)}")
     
     def get_supported_chains(self) -> List[Dict[str, str]]:
         """Get list of supported chains"""

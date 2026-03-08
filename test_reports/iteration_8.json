@@ -1,0 +1,66 @@
+{
+  "summary": "CSV Parser Coinbase format tests complete. All new tests pass. Modern Coinbase format (Transaction ID, Date & time, Asset Acquired/Sold, Quantity Acquired/Sold, USD Value) correctly detected and parsed. Classic format (Timestamp, Transaction Type, Asset, Quantity Transacted) working. Buy/sell detection logic verified - buying crypto with USD/stablecoins = 'buy', selling crypto for USD/stablecoins = 'sell'. API endpoints /api/exchanges/supported and /api/exchanges/export-instructions/{exchange} both return accepted_columns field.",
+  "mode": "generate",
+  "baseline_commit": "e7a0142b0d7e2e73d6a4296e09541c0d0d286d91",
+  "head_commit": "0290d3c3268ce8c4e98567f250849b4ecb46e458",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "regression_results": {
+    "total_specs": 61,
+    "passed": 61,
+    "failed": 0,
+    "skipped": 0
+  },
+  "specs_created": [
+    "/app/backend/tests/test_csv_parser.py"
+  ],
+  "specs_updated": [
+    "/app/tests/e2e/exchange.spec.ts"
+  ],
+  "quarantined_tests": [],
+  "test_report_links": [
+    "/app/backend/tests/test_csv_parser.py",
+    "/app/backend/tests/test_exchange.py",
+    "/app/tests/e2e/exchange.spec.ts",
+    "/app/test_reports/pytest/pytest_csv_parser_results.xml"
+  ],
+  "action_items": [],
+  "updated_files": [
+    "/app/backend/tests/test_csv_parser.py",
+    "/app/tests/e2e/exchange.spec.ts"
+  ],
+  "success_rate": {
+    "backend": "100% (41/41 tests passed - 21 new CSV parser tests + 20 existing exchange tests)",
+    "frontend": "100% (20/20 exchange spec tests passed including 3 new accepted_columns tests)"
+  },
+  "seed_data_creation": "Test users created dynamically with unique timestamps",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "CSV parser fix for Coinbase formats verified. Created test_csv_parser.py with 21 tests covering: format detection (classic, modern, heuristic), parsing (buy/sell/multiple transactions), buy/sell logic (crypto acquired = buy, crypto sold = sell, stablecoin handling), API endpoints (accepted_columns in /exchanges/supported and /exchanges/export-instructions), edge cases (empty CSV, unknown format, missing values, timestamp formats). All tests pass.",
+  "features_verified": [
+    "CSV Parser: Modern Coinbase format detection (Transaction ID, Date & time, Asset Acquired, Quantity Acquired, Asset Sold, Quantity Sold, USD Value)",
+    "CSV Parser: Classic Coinbase format detection (Timestamp, Transaction Type, Asset, Quantity Transacted)",
+    "CSV Parser: Buy/sell detection - acquiring crypto with USD/stablecoins = 'buy'",
+    "CSV Parser: Buy/sell detection - selling crypto for USD/stablecoins = 'sell'",
+    "CSV Parser: Stablecoin handling (USDC, USDT, BUSD, DAI treated like USD)",
+    "API: GET /api/exchanges/supported returns accepted_columns for each exchange",
+    "API: GET /api/exchanges/export-instructions/{exchange} returns accepted_columns for Coinbase",
+    "API: Coinbase shows both classic and modern format descriptions in accepted_columns"
+  ],
+  "tests_executed": {
+    "backend": {
+      "test_csv_parser.py": "21 passed - NEW CSV parser tests for Coinbase format fix",
+      "test_exchange.py": "20 passed - existing exchange API tests"
+    },
+    "frontend": {
+      "exchange.spec.ts": "20 passed - including 3 new tests for accepted_columns feature"
+    }
+  }
+}

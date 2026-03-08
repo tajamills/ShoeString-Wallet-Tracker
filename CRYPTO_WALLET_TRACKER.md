@@ -109,7 +109,7 @@ ALCHEMY_API_KEY="U2_F7nkCGFY73wbiIFpum"
 
 **Frontend (.env)**
 ```
-REACT_APP_BACKEND_URL=https://bag-tracker-tax.preview.emergentagent.com
+REACT_APP_BACKEND_URL=https://fifo-calculator-1.preview.emergentagent.com
 ```
 
 ## How It Works

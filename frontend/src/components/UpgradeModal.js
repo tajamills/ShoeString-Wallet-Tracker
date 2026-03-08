@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Bitcoin, Crown, Check } from 'lucide-react';
+import { Loader2, Crown, Check, Zap, Shield, FileText, Globe, Tag, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import axios from 'axios';
 
@@ -12,29 +13,51 @@ const API = `${BACKEND_URL}/api`;
 
 export const UpgradeModal = ({ isOpen, onClose }) => {
   const { user, getAuthHeader } = useAuth();
-  const [selectedTier, setSelectedTier] = useState(user?.subscription_tier === 'premium' ? 'pro' : 'premium');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [affiliateCode, setAffiliateCode] = useState('');
+  const [affiliateValid, setAffiliateValid] = useState(null);
+  const [validatingCode, setValidatingCode] = useState(false);
 
-  const tiers = {
-    premium: {
-      name: 'Premium',
-      price: 19,
-      features: [
-        'Unlimited wallet analyses',
-        'Multi-chain support (6 blockchains)',
-        'CSV export',
-        'Advanced analytics'
-      ]
-    },
-    pro: {
-      name: 'Pro',
-      price: 49,
-      features: [
-        'Everything in Premium',
-        'Custom reports',
-        'Request new chains'
-      ]
+  const features = [
+    { icon: Globe, text: 'Unlimited wallet analyses' },
+    { icon: Zap, text: 'All 6 blockchains (ETH, BTC, POLY, ARB, BSC, SOL)' },
+    { icon: FileText, text: 'Full CSV export & tax reports' },
+    { icon: Shield, text: 'Cost basis & capital gains (FIFO)' },
+    { icon: Crown, text: 'Form 8949 & Schedule D export' },
+    { icon: Check, text: 'Bitcoin xPub HD wallet support' },
+    { icon: Check, text: 'Analyze All Chains feature' },
+    { icon: Check, text: 'Transaction categorization' },
+    { icon: Check, text: 'Priority support' },
+  ];
+
+  const validateAffiliateCode = async (code) => {
+    if (!code || code.length < 3) {
+      setAffiliateValid(null);
+      return;
+    }
+
+    setValidatingCode(true);
+    try {
+      const response = await axios.get(`${API}/affiliate/validate/${code}`);
+      setAffiliateValid(response.data);
+    } catch (err) {
+      setAffiliateValid({ valid: false, message: 'Error validating code' });
+    } finally {
+      setValidatingCode(false);
+    }
+  };
+
+  const handleCodeChange = (e) => {
+    const code = e.target.value.toUpperCase();
+    setAffiliateCode(code);
+    
+    // Debounce validation
+    if (code.length >= 3) {
+      const timer = setTimeout(() => validateAffiliateCode(code), 500);
+      return () => clearTimeout(timer);
+    } else {
+      setAffiliateValid(null);
     }
   };
 
@@ -48,8 +71,9 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
       const response = await axios.post(
         `${API}/payments/create-upgrade`,
         { 
-          tier: selectedTier,
-          origin_url: originUrl
+          tier: 'unlimited',
+          origin_url: originUrl,
+          affiliate_code: affiliateValid?.valid ? affiliateCode : null
         },
         { headers: getAuthHeader() }
       );
@@ -67,99 +91,141 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
     }
   };
 
-  // Check if user already has this tier
-  const hasActiveTier = user?.subscription_tier === selectedTier && user?.subscription_status === 'active';
+  // Check if user already has unlimited
+  const hasUnlimited = user?.subscription_tier === 'unlimited' && user?.subscription_status === 'active';
+
+  // Calculate final price
+  const basePrice = 100.88;
+  const discount = affiliateValid?.valid ? 10 : 0;
+  const finalPrice = basePrice - discount;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-3xl bg-slate-800 border-slate-700 max-h-[90vh] overflow-y-auto" data-testid="upgrade-modal">
+      <DialogContent className="sm:max-w-lg bg-slate-800 border-slate-700 max-h-[90vh] overflow-y-auto" data-testid="upgrade-modal">
         <DialogHeader>
           <DialogTitle className="text-white text-2xl flex items-center gap-2">
             <Crown className="w-6 h-6 text-yellow-400" />
-            Upgrade Your Subscription
+            Upgrade to Unlimited
           </DialogTitle>
           <DialogDescription className="text-gray-400">
-            Choose a plan and pay securely with Stripe
+            Get full access to all features for one year
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
-            {/* Tier Selection */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {Object.entries(tiers)
-                .filter(([key]) => {
-                  // Hide Premium if user is already Premium or Pro
-                  if (key === 'premium' && (user?.subscription_tier === 'premium' || user?.subscription_tier === 'pro')) {
-                    return false;
-                  }
-                  return true;
-                })
-                .map(([key, tier]) => (
-                <div
-                  key={key}
-                  onClick={() => setSelectedTier(key)}
-                  className={`p-6 rounded-lg border-2 cursor-pointer transition-all ${
-                    selectedTier === key
-                      ? 'border-purple-500 bg-purple-900/20'
-                      : 'border-slate-600 bg-slate-700/30 hover:border-slate-500'
-                  }`}
-                  data-testid={`tier-${key}`}
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-bold text-white">{tier.name}</h3>
-                    <Badge className="bg-purple-600">${tier.price}/mo</Badge>
-                  </div>
-                  <ul className="space-y-2">
-                    {tier.features.map((feature, idx) => (
-                      <li key={idx} className="flex items-center gap-2 text-gray-300 text-sm">
-                        <Check className="w-4 h-4 text-green-400" />
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+          {/* Pricing Card */}
+          <div className="p-6 rounded-lg border-2 border-yellow-500 bg-gradient-to-br from-yellow-900/20 to-orange-900/20">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-2xl font-bold text-white">Unlimited Access</h3>
+              <div className="text-right">
+                {discount > 0 && (
+                  <span className="text-gray-400 line-through text-sm mr-2">${basePrice}/year</span>
+                )}
+                <Badge className="bg-yellow-600 text-lg px-3 py-1">
+                  ${finalPrice.toFixed(2)}/year
+                </Badge>
+              </div>
+            </div>
+            <p className="text-gray-400 text-sm mb-4">
+              One payment. Full year. Unlimited everything.
+            </p>
+            
+            <ul className="space-y-3">
+              {features.map((feature, idx) => (
+                <li key={idx} className="flex items-center gap-3 text-gray-300">
+                  <feature.icon className="w-5 h-5 text-yellow-400 flex-shrink-0" />
+                  <span>{feature.text}</span>
+                </li>
               ))}
+            </ul>
+          </div>
+
+          {/* Affiliate Code Input */}
+          <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-300 mb-2">
+              <Tag className="w-4 h-4 text-purple-400" />
+              Have a referral code? Get $10 off!
+            </label>
+            <div className="flex gap-2">
+              <Input
+                value={affiliateCode}
+                onChange={handleCodeChange}
+                placeholder="Enter code (e.g., JOHN10)"
+                className="bg-slate-800 border-slate-600 text-white uppercase"
+                maxLength={20}
+                data-testid="upgrade-affiliate-code-input"
+              />
+              {validatingCode && (
+                <Loader2 className="w-5 h-5 animate-spin text-gray-400 my-auto" />
+              )}
             </div>
-
-            {error && (
-              <Alert className="bg-red-900/20 border-red-900 text-red-300" data-testid="payment-error">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
-            <div className="flex items-center justify-center gap-2 text-gray-400 text-sm">
-              <Crown className="w-5 h-5 text-purple-400" />
-              <span>Secure payment powered by Stripe</span>
-            </div>
-
-            {hasActiveTier ? (
-              <Alert className="bg-green-900/20 border-green-700 text-green-300">
-                <Check className="h-4 w-4" />
-                <AlertDescription>
-                  You already have an active {tiers[selectedTier].name} subscription
-                </AlertDescription>
-              </Alert>
-            ) : (
-              <Button
-                onClick={handleUpgrade}
-                disabled={loading}
-                className="w-full bg-purple-600 hover:bg-purple-700 h-12 text-lg"
-                data-testid="create-payment-button"
-              >
-                {loading ? (
+            
+            {affiliateValid && (
+              <div className={`mt-2 text-sm flex items-center gap-2 ${affiliateValid.valid ? 'text-green-400' : 'text-red-400'}`} data-testid="affiliate-validation-status">
+                {affiliateValid.valid ? (
                   <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Creating Payment...
+                    <CheckCircle className="w-4 h-4" />
+                    {affiliateValid.message}
                   </>
                 ) : (
-                  <>
-                    {user?.subscription_tier === 'premium' && selectedTier === 'pro' ? 'Upgrade' : 'Subscribe'} to {tiers[selectedTier].name} - ${tiers[selectedTier].price}/mo
-                  </>
+                  affiliateValid.message
                 )}
-              </Button>
+              </div>
             )}
           </div>
-        )}
+
+          {/* Free tier info */}
+          <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+            <p className="text-sm text-gray-400">
+              <span className="text-white font-semibold">Free tier:</span> 1 wallet analysis to try before you buy.
+              Upgrade for unlimited analyses and all premium features.
+            </p>
+          </div>
+
+          {error && (
+            <Alert className="bg-red-900/20 border-red-900 text-red-300" data-testid="payment-error">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <div className="flex items-center justify-center gap-2 text-gray-400 text-sm">
+            <Shield className="w-5 h-5 text-green-400" />
+            <span>Secure payment powered by Stripe</span>
+          </div>
+
+          {hasUnlimited ? (
+            <Alert className="bg-green-900/20 border-green-700 text-green-300">
+              <Check className="h-4 w-4" />
+              <AlertDescription>
+                You already have an active Unlimited subscription
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <Button
+              onClick={handleUpgrade}
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 h-14 text-lg font-semibold"
+              data-testid="create-payment-button"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Creating Payment...
+                </>
+              ) : (
+                <>
+                  <Crown className="mr-2 h-5 w-5" />
+                  Get Unlimited Access - ${finalPrice.toFixed(2)}/year
+                </>
+              )}
+            </Button>
+          )}
+
+          <p className="text-xs text-gray-500 text-center">
+            By purchasing, you agree to our Terms of Service. Subscription auto-renews annually.
+            Cancel anytime from your account settings.
+          </p>
+        </div>
       </DialogContent>
     </Dialog>
   );

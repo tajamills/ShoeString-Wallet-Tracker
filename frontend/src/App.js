@@ -5,84 +5,78 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Wallet, TrendingUp, TrendingDown, DollarSign, Activity, LogOut, User, Crown, Download } from 'lucide-react';
+import { Loader2, Wallet, TrendingUp, TrendingDown, DollarSign, Activity, LogOut, User, Crown, Download, Calculator, Tag, Users, Link2 } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAnalysis } from '@/hooks/useAnalysis';
+import { usePayment } from '@/hooks/usePayment';
 import { AuthModal } from '@/components/AuthModal';
 import { UpgradeModal } from '@/components/UpgradeModal';
 import { SavedWallets } from '@/components/SavedWallets';
 import { DowngradeModal } from '@/components/DowngradeModal';
 import { ChainRequestModal } from '@/components/ChainRequestModal';
 import { ExportModal } from '@/components/ExportModal';
+import { TaxDashboard } from '@/components/TaxDashboard';
+import { UnifiedTaxDashboard } from '@/components/UnifiedTaxDashboard';
+import { TransactionCategorizer } from '@/components/TransactionCategorizer';
+import { ScheduleDExport, BatchCategorizationModal } from '@/components/TaxEnhancements';
+import { TermsModal } from '@/components/TermsModal';
+import { AffiliateModal } from '@/components/AffiliateModal';
+import { ExchangeModal } from '@/components/ExchangeModal';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 function App() {
-  const { user, logout, getAuthHeader, loading: authLoading, fetchUserProfile } = useAuth();
+  const { user, logout, getAuthHeader, loading: authLoading, fetchUserProfile, acceptTerms } = useAuth();
+  
+  // Use custom hooks for analysis and payment
+  const {
+    loading,
+    analysis,
+    error,
+    setError,
+    multiChainResults,
+    analyzingAll,
+    analyzeWallet: doAnalyzeWallet,
+    analyzeAllChains: doAnalyzeAllChains,
+    setAnalysis
+  } = useAnalysis(getAuthHeader, fetchUserProfile);
+  
+  const { paymentSuccess, setPaymentSuccess } = usePayment(user, getAuthHeader, fetchUserProfile);
+  
+  // Form state
   const [walletAddress, setWalletAddress] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [analysis, setAnalysis] = useState(null);
-  const [error, setError] = useState('');
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showAffiliateModal, setShowAffiliateModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [showExchangeModal, setShowExchangeModal] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [selectedChain, setSelectedChain] = useState('ethereum');
   const [showSavedWallets, setShowSavedWallets] = useState(false);
   const [showDowngradeModal, setShowDowngradeModal] = useState(false);
   const [showChainRequestModal, setShowChainRequestModal] = useState(false);
-  const [multiChainResults, setMultiChainResults] = useState(null);
-  const [analyzingAll, setAnalyzingAll] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showCategorizer, setShowCategorizer] = useState(false);
+  const [showScheduleD, setShowScheduleD] = useState(false);
+  const [showBatchCategorize, setShowBatchCategorize] = useState(false);
+  const [exportingForm8949, setExportingForm8949] = useState(false);
 
-  // Check for payment success on component mount
+  // Show terms modal if user is logged in but hasn't accepted terms
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const sessionId = urlParams.get('session_id');
-    
-    if (sessionId && user) {
-      // Poll payment status
-      pollPaymentStatus(sessionId);
+    if (user && !user.terms_accepted) {
+      setShowTermsModal(true);
     }
   }, [user]);
 
-  const pollPaymentStatus = async (sessionId, attempts = 0) => {
-    const maxAttempts = 5;
-    
-    if (attempts >= maxAttempts) {
-      setError('Payment verification timed out. Please check your subscription status.');
-      return;
-    }
-
+  const handleAcceptTerms = async () => {
     try {
-      const response = await axios.get(
-        `${API}/payments/status/${sessionId}`,
-        { headers: getAuthHeader() }
-      );
-
-      if (response.data.payment_status === 'paid') {
-        setPaymentSuccess(true);
-        setError('');
-        // Refresh user profile to get updated subscription tier
-        await fetchUserProfile();
-        // Remove session_id from URL
-        window.history.replaceState({}, document.title, window.location.pathname);
-        return;
-      }
-
-      // Continue polling if still pending
-      if (response.data.status !== 'expired') {
-        setTimeout(() => pollPaymentStatus(sessionId, attempts + 1), 2000);
-      } else {
-        setError('Payment session expired.');
-      }
+      await acceptTerms();
+      setShowTermsModal(false);
     } catch (err) {
-      console.error('Error checking payment status:', err);
-      if (attempts < maxAttempts) {
-        setTimeout(() => pollPaymentStatus(sessionId, attempts + 1), 2000);
-      }
+      setError('Failed to accept terms. Please try again.');
     }
   };
 
@@ -93,7 +87,13 @@ function App() {
       polygon: 'MATIC',
       arbitrum: 'ETH',
       bsc: 'BNB',
-      solana: 'SOL'
+      solana: 'SOL',
+      algorand: 'ALGO',
+      avalanche: 'AVAX',
+      optimism: 'ETH',
+      base: 'ETH',
+      fantom: 'FTM',
+      dogecoin: 'DOGE'
     };
     return symbols[chain] || 'ETH';
   };
@@ -105,68 +105,31 @@ function App() {
       polygon: '🔺',
       arbitrum: '🔷',
       bsc: '🟡',
-      solana: '◎'
+      solana: '◎',
+      algorand: '🔷',
+      avalanche: '🔺',
+      optimism: '🔴',
+      base: '🔵',
+      fantom: '👻',
+      dogecoin: '🐕'
     };
     return icons[chain] || '⟠';
   };
 
+  // Wrapper to use the hook's analyze functions
   const analyzeAllChains = async () => {
     if (!user) {
       setShowAuthModal(true);
       return;
     }
 
-    if (user.subscription_tier !== 'pro') {
-      setError('Analyze All Chains is a Pro-only feature. Upgrade to Pro to unlock this feature!');
+    if (user.subscription_tier !== 'pro' && user.subscription_tier !== 'unlimited') {
+      setError('Analyze All Chains requires Unlimited subscription!');
+      setShowUpgradeModal(true);
       return;
     }
 
-    const address = walletAddress;
-
-    if (!address) {
-      setError('Please enter a wallet address');
-      return;
-    }
-
-    if (!address.startsWith('0x') || address.length !== 42) {
-      setError('Please enter a valid EVM address (0x...) for multi-chain analysis');
-      return;
-    }
-
-    setAnalyzingAll(true);
-    setError('');
-    setAnalysis(null);
-    setMultiChainResults(null);
-
-    try {
-      const payload = { 
-        address: address,
-        chain: 'ethereum' // Not used but required by backend
-      };
-      
-      if (startDate) payload.start_date = startDate;
-      if (endDate) payload.end_date = endDate;
-      
-      const response = await axios.post(
-        `${API}/wallet/analyze-all`,
-        payload,
-        { headers: getAuthHeader() }
-      );
-      
-      setMultiChainResults(response.data);
-      await fetchUserProfile();
-    } catch (err) {
-      if (err.response?.status === 403) {
-        setError('Analyze All Chains is a Pro-only feature. Upgrade to Pro!');
-      } else if (err.response?.status === 401) {
-        setError('Please login to analyze wallets');
-        setShowAuthModal(true);
-      } else {
-        setError(err.response?.data?.detail || 'Failed to analyze wallet across all chains');
-      }
-    } finally {
-      setAnalyzingAll(false);
-    }
+    await doAnalyzeAllChains(walletAddress, startDate, endDate);
   };
 
   const analyzeWallet = async (addressOverride = null, chainOverride = null) => {
@@ -178,58 +141,8 @@ function App() {
     const address = addressOverride || walletAddress;
     const chain = chainOverride || selectedChain;
 
-    // Basic validation - chain-specific
-    if (!address) {
-      setError('Please enter a wallet address');
-      return;
-    }
-
-    if (chain === 'ethereum' || chain === 'arbitrum' || chain === 'bsc' || chain === 'polygon') {
-      if (!address.startsWith('0x') || address.length !== 42) {
-        setError('Please enter a valid address (0x...)');
-        return;
-      }
-    }
-
-    setLoading(true);
-    setError('');
-    setAnalysis(null);
-    setMultiChainResults(null);
-
-    try {
-      const payload = { 
-        address: address,
-        chain: chain
-      };
-      
-      // Add date range if provided
-      if (startDate) {
-        payload.start_date = startDate;
-      }
-      if (endDate) {
-        payload.end_date = endDate;
-      }
-      
-      const response = await axios.post(
-        `${API}/wallet/analyze`,
-        payload,
-        { headers: getAuthHeader() }
-      );
-      setAnalysis(response.data);
-      // Refresh user data to update usage count
-      await fetchUserProfile();
-    } catch (err) {
-      if (err.response?.status === 429) {
-        setError('Daily limit reached! Upgrade to Premium for unlimited wallet analyses.');
-      } else if (err.response?.status === 401) {
-        setError('Please login to continue');
-        setShowAuthModal(true);
-      } else {
-        setError(err.response?.data?.detail || 'Failed to analyze wallet. Please try again.');
-      }
-    } finally {
-      setLoading(false);
-    }
+    // Use the hook's analyze function
+    await doAnalyzeWallet(address, chain, startDate, endDate);
   };
 
   const loadHistory = async () => {
@@ -262,6 +175,69 @@ function App() {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     }).format(num);
+  };
+
+  const exportForm8949 = async (filterType = 'all') => {
+    if (!analysis || !analysis.address) {
+      setError('Please analyze a wallet first');
+      return;
+    }
+
+    setExportingForm8949(true);
+    setError('');
+
+    try {
+      const response = await axios.post(
+        `${API}/tax/export-form-8949`,
+        {
+          address: analysis.address,
+          chain: analysis.chain || selectedChain,
+          filter_type: filterType
+        },
+        { 
+          headers: getAuthHeader(),
+          responseType: 'blob'
+        }
+      );
+
+      // Download the CSV
+      const blob = new Blob([response.data], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `form-8949-${analysis.address.substring(0, 8)}-${filterType}-${Date.now()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      if (err.response?.status === 403) {
+        setError('Form 8949 export is a Premium feature. Upgrade to access tax reports.');
+        setShowUpgradeModal(true);
+      } else {
+        setError(err.response?.data?.detail || 'Failed to export Form 8949');
+      }
+    } finally {
+      setExportingForm8949(false);
+    }
+  };
+
+  const handleSaveCategories = async (categories) => {
+    if (!analysis || !analysis.address) return;
+
+    try {
+      await axios.post(
+        `${API}/tax/save-categories`,
+        {
+          address: analysis.address,
+          chain: analysis.chain || selectedChain,
+          categories: categories
+        },
+        { headers: getAuthHeader() }
+      );
+    } catch (err) {
+      throw new Error(err.response?.data?.detail || 'Failed to save categories');
+    }
   };
 
   if (authLoading) {
@@ -309,15 +285,14 @@ function App() {
                     <div>
                       <p className="text-white font-medium">{user.email}</p>
                       <div className="flex items-center gap-2 mt-1">
-                        <Badge className={`${user.subscription_tier === 'free' ? 'bg-gray-600' : 'bg-purple-600'}`}>
-                          {user.subscription_tier === 'premium' && <Crown className="w-3 h-3 mr-1" />}
-                          {user.subscription_tier === 'pro' && <Crown className="w-3 h-3 mr-1" />}
-                          {user.subscription_tier.toUpperCase()}
+                        <Badge className={`${user.subscription_tier === 'free' ? 'bg-gray-600' : 'bg-gradient-to-r from-yellow-600 to-orange-600'}`}>
+                          {user.subscription_tier !== 'free' && <Crown className="w-3 h-3 mr-1" />}
+                          {user.subscription_tier === 'free' ? 'FREE' : 'UNLIMITED'}
                         </Badge>
                         <span className="text-sm text-gray-400">
                           {user.subscription_tier === 'free' 
-                            ? `${user.daily_usage_count}/1 analyses today` 
-                            : `${user.daily_usage_count} analyses today`}
+                            ? `${user.analysis_count || 0}/1 free analysis` 
+                            : 'Unlimited analyses'}
                         </span>
                         {user.subscription_tier !== 'free' && (
                           <button
@@ -331,16 +306,36 @@ function App() {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    {user.subscription_tier !== 'pro' && (
+                    {user.subscription_tier === 'free' && (
                       <Button 
                         onClick={() => setShowUpgradeModal(true)}
-                        className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                        className="bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700"
                         data-testid="upgrade-button"
                       >
                         <Crown className="w-4 h-4 mr-2" />
-                        {user.subscription_tier === 'free' ? 'Upgrade' : 'Upgrade to Pro'}
+                        Get Unlimited
                       </Button>
                     )}
+                    {user.subscription_tier !== 'free' && (
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setShowExchangeModal(true)}
+                        className="border-blue-600 text-blue-300 hover:bg-blue-900/30"
+                        data-testid="exchange-button"
+                      >
+                        <Link2 className="w-4 h-4 mr-2" />
+                        Exchanges
+                      </Button>
+                    )}
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setShowAffiliateModal(true)}
+                      className="border-purple-600 text-purple-300 hover:bg-purple-900/30"
+                      data-testid="affiliate-button"
+                    >
+                      <Users className="w-4 h-4 mr-2" />
+                      Affiliate
+                    </Button>
                     <Button 
                       variant="outline" 
                       onClick={logout}
@@ -411,8 +406,9 @@ function App() {
           <CardHeader>
             <CardTitle className="text-white">Analyze Wallet</CardTitle>
             <CardDescription className="text-gray-400">
-              Multi-chain wallet analysis: Ethereum, Bitcoin, Polygon, Arbitrum, BSC, and Solana
+              Multi-chain wallet analysis: 12+ blockchains including ETH, BTC, SOL, ALGO, AVAX, DOGE
             </CardDescription>
+            <span className="hidden" aria-hidden="true" data-v="8888">8888</span>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -454,13 +450,31 @@ function App() {
                   <option value="solana" disabled={user?.subscription_tier === 'free'}>
                     ◎ Solana {user?.subscription_tier === 'free' ? '🔒' : ''}
                   </option>
+                  <option value="algorand" disabled={user?.subscription_tier === 'free'}>
+                    🔷 Algorand {user?.subscription_tier === 'free' ? '🔒' : ''}
+                  </option>
+                  <option value="avalanche" disabled={user?.subscription_tier === 'free'}>
+                    🔺 Avalanche {user?.subscription_tier === 'free' ? '🔒' : ''}
+                  </option>
+                  <option value="optimism" disabled={user?.subscription_tier === 'free'}>
+                    🔴 Optimism {user?.subscription_tier === 'free' ? '🔒' : ''}
+                  </option>
+                  <option value="base" disabled={user?.subscription_tier === 'free'}>
+                    🔵 Base {user?.subscription_tier === 'free' ? '🔒' : ''}
+                  </option>
+                  <option value="fantom" disabled={user?.subscription_tier === 'free'}>
+                    👻 Fantom {user?.subscription_tier === 'free' ? '🔒' : ''}
+                  </option>
+                  <option value="dogecoin" disabled={user?.subscription_tier === 'free'}>
+                    🐕 Dogecoin {user?.subscription_tier === 'free' ? '🔒' : ''}
+                  </option>
                 </select>
-                {user?.subscription_tier === 'pro' && (
+                {(user?.subscription_tier === 'pro' || user?.subscription_tier === 'unlimited') && (
                   <button
                     onClick={() => setShowChainRequestModal(true)}
                     className="text-xs text-purple-400 hover:text-purple-300 underline mt-2"
                   >
-                    Need a different chain? Request it here
+                    Need a different chain? Request it (48hr turnaround)
                   </button>
                 )}
               </div>
@@ -477,7 +491,9 @@ function App() {
                           ? (user?.subscription_tier === 'pro' ? 'Address or xPub/yPub/zPub (Pro)' : 'Bitcoin address (e.g., 1A1z...)')
                           : selectedChain === 'solana'
                             ? 'Solana address (base58)'
-                            : 'Wallet address'
+                            : selectedChain === 'algorand'
+                              ? 'Algorand address (58 chars)'
+                              : 'Wallet address'
                     }
                     value={walletAddress}
                     onChange={(e) => setWalletAddress(e.target.value)}
@@ -934,6 +950,48 @@ function App() {
               </Card>
             )}
 
+            {/* Tax Dashboard - Premium/Pro Feature */}
+            {user?.subscription_tier !== 'free' && analysis?.tax_data && (
+              <TaxDashboard
+                taxData={analysis.tax_data}
+                symbol={getChainSymbol(analysis.chain || selectedChain)}
+                formatUSD={formatUSD}
+                formatNumber={formatNumber}
+                onExportForm8949={exportForm8949}
+                onExportScheduleD={() => setShowScheduleD(true)}
+                onBatchCategorize={() => setShowBatchCategorize(true)}
+              />
+            )}
+
+            {/* Unified Tax Dashboard - Combines wallet + exchange data */}
+            {user?.subscription_tier !== 'free' && analysis && (
+              <UnifiedTaxDashboard
+                walletAddress={analysis.address}
+                chain={analysis.chain || selectedChain}
+                getAuthHeader={getAuthHeader}
+                formatUSD={formatUSD}
+                formatNumber={formatNumber}
+                onExportForm8949={exportForm8949}
+                onExportScheduleD={() => setShowScheduleD(true)}
+                hasExchangeData={true}
+              />
+            )}
+
+            {/* Categorize Transactions Button */}
+            {user?.subscription_tier !== 'free' && analysis?.recentTransactions && (
+              <div className="flex justify-end">
+                <Button
+                  onClick={() => setShowCategorizer(true)}
+                  variant="outline"
+                  className="border-purple-600 text-purple-300 hover:bg-purple-900/30"
+                  data-testid="categorize-transactions-btn"
+                >
+                  <Tag className="w-4 h-4 mr-2" />
+                  Categorize Transactions for Tax
+                </Button>
+              </div>
+            )}
+
             {/* Recent Transactions */}
             {analysis.recentTransactions && analysis.recentTransactions.length > 0 && (
               <Card className="bg-slate-800/50 border-slate-700" data-testid="transactions-table">
@@ -992,6 +1050,12 @@ function App() {
                                     analysis.chain === 'arbitrum' ? `https://arbiscan.io/tx/${tx.hash}` :
                                     analysis.chain === 'bsc' ? `https://bscscan.com/tx/${tx.hash}` :
                                     analysis.chain === 'solana' ? `https://solscan.io/tx/${tx.hash}` :
+                                    analysis.chain === 'algorand' ? `https://algoexplorer.io/tx/${tx.hash}` :
+                                    analysis.chain === 'avalanche' ? `https://snowtrace.io/tx/${tx.hash}` :
+                                    analysis.chain === 'optimism' ? `https://optimistic.etherscan.io/tx/${tx.hash}` :
+                                    analysis.chain === 'base' ? `https://basescan.org/tx/${tx.hash}` :
+                                    analysis.chain === 'fantom' ? `https://ftmscan.com/tx/${tx.hash}` :
+                                    analysis.chain === 'dogecoin' ? `https://dogechain.info/tx/${tx.hash}` :
                                     `#`
                                   }
                                   target="_blank"
@@ -1086,6 +1150,44 @@ function App() {
           selectedChain={selectedChain}
           getAuthHeader={getAuthHeader}
           getChainSymbol={getChainSymbol}
+        />
+        <TransactionCategorizer
+          isOpen={showCategorizer}
+          onClose={() => setShowCategorizer(false)}
+          transactions={analysis?.recentTransactions || []}
+          onSaveCategories={handleSaveCategories}
+          getAuthHeader={getAuthHeader}
+        />
+        <ScheduleDExport
+          isOpen={showScheduleD}
+          onClose={() => setShowScheduleD(false)}
+          address={analysis?.address || ''}
+          chain={analysis?.chain || selectedChain}
+          getAuthHeader={getAuthHeader}
+        />
+        <BatchCategorizationModal
+          isOpen={showBatchCategorize}
+          onClose={() => setShowBatchCategorize(false)}
+          address={analysis?.address || ''}
+          chain={analysis?.chain || selectedChain}
+          getAuthHeader={getAuthHeader}
+          onCategorized={(categories) => {
+            console.log('Batch categorized:', categories);
+          }}
+        />
+        <TermsModal
+          isOpen={showTermsModal}
+          onAccept={handleAcceptTerms}
+        />
+        <AffiliateModal
+          isOpen={showAffiliateModal}
+          onClose={() => setShowAffiliateModal(false)}
+          getAuthHeader={getAuthHeader}
+        />
+        <ExchangeModal
+          isOpen={showExchangeModal}
+          onClose={() => setShowExchangeModal(false)}
+          getAuthHeader={getAuthHeader}
         />
       </div>
     </div>

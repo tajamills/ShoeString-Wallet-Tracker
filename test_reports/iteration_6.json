@@ -1,0 +1,80 @@
+{
+  "summary": "Updated exchange tests for new CSV import approach. Exchange integration changed from API keys to CSV import - all old tests referencing /exchanges/connect, /exchanges/sync, etc. were removed and replaced with tests for the new endpoints. Fixed a bug in server.py where HTTPException was being caught by generic Exception handler causing 500 errors.",
+  "mode": "update",
+  "baseline_commit": "63e9497e09099735810d16ed9f999ca3d593fb74",
+  "head_commit": "d4cc524b9395127582fcda070cbd803f4c758c9a",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "/api/affiliate/register",
+        "issue": "Affiliate code format tests failing - alphanumeric codes being rejected with 400 error. Pre-existing issue not related to exchange update.",
+        "priority": "LOW"
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "regression_results": {
+    "total_specs": 55,
+    "passed": 53,
+    "failed": 2,
+    "skipped": 0
+  },
+  "specs_created": [],
+  "specs_updated": [
+    "/app/tests/e2e/exchange.spec.ts",
+    "/app/backend/tests/test_exchange.py"
+  ],
+  "quarantined_tests": [],
+  "test_report_links": [
+    "/app/tests/e2e/exchange.spec.ts",
+    "/app/backend/tests/test_exchange.py",
+    "/app/tests/e2e/core-flows.spec.ts",
+    "/app/tests/e2e/affiliate.spec.ts",
+    "/app/tests/e2e/tax-core.spec.ts"
+  ],
+  "action_items": [],
+  "updated_files": [
+    "/app/backend/server.py",
+    "/app/backend/tests/test_exchange.py",
+    "/app/tests/e2e/exchange.spec.ts"
+  ],
+  "success_rate": {
+    "backend": "94% (34/36 - 2 pre-existing affiliate test failures)",
+    "frontend": "100% (35/35)"
+  },
+  "seed_data_creation": "Test users created dynamically with unique timestamps",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Exchange CSV Import feature fully tested. New endpoints tested: GET /api/exchanges/supported (6 exchanges), GET /api/exchanges/export-instructions/{id}, POST /api/exchanges/import-csv (Unlimited only), GET /api/exchanges/transactions (Unlimited only), DELETE /api/exchanges/transactions. ExchangeModal UI shows CSV upload interface with exchange cards that expand to show export instructions. Free users get 403 when trying to import CSV. Fixed bug in server.py - HTTPException was being caught by generic Exception handler.",
+  "tests_executed": {
+    "backend": {
+      "test_exchange.py": "20 passed - CSV import approach",
+      "test_affiliate.py": "14 passed, 2 failed (pre-existing)"
+    },
+    "frontend": {
+      "exchange.spec.ts": "9 passed - CSV import UI tests",
+      "core-flows.spec.ts": "15 passed",
+      "affiliate.spec.ts": "8 passed",
+      "tax-core.spec.ts": "3 passed"
+    }
+  },
+  "features_verified": [
+    "GET /api/exchanges/supported - returns 6 exchanges with export instructions",
+    "GET /api/exchanges/export-instructions/{id} - returns detailed step-by-step guide",
+    "POST /api/exchanges/import-csv - requires auth and Unlimited, rejects non-CSV files",
+    "GET /api/exchanges/transactions - requires Unlimited, supports filters",
+    "DELETE /api/exchanges/transactions - deletes imported transactions with optional exchange filter",
+    "ExchangeModal UI shows CSV upload interface",
+    "Free users blocked from CSV import (403)"
+  ],
+  "bug_fixed": {
+    "file": "/app/backend/server.py",
+    "issue": "HTTPException in import_exchange_csv was being caught by generic Exception handler, returning 500 instead of proper status codes",
+    "fix": "Added 'except HTTPException: raise' before the generic Exception catch"
+  }
+}
