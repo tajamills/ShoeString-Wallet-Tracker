@@ -23,6 +23,7 @@ import { ScheduleDExport, BatchCategorizationModal } from '@/components/TaxEnhan
 import { TermsModal } from '@/components/TermsModal';
 import { AffiliateModal } from '@/components/AffiliateModal';
 import { ExchangeModal } from '@/components/ExchangeModal';
+import { ChainOfCustodyModal } from '@/components/ChainOfCustodyModal';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -52,6 +53,7 @@ function App() {
   const [showAffiliateModal, setShowAffiliateModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showExchangeModal, setShowExchangeModal] = useState(false);
+  const [showCustodyModal, setShowCustodyModal] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [selectedChain, setSelectedChain] = useState('ethereum');
@@ -325,6 +327,17 @@ function App() {
                       >
                         <Link2 className="w-4 h-4 mr-2" />
                         Exchanges
+                      </Button>
+                    )}
+                    {user.subscription_tier !== 'free' && (
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setShowCustodyModal(true)}
+                        className="border-green-600 text-green-300 hover:bg-green-900/30"
+                        data-testid="custody-button"
+                      >
+                        <Link2 className="w-4 h-4 mr-2" />
+                        Chain of Custody
                       </Button>
                     )}
                     <Button 
@@ -1188,6 +1201,12 @@ function App() {
           isOpen={showExchangeModal}
           onClose={() => setShowExchangeModal(false)}
           getAuthHeader={getAuthHeader}
+        />
+        <ChainOfCustodyModal
+          isOpen={showCustodyModal}
+          onClose={() => setShowCustodyModal(false)}
+          getAuthHeader={getAuthHeader}
+          userTier={user?.subscription_tier}
         />
       </div>
     </div>

@@ -3056,6 +3056,115 @@ async def export_exchange_form_8949_csv(
         logger.error(f"Error exporting CSV: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to export CSV")
 
+# ============================================================================
+# Chain of Custody Endpoints (Unlimited tier only)
+# ============================================================================
+from custody_service import custody_service
+
+class CustodyAnalysisRequest(BaseModel):
+    address: str
+    chain: str = "ethereum"
+    max_depth: int = 10  # 0 = unlimited
+    dormancy_days: int = 365
+
+@api_router.post("/custody/analyze")
+async def analyze_chain_of_custody(
+    request: CustodyAnalysisRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Analyze chain of custody for a wallet address.
+    Traces transactions backwards to find origin points (exchanges, DEXs, dormant wallets).
+    
+    This is an Unlimited-tier feature for comprehensive tax cost basis analysis.
+    """
+    try:
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier not in ['unlimited', 'pro', 'premium']:
+            raise HTTPException(
+                status_code=403,
+                detail="Chain of Custody analysis requires Unlimited subscription."
+            )
+        
+        # Validate address
+        address = request.address.strip().lower()
+        if not address.startswith('0x') or len(address) != 42:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid EVM address format. Must start with 0x and be 42 characters."
+            )
+        
+        # Supported chains for custody analysis
+        supported_chains = ['ethereum', 'polygon', 'arbitrum', 'bsc', 'base', 'optimism']
+        if request.chain not in supported_chains:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Chain not supported for custody analysis. Supported: {', '.join(supported_chains)}"
+            )
+        
+        # Run the analysis
+        result = custody_service.analyze_chain_of_custody(
+            address=address,
+            chain=request.chain,
+            max_depth=request.max_depth,
+            dormancy_days=request.dormancy_days
+        )
+        
+        # Store the analysis for the user
+        analysis_record = {
+            "id": str(uuid.uuid4()),
+            "user_id": user["id"],
+            "address": address,
+            "chain": request.chain,
+            "analysis_timestamp": datetime.now(timezone.utc).isoformat(),
+            "summary": result["summary"],
+            "settings": result["settings"]
+        }
+        await db.custody_analyses.insert_one(analysis_record)
+        
+        logger.info(f"Chain of custody analysis completed for {address[:10]}... - {result['summary']['total_links_traced']} links traced")
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in chain of custody analysis: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Chain of custody analysis failed: {str(e)}")
+
+@api_router.get("/custody/history")
+async def get_custody_analysis_history(
+    user: dict = Depends(get_current_user)
+):
+    """Get user's chain of custody analysis history"""
+    try:
+        analyses = await db.custody_analyses.find(
+            {"user_id": user["id"]},
+            {"_id": 0}
+        ).sort("analysis_timestamp", -1).to_list(50)
+        
+        return {"analyses": analyses}
+        
+    except Exception as e:
+        logger.error(f"Error fetching custody history: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch analysis history")
+
+@api_router.get("/custody/known-addresses")
+async def get_known_addresses():
+    """Get list of known exchange and DEX addresses for reference"""
+    from custody_service import KNOWN_EXCHANGE_ADDRESSES, KNOWN_DEX_ADDRESSES
+    
+    return {
+        "exchanges": [
+            {"address": addr, "name": name} 
+            for addr, name in KNOWN_EXCHANGE_ADDRESSES.items()
+        ],
+        "dexes": [
+            {"address": addr, "name": name}
+            for addr, name in KNOWN_DEX_ADDRESSES.items()
+        ]
+    }
+
 # Include the router in the main app
 app.include_router(api_router)
 

@@ -132,6 +132,26 @@ All users must accept Terms of Service before using the platform. The TOS modal 
 - [x] Coupon code support
 - [x] Branding updates (Crypto Bag Tracker)
 
+### Phase 9: Chain of Custody Analysis (Completed - Mar 8, 2026)
+- [x] Chain of Custody service (`custody_service.py`)
+- [x] Traces transactions backwards to find asset origins
+- [x] Stop conditions:
+  - Exchange detection (Binance, Coinbase, Kraken, Gemini, etc.)
+  - DEX detection (Uniswap, SushiSwap, 1inch)
+  - Dormancy threshold (configurable, default 365 days)
+- [x] Known exchange addresses database (24+ exchange addresses)
+- [x] Known DEX router addresses (6 major DEXs)
+- [x] API endpoints:
+  - POST `/api/custody/analyze` - Run chain of custody analysis
+  - GET `/api/custody/history` - Get user's analysis history
+  - GET `/api/custody/known-addresses` - List known exchange/DEX addresses
+- [x] Frontend modal (`ChainOfCustodyModal.js`)
+- [x] Support for 6 EVM chains (Ethereum, Polygon, Arbitrum, BSC, Base, Optimism)
+- [x] Advanced options (max depth, dormancy threshold)
+- [x] CSV export of results
+- [x] Unlimited tier only feature
+- [x] Designed for easy extraction/licensing to government entities
+
 ## API Endpoints
 
 ### Authentication
@@ -172,6 +192,11 @@ All users must accept Terms of Service before using the platform. The TOS modal 
 - POST `/api/payments/create-upgrade` - Create Stripe checkout session
 - POST `/api/payments/manage-subscription` - Get billing portal URL
 - POST `/api/payments/webhook/stripe` - Stripe webhook handler
+
+### Chain of Custody (Unlimited tier)
+- POST `/api/custody/analyze` - Run chain of custody analysis
+- GET `/api/custody/history` - Get user's analysis history
+- GET `/api/custody/known-addresses` - List known exchange/DEX addresses
 
 ## Database Schema
 
