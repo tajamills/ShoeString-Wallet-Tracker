@@ -9,7 +9,7 @@ import time
 from datetime import datetime
 
 # Configuration
-BASE_URL = "https://cryptotracker-63.preview.emergentagent.com/api"
+BASE_URL = "https://bag-tracker-tax.preview.emergentagent.com/api"
 TIMEOUT = 30
 
 def test_tax_calculations_phase2():

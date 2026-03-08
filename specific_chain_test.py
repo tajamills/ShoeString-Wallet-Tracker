@@ -11,7 +11,7 @@ from datetime import datetime
 import sys
 
 # Configuration
-BASE_URL = "https://cryptotracker-63.preview.emergentagent.com/api"
+BASE_URL = "https://bag-tracker-tax.preview.emergentagent.com/api"
 TIMEOUT = 30
 
 class SpecificChainTester:
