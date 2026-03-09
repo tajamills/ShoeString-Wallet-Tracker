@@ -24,15 +24,16 @@ import {
   Link2,
   Building2,
   ArrowRight,
-  Clock,
   Download,
   RefreshCw,
   ExternalLink,
   Layers,
   AlertTriangle,
-  CheckCircle2
+  GitBranch,
+  Table
 } from 'lucide-react';
 import axios from 'axios';
+import { CustodyFlowGraph } from './CustodyFlowGraph';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -46,6 +47,7 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [viewMode, setViewMode] = useState('graph'); // 'graph' or 'table'
 
   const supportedChains = [
     { id: 'ethereum', name: 'Ethereum', icon: '⟠' },
@@ -309,8 +311,28 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
                 </Card>
               </div>
 
-              {/* Export Button */}
-              <div className="flex justify-end">
+              {/* View Toggle and Export */}
+              <div className="flex justify-between items-center">
+                <div className="flex gap-2">
+                  <Button
+                    variant={viewMode === 'graph' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setViewMode('graph')}
+                    className={viewMode === 'graph' ? 'bg-purple-600 hover:bg-purple-700' : 'border-slate-600 text-gray-300'}
+                  >
+                    <GitBranch className="w-4 h-4 mr-2" />
+                    Flow Graph
+                  </Button>
+                  <Button
+                    variant={viewMode === 'table' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setViewMode('table')}
+                    className={viewMode === 'table' ? 'bg-purple-600 hover:bg-purple-700' : 'border-slate-600 text-gray-300'}
+                  >
+                    <Table className="w-4 h-4 mr-2" />
+                    Table View
+                  </Button>
+                </div>
                 <Button
                   onClick={exportResults}
                   variant="outline"
@@ -321,8 +343,13 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
                 </Button>
               </div>
 
-              {/* Exchange Endpoints */}
-              {result.exchange_endpoints.length > 0 && (
+              {/* Flow Graph View */}
+              {viewMode === 'graph' && (
+                <CustodyFlowGraph result={result} chain={chain} />
+              )}
+
+              {/* Table View - Exchange Endpoints */}
+              {viewMode === 'table' && result.exchange_endpoints.length > 0 && (
                 <Card className="bg-slate-800/50 border-slate-700">
                   <CardHeader>
                     <CardTitle className="text-white flex items-center gap-2">
@@ -379,8 +406,8 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
                 </Card>
               )}
 
-              {/* DEX Endpoints */}
-              {result.dex_endpoints.length > 0 && (
+              {/* DEX Endpoints - Table View */}
+              {viewMode === 'table' && result.dex_endpoints.length > 0 && (
                 <Card className="bg-slate-800/50 border-slate-700">
                   <CardHeader>
                     <CardTitle className="text-white flex items-center gap-2">
@@ -437,8 +464,8 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
                 </Card>
               )}
 
-              {/* Full Chain Table */}
-              {result.custody_chain.length > 0 && (
+              {/* Full Chain Table - Table View */}
+              {viewMode === 'table' && result.custody_chain.length > 0 && (
                 <Card className="bg-slate-800/50 border-slate-700">
                   <CardHeader>
                     <CardTitle className="text-white flex items-center gap-2">

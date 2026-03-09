@@ -146,6 +146,13 @@ All users must accept Terms of Service before using the platform. The TOS modal 
   - GET `/api/custody/history` - Get user's analysis history
   - GET `/api/custody/known-addresses` - List known exchange/DEX addresses
 - [x] Frontend modal (`ChainOfCustodyModal.js`)
+- [x] **Interactive Flow Graph visualization** (`CustodyFlowGraph.js`) - Mar 9, 2026:
+  - Tree diagram showing asset flow through wallets
+  - Color-coded nodes (Exchange=green, DEX=blue, Dormant=orange, Target=purple)
+  - Interactive zoom, pan, and drag
+  - MiniMap for navigation
+  - Legend explaining node types
+  - Toggle between Graph View and Table View
 - [x] Support for 6 EVM chains (Ethereum, Polygon, Arbitrum, BSC, Base, Optimism)
 - [x] Advanced options (max depth, dormancy threshold)
 - [x] CSV export of results
