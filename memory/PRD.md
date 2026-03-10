@@ -385,10 +385,22 @@ All users must accept Terms of Service before using the platform. The TOS modal 
 - [ ] DeFi & NFT Integration (liquidity pools, staking, NFT valuations)
 - [ ] Additional blockchains (Avalanche, Optimism, Base)
 - [ ] Data visualizations (charts, graphs for portfolio history)
-- [ ] Mobile responsiveness improvements
+- [x] **Mobile responsiveness improvements** (Completed - Mar 10, 2026)
 - [ ] Tax loss harvesting suggestions
 - [ ] Further component extraction from App.js (WalletInputCard, AnalysisResults)
 - [ ] Use multi_chain_service_v2 as the primary service (deprecate v1)
+
+### Phase 14: Mobile Responsiveness (Completed - Mar 10, 2026)
+- [x] Responsive header - scales title and icons for mobile
+- [x] Responsive user info bar - buttons wrap on mobile instead of overflowing
+- [x] Responsive wallet input - input and buttons stack on small screens
+- [x] Responsive statistics grid - 2 columns on mobile, 4 on desktop
+- [x] Responsive transactions table - hidden columns on mobile, scrollable
+- [x] Responsive modals - full width on mobile with adjusted padding
+- [x] Chain of Custody modal mobile fixes
+- [x] Support modal mobile fixes
+- [x] Tablet breakpoint support (768px)
+- [x] Mobile breakpoint support (375px and below)
 
 ## Deployment
 - **Platform**: Render

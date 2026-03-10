@@ -12,7 +12,7 @@ import os
 import uuid
 from datetime import datetime
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://fifo-calculator-1.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://asset-flow-track.preview.emergentagent.com').rstrip('/')
 
 
 class TestAffiliateValidation:
@@ -331,7 +331,7 @@ class TestPaymentWithAffiliateCode:
             f"{BASE_URL}/api/payments/create-upgrade",
             json={
                 "tier": "unlimited",
-                "origin_url": "https://fifo-calculator-1.preview.emergentagent.com",
+                "origin_url": "https://asset-flow-track.preview.emergentagent.com",
                 "affiliate_code": "FAKECODE123"  # Invalid code - should still create session but without discount
             },
             headers={"Authorization": f"Bearer {token}"}
@@ -378,7 +378,7 @@ class TestPaymentWithAffiliateCode:
             f"{BASE_URL}/api/payments/create-upgrade",
             json={
                 "tier": "unlimited",
-                "origin_url": "https://fifo-calculator-1.preview.emergentagent.com",
+                "origin_url": "https://asset-flow-track.preview.emergentagent.com",
                 "affiliate_code": affiliate_code
             },
             headers={"Authorization": f"Bearer {token}"}

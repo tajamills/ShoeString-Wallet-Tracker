@@ -16,7 +16,7 @@ import os
 import uuid
 import io
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://fifo-calculator-1.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://asset-flow-track.preview.emergentagent.com').rstrip('/')
 
 
 class TestExchangeSupportedEndpoint:

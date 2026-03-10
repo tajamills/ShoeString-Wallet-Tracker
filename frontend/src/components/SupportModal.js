@@ -146,42 +146,42 @@ export const SupportModal = ({ isOpen, onClose, getAuthHeader, isLoggedIn }) => 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden bg-slate-900 border-slate-700">
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden bg-slate-900 border-slate-700 w-[95vw] md:w-auto mx-2 md:mx-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl text-white flex items-center gap-2">
-            <HelpCircle className="w-6 h-6 text-blue-400" />
+          <DialogTitle className="text-lg md:text-xl text-white flex items-center gap-2">
+            <HelpCircle className="w-5 h-5 md:w-6 md:h-6 text-blue-400" />
             Help & Support
           </DialogTitle>
-          <DialogDescription className="text-gray-400">
+          <DialogDescription className="text-gray-400 text-sm">
             Get instant AI help or send us a message
           </DialogDescription>
         </DialogHeader>
 
         {/* Tab Buttons */}
-        <div className="flex gap-2 border-b border-slate-700 pb-3">
+        <div className="flex gap-2 border-b border-slate-700 pb-2 md:pb-3">
           <Button
             variant={activeTab === 'ai' ? 'default' : 'ghost'}
             size="sm"
             onClick={() => setActiveTab('ai')}
-            className={activeTab === 'ai' ? 'bg-blue-600' : 'text-gray-400'}
+            className={`text-xs md:text-sm ${activeTab === 'ai' ? 'bg-blue-600' : 'text-gray-400'}`}
           >
-            <Bot className="w-4 h-4 mr-2" />
-            AI Assistant
+            <Bot className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
+            AI Help
           </Button>
           <Button
             variant={activeTab === 'contact' ? 'default' : 'ghost'}
             size="sm"
             onClick={() => setActiveTab('contact')}
-            className={activeTab === 'contact' ? 'bg-blue-600' : 'text-gray-400'}
+            className={`text-xs md:text-sm ${activeTab === 'contact' ? 'bg-blue-600' : 'text-gray-400'}`}
           >
-            <Mail className="w-4 h-4 mr-2" />
-            Contact Us
+            <Mail className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
+            Contact
           </Button>
         </div>
 
         {/* AI Chat Tab */}
         {activeTab === 'ai' && (
-          <div className="flex flex-col h-[500px]">
+          <div className="flex flex-col h-[400px] md:h-[500px]">
             {!isLoggedIn ? (
               <div className="flex-1 flex items-center justify-center">
                 <Card className="bg-slate-800/50 border-slate-700 p-6 text-center">
@@ -310,23 +310,23 @@ export const SupportModal = ({ isOpen, onClose, getAuthHeader, isLoggedIn }) => 
                   </Alert>
                 )}
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
                   <div>
-                    <label className="text-sm text-gray-400 block mb-2">Name *</label>
+                    <label className="text-xs md:text-sm text-gray-400 block mb-1 md:mb-2">Name *</label>
                     <Input
                       value={contactForm.name}
                       onChange={(e) => setContactForm({...contactForm, name: e.target.value})}
-                      className="bg-slate-800 border-slate-600 text-white"
+                      className="bg-slate-800 border-slate-600 text-white text-sm"
                       placeholder="Your name"
                     />
                   </div>
                   <div>
-                    <label className="text-sm text-gray-400 block mb-2">Email *</label>
+                    <label className="text-xs md:text-sm text-gray-400 block mb-1 md:mb-2">Email *</label>
                     <Input
                       type="email"
                       value={contactForm.email}
                       onChange={(e) => setContactForm({...contactForm, email: e.target.value})}
-                      className="bg-slate-800 border-slate-600 text-white"
+                      className="bg-slate-800 border-slate-600 text-white text-sm"
                       placeholder="your@email.com"
                     />
                   </div>

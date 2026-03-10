@@ -284,46 +284,45 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-700">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-700 w-[95vw] md:w-auto mx-2 md:mx-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl text-white flex items-center gap-2">
-            <Link2 className="w-6 h-6 text-blue-400" />
-            Chain of Custody Analysis
-            <Badge className="bg-gradient-to-r from-yellow-600 to-orange-600 ml-2">
+          <DialogTitle className="text-lg md:text-2xl text-white flex items-center gap-2">
+            <Link2 className="w-5 h-5 md:w-6 md:h-6 text-blue-400" />
+            Chain of Custody
+            <Badge className="bg-gradient-to-r from-yellow-600 to-orange-600 ml-1 md:ml-2 text-xs">
               Unlimited
             </Badge>
           </DialogTitle>
-          <DialogDescription className="text-gray-400">
-            Trace the origin of cryptocurrency by following the transaction graph backwards.
-            Find where assets came from - exchanges, DEXs, or dormant wallets.
+          <DialogDescription className="text-gray-400 text-sm">
+            Trace asset origins - exchanges, DEXs, or dormant wallets.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 mt-4">
           {/* Method Selection - Show only when no results */}
           {!result && inputMethod === 'select' && (
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
               {/* Option 1: Connect Coinbase */}
               <Card 
                 className="bg-slate-800/50 border-slate-700 hover:border-blue-500 cursor-pointer transition-all"
                 onClick={() => setInputMethod('coinbase')}
               >
-                <CardContent className="pt-6">
-                  <div className="flex flex-col items-center text-center space-y-4">
-                    <div className="w-16 h-16 bg-blue-900/50 rounded-full flex items-center justify-center">
-                      <Wallet className="w-8 h-8 text-blue-400" />
+                <CardContent className="pt-4 md:pt-6">
+                  <div className="flex flex-col items-center text-center space-y-3 md:space-y-4">
+                    <div className="w-12 h-12 md:w-16 md:h-16 bg-blue-900/50 rounded-full flex items-center justify-center">
+                      <Wallet className="w-6 h-6 md:w-8 md:h-8 text-blue-400" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-white">Connect Coinbase</h3>
-                      <p className="text-sm text-gray-400 mt-2">
-                        Automatically import wallet addresses from your Coinbase account
+                      <h3 className="text-base md:text-lg font-semibold text-white">Connect Coinbase</h3>
+                      <p className="text-xs md:text-sm text-gray-400 mt-1 md:mt-2">
+                        Auto-import from your Coinbase account
                       </p>
                     </div>
-                    <div className="flex items-center gap-2 text-green-400 text-xs">
-                      <Shield className="w-4 h-4" />
-                      <span>READ-ONLY access - Cannot move funds</span>
+                    <div className="flex items-center gap-1 md:gap-2 text-green-400 text-xs">
+                      <Shield className="w-3 h-3 md:w-4 md:h-4" />
+                      <span>READ-ONLY access</span>
                     </div>
-                    <Badge className="bg-blue-600">Recommended</Badge>
+                    <Badge className="bg-blue-600 text-xs">Recommended</Badge>
                   </div>
                 </CardContent>
               </Card>
@@ -333,22 +332,22 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
                 className="bg-slate-800/50 border-slate-700 hover:border-purple-500 cursor-pointer transition-all"
                 onClick={() => setInputMethod('manual')}
               >
-                <CardContent className="pt-6">
-                  <div className="flex flex-col items-center text-center space-y-4">
-                    <div className="w-16 h-16 bg-purple-900/50 rounded-full flex items-center justify-center">
-                      <Search className="w-8 h-8 text-purple-400" />
+                <CardContent className="pt-4 md:pt-6">
+                  <div className="flex flex-col items-center text-center space-y-3 md:space-y-4">
+                    <div className="w-12 h-12 md:w-16 md:h-16 bg-purple-900/50 rounded-full flex items-center justify-center">
+                      <Search className="w-6 h-6 md:w-8 md:h-8 text-purple-400" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-white">Manual Entry</h3>
-                      <p className="text-sm text-gray-400 mt-2">
-                        Enter wallet addresses one by one for analysis
+                      <h3 className="text-base md:text-lg font-semibold text-white">Manual Entry</h3>
+                      <p className="text-xs md:text-sm text-gray-400 mt-1 md:mt-2">
+                        Enter wallet addresses one by one
                       </p>
                     </div>
-                    <div className="flex items-center gap-2 text-gray-400 text-xs">
-                      <CheckCircle2 className="w-4 h-4" />
-                      <span>No account connection required</span>
+                    <div className="flex items-center gap-1 md:gap-2 text-gray-400 text-xs">
+                      <CheckCircle2 className="w-3 h-3 md:w-4 md:h-4" />
+                      <span>No connection required</span>
                     </div>
-                    <Badge variant="outline" className="border-gray-600 text-gray-400">Alternative</Badge>
+                    <Badge variant="outline" className="border-gray-600 text-gray-400 text-xs">Alternative</Badge>
                   </div>
                 </CardContent>
               </Card>
@@ -696,61 +695,61 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
               </div>
 
               {/* Summary Cards */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
                 <Card className="bg-slate-800/50 border-slate-700">
-                  <CardContent className="pt-4">
-                    <div className="text-2xl font-bold text-white">
+                  <CardContent className="pt-3 md:pt-4">
+                    <div className="text-xl md:text-2xl font-bold text-white">
                       {result.summary.total_links_traced}
                     </div>
-                    <div className="text-sm text-gray-400">Links Traced</div>
+                    <div className="text-xs md:text-sm text-gray-400">Links</div>
                   </CardContent>
                 </Card>
                 <Card className="bg-green-900/30 border-green-700">
-                  <CardContent className="pt-4">
-                    <div className="text-2xl font-bold text-green-400">
+                  <CardContent className="pt-3 md:pt-4">
+                    <div className="text-xl md:text-2xl font-bold text-green-400">
                       {result.summary.exchange_origins}
                     </div>
-                    <div className="text-sm text-gray-400">Exchange Origins</div>
+                    <div className="text-xs md:text-sm text-gray-400">Exchanges</div>
                   </CardContent>
                 </Card>
                 <Card className="bg-blue-900/30 border-blue-700">
-                  <CardContent className="pt-4">
-                    <div className="text-2xl font-bold text-blue-400">
+                  <CardContent className="pt-3 md:pt-4">
+                    <div className="text-xl md:text-2xl font-bold text-blue-400">
                       {result.summary.dex_origins}
                     </div>
-                    <div className="text-sm text-gray-400">DEX Origins</div>
+                    <div className="text-xs md:text-sm text-gray-400">DEX</div>
                   </CardContent>
                 </Card>
                 <Card className="bg-orange-900/30 border-orange-700">
-                  <CardContent className="pt-4">
-                    <div className="text-2xl font-bold text-orange-400">
+                  <CardContent className="pt-3 md:pt-4">
+                    <div className="text-xl md:text-2xl font-bold text-orange-400">
                       {result.summary.dormant_origins}
                     </div>
-                    <div className="text-sm text-gray-400">Dormant Origins</div>
+                    <div className="text-xs md:text-sm text-gray-400">Dormant</div>
                   </CardContent>
                 </Card>
               </div>
 
               {/* View Toggle and Export */}
-              <div className="flex justify-between items-center flex-wrap gap-2">
-                <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Button
                     variant={viewMode === 'graph' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setViewMode('graph')}
-                    className={viewMode === 'graph' ? 'bg-purple-600 hover:bg-purple-700' : 'border-slate-600 text-gray-300'}
+                    className={`text-xs ${viewMode === 'graph' ? 'bg-purple-600 hover:bg-purple-700' : 'border-slate-600 text-gray-300'}`}
                   >
-                    <GitBranch className="w-4 h-4 mr-2" />
-                    Flow Graph
+                    <GitBranch className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
+                    Graph
                   </Button>
                   <Button
                     variant={viewMode === 'table' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setViewMode('table')}
-                    className={viewMode === 'table' ? 'bg-purple-600 hover:bg-purple-700' : 'border-slate-600 text-gray-300'}
+                    className={`text-xs ${viewMode === 'table' ? 'bg-purple-600 hover:bg-purple-700' : 'border-slate-600 text-gray-300'}`}
                   >
-                    <Table className="w-4 h-4 mr-2" />
-                    Table View
+                    <Table className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
+                    Table
                   </Button>
                 </div>
                 <div className="flex gap-2">
@@ -758,24 +757,24 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
                     onClick={exportResults}
                     variant="outline"
                     size="sm"
-                    className="border-slate-600 text-gray-300"
+                    className="border-slate-600 text-gray-300 text-xs"
                   >
-                    <Download className="w-4 h-4 mr-2" />
+                    <Download className="w-3 h-3 md:w-4 md:h-4 mr-1" />
                     CSV
                   </Button>
                   <Button
                     onClick={exportPDF}
                     variant="outline"
                     size="sm"
-                    className="border-red-600 text-red-300 hover:bg-red-900/30"
+                    className="border-red-600 text-red-300 hover:bg-red-900/30 text-xs"
                     disabled={loading}
                   >
                     {loading ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      <Loader2 className="w-3 h-3 md:w-4 md:h-4 mr-1 animate-spin" />
                     ) : (
-                      <Download className="w-4 h-4 mr-2" />
+                      <Download className="w-3 h-3 md:w-4 md:h-4 mr-1" />
                     )}
-                    PDF Report
+                    PDF
                   </Button>
                 </div>
               </div>

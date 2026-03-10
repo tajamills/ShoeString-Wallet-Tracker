@@ -7,7 +7,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://fifo-calculator-1.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://asset-flow-track.preview.emergentagent.com').rstrip('/')
 
 # Test data
 TEST_WALLET_ADDRESS = "0x742d35Cc6634C0532925a3b844Bc9e7595f5fEb6"

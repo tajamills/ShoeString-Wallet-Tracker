@@ -11,7 +11,7 @@ export default defineConfig({
     ['json', { outputFile: '/root/.emergent/automation_output/20260306_203226/results.json' }],
   ],
   use: {
-    baseURL: 'https://fifo-calculator-1.preview.emergentagent.com',
+    baseURL: 'https://asset-flow-track.preview.emergentagent.com',
     screenshot: 'only-on-failure',
     trace: 'off',
     headless: true,

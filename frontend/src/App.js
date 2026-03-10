@@ -257,12 +257,12 @@ function App() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <Wallet className="w-12 h-12 text-purple-400" />
-            <h1 className="text-5xl font-bold text-white">Crypto Bag Tracker</h1>
+        <div className="text-center mb-6 md:mb-8">
+          <div className="flex items-center justify-center gap-2 md:gap-3 mb-3 md:mb-4">
+            <Wallet className="w-8 h-8 md:w-12 md:h-12 text-purple-400" />
+            <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold text-white">Crypto Bag Tracker</h1>
           </div>
-          <p className="text-gray-300 text-lg">
+          <p className="text-gray-300 text-sm md:text-lg px-2">
             Track your crypto transactions across multiple blockchains.
           </p>
         </div>
@@ -280,55 +280,70 @@ function App() {
         )}
 
         {/* User Info Bar */}
-        <div className="max-w-3xl mx-auto mb-6">
+        <div className="max-w-3xl mx-auto mb-4 md:mb-6">
           {user ? (
             <Card className="bg-slate-800/50 border-slate-700" data-testid="user-info-bar">
-              <CardContent className="py-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <User className="w-5 h-5 text-purple-400" />
-                    <div>
-                      <p className="text-white font-medium">{user.email}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge className={`${user.subscription_tier === 'free' ? 'bg-gray-600' : 'bg-gradient-to-r from-yellow-600 to-orange-600'}`}>
-                          {user.subscription_tier !== 'free' && <Crown className="w-3 h-3 mr-1" />}
-                          {user.subscription_tier === 'free' ? 'FREE' : 'UNLIMITED'}
-                        </Badge>
-                        <span className="text-sm text-gray-400">
-                          {user.subscription_tier === 'free' 
-                            ? `${user.analysis_count || 0}/1 free analysis` 
-                            : 'Unlimited analyses'}
-                        </span>
-                        {user.subscription_tier !== 'free' && (
-                          <button
-                            onClick={() => setShowDowngradeModal(true)}
-                            className="text-xs text-gray-500 hover:text-gray-400 underline ml-2"
-                          >
-                            manage
-                          </button>
-                        )}
+              <CardContent className="py-3 md:py-4">
+                <div className="flex flex-col space-y-3">
+                  {/* User Info Row */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 md:gap-4 min-w-0">
+                      <User className="w-4 h-4 md:w-5 md:h-5 text-purple-400 flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-white font-medium text-sm md:text-base truncate">{user.email}</p>
+                        <div className="flex flex-wrap items-center gap-1 md:gap-2 mt-1">
+                          <Badge className={`text-xs ${user.subscription_tier === 'free' ? 'bg-gray-600' : 'bg-gradient-to-r from-yellow-600 to-orange-600'}`}>
+                            {user.subscription_tier !== 'free' && <Crown className="w-3 h-3 mr-1" />}
+                            {user.subscription_tier === 'free' ? 'FREE' : 'UNLIMITED'}
+                          </Badge>
+                          <span className="text-xs md:text-sm text-gray-400">
+                            {user.subscription_tier === 'free' 
+                              ? `${user.analysis_count || 0}/1` 
+                              : 'Unlimited'}
+                          </span>
+                          {user.subscription_tier !== 'free' && (
+                            <button
+                              onClick={() => setShowDowngradeModal(true)}
+                              className="text-xs text-gray-500 hover:text-gray-400 underline"
+                            >
+                              manage
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
+                    {/* Logout button always visible */}
+                    <Button 
+                      variant="outline" 
+                      onClick={logout}
+                      className="border-slate-600 text-gray-300 hover:bg-slate-700 h-8 px-2 md:px-4 flex-shrink-0"
+                      data-testid="logout-button"
+                    >
+                      <LogOut className="w-4 h-4 md:mr-2" />
+                      <span className="hidden md:inline">Logout</span>
+                    </Button>
                   </div>
-                  <div className="flex gap-2">
+                  
+                  {/* Action Buttons Row - Wraps on mobile */}
+                  <div className="flex flex-wrap gap-2">
                     {user.subscription_tier === 'free' && (
                       <Button 
                         onClick={() => setShowUpgradeModal(true)}
-                        className="bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700"
+                        className="bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 h-8 text-xs md:text-sm"
                         data-testid="upgrade-button"
                       >
-                        <Crown className="w-4 h-4 mr-2" />
-                        Get Unlimited
+                        <Crown className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
+                        Upgrade
                       </Button>
                     )}
                     {user.subscription_tier !== 'free' && (
                       <Button 
                         variant="outline" 
                         onClick={() => setShowExchangeModal(true)}
-                        className="border-blue-600 text-blue-300 hover:bg-blue-900/30"
+                        className="border-blue-600 text-blue-300 hover:bg-blue-900/30 h-8 text-xs md:text-sm"
                         data-testid="exchange-button"
                       >
-                        <Link2 className="w-4 h-4 mr-2" />
+                        <Link2 className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                         Exchanges
                       </Button>
                     )}
@@ -336,39 +351,30 @@ function App() {
                       <Button 
                         variant="outline" 
                         onClick={() => setShowCustodyModal(true)}
-                        className="border-green-600 text-green-300 hover:bg-green-900/30"
+                        className="border-green-600 text-green-300 hover:bg-green-900/30 h-8 text-xs md:text-sm"
                         data-testid="custody-button"
                       >
-                        <Link2 className="w-4 h-4 mr-2" />
-                        Chain of Custody
+                        <Link2 className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
+                        Custody
                       </Button>
                     )}
                     <Button 
                       variant="outline" 
                       onClick={() => setShowAffiliateModal(true)}
-                      className="border-purple-600 text-purple-300 hover:bg-purple-900/30"
+                      className="border-purple-600 text-purple-300 hover:bg-purple-900/30 h-8 text-xs md:text-sm"
                       data-testid="affiliate-button"
                     >
-                      <Users className="w-4 h-4 mr-2" />
+                      <Users className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                       Affiliate
                     </Button>
                     <Button 
                       variant="outline" 
                       onClick={() => setShowSupportModal(true)}
-                      className="border-cyan-600 text-cyan-300 hover:bg-cyan-900/30"
+                      className="border-cyan-600 text-cyan-300 hover:bg-cyan-900/30 h-8 text-xs md:text-sm"
                       data-testid="support-button"
                     >
-                      <HelpCircle className="w-4 h-4 mr-2" />
+                      <HelpCircle className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                       Help
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      onClick={logout}
-                      className="border-slate-600 text-gray-300 hover:bg-slate-700"
-                      data-testid="logout-button"
-                    >
-                      <LogOut className="w-4 h-4 mr-2" />
-                      Logout
                     </Button>
                   </div>
                 </div>
@@ -376,12 +382,12 @@ function App() {
             </Card>
           ) : (
             <Card className="bg-slate-800/50 border-slate-700" data-testid="login-prompt">
-              <CardContent className="py-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-gray-300">Login to start analyzing wallets</p>
+              <CardContent className="py-3 md:py-4">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <p className="text-gray-300 text-sm md:text-base text-center sm:text-left">Login to start analyzing wallets</p>
                   <Button 
                     onClick={() => setShowAuthModal(true)}
-                    className="bg-purple-600 hover:bg-purple-700"
+                    className="bg-purple-600 hover:bg-purple-700 w-full sm:w-auto"
                     data-testid="login-button"
                   >
                     Login / Sign Up
@@ -504,7 +510,7 @@ function App() {
                 )}
               </div>
 
-              <div className="flex gap-4">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
                 <div className="flex-1">
                   <Input
                     data-testid="wallet-address-input"
@@ -531,41 +537,45 @@ function App() {
                     </p>
                   )}
                 </div>
-                <Button
-                  data-testid="analyze-button"
-                  onClick={() => analyzeWallet()}
-                  disabled={loading || analyzingAll || !user}
-                  className="bg-purple-600 hover:bg-purple-700"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Analyzing...
-                    </>
-                  ) : (
-                    'Analyze'
-                  )}
-                </Button>
-                
-                {user?.subscription_tier === 'pro' && (
+                <div className="flex gap-2">
                   <Button
-                    onClick={analyzeAllChains}
+                    data-testid="analyze-button"
+                    onClick={() => analyzeWallet()}
                     disabled={loading || analyzingAll || !user}
-                    className="bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700"
+                    className="bg-purple-600 hover:bg-purple-700 flex-1 sm:flex-none"
                   >
-                    {analyzingAll ? (
+                    {loading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Analyzing All...
+                        <span className="hidden sm:inline">Analyzing...</span>
+                        <span className="sm:hidden">...</span>
                       </>
                     ) : (
-                      <>
-                        <Crown className="mr-2 h-4 w-4" />
-                        Analyze All Chains
-                      </>
+                      'Analyze'
                     )}
                   </Button>
-                )}
+                  
+                  {user?.subscription_tier === 'pro' && (
+                    <Button
+                      onClick={analyzeAllChains}
+                      disabled={loading || analyzingAll || !user}
+                      className="bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700"
+                    >
+                      {analyzingAll ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          <span className="hidden sm:inline">Analyzing All...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Crown className="mr-1 sm:mr-2 h-4 w-4" />
+                          <span className="hidden sm:inline">Analyze All Chains</span>
+                          <span className="sm:hidden">All</span>
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
               </div>
               
               {/* Date Range Filter */}
@@ -709,16 +719,16 @@ function App() {
             {/* Portfolio Value Header */}
             {analysis.total_value_usd !== undefined && (
               <Card className="bg-gradient-to-r from-green-900/30 to-emerald-800/30 border-green-700">
-                <CardContent className="pt-6">
+                <CardContent className="pt-4 md:pt-6">
                   <div className="text-center">
-                    <p className="text-gray-400 text-sm mb-2">Portfolio Value</p>
-                    <h2 className="text-5xl font-bold text-white mb-2">
+                    <p className="text-gray-400 text-xs md:text-sm mb-1 md:mb-2">Portfolio Value</p>
+                    <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold text-white mb-1 md:mb-2">
                       {formatUSD(analysis.total_value_usd)}
                     </h2>
                     {analysis.current_price_usd && (
-                      <p className="text-gray-400 text-sm">
+                      <p className="text-gray-400 text-xs md:text-sm">
                         {formatNumber(analysis.netEth)} {getChainSymbol(analysis.chain || selectedChain)} 
-                        <span className="mx-2">•</span>
+                        <span className="mx-1 md:mx-2">•</span>
                         1 {getChainSymbol(analysis.chain || selectedChain)} = {formatUSD(analysis.current_price_usd)}
                       </p>
                     )}
@@ -728,102 +738,97 @@ function App() {
             )}
 
             {/* Lifetime Statistics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
               <Card className="bg-gradient-to-br from-green-900/30 to-green-800/20 border-green-700" data-testid="received-card">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-green-300 flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4" />
-                    Total Flow In (All Time)
+                <CardHeader className="pb-2 md:pb-3">
+                  <CardTitle className="text-xs md:text-sm font-medium text-green-300 flex items-center gap-1 md:gap-2">
+                    <TrendingUp className="w-3 h-3 md:w-4 md:h-4" />
+                    <span className="hidden sm:inline">Total Flow In (All Time)</span>
+                    <span className="sm:hidden">Flow In</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-white">
-                    {formatNumber(analysis.totalEthReceived)} {getChainSymbol(analysis.chain || selectedChain)}
+                  <div className="text-lg md:text-3xl font-bold text-white">
+                    {formatNumber(analysis.totalEthReceived)} <span className="text-xs md:text-base">{getChainSymbol(analysis.chain || selectedChain)}</span>
                   </div>
                   {analysis.total_received_usd !== undefined && (
-                    <p className="text-xl font-semibold text-green-300 mt-1">
+                    <p className="text-sm md:text-xl font-semibold text-green-300 mt-1">
                       {formatUSD(analysis.total_received_usd)}
                     </p>
                   )}
                   <p className="text-xs text-green-300 mt-1">
-                    {analysis.incomingTransactionCount} transactions
-                  </p>
-                  <p className="text-xs text-gray-400 mt-2">
-                    All incoming transfers
+                    {analysis.incomingTransactionCount} txns
                   </p>
                 </CardContent>
               </Card>
 
               <Card className="bg-gradient-to-br from-red-900/30 to-red-800/20 border-red-700" data-testid="sent-card">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-red-300 flex items-center gap-2">
-                    <TrendingDown className="w-4 h-4" />
-                    Total Flow Out (All Time)
+                <CardHeader className="pb-2 md:pb-3">
+                  <CardTitle className="text-xs md:text-sm font-medium text-red-300 flex items-center gap-1 md:gap-2">
+                    <TrendingDown className="w-3 h-3 md:w-4 md:h-4" />
+                    <span className="hidden sm:inline">Total Flow Out (All Time)</span>
+                    <span className="sm:hidden">Flow Out</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-white">
-                    {formatNumber(analysis.totalEthSent)} {getChainSymbol(analysis.chain || selectedChain)}
+                  <div className="text-lg md:text-3xl font-bold text-white">
+                    {formatNumber(analysis.totalEthSent)} <span className="text-xs md:text-base">{getChainSymbol(analysis.chain || selectedChain)}</span>
                   </div>
                   {analysis.total_sent_usd !== undefined && (
-                    <p className="text-xl font-semibold text-red-300 mt-1">
+                    <p className="text-sm md:text-xl font-semibold text-red-300 mt-1">
                       {formatUSD(analysis.total_sent_usd)}
                     </p>
                   )}
                   <p className="text-xs text-red-300 mt-1">
-                    {analysis.outgoingTransactionCount} transactions
-                  </p>
-                  <p className="text-xs text-gray-400 mt-2">
-                    All outgoing transfers
+                    {analysis.outgoingTransactionCount} txns
                   </p>
                 </CardContent>
               </Card>
 
               {(analysis.totalGasFees > 0 || selectedChain === 'ethereum' || selectedChain === 'arbitrum') && (
                 <Card className="bg-gradient-to-br from-orange-900/30 to-orange-800/20 border-orange-700" data-testid="gas-fees-card">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium text-orange-300 flex items-center gap-2">
-                      <Activity className="w-4 h-4" />
-                      Gas Fees (All Time)
+                  <CardHeader className="pb-2 md:pb-3">
+                    <CardTitle className="text-xs md:text-sm font-medium text-orange-300 flex items-center gap-1 md:gap-2">
+                      <Activity className="w-3 h-3 md:w-4 md:h-4" />
+                      <span className="hidden sm:inline">Gas Fees (All Time)</span>
+                      <span className="sm:hidden">Gas Fees</span>
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold text-white">
-                      {formatNumber(analysis.totalGasFees)} {getChainSymbol(analysis.chain || selectedChain)}
+                    <div className="text-lg md:text-3xl font-bold text-white">
+                      {formatNumber(analysis.totalGasFees)} <span className="text-xs md:text-base">{getChainSymbol(analysis.chain || selectedChain)}</span>
                     </div>
                     {analysis.total_gas_fees_usd !== undefined && (
-                      <p className="text-xl font-semibold text-orange-300 mt-1">
+                      <p className="text-sm md:text-xl font-semibold text-orange-300 mt-1">
                         {formatUSD(analysis.total_gas_fees_usd)}
                       </p>
                     )}
                     <p className="text-xs text-orange-300 mt-1">
-                      Transaction costs
-                    </p>
-                    <p className="text-xs text-gray-400 mt-2">
-                      Network fees paid
+                      Network fees
                     </p>
                   </CardContent>
                 </Card>
               )}
 
               <Card className="bg-gradient-to-br from-blue-900/30 to-indigo-800/20 border-blue-700" data-testid="balance-card">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-blue-300 flex items-center gap-2">
-                    <Wallet className="w-4 h-4" />
-                    Current Balance
+                <CardHeader className="pb-2 md:pb-3">
+                  <CardTitle className="text-xs md:text-sm font-medium text-blue-300 flex items-center gap-1 md:gap-2">
+                    <Wallet className="w-3 h-3 md:w-4 md:h-4" />
+                    <span className="hidden sm:inline">Current Balance</span>
+                    <span className="sm:hidden">Balance</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-2xl font-bold text-blue-400" data-testid="balance-value">
-                    {formatNumber(analysis.currentBalance || analysis.netEth)} {getChainSymbol(analysis.chain || selectedChain)}
+                  <p className="text-lg md:text-2xl font-bold text-blue-400" data-testid="balance-value">
+                    {formatNumber(analysis.currentBalance || analysis.netEth)} <span className="text-xs md:text-base">{getChainSymbol(analysis.chain || selectedChain)}</span>
                   </p>
                   {analysis.total_value_usd !== undefined && (
-                    <p className="text-lg font-semibold mt-1 text-blue-300">
+                    <p className="text-sm md:text-lg font-semibold mt-1 text-blue-300">
                       {formatUSD(analysis.total_value_usd)}
                     </p>
                   )}
-                  <p className="text-gray-400 text-xs mt-2">
-                    Right now in wallet
+                  <p className="text-gray-400 text-xs mt-1">
+                    In wallet now
                   </p>
                 </CardContent>
               </Card>
@@ -1040,32 +1045,32 @@ function App() {
                     )}
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
+                <CardContent className="px-2 md:px-6">
+                  <div className="overflow-x-auto -mx-2 md:mx-0">
+                    <table className="w-full min-w-[600px]">
                       <thead>
                         <tr className="border-b border-slate-700">
-                          <th className="text-left py-3 px-4 text-gray-400 font-medium">Type</th>
-                          <th className="text-left py-3 px-4 text-gray-400 font-medium">Hash</th>
-                          <th className="text-left py-3 px-4 text-gray-400 font-medium">Asset</th>
-                          <th className="text-right py-3 px-4 text-gray-400 font-medium">Amount</th>
-                          <th className="text-right py-3 px-4 text-gray-400 font-medium">USD Value</th>
-                          <th className="text-right py-3 px-4 text-gray-400 font-medium">Running Balance</th>
-                          <th className="text-left py-3 px-4 text-gray-400 font-medium">Address/Label</th>
+                          <th className="text-left py-2 md:py-3 px-2 md:px-4 text-gray-400 font-medium text-xs md:text-sm">Type</th>
+                          <th className="text-left py-2 md:py-3 px-2 md:px-4 text-gray-400 font-medium text-xs md:text-sm">Hash</th>
+                          <th className="text-left py-2 md:py-3 px-2 md:px-4 text-gray-400 font-medium text-xs md:text-sm hidden sm:table-cell">Asset</th>
+                          <th className="text-right py-2 md:py-3 px-2 md:px-4 text-gray-400 font-medium text-xs md:text-sm">Amount</th>
+                          <th className="text-right py-2 md:py-3 px-2 md:px-4 text-gray-400 font-medium text-xs md:text-sm hidden md:table-cell">USD</th>
+                          <th className="text-right py-2 md:py-3 px-2 md:px-4 text-gray-400 font-medium text-xs md:text-sm hidden lg:table-cell">Balance</th>
+                          <th className="text-left py-2 md:py-3 px-2 md:px-4 text-gray-400 font-medium text-xs md:text-sm hidden sm:table-cell">To/From</th>
                         </tr>
                       </thead>
                       <tbody>
                         {analysis.recentTransactions.map((tx, idx) => (
                           <tr key={idx} className="border-b border-slate-700/50 hover:bg-slate-700/30">
-                            <td className="py-3 px-4">
+                            <td className="py-2 md:py-3 px-2 md:px-4">
                               <Badge
                                 variant="outline"
-                                className={tx.type === 'sent' ? 'text-red-300 border-red-700' : 'text-green-300 border-green-700'}
+                                className={`text-xs ${tx.type === 'sent' ? 'text-red-300 border-red-700' : 'text-green-300 border-green-700'}`}
                               >
-                                {tx.type === 'sent' ? 'Sent' : 'Received'}
+                                {tx.type === 'sent' ? 'Out' : 'In'}
                               </Badge>
                             </td>
-                            <td className="py-3 px-4">
+                            <td className="py-2 md:py-3 px-2 md:px-4">
                               {tx.hash ? (
                                 <a
                                   href={
@@ -1085,47 +1090,47 @@ function App() {
                                   }
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-purple-400 hover:text-purple-300 font-mono text-sm"
+                                  className="text-purple-400 hover:text-purple-300 font-mono text-xs md:text-sm"
                                 >
                                   {formatAddress(tx.hash)}
                                 </a>
                               ) : (
-                                <span className="text-gray-500 text-sm">N/A</span>
+                                <span className="text-gray-500 text-xs">N/A</span>
                               )}
                             </td>
-                            <td className="py-3 px-4">
-                              <span className="text-white font-medium">{tx.asset}</span>
+                            <td className="py-2 md:py-3 px-2 md:px-4 hidden sm:table-cell">
+                              <span className="text-white font-medium text-xs md:text-sm">{tx.asset}</span>
                             </td>
-                            <td className="py-3 px-4 text-right">
-                              <span className="text-white font-mono">{formatNumber(tx.value)}</span>
+                            <td className="py-2 md:py-3 px-2 md:px-4 text-right">
+                              <span className="text-white font-mono text-xs md:text-sm">{formatNumber(tx.value)}</span>
                             </td>
-                            <td className="py-3 px-4 text-right">
+                            <td className="py-2 md:py-3 px-2 md:px-4 text-right hidden md:table-cell">
                               {tx.value_usd !== undefined ? (
-                                <span className="text-gray-300 font-semibold">{formatUSD(tx.value_usd)}</span>
+                                <span className="text-gray-300 font-semibold text-xs md:text-sm">{formatUSD(tx.value_usd)}</span>
                               ) : (
-                                <span className="text-gray-500 text-sm">-</span>
+                                <span className="text-gray-500 text-xs">-</span>
                               )}
                             </td>
-                            <td className="py-3 px-4 text-right">
+                            <td className="py-2 md:py-3 px-2 md:px-4 text-right hidden lg:table-cell">
                               {tx.running_balance !== undefined ? (
-                                <span className="text-blue-300 font-semibold font-mono">{formatNumber(tx.running_balance)}</span>
+                                <span className="text-blue-300 font-semibold font-mono text-xs md:text-sm">{formatNumber(tx.running_balance)}</span>
                               ) : (
-                                <span className="text-gray-500 text-sm">-</span>
+                                <span className="text-gray-500 text-xs">-</span>
                               )}
                             </td>
-                            <td className="py-3 px-4">
+                            <td className="py-2 md:py-3 px-2 md:px-4 hidden sm:table-cell">
                               <div className="flex flex-col">
                                 {tx.type === 'sent' && tx.to_label && (
-                                  <Badge variant="outline" className="text-blue-300 border-blue-700 mb-1 w-fit">
-                                    🏦 {tx.to_label}
+                                  <Badge variant="outline" className="text-blue-300 border-blue-700 mb-1 w-fit text-xs">
+                                    {tx.to_label}
                                   </Badge>
                                 )}
                                 {tx.type === 'received' && tx.from_label && (
-                                  <Badge variant="outline" className="text-blue-300 border-blue-700 mb-1 w-fit">
-                                    🏦 {tx.from_label}
+                                  <Badge variant="outline" className="text-blue-300 border-blue-700 mb-1 w-fit text-xs">
+                                    {tx.from_label}
                                   </Badge>
                                 )}
-                                <span className="text-gray-400 font-mono text-sm">
+                                <span className="text-gray-400 font-mono text-xs">
                                   {tx.type === 'sent' ? formatAddress(tx.to) : formatAddress(tx.from)}
                                 </span>
                               </div>
