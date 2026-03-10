@@ -3165,6 +3165,204 @@ async def get_known_addresses():
         ]
     }
 
+# ============================================================================
+# Coinbase OAuth Integration (Read-Only Access)
+# ============================================================================
+from coinbase_oauth_service import coinbase_oauth_service, OAUTH_SCOPES
+
+@api_router.get("/coinbase/auth-url")
+async def get_coinbase_auth_url(user: dict = Depends(get_current_user)):
+    """
+    Get Coinbase OAuth authorization URL.
+    
+    SECURITY NOTE: This only requests READ-ONLY access.
+    The app CANNOT move, send, or withdraw any funds.
+    """
+    try:
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier not in ['unlimited', 'pro', 'premium']:
+            raise HTTPException(
+                status_code=403,
+                detail="Coinbase integration requires a paid subscription."
+            )
+        
+        auth_url, state = coinbase_oauth_service.get_authorization_url()
+        
+        # Store state with user ID for verification
+        await db.coinbase_oauth_states.insert_one({
+            "state": state,
+            "user_id": user["id"],
+            "created_at": datetime.now(timezone.utc)
+        })
+        
+        return {
+            "auth_url": auth_url,
+            "state": state,
+            "scopes": OAUTH_SCOPES,
+            "security_note": "This app only requests READ-ONLY access. It cannot move, send, or withdraw any of your funds."
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating Coinbase auth URL: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to generate authorization URL")
+
+@api_router.post("/coinbase/callback")
+async def coinbase_oauth_callback(
+    code: str,
+    state: str,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Handle Coinbase OAuth callback and exchange code for tokens.
+    """
+    try:
+        # Validate state
+        state_record = await db.coinbase_oauth_states.find_one({
+            "state": state,
+            "user_id": user["id"]
+        })
+        
+        if not state_record:
+            raise HTTPException(status_code=400, detail="Invalid state parameter")
+        
+        # Delete used state
+        await db.coinbase_oauth_states.delete_one({"state": state})
+        
+        # Exchange code for tokens
+        tokens = await coinbase_oauth_service.exchange_code_for_tokens(code)
+        
+        # Store tokens securely (encrypted in production)
+        await db.coinbase_connections.update_one(
+            {"user_id": user["id"]},
+            {
+                "$set": {
+                    "user_id": user["id"],
+                    "access_token": tokens.access_token,
+                    "refresh_token": tokens.refresh_token,
+                    "expires_at": tokens.expires_at,
+                    "connected_at": datetime.now(timezone.utc),
+                    "scopes": OAUTH_SCOPES
+                }
+            },
+            upsert=True
+        )
+        
+        logger.info(f"Coinbase connected for user {user['id']}")
+        
+        return {
+            "success": True,
+            "message": "Coinbase account connected successfully",
+            "expires_at": tokens.expires_at.isoformat() if tokens.expires_at else None
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Coinbase OAuth callback error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to connect Coinbase account")
+
+@api_router.get("/coinbase/status")
+async def get_coinbase_connection_status(user: dict = Depends(get_current_user)):
+    """Check if user has connected their Coinbase account."""
+    try:
+        connection = await db.coinbase_connections.find_one(
+            {"user_id": user["id"]},
+            {"_id": 0, "access_token": 0, "refresh_token": 0}
+        )
+        
+        if connection:
+            return {
+                "connected": True,
+                "connected_at": connection.get("connected_at"),
+                "expires_at": connection.get("expires_at"),
+                "scopes": connection.get("scopes", [])
+            }
+        
+        return {"connected": False}
+    
+    except Exception as e:
+        logger.error(f"Error checking Coinbase status: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to check connection status")
+
+@api_router.delete("/coinbase/disconnect")
+async def disconnect_coinbase(user: dict = Depends(get_current_user)):
+    """Disconnect Coinbase account and delete stored tokens."""
+    try:
+        result = await db.coinbase_connections.delete_one({"user_id": user["id"]})
+        
+        if result.deleted_count > 0:
+            logger.info(f"Coinbase disconnected for user {user['id']}")
+            return {"success": True, "message": "Coinbase account disconnected"}
+        
+        return {"success": False, "message": "No Coinbase account connected"}
+    
+    except Exception as e:
+        logger.error(f"Error disconnecting Coinbase: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to disconnect Coinbase account")
+
+@api_router.get("/coinbase/addresses-for-custody")
+async def get_coinbase_addresses_for_custody(user: dict = Depends(get_current_user)):
+    """
+    Fetch all wallet addresses and transaction addresses from connected Coinbase account.
+    Used for Chain of Custody analysis.
+    
+    Returns:
+    - User's wallet addresses
+    - Destination addresses from Send transactions
+    - Source addresses from Receive transactions
+    """
+    try:
+        # Get user's Coinbase connection
+        connection = await db.coinbase_connections.find_one({"user_id": user["id"]})
+        
+        if not connection:
+            raise HTTPException(
+                status_code=400, 
+                detail="No Coinbase account connected. Please connect your Coinbase account first."
+            )
+        
+        access_token = connection.get("access_token")
+        
+        # Check if token is expired and refresh if needed
+        expires_at = connection.get("expires_at")
+        if expires_at and datetime.now(timezone.utc) > expires_at:
+            # Refresh the token
+            try:
+                new_tokens = await coinbase_oauth_service.refresh_access_token(
+                    connection.get("refresh_token")
+                )
+                access_token = new_tokens.access_token
+                
+                # Update stored tokens
+                await db.coinbase_connections.update_one(
+                    {"user_id": user["id"]},
+                    {
+                        "$set": {
+                            "access_token": new_tokens.access_token,
+                            "refresh_token": new_tokens.refresh_token,
+                            "expires_at": new_tokens.expires_at
+                        }
+                    }
+                )
+            except Exception as e:
+                logger.error(f"Token refresh failed: {e}")
+                raise HTTPException(
+                    status_code=401,
+                    detail="Coinbase session expired. Please reconnect your account."
+                )
+        
+        # Fetch all addresses for custody analysis
+        result = await coinbase_oauth_service.get_all_wallet_addresses_for_custody(access_token)
+        
+        return result
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching Coinbase addresses: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch Coinbase data")
+
 # Include the router in the main app
 app.include_router(api_router)
 

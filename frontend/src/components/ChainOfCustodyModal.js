@@ -3,9 +3,13 @@
  * Traces the origin of cryptocurrency by following the transaction graph backwards.
  * Helps establish accurate cost basis by finding exchanges, DEXs, and dormant wallet origins.
  * 
+ * TWO OPTIONS:
+ * 1. Connect Coinbase (OAuth) - Automatically fetch addresses from your Coinbase account
+ * 2. Manual Entry - Enter wallet addresses one by one
+ * 
  * Unlimited tier only - designed to be easily separable for government/enterprise licensing.
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -30,7 +34,11 @@ import {
   Layers,
   AlertTriangle,
   GitBranch,
-  Table
+  Table,
+  Wallet,
+  Shield,
+  CheckCircle2,
+  X
 } from 'lucide-react';
 import axios from 'axios';
 import { CustodyFlowGraph } from './CustodyFlowGraph';
@@ -39,15 +47,26 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }) => {
+  // Input method: 'select' (choose method), 'coinbase', or 'manual'
+  const [inputMethod, setInputMethod] = useState('select');
+  
+  // Manual entry state
   const [address, setAddress] = useState('');
   const [chain, setChain] = useState('ethereum');
   const [maxDepth, setMaxDepth] = useState(10);
   const [dormancyDays, setDormancyDays] = useState(365);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  
+  // Coinbase state
+  const [coinbaseConnected, setCoinbaseConnected] = useState(false);
+  const [coinbaseAddresses, setCoinbaseAddresses] = useState(null);
+  const [selectedCoinbaseAddress, setSelectedCoinbaseAddress] = useState('');
+  
+  // Common state
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [viewMode, setViewMode] = useState('graph'); // 'graph' or 'table'
+  const [viewMode, setViewMode] = useState('graph');
 
   const supportedChains = [
     { id: 'ethereum', name: 'Ethereum', icon: '⟠' },
@@ -57,6 +76,88 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
     { id: 'base', name: 'Base', icon: '🔵' },
     { id: 'optimism', name: 'Optimism', icon: '🔴' },
   ];
+
+  // Check Coinbase connection status on modal open
+  useEffect(() => {
+    if (isOpen) {
+      checkCoinbaseStatus();
+    }
+  }, [isOpen]);
+
+  const checkCoinbaseStatus = async () => {
+    try {
+      const response = await axios.get(`${API}/coinbase/status`, {
+        headers: getAuthHeader()
+      });
+      setCoinbaseConnected(response.data.connected);
+    } catch (err) {
+      setCoinbaseConnected(false);
+    }
+  };
+
+  const connectCoinbase = async () => {
+    setLoading(true);
+    setError('');
+    
+    try {
+      const response = await axios.get(`${API}/coinbase/auth-url`, {
+        headers: getAuthHeader()
+      });
+      
+      // Open Coinbase OAuth in a popup
+      const popup = window.open(
+        response.data.auth_url,
+        'coinbase_oauth',
+        'width=600,height=700,scrollbars=yes'
+      );
+      
+      // Poll for OAuth completion
+      const pollInterval = setInterval(async () => {
+        try {
+          if (popup.closed) {
+            clearInterval(pollInterval);
+            // Check if connection was successful
+            await checkCoinbaseStatus();
+            setLoading(false);
+          }
+        } catch (e) {
+          // Popup still open
+        }
+      }, 1000);
+      
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to initiate Coinbase connection');
+      setLoading(false);
+    }
+  };
+
+  const disconnectCoinbase = async () => {
+    try {
+      await axios.delete(`${API}/coinbase/disconnect`, {
+        headers: getAuthHeader()
+      });
+      setCoinbaseConnected(false);
+      setCoinbaseAddresses(null);
+    } catch (err) {
+      setError('Failed to disconnect Coinbase');
+    }
+  };
+
+  const fetchCoinbaseAddresses = async () => {
+    setLoading(true);
+    setError('');
+    
+    try {
+      const response = await axios.get(`${API}/coinbase/addresses-for-custody`, {
+        headers: getAuthHeader()
+      });
+      setCoinbaseAddresses(response.data);
+      setLoading(false);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to fetch Coinbase addresses');
+      setLoading(false);
+    }
+  };
 
   const analyzeChainOfCustody = async () => {
     if (!address) {
@@ -165,104 +266,369 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
         </DialogHeader>
 
         <div className="space-y-6 mt-4">
-          {/* Input Section */}
-          <Card className="bg-slate-800/50 border-slate-700">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-white text-lg">Analysis Parameters</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Chain Selector */}
-              <div>
-                <label className="text-sm text-gray-400 block mb-2">Blockchain</label>
-                <select
-                  value={chain}
-                  onChange={(e) => setChain(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-600 text-white rounded-md px-3 py-2"
-                  disabled={loading}
-                >
-                  {supportedChains.map(c => (
-                    <option key={c.id} value={c.id}>
-                      {c.icon} {c.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          {/* Method Selection - Show only when no results */}
+          {!result && inputMethod === 'select' && (
+            <div className="grid md:grid-cols-2 gap-4">
+              {/* Option 1: Connect Coinbase */}
+              <Card 
+                className="bg-slate-800/50 border-slate-700 hover:border-blue-500 cursor-pointer transition-all"
+                onClick={() => setInputMethod('coinbase')}
+              >
+                <CardContent className="pt-6">
+                  <div className="flex flex-col items-center text-center space-y-4">
+                    <div className="w-16 h-16 bg-blue-900/50 rounded-full flex items-center justify-center">
+                      <Wallet className="w-8 h-8 text-blue-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white">Connect Coinbase</h3>
+                      <p className="text-sm text-gray-400 mt-2">
+                        Automatically import wallet addresses from your Coinbase account
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 text-green-400 text-xs">
+                      <Shield className="w-4 h-4" />
+                      <span>READ-ONLY access - Cannot move funds</span>
+                    </div>
+                    <Badge className="bg-blue-600">Recommended</Badge>
+                  </div>
+                </CardContent>
+              </Card>
 
-              {/* Address Input */}
-              <div>
-                <label className="text-sm text-gray-400 block mb-2">Wallet Address</label>
-                <div className="flex gap-2">
-                  <Input
-                    type="text"
-                    placeholder="0x..."
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    className="flex-1 bg-slate-900 border-slate-600 text-white"
-                    disabled={loading}
-                  />
+              {/* Option 2: Manual Entry */}
+              <Card 
+                className="bg-slate-800/50 border-slate-700 hover:border-purple-500 cursor-pointer transition-all"
+                onClick={() => setInputMethod('manual')}
+              >
+                <CardContent className="pt-6">
+                  <div className="flex flex-col items-center text-center space-y-4">
+                    <div className="w-16 h-16 bg-purple-900/50 rounded-full flex items-center justify-center">
+                      <Search className="w-8 h-8 text-purple-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white">Manual Entry</h3>
+                      <p className="text-sm text-gray-400 mt-2">
+                        Enter wallet addresses one by one for analysis
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-400 text-xs">
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>No account connection required</span>
+                    </div>
+                    <Badge variant="outline" className="border-gray-600 text-gray-400">Alternative</Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Coinbase Connection Flow */}
+          {!result && inputMethod === 'coinbase' && (
+            <Card className="bg-slate-800/50 border-slate-700">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-white text-lg flex items-center gap-2">
+                    <Wallet className="w-5 h-5 text-blue-400" />
+                    Coinbase Connection
+                  </CardTitle>
                   <Button
-                    onClick={analyzeChainOfCustody}
-                    disabled={loading || !address}
-                    className="bg-blue-600 hover:bg-blue-700"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setInputMethod('select')}
+                    className="text-gray-400 hover:text-white"
                   >
-                    {loading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Tracing...
-                      </>
-                    ) : (
-                      <>
-                        <Search className="w-4 h-4 mr-2" />
-                        Analyze
-                      </>
-                    )}
+                    <ArrowRight className="w-4 h-4 mr-1 rotate-180" />
+                    Back
                   </Button>
                 </div>
-              </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Security Notice */}
+                <Alert className="bg-green-900/20 border-green-700">
+                  <Shield className="w-4 h-4 text-green-400" />
+                  <AlertDescription className="text-green-300">
+                    <strong>Security:</strong> This app only requests READ-ONLY access. 
+                    It cannot send, withdraw, or move any of your funds. 
+                    You can revoke access anytime from your Coinbase settings.
+                  </AlertDescription>
+                </Alert>
 
-              {/* Advanced Options Toggle */}
-              <button
-                onClick={() => setShowAdvanced(!showAdvanced)}
-                className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1"
-              >
-                {showAdvanced ? '▼' : '▶'} Advanced Options
-              </button>
-
-              {showAdvanced && (
-                <div className="grid grid-cols-2 gap-4 pt-2">
-                  <div>
-                    <label className="text-sm text-gray-400 block mb-2">
-                      Max Trace Depth
-                      <span className="text-xs text-gray-500 ml-1">(0 = unlimited)</span>
-                    </label>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="50"
-                      value={maxDepth}
-                      onChange={(e) => setMaxDepth(parseInt(e.target.value) || 0)}
-                      className="bg-slate-900 border-slate-600 text-white"
+                {!coinbaseConnected ? (
+                  <div className="text-center py-4">
+                    <Button
+                      onClick={connectCoinbase}
                       disabled={loading}
-                    />
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Connecting...
+                        </>
+                      ) : (
+                        <>
+                          <Wallet className="w-4 h-4 mr-2" />
+                          Connect Coinbase Account
+                        </>
+                      )}
+                    </Button>
                   </div>
-                  <div>
-                    <label className="text-sm text-gray-400 block mb-2">
-                      Dormancy Threshold (days)
-                    </label>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-3 bg-green-900/20 rounded-lg border border-green-700">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-5 h-5 text-green-400" />
+                        <span className="text-green-300">Coinbase Connected</span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={disconnectCoinbase}
+                        className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                      >
+                        <X className="w-4 h-4 mr-1" />
+                        Disconnect
+                      </Button>
+                    </div>
+
+                    {!coinbaseAddresses ? (
+                      <Button
+                        onClick={fetchCoinbaseAddresses}
+                        disabled={loading}
+                        className="w-full bg-blue-600 hover:bg-blue-700"
+                      >
+                        {loading ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Fetching Addresses...
+                          </>
+                        ) : (
+                          <>
+                            <Download className="w-4 h-4 mr-2" />
+                            Fetch Wallet Addresses
+                          </>
+                        )}
+                      </Button>
+                    ) : (
+                      <div className="space-y-4">
+                        {/* Summary of fetched addresses */}
+                        <div className="grid grid-cols-3 gap-3">
+                          <div className="bg-slate-900 p-3 rounded-lg text-center">
+                            <div className="text-2xl font-bold text-white">
+                              {coinbaseAddresses.wallet_addresses?.length || 0}
+                            </div>
+                            <div className="text-xs text-gray-400">Your Addresses</div>
+                          </div>
+                          <div className="bg-slate-900 p-3 rounded-lg text-center">
+                            <div className="text-2xl font-bold text-green-400">
+                              {coinbaseAddresses.send_destinations?.length || 0}
+                            </div>
+                            <div className="text-xs text-gray-400">Send Destinations</div>
+                          </div>
+                          <div className="bg-slate-900 p-3 rounded-lg text-center">
+                            <div className="text-2xl font-bold text-blue-400">
+                              {coinbaseAddresses.receive_sources?.length || 0}
+                            </div>
+                            <div className="text-xs text-gray-400">Receive Sources</div>
+                          </div>
+                        </div>
+
+                        {/* Address selector */}
+                        <div>
+                          <label className="text-sm text-gray-400 block mb-2">
+                            Select Address to Analyze
+                          </label>
+                          <select
+                            value={selectedCoinbaseAddress}
+                            onChange={(e) => {
+                              setSelectedCoinbaseAddress(e.target.value);
+                              setAddress(e.target.value);
+                            }}
+                            className="w-full bg-slate-900 border border-slate-600 text-white rounded-md px-3 py-2"
+                          >
+                            <option value="">-- Select an address --</option>
+                            <optgroup label="Your Wallet Addresses">
+                              {coinbaseAddresses.wallet_addresses?.map((addr, idx) => (
+                                <option key={`wallet-${idx}`} value={addr.address}>
+                                  {addr.currency}: {addr.address?.slice(0, 10)}...{addr.address?.slice(-6)}
+                                </option>
+                              ))}
+                            </optgroup>
+                            <optgroup label="Send Destinations (trace where funds went)">
+                              {coinbaseAddresses.send_destinations?.map((addr, idx) => (
+                                <option key={`send-${idx}`} value={addr.address}>
+                                  Sent {addr.amount} {addr.currency} to: {addr.address?.slice(0, 10)}...
+                                </option>
+                              ))}
+                            </optgroup>
+                            <optgroup label="Receive Sources (trace where funds came from)">
+                              {coinbaseAddresses.receive_sources?.map((addr, idx) => (
+                                <option key={`recv-${idx}`} value={addr.address}>
+                                  Received {addr.amount} {addr.currency} from: {addr.address?.slice(0, 10)}...
+                                </option>
+                              ))}
+                            </optgroup>
+                          </select>
+                        </div>
+
+                        {/* Chain selector and Analyze button */}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm text-gray-400 block mb-2">Blockchain</label>
+                            <select
+                              value={chain}
+                              onChange={(e) => setChain(e.target.value)}
+                              className="w-full bg-slate-900 border border-slate-600 text-white rounded-md px-3 py-2"
+                              disabled={loading}
+                            >
+                              {supportedChains.map(c => (
+                                <option key={c.id} value={c.id}>
+                                  {c.icon} {c.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="flex items-end">
+                            <Button
+                              onClick={analyzeChainOfCustody}
+                              disabled={loading || !selectedCoinbaseAddress}
+                              className="w-full bg-blue-600 hover:bg-blue-700"
+                            >
+                              {loading ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                  Analyzing...
+                                </>
+                              ) : (
+                                <>
+                                  <Search className="w-4 h-4 mr-2" />
+                                  Analyze Chain of Custody
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Manual Entry Section */}
+          {!result && inputMethod === 'manual' && (
+            <Card className="bg-slate-800/50 border-slate-700">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-white text-lg flex items-center gap-2">
+                    <Search className="w-5 h-5 text-purple-400" />
+                    Manual Address Entry
+                  </CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setInputMethod('select')}
+                    className="text-gray-400 hover:text-white"
+                  >
+                    <ArrowRight className="w-4 h-4 mr-1 rotate-180" />
+                    Back
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Chain Selector */}
+                <div>
+                  <label className="text-sm text-gray-400 block mb-2">Blockchain</label>
+                  <select
+                    value={chain}
+                    onChange={(e) => setChain(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-600 text-white rounded-md px-3 py-2"
+                    disabled={loading}
+                  >
+                    {supportedChains.map(c => (
+                      <option key={c.id} value={c.id}>
+                        {c.icon} {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Address Input */}
+                <div>
+                  <label className="text-sm text-gray-400 block mb-2">Wallet Address</label>
+                  <div className="flex gap-2">
                     <Input
-                      type="number"
-                      min="30"
-                      max="3650"
-                      value={dormancyDays}
-                      onChange={(e) => setDormancyDays(parseInt(e.target.value) || 365)}
-                      className="bg-slate-900 border-slate-600 text-white"
+                      type="text"
+                      placeholder="0x..."
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      className="flex-1 bg-slate-900 border-slate-600 text-white"
                       disabled={loading}
                     />
+                    <Button
+                      onClick={analyzeChainOfCustody}
+                      disabled={loading || !address}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Tracing...
+                        </>
+                      ) : (
+                        <>
+                          <Search className="w-4 h-4 mr-2" />
+                          Analyze
+                        </>
+                      )}
+                    </Button>
                   </div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+
+                {/* Advanced Options Toggle */}
+                <button
+                  onClick={() => setShowAdvanced(!showAdvanced)}
+                  className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                >
+                  {showAdvanced ? '▼' : '▶'} Advanced Options
+                </button>
+
+                {showAdvanced && (
+                  <div className="grid grid-cols-2 gap-4 pt-2">
+                    <div>
+                      <label className="text-sm text-gray-400 block mb-2">
+                        Max Trace Depth
+                        <span className="text-xs text-gray-500 ml-1">(0 = unlimited)</span>
+                      </label>
+                      <Input
+                        type="number"
+                        min="0"
+                        max="50"
+                        value={maxDepth}
+                        onChange={(e) => setMaxDepth(parseInt(e.target.value) || 0)}
+                        className="bg-slate-900 border-slate-600 text-white"
+                        disabled={loading}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm text-gray-400 block mb-2">
+                        Dormancy Threshold (days)
+                      </label>
+                      <Input
+                        type="number"
+                        min="30"
+                        max="3650"
+                        value={dormancyDays}
+                        onChange={(e) => setDormancyDays(parseInt(e.target.value) || 365)}
+                        className="bg-slate-900 border-slate-600 text-white"
+                        disabled={loading}
+                      />
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Error Display */}
           {error && (
@@ -275,6 +641,26 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
           {/* Results Section */}
           {result && (
             <>
+              {/* New Analysis Button */}
+              <div className="flex justify-between items-center">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setResult(null);
+                    setInputMethod('select');
+                    setAddress('');
+                    setSelectedCoinbaseAddress('');
+                  }}
+                  className="border-slate-600 text-gray-300"
+                >
+                  <ArrowRight className="w-4 h-4 mr-2 rotate-180" />
+                  New Analysis
+                </Button>
+                <span className="text-sm text-gray-400">
+                  Analyzed: {result.analyzed_address?.slice(0, 10)}...{result.analyzed_address?.slice(-6)}
+                </span>
+              </div>
+
               {/* Summary Cards */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <Card className="bg-slate-800/50 border-slate-700">

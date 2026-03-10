@@ -159,6 +159,22 @@ All users must accept Terms of Service before using the platform. The TOS modal 
 - [x] Unlimited tier only feature
 - [x] Designed for easy extraction/licensing to government entities
 
+### Phase 10: Coinbase OAuth Integration (Completed - Mar 10, 2026)
+- [x] Coinbase OAuth service (`coinbase_oauth_service.py`)
+- [x] READ-ONLY access only (cannot move, send, or withdraw funds)
+- [x] OAuth scopes: wallet:accounts:read, wallet:transactions:read, wallet:addresses:read
+- [x] API endpoints:
+  - GET `/api/coinbase/auth-url` - Get OAuth authorization URL
+  - POST `/api/coinbase/callback` - Handle OAuth callback
+  - GET `/api/coinbase/status` - Check connection status
+  - DELETE `/api/coinbase/disconnect` - Disconnect Coinbase account
+  - GET `/api/coinbase/addresses-for-custody` - Fetch addresses for custody analysis
+- [x] Frontend updated with two input methods:
+  - **Connect Coinbase** - Automatically import addresses from Coinbase
+  - **Manual Entry** - Enter wallet addresses one by one
+- [x] Security notice explaining READ-ONLY access
+- [x] Token refresh handling for expired access tokens
+
 ## API Endpoints
 
 ### Authentication
@@ -204,6 +220,13 @@ All users must accept Terms of Service before using the platform. The TOS modal 
 - POST `/api/custody/analyze` - Run chain of custody analysis
 - GET `/api/custody/history` - Get user's analysis history
 - GET `/api/custody/known-addresses` - List known exchange/DEX addresses
+
+### Coinbase OAuth (Unlimited tier)
+- GET `/api/coinbase/auth-url` - Get OAuth authorization URL
+- POST `/api/coinbase/callback` - Handle OAuth callback and exchange tokens
+- GET `/api/coinbase/status` - Check Coinbase connection status
+- DELETE `/api/coinbase/disconnect` - Disconnect Coinbase account
+- GET `/api/coinbase/addresses-for-custody` - Fetch all addresses for custody analysis
 
 ## Database Schema
 
