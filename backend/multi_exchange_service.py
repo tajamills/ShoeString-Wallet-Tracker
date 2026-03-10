@@ -1,6 +1,6 @@
 """
 Multi-Exchange Integration Service
-Supports Binance, Kraken, and Gemini with READ-ONLY API access.
+Supports Binance, Kraken, Gemini, Crypto.com, KuCoin, and OKX with READ-ONLY API access.
 For tax tracking and Chain of Custody analysis.
 """
 import os
@@ -8,6 +8,7 @@ import hmac
 import hashlib
 import time
 import base64
+import json
 import urllib.parse
 import logging
 import httpx
@@ -355,18 +356,405 @@ class GeminiClient:
             return []
 
 
+class CryptoComClient:
+    """Crypto.com Exchange API Client - READ ONLY"""
+    
+    BASE_URL = "https://api.crypto.com/v2"
+    
+    def __init__(self, api_key: str, api_secret: str):
+        self.api_key = api_key
+        self.api_secret = api_secret
+    
+    def _sign_request(self, method: str, endpoint: str, params: Dict = None) -> Dict:
+        """Sign request with HMAC SHA256"""
+        params = params or {}
+        nonce = str(int(time.time() * 1000))
+        
+        params_str = ""
+        if params:
+            params_str = "".join(f"{k}{params[k]}" for k in sorted(params.keys()))
+        
+        sig_payload = f"{method}{endpoint.split('/')[-1]}{self.api_key}{params_str}{nonce}"
+        signature = hmac.new(
+            self.api_secret.encode(),
+            sig_payload.encode(),
+            hashlib.sha256
+        ).hexdigest()
+        
+        return {
+            "id": 1,
+            "method": endpoint.split('/')[-1],
+            "api_key": self.api_key,
+            "params": params,
+            "sig": signature,
+            "nonce": nonce
+        }
+    
+    async def _request(self, method: str, endpoint: str, params: Dict = None) -> Any:
+        """Make authenticated request"""
+        payload = self._sign_request(method, endpoint, params)
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{self.BASE_URL}/{endpoint}",
+                json=payload,
+                timeout=30.0
+            )
+            response.raise_for_status()
+            data = response.json()
+            
+            if data.get('code') != 0:
+                raise Exception(f"Crypto.com API Error: {data.get('message')}")
+            
+            return data.get('result', {})
+    
+    async def get_deposits(self) -> List[ExchangeTransaction]:
+        """Get deposit history"""
+        try:
+            data = await self._request("POST", "private/get-deposit-history")
+            
+            transactions = []
+            for d in data.get('deposit_list', []):
+                transactions.append(ExchangeTransaction(
+                    id=d.get('id', ''),
+                    exchange='cryptocom',
+                    type='deposit',
+                    asset=d.get('currency', ''),
+                    amount=float(d.get('amount', 0)),
+                    fee=float(d.get('fee', 0)) if d.get('fee') else None,
+                    timestamp=datetime.fromtimestamp(d.get('create_time', 0) / 1000).isoformat(),
+                    tx_hash=d.get('txid'),
+                    address=d.get('address')
+                ))
+            
+            return transactions
+        except Exception as e:
+            logger.error(f"Crypto.com get_deposits error: {e}")
+            return []
+    
+    async def get_withdrawals(self) -> List[ExchangeTransaction]:
+        """Get withdrawal history"""
+        try:
+            data = await self._request("POST", "private/get-withdrawal-history")
+            
+            transactions = []
+            for w in data.get('withdrawal_list', []):
+                transactions.append(ExchangeTransaction(
+                    id=w.get('id', ''),
+                    exchange='cryptocom',
+                    type='withdrawal',
+                    asset=w.get('currency', ''),
+                    amount=float(w.get('amount', 0)),
+                    fee=float(w.get('fee', 0)) if w.get('fee') else None,
+                    timestamp=datetime.fromtimestamp(w.get('create_time', 0) / 1000).isoformat(),
+                    tx_hash=w.get('txid'),
+                    address=w.get('address')
+                ))
+            
+            return transactions
+        except Exception as e:
+            logger.error(f"Crypto.com get_withdrawals error: {e}")
+            return []
+    
+    async def get_deposit_addresses(self) -> List[ExchangeAddress]:
+        """Get deposit addresses"""
+        try:
+            data = await self._request("POST", "private/get-deposit-address", {"currency": "BTC"})
+            addresses = []
+            
+            for addr in data.get('deposit_address_list', []):
+                addresses.append(ExchangeAddress(
+                    address=addr.get('address', ''),
+                    asset=addr.get('currency', ''),
+                    exchange='cryptocom',
+                    network=addr.get('network')
+                ))
+            
+            return addresses
+        except Exception:
+            return []
+
+
+class KuCoinClient:
+    """KuCoin API Client - READ ONLY"""
+    
+    BASE_URL = "https://api.kucoin.com"
+    
+    def __init__(self, api_key: str, api_secret: str, passphrase: str = None):
+        self.api_key = api_key
+        self.api_secret = api_secret
+        self.passphrase = passphrase or ""
+    
+    def _sign_request(self, method: str, endpoint: str, body: str = "") -> Dict:
+        """Sign request with HMAC SHA256"""
+        timestamp = str(int(time.time() * 1000))
+        str_to_sign = timestamp + method.upper() + endpoint + body
+        
+        signature = base64.b64encode(
+            hmac.new(
+                self.api_secret.encode(),
+                str_to_sign.encode(),
+                hashlib.sha256
+            ).digest()
+        ).decode()
+        
+        passphrase_sign = base64.b64encode(
+            hmac.new(
+                self.api_secret.encode(),
+                self.passphrase.encode(),
+                hashlib.sha256
+            ).digest()
+        ).decode()
+        
+        return {
+            "KC-API-KEY": self.api_key,
+            "KC-API-SIGN": signature,
+            "KC-API-TIMESTAMP": timestamp,
+            "KC-API-PASSPHRASE": passphrase_sign,
+            "KC-API-KEY-VERSION": "2"
+        }
+    
+    async def _request(self, method: str, endpoint: str, params: Dict = None) -> Any:
+        """Make authenticated request"""
+        body = json.dumps(params) if params and method == "POST" else ""
+        headers = self._sign_request(method, endpoint, body)
+        headers["Content-Type"] = "application/json"
+        
+        async with httpx.AsyncClient() as client:
+            if method == "GET":
+                response = await client.get(
+                    f"{self.BASE_URL}{endpoint}",
+                    headers=headers,
+                    timeout=30.0
+                )
+            else:
+                response = await client.post(
+                    f"{self.BASE_URL}{endpoint}",
+                    headers=headers,
+                    content=body,
+                    timeout=30.0
+                )
+            
+            response.raise_for_status()
+            data = response.json()
+            
+            if data.get('code') != '200000':
+                raise Exception(f"KuCoin API Error: {data.get('msg')}")
+            
+            return data.get('data', {})
+    
+    async def get_deposits(self) -> List[ExchangeTransaction]:
+        """Get deposit history"""
+        try:
+            data = await self._request("GET", "/api/v1/deposits")
+            
+            transactions = []
+            for d in data.get('items', []):
+                transactions.append(ExchangeTransaction(
+                    id=d.get('id', ''),
+                    exchange='kucoin',
+                    type='deposit',
+                    asset=d.get('currency', ''),
+                    amount=float(d.get('amount', 0)),
+                    fee=float(d.get('fee', 0)) if d.get('fee') else None,
+                    timestamp=datetime.fromtimestamp(d.get('createdAt', 0) / 1000).isoformat(),
+                    tx_hash=d.get('walletTxId'),
+                    address=d.get('address')
+                ))
+            
+            return transactions
+        except Exception as e:
+            logger.error(f"KuCoin get_deposits error: {e}")
+            return []
+    
+    async def get_withdrawals(self) -> List[ExchangeTransaction]:
+        """Get withdrawal history"""
+        try:
+            data = await self._request("GET", "/api/v1/withdrawals")
+            
+            transactions = []
+            for w in data.get('items', []):
+                transactions.append(ExchangeTransaction(
+                    id=w.get('id', ''),
+                    exchange='kucoin',
+                    type='withdrawal',
+                    asset=w.get('currency', ''),
+                    amount=float(w.get('amount', 0)),
+                    fee=float(w.get('fee', 0)) if w.get('fee') else None,
+                    timestamp=datetime.fromtimestamp(w.get('createdAt', 0) / 1000).isoformat(),
+                    tx_hash=w.get('walletTxId'),
+                    address=w.get('address')
+                ))
+            
+            return transactions
+        except Exception as e:
+            logger.error(f"KuCoin get_withdrawals error: {e}")
+            return []
+    
+    async def get_deposit_addresses(self) -> List[ExchangeAddress]:
+        """Get deposit addresses"""
+        try:
+            # KuCoin requires specifying currency
+            currencies = ['BTC', 'ETH', 'USDT']
+            addresses = []
+            
+            for currency in currencies:
+                try:
+                    data = await self._request("GET", f"/api/v1/deposit-addresses?currency={currency}")
+                    if data.get('address'):
+                        addresses.append(ExchangeAddress(
+                            address=data['address'],
+                            asset=currency,
+                            exchange='kucoin',
+                            network=data.get('chain')
+                        ))
+                except Exception:
+                    pass
+            
+            return addresses
+        except Exception:
+            return []
+
+
+class OKXClient:
+    """OKX API Client - READ ONLY"""
+    
+    BASE_URL = "https://www.okx.com"
+    
+    def __init__(self, api_key: str, api_secret: str, passphrase: str = None):
+        self.api_key = api_key
+        self.api_secret = api_secret
+        self.passphrase = passphrase or ""
+    
+    def _sign_request(self, timestamp: str, method: str, endpoint: str, body: str = "") -> str:
+        """Sign request with HMAC SHA256"""
+        message = timestamp + method.upper() + endpoint + body
+        signature = base64.b64encode(
+            hmac.new(
+                self.api_secret.encode(),
+                message.encode(),
+                hashlib.sha256
+            ).digest()
+        ).decode()
+        return signature
+    
+    async def _request(self, method: str, endpoint: str, params: Dict = None) -> Any:
+        """Make authenticated request"""
+        timestamp = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+        body = json.dumps(params) if params and method == "POST" else ""
+        
+        signature = self._sign_request(timestamp, method, endpoint, body)
+        
+        headers = {
+            "OK-ACCESS-KEY": self.api_key,
+            "OK-ACCESS-SIGN": signature,
+            "OK-ACCESS-TIMESTAMP": timestamp,
+            "OK-ACCESS-PASSPHRASE": self.passphrase,
+            "Content-Type": "application/json"
+        }
+        
+        async with httpx.AsyncClient() as client:
+            if method == "GET":
+                response = await client.get(
+                    f"{self.BASE_URL}{endpoint}",
+                    headers=headers,
+                    timeout=30.0
+                )
+            else:
+                response = await client.post(
+                    f"{self.BASE_URL}{endpoint}",
+                    headers=headers,
+                    content=body,
+                    timeout=30.0
+                )
+            
+            response.raise_for_status()
+            data = response.json()
+            
+            if data.get('code') != '0':
+                raise Exception(f"OKX API Error: {data.get('msg')}")
+            
+            return data.get('data', [])
+    
+    async def get_deposits(self) -> List[ExchangeTransaction]:
+        """Get deposit history"""
+        try:
+            data = await self._request("GET", "/api/v5/asset/deposit-history")
+            
+            transactions = []
+            for d in data if isinstance(data, list) else []:
+                transactions.append(ExchangeTransaction(
+                    id=d.get('depId', ''),
+                    exchange='okx',
+                    type='deposit',
+                    asset=d.get('ccy', ''),
+                    amount=float(d.get('amt', 0)),
+                    fee=float(d.get('fee', 0)) if d.get('fee') else None,
+                    timestamp=datetime.fromtimestamp(int(d.get('ts', 0)) / 1000).isoformat(),
+                    tx_hash=d.get('txId'),
+                    address=d.get('to')
+                ))
+            
+            return transactions
+        except Exception as e:
+            logger.error(f"OKX get_deposits error: {e}")
+            return []
+    
+    async def get_withdrawals(self) -> List[ExchangeTransaction]:
+        """Get withdrawal history"""
+        try:
+            data = await self._request("GET", "/api/v5/asset/withdrawal-history")
+            
+            transactions = []
+            for w in data if isinstance(data, list) else []:
+                transactions.append(ExchangeTransaction(
+                    id=w.get('wdId', ''),
+                    exchange='okx',
+                    type='withdrawal',
+                    asset=w.get('ccy', ''),
+                    amount=float(w.get('amt', 0)),
+                    fee=float(w.get('fee', 0)) if w.get('fee') else None,
+                    timestamp=datetime.fromtimestamp(int(w.get('ts', 0)) / 1000).isoformat(),
+                    tx_hash=w.get('txId'),
+                    address=w.get('to')
+                ))
+            
+            return transactions
+        except Exception as e:
+            logger.error(f"OKX get_withdrawals error: {e}")
+            return []
+    
+    async def get_deposit_addresses(self) -> List[ExchangeAddress]:
+        """Get deposit addresses"""
+        try:
+            data = await self._request("GET", "/api/v5/asset/deposit-address?ccy=BTC")
+            addresses = []
+            
+            for addr in data if isinstance(data, list) else []:
+                addresses.append(ExchangeAddress(
+                    address=addr.get('addr', ''),
+                    asset=addr.get('ccy', ''),
+                    exchange='okx',
+                    network=addr.get('chain')
+                ))
+            
+            return addresses
+        except Exception:
+            return []
+
+
 class MultiExchangeService:
     """
     Unified service for multiple exchange integrations.
     All access is READ-ONLY - cannot move or withdraw funds.
     """
     
-    SUPPORTED_EXCHANGES = ['binance', 'kraken', 'gemini', 'coinbase']
+    SUPPORTED_EXCHANGES = ['binance', 'kraken', 'gemini', 'coinbase', 'cryptocom', 'kucoin', 'okx']
     
     def __init__(self):
         self.clients: Dict[str, Any] = {}
     
-    def add_exchange(self, exchange: str, api_key: str, api_secret: str) -> bool:
+    def add_exchange(self, exchange: str, api_key: str, api_secret: str, passphrase: str = None) -> bool:
         """Add an exchange connection"""
         exchange = exchange.lower()
         
@@ -376,6 +764,12 @@ class MultiExchangeService:
             self.clients[exchange] = KrakenClient(api_key, api_secret)
         elif exchange == 'gemini':
             self.clients[exchange] = GeminiClient(api_key, api_secret)
+        elif exchange == 'cryptocom':
+            self.clients[exchange] = CryptoComClient(api_key, api_secret)
+        elif exchange == 'kucoin':
+            self.clients[exchange] = KuCoinClient(api_key, api_secret, passphrase)
+        elif exchange == 'okx':
+            self.clients[exchange] = OKXClient(api_key, api_secret, passphrase)
         else:
             return False
         

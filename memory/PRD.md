@@ -180,8 +180,16 @@ All users must accept Terms of Service before using the platform. The TOS modal 
   - Binance API integration (READ-ONLY)
   - Kraken API integration (READ-ONLY)
   - Gemini API integration (READ-ONLY)
+  - **Crypto.com API integration (READ-ONLY)** - NEW
+  - **KuCoin API integration (READ-ONLY)** - NEW
+  - **OKX API integration (READ-ONLY)** - NEW
+- [x] **Encryption Service** (`encryption_service.py`) - NEW
+  - Fernet symmetric encryption for API keys
+  - Keys encrypted before database storage
+  - Automatic decryption on retrieval
+  - ENCRYPTION_KEY environment variable required for production
 - [x] API endpoints for exchange connections:
-  - POST `/api/exchanges/connect-api` - Connect exchange with API keys
+  - POST `/api/exchanges/connect-api` - Connect exchange with API keys (now with passphrase support)
   - GET `/api/exchanges/api-connections` - List connected exchanges
   - DELETE `/api/exchanges/disconnect-api/{exchange}` - Disconnect exchange
   - GET `/api/exchanges/addresses-for-custody/{exchange}` - Fetch addresses
@@ -198,6 +206,7 @@ All users must accept Terms of Service before using the platform. The TOS modal 
   - POST `/api/custody/export-pdf` - Generate PDF from new analysis
   - POST `/api/custody/export-pdf-from-result` - Generate PDF from existing result
 - [x] Frontend "PDF Report" button added to results view
+- [x] **Coinbase OAuth Setup Guide** (`/app/COINBASE_OAUTH_SETUP.md`) - NEW
 
 ## API Endpoints
 

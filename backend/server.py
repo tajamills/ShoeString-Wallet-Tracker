@@ -3365,14 +3365,16 @@ async def get_coinbase_addresses_for_custody(user: dict = Depends(get_current_us
         raise HTTPException(status_code=500, detail="Failed to fetch Coinbase data")
 
 # ============================================================================
-# Multi-Exchange Integration (Binance, Kraken, Gemini)
+# Multi-Exchange Integration (Binance, Kraken, Gemini, Crypto.com, KuCoin, OKX)
 # ============================================================================
 from multi_exchange_service import multi_exchange_service, MultiExchangeService
+from encryption_service import encryption_service
 
 class ExchangeConnectionRequest(BaseModel):
-    exchange: str  # 'binance', 'kraken', 'gemini'
+    exchange: str  # 'binance', 'kraken', 'gemini', 'cryptocom', 'kucoin', 'okx'
     api_key: str
     api_secret: str
+    passphrase: Optional[str] = None  # Required for KuCoin and OKX
 
 @api_router.post("/exchanges/connect-api")
 async def connect_exchange_api(
@@ -3387,6 +3389,8 @@ async def connect_exchange_api(
     - Read access ONLY
     - Withdrawals DISABLED
     - Trading DISABLED (optional)
+    
+    API keys are encrypted before storage.
     """
     try:
         user_tier = user.get('subscription_tier', 'free')
@@ -3397,7 +3401,7 @@ async def connect_exchange_api(
             )
         
         exchange = request.exchange.lower()
-        supported = ['binance', 'kraken', 'gemini']
+        supported = ['binance', 'kraken', 'gemini', 'cryptocom', 'kucoin', 'okx']
         
         if exchange not in supported:
             raise HTTPException(
@@ -3405,17 +3409,24 @@ async def connect_exchange_api(
                 detail=f"Exchange not supported. Supported: {', '.join(supported)}"
             )
         
-        # Store encrypted credentials (in production, use proper encryption)
+        # Encrypt credentials before storage
+        encrypted_api_key = encryption_service.encrypt(request.api_key)
+        encrypted_api_secret = encryption_service.encrypt(request.api_secret)
+        encrypted_passphrase = encryption_service.encrypt(request.passphrase) if request.passphrase else None
+        
+        # Store encrypted credentials
         await db.exchange_connections.update_one(
             {"user_id": user["id"], "exchange": exchange},
             {
                 "$set": {
                     "user_id": user["id"],
                     "exchange": exchange,
-                    "api_key": request.api_key,  # Encrypt in production!
-                    "api_secret": request.api_secret,  # Encrypt in production!
+                    "api_key": encrypted_api_key,
+                    "api_secret": encrypted_api_secret,
+                    "passphrase": encrypted_passphrase,
                     "connected_at": datetime.now(timezone.utc),
-                    "connection_type": "api_key"
+                    "connection_type": "api_key",
+                    "encrypted": True
                 }
             },
             upsert=True
@@ -3475,6 +3486,7 @@ async def get_exchange_addresses_for_custody(
 ):
     """
     Fetch addresses from a connected exchange for Chain of Custody analysis.
+    Credentials are decrypted before use.
     """
     try:
         connection = await db.exchange_connections.find_one({
@@ -3488,12 +3500,24 @@ async def get_exchange_addresses_for_custody(
                 detail=f"No {exchange} connection found. Please connect first."
             )
         
+        # Decrypt credentials if encrypted
+        api_key = connection['api_key']
+        api_secret = connection['api_secret']
+        passphrase = connection.get('passphrase')
+        
+        if connection.get('encrypted', False):
+            api_key = encryption_service.decrypt(api_key)
+            api_secret = encryption_service.decrypt(api_secret)
+            if passphrase:
+                passphrase = encryption_service.decrypt(passphrase)
+        
         # Initialize exchange client
         service = MultiExchangeService()
         service.add_exchange(
             exchange.lower(),
-            connection['api_key'],
-            connection['api_secret']
+            api_key,
+            api_secret,
+            passphrase
         )
         
         # Fetch addresses
