@@ -7,9 +7,21 @@ import os
 import logging
 from typing import Dict, List, Optional
 from datetime import datetime
-from emergentintegrations.llm.chat import LlmChat, UserMessage
 
 logger = logging.getLogger(__name__)
+
+# Try to import emergentintegrations, fall back to direct OpenAI if not available
+try:
+    from emergentintegrations.llm.chat import LlmChat, UserMessage
+    EMERGENT_AVAILABLE = True
+except ImportError:
+    EMERGENT_AVAILABLE = False
+    logger.warning("emergentintegrations not available, using fallback")
+    try:
+        import openai
+        OPENAI_AVAILABLE = True
+    except ImportError:
+        OPENAI_AVAILABLE = False
 
 # System prompt for the support agent
 SUPPORT_AGENT_SYSTEM_PROMPT = """You are a helpful AI support assistant for Crypto Bag Tracker, a cryptocurrency tax tracking and chain of custody analysis application.
@@ -52,7 +64,7 @@ class SupportAgentService:
     """
     
     def __init__(self):
-        self.api_key = os.environ.get('EMERGENT_LLM_KEY', '')
+        self.api_key = os.environ.get('EMERGENT_LLM_KEY', '') or os.environ.get('OPENAI_API_KEY', '')
         self.conversations: Dict[str, List[Dict]] = {}
     
     async def get_response(
@@ -63,14 +75,6 @@ class SupportAgentService:
     ) -> Dict:
         """
         Get AI response to a user message.
-        
-        Args:
-            user_id: User ID for session tracking
-            message: User's question
-            conversation_history: Previous messages for context
-            
-        Returns:
-            Dict with response and updated conversation
         """
         if not self.api_key:
             return {
@@ -80,31 +84,50 @@ class SupportAgentService:
             }
         
         try:
-            # Initialize chat with session
             session_id = f"support_{user_id}_{datetime.utcnow().strftime('%Y%m%d')}"
             
-            chat = LlmChat(
-                api_key=self.api_key,
-                session_id=session_id,
-                system_message=SUPPORT_AGENT_SYSTEM_PROMPT
-            ).with_model("openai", "gpt-4o")
-            
-            # Add conversation history context if provided
+            # Build context from conversation history
             context_text = ""
             if conversation_history:
                 context_text = "Previous conversation:\n"
-                for msg in conversation_history[-5:]:  # Last 5 messages
+                for msg in conversation_history[-5:]:
                     role = "User" if msg.get('role') == 'user' else "Assistant"
                     context_text += f"{role}: {msg.get('content', '')}\n"
                 context_text += "\nCurrent question:\n"
             
-            # Create user message
-            user_message = UserMessage(
-                text=context_text + message if context_text else message
-            )
+            full_message = context_text + message if context_text else message
             
-            # Get response
-            response = await chat.send_message(user_message)
+            if EMERGENT_AVAILABLE:
+                # Use emergentintegrations
+                chat = LlmChat(
+                    api_key=self.api_key,
+                    session_id=session_id,
+                    system_message=SUPPORT_AGENT_SYSTEM_PROMPT
+                ).with_model("openai", "gpt-4o")
+                
+                user_message = UserMessage(text=full_message)
+                response = await chat.send_message(user_message)
+            
+            elif OPENAI_AVAILABLE:
+                # Fallback to direct OpenAI
+                client = openai.AsyncOpenAI(api_key=self.api_key)
+                completion = await client.chat.completions.create(
+                    model="gpt-4o",
+                    messages=[
+                        {"role": "system", "content": SUPPORT_AGENT_SYSTEM_PROMPT},
+                        {"role": "user", "content": full_message}
+                    ]
+                )
+                response = completion.choices[0].message.content
+            
+            else:
+                # No AI available - return helpful fallback
+                return {
+                    "success": True,
+                    "response": self._get_fallback_response(message),
+                    "session_id": session_id,
+                    "fallback": True
+                }
             
             return {
                 "success": True,
@@ -119,6 +142,21 @@ class SupportAgentService:
                 "response": "I'm having trouble processing your request. Please try again or contact support@cryptobagtracker.io",
                 "error": str(e)
             }
+    
+    def _get_fallback_response(self, message: str) -> str:
+        """Provide helpful response when AI is not available."""
+        message_lower = message.lower()
+        
+        if "cost basis" in message_lower:
+            return "Cost basis is the original value of an asset for tax purposes. We use FIFO (First-In, First-Out) method by default. For detailed help, please email support@cryptobagtracker.io"
+        elif "capital gain" in message_lower:
+            return "Capital gains are profits from selling crypto. Short-term (held <1 year) are taxed as ordinary income. Long-term (held >1 year) get preferential rates. For specific advice, consult a tax professional."
+        elif "connect" in message_lower or "exchange" in message_lower:
+            return "To connect an exchange, go to the Exchanges section and either use OAuth (for Coinbase) or enter your API keys. Make sure to create READ-ONLY keys for security."
+        elif "chain of custody" in message_lower:
+            return "Chain of Custody traces where your crypto came from by following transactions backwards. It helps establish accurate cost basis by finding the original acquisition point (exchange, DEX, etc.)."
+        else:
+            return "Thanks for your question! For detailed assistance, please email support@cryptobagtracker.io and we'll get back to you within 24-48 hours."
     
     def get_suggested_questions(self) -> List[str]:
         """Get list of suggested questions for users."""

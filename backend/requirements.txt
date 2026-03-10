@@ -106,3 +106,4 @@ stripe==8.0.0
 httpx==0.28.1
 reportlab==4.4.10
 weasyprint==68.1
+openai>=1.0.0
