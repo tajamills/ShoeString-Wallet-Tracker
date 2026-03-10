@@ -231,6 +231,40 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
     window.URL.revokeObjectURL(url);
   };
 
+  const exportPDF = async () => {
+    if (!result) return;
+    
+    setLoading(true);
+    try {
+      const response = await axios.post(
+        `${API}/custody/export-pdf-from-result`,
+        result,
+        {
+          headers: {
+            ...getAuthHeader(),
+            'Content-Type': 'application/json'
+          },
+          responseType: 'blob'
+        }
+      );
+      
+      // Create download link
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `chain_of_custody_${address.substring(0, 10)}_${Date.now()}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setError('Failed to generate PDF report');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getExplorerUrl = (txHash, chainId) => {
     const explorers = {
       ethereum: 'https://etherscan.io/tx/',
@@ -698,7 +732,7 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
               </div>
 
               {/* View Toggle and Export */}
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center flex-wrap gap-2">
                 <div className="flex gap-2">
                   <Button
                     variant={viewMode === 'graph' ? 'default' : 'outline'}
@@ -719,14 +753,31 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
                     Table View
                   </Button>
                 </div>
-                <Button
-                  onClick={exportResults}
-                  variant="outline"
-                  className="border-slate-600 text-gray-300"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Export Results (CSV)
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={exportResults}
+                    variant="outline"
+                    size="sm"
+                    className="border-slate-600 text-gray-300"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    CSV
+                  </Button>
+                  <Button
+                    onClick={exportPDF}
+                    variant="outline"
+                    size="sm"
+                    className="border-red-600 text-red-300 hover:bg-red-900/30"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Download className="w-4 h-4 mr-2" />
+                    )}
+                    PDF Report
+                  </Button>
+                </div>
               </div>
 
               {/* Flow Graph View */}

@@ -175,6 +175,30 @@ All users must accept Terms of Service before using the platform. The TOS modal 
 - [x] Security notice explaining READ-ONLY access
 - [x] Token refresh handling for expired access tokens
 
+### Phase 11: Multi-Exchange & PDF Reports (Completed - Mar 10, 2026)
+- [x] Multi-Exchange service (`multi_exchange_service.py`)
+  - Binance API integration (READ-ONLY)
+  - Kraken API integration (READ-ONLY)
+  - Gemini API integration (READ-ONLY)
+- [x] API endpoints for exchange connections:
+  - POST `/api/exchanges/connect-api` - Connect exchange with API keys
+  - GET `/api/exchanges/api-connections` - List connected exchanges
+  - DELETE `/api/exchanges/disconnect-api/{exchange}` - Disconnect exchange
+  - GET `/api/exchanges/addresses-for-custody/{exchange}` - Fetch addresses
+- [x] PDF Report Generator (`custody_report_generator.py`)
+  - Professional reports for auditors/government
+  - Title page with analysis metadata
+  - Executive summary with statistics
+  - Exchange origins table
+  - DEX origins table
+  - Dormant wallet origins
+  - Full transaction chain detail
+  - Disclaimer and footer
+- [x] API endpoints for PDF export:
+  - POST `/api/custody/export-pdf` - Generate PDF from new analysis
+  - POST `/api/custody/export-pdf-from-result` - Generate PDF from existing result
+- [x] Frontend "PDF Report" button added to results view
+
 ## API Endpoints
 
 ### Authentication

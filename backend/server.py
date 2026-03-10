@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
+import io
 import logging
 import json
 from pathlib import Path
@@ -3362,6 +3363,257 @@ async def get_coinbase_addresses_for_custody(user: dict = Depends(get_current_us
     except Exception as e:
         logger.error(f"Error fetching Coinbase addresses: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to fetch Coinbase data")
+
+# ============================================================================
+# Multi-Exchange Integration (Binance, Kraken, Gemini)
+# ============================================================================
+from multi_exchange_service import multi_exchange_service, MultiExchangeService
+
+class ExchangeConnectionRequest(BaseModel):
+    exchange: str  # 'binance', 'kraken', 'gemini'
+    api_key: str
+    api_secret: str
+
+@api_router.post("/exchanges/connect-api")
+async def connect_exchange_api(
+    request: ExchangeConnectionRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Connect an exchange using API keys.
+    
+    SECURITY NOTE: These are READ-ONLY API keys.
+    Users should create keys with:
+    - Read access ONLY
+    - Withdrawals DISABLED
+    - Trading DISABLED (optional)
+    """
+    try:
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier not in ['unlimited', 'pro', 'premium']:
+            raise HTTPException(
+                status_code=403,
+                detail="Exchange API integration requires a paid subscription."
+            )
+        
+        exchange = request.exchange.lower()
+        supported = ['binance', 'kraken', 'gemini']
+        
+        if exchange not in supported:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Exchange not supported. Supported: {', '.join(supported)}"
+            )
+        
+        # Store encrypted credentials (in production, use proper encryption)
+        await db.exchange_connections.update_one(
+            {"user_id": user["id"], "exchange": exchange},
+            {
+                "$set": {
+                    "user_id": user["id"],
+                    "exchange": exchange,
+                    "api_key": request.api_key,  # Encrypt in production!
+                    "api_secret": request.api_secret,  # Encrypt in production!
+                    "connected_at": datetime.now(timezone.utc),
+                    "connection_type": "api_key"
+                }
+            },
+            upsert=True
+        )
+        
+        logger.info(f"{exchange.capitalize()} connected for user {user['id']}")
+        
+        return {
+            "success": True,
+            "message": f"{exchange.capitalize()} connected successfully",
+            "exchange": exchange
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error connecting exchange: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to connect exchange")
+
+@api_router.get("/exchanges/api-connections")
+async def get_exchange_connections(user: dict = Depends(get_current_user)):
+    """Get list of connected exchanges via API keys"""
+    try:
+        connections = await db.exchange_connections.find(
+            {"user_id": user["id"]},
+            {"_id": 0, "api_key": 0, "api_secret": 0}
+        ).to_list(20)
+        
+        return {"connections": connections}
+    
+    except Exception as e:
+        logger.error(f"Error fetching exchange connections: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch connections")
+
+@api_router.delete("/exchanges/disconnect-api/{exchange}")
+async def disconnect_exchange_api(exchange: str, user: dict = Depends(get_current_user)):
+    """Disconnect an exchange API connection"""
+    try:
+        result = await db.exchange_connections.delete_one({
+            "user_id": user["id"],
+            "exchange": exchange.lower()
+        })
+        
+        if result.deleted_count > 0:
+            return {"success": True, "message": f"{exchange.capitalize()} disconnected"}
+        
+        return {"success": False, "message": "Exchange not connected"}
+    
+    except Exception as e:
+        logger.error(f"Error disconnecting exchange: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to disconnect exchange")
+
+@api_router.get("/exchanges/addresses-for-custody/{exchange}")
+async def get_exchange_addresses_for_custody(
+    exchange: str,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Fetch addresses from a connected exchange for Chain of Custody analysis.
+    """
+    try:
+        connection = await db.exchange_connections.find_one({
+            "user_id": user["id"],
+            "exchange": exchange.lower()
+        })
+        
+        if not connection:
+            raise HTTPException(
+                status_code=400,
+                detail=f"No {exchange} connection found. Please connect first."
+            )
+        
+        # Initialize exchange client
+        service = MultiExchangeService()
+        service.add_exchange(
+            exchange.lower(),
+            connection['api_key'],
+            connection['api_secret']
+        )
+        
+        # Fetch addresses
+        result = await service.get_addresses_for_custody(exchange.lower())
+        
+        return result
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching {exchange} addresses: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch {exchange} data")
+
+# ============================================================================
+# Chain of Custody PDF Report Generation
+# ============================================================================
+from custody_report_generator import custody_report_generator
+from fastapi.responses import StreamingResponse
+
+@api_router.post("/custody/export-pdf")
+async def export_custody_pdf(
+    request: CustodyAnalysisRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Generate a PDF report for Chain of Custody analysis.
+    
+    Runs the analysis and generates a professional PDF suitable for
+    auditors, tax authorities, and legal teams.
+    """
+    try:
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier not in ['unlimited', 'pro', 'premium']:
+            raise HTTPException(
+                status_code=403,
+                detail="PDF reports require Unlimited subscription."
+            )
+        
+        # Run the custody analysis first
+        address = request.address.strip().lower()
+        if not address.startswith('0x') or len(address) != 42:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid EVM address format."
+            )
+        
+        result = custody_service.analyze_chain_of_custody(
+            address=address,
+            chain=request.chain,
+            max_depth=request.max_depth,
+            dormancy_days=request.dormancy_days
+        )
+        
+        # Generate PDF
+        user_info = {
+            "email": user.get("email"),
+            "id": user.get("id")
+        }
+        
+        pdf_bytes = custody_report_generator.generate_report(result, user_info)
+        
+        # Generate filename
+        filename = f"chain_of_custody_{address[:10]}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+        
+        logger.info(f"Generated PDF report for {address[:10]}...")
+        
+        return StreamingResponse(
+            io.BytesIO(pdf_bytes),
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"'
+            }
+        )
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating PDF report: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to generate PDF report")
+
+@api_router.post("/custody/export-pdf-from-result")
+async def export_custody_pdf_from_result(
+    result: Dict[str, Any],
+    user: dict = Depends(get_current_user)
+):
+    """
+    Generate a PDF report from an existing custody analysis result.
+    Use this when you already have the analysis data and don't want to re-run it.
+    """
+    try:
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier not in ['unlimited', 'pro', 'premium']:
+            raise HTTPException(
+                status_code=403,
+                detail="PDF reports require Unlimited subscription."
+            )
+        
+        user_info = {
+            "email": user.get("email"),
+            "id": user.get("id")
+        }
+        
+        pdf_bytes = custody_report_generator.generate_report(result, user_info)
+        
+        address = result.get('analyzed_address', 'unknown')[:10]
+        filename = f"chain_of_custody_{address}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+        
+        return StreamingResponse(
+            io.BytesIO(pdf_bytes),
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"'
+            }
+        )
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating PDF from result: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to generate PDF report")
 
 # Include the router in the main app
 app.include_router(api_router)
