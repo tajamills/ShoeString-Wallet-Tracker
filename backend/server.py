@@ -3401,7 +3401,7 @@ async def connect_exchange_api(
             )
         
         exchange = request.exchange.lower()
-        supported = ['binance', 'kraken', 'gemini', 'cryptocom', 'kucoin', 'okx']
+        supported = ['binance', 'kraken', 'gemini', 'cryptocom', 'kucoin', 'okx', 'bybit', 'gateio']
         
         if exchange not in supported:
             raise HTTPException(
@@ -3638,6 +3638,130 @@ async def export_custody_pdf_from_result(
     except Exception as e:
         logger.error(f"Error generating PDF from result: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to generate PDF report")
+
+# ============================================================================
+# Support & AI Help Endpoints
+# ============================================================================
+from support_agent_service import support_agent_service
+
+class SupportMessageRequest(BaseModel):
+    message: str
+    conversation_history: Optional[List[Dict]] = None
+
+class ContactRequest(BaseModel):
+    name: str
+    email: str
+    subject: str
+    message: str
+
+@api_router.post("/support/ai-chat")
+async def ai_support_chat(
+    request: SupportMessageRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Get AI-powered support response.
+    Uses GPT-4o for intelligent cryptocurrency tax help.
+    """
+    try:
+        result = await support_agent_service.get_response(
+            user_id=user.get("id", "anonymous"),
+            message=request.message,
+            conversation_history=request.conversation_history
+        )
+        
+        # Store conversation in database for history
+        await db.support_conversations.update_one(
+            {"user_id": user["id"], "date": datetime.now(timezone.utc).strftime("%Y-%m-%d")},
+            {
+                "$push": {
+                    "messages": {
+                        "role": "user",
+                        "content": request.message,
+                        "timestamp": datetime.now(timezone.utc)
+                    }
+                },
+                "$set": {"updated_at": datetime.now(timezone.utc)}
+            },
+            upsert=True
+        )
+        
+        if result.get("success"):
+            await db.support_conversations.update_one(
+                {"user_id": user["id"], "date": datetime.now(timezone.utc).strftime("%Y-%m-%d")},
+                {
+                    "$push": {
+                        "messages": {
+                            "role": "assistant",
+                            "content": result["response"],
+                            "timestamp": datetime.now(timezone.utc)
+                        }
+                    }
+                }
+            )
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"AI support error: {str(e)}")
+        return {
+            "success": False,
+            "response": "Unable to process your request. Please try again or email support@cryptobagtracker.io"
+        }
+
+@api_router.get("/support/suggested-questions")
+async def get_suggested_questions():
+    """Get suggested questions for the support chat."""
+    return {
+        "questions": support_agent_service.get_suggested_questions()
+    }
+
+@api_router.post("/support/contact")
+async def submit_contact_form(request: ContactRequest):
+    """
+    Submit a contact form message.
+    Stores in database for review and sends email notification.
+    """
+    try:
+        contact_record = {
+            "id": str(uuid.uuid4()),
+            "name": request.name,
+            "email": request.email,
+            "subject": request.subject,
+            "message": request.message,
+            "status": "new",
+            "created_at": datetime.now(timezone.utc),
+            "responded_at": None
+        }
+        
+        await db.contact_messages.insert_one(contact_record)
+        
+        logger.info(f"New contact form submission from {request.email}")
+        
+        return {
+            "success": True,
+            "message": "Thank you for your message! We'll get back to you within 24-48 hours.",
+            "ticket_id": contact_record["id"]
+        }
+        
+    except Exception as e:
+        logger.error(f"Contact form error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to submit contact form")
+
+@api_router.get("/support/conversation-history")
+async def get_conversation_history(user: dict = Depends(get_current_user)):
+    """Get user's support conversation history."""
+    try:
+        conversations = await db.support_conversations.find(
+            {"user_id": user["id"]},
+            {"_id": 0}
+        ).sort("updated_at", -1).limit(10).to_list(10)
+        
+        return {"conversations": conversations}
+        
+    except Exception as e:
+        logger.error(f"Error fetching conversation history: {str(e)}")
+        return {"conversations": []}
 
 # Include the router in the main app
 app.include_router(api_router)

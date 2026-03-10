@@ -743,13 +743,245 @@ class OKXClient:
             return []
 
 
+class BybitClient:
+    """Bybit API Client - READ ONLY"""
+    
+    BASE_URL = "https://api.bybit.com"
+    
+    def __init__(self, api_key: str, api_secret: str):
+        self.api_key = api_key
+        self.api_secret = api_secret
+    
+    def _sign_request(self, params: Dict) -> Dict:
+        """Sign request with HMAC SHA256"""
+        timestamp = str(int(time.time() * 1000))
+        params['api_key'] = self.api_key
+        params['timestamp'] = timestamp
+        
+        # Sort params and create query string
+        sorted_params = sorted(params.items())
+        query_string = '&'.join([f"{k}={v}" for k, v in sorted_params])
+        
+        signature = hmac.new(
+            self.api_secret.encode(),
+            query_string.encode(),
+            hashlib.sha256
+        ).hexdigest()
+        
+        params['sign'] = signature
+        return params
+    
+    async def _request(self, endpoint: str, params: Dict = None) -> Any:
+        """Make authenticated request"""
+        params = params or {}
+        params = self._sign_request(params)
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{self.BASE_URL}{endpoint}",
+                params=params,
+                timeout=30.0
+            )
+            response.raise_for_status()
+            data = response.json()
+            
+            if data.get('ret_code') != 0:
+                raise Exception(f"Bybit API Error: {data.get('ret_msg')}")
+            
+            return data.get('result', {})
+    
+    async def get_deposits(self) -> List[ExchangeTransaction]:
+        """Get deposit history"""
+        try:
+            data = await self._request("/v5/asset/deposit/query-record")
+            
+            transactions = []
+            for d in data.get('rows', []):
+                transactions.append(ExchangeTransaction(
+                    id=d.get('txID', ''),
+                    exchange='bybit',
+                    type='deposit',
+                    asset=d.get('coin', ''),
+                    amount=float(d.get('amount', 0)),
+                    timestamp=datetime.fromtimestamp(int(d.get('successAt', 0)) / 1000).isoformat() if d.get('successAt') else '',
+                    tx_hash=d.get('txID'),
+                    address=d.get('toAddress')
+                ))
+            
+            return transactions
+        except Exception as e:
+            logger.error(f"Bybit get_deposits error: {e}")
+            return []
+    
+    async def get_withdrawals(self) -> List[ExchangeTransaction]:
+        """Get withdrawal history"""
+        try:
+            data = await self._request("/v5/asset/withdraw/query-record")
+            
+            transactions = []
+            for w in data.get('rows', []):
+                transactions.append(ExchangeTransaction(
+                    id=w.get('withdrawId', ''),
+                    exchange='bybit',
+                    type='withdrawal',
+                    asset=w.get('coin', ''),
+                    amount=float(w.get('amount', 0)),
+                    fee=float(w.get('withdrawFee', 0)) if w.get('withdrawFee') else None,
+                    timestamp=datetime.fromtimestamp(int(w.get('createTime', 0)) / 1000).isoformat() if w.get('createTime') else '',
+                    tx_hash=w.get('txID'),
+                    address=w.get('toAddress')
+                ))
+            
+            return transactions
+        except Exception as e:
+            logger.error(f"Bybit get_withdrawals error: {e}")
+            return []
+    
+    async def get_deposit_addresses(self) -> List[ExchangeAddress]:
+        """Get deposit addresses"""
+        try:
+            data = await self._request("/v5/asset/deposit/query-address", {"coin": "BTC"})
+            addresses = []
+            
+            chains = data.get('chains', [])
+            for chain in chains:
+                if chain.get('addressDeposit'):
+                    addresses.append(ExchangeAddress(
+                        address=chain['addressDeposit'],
+                        asset='BTC',
+                        exchange='bybit',
+                        network=chain.get('chain')
+                    ))
+            
+            return addresses
+        except Exception:
+            return []
+
+
+class GateIOClient:
+    """Gate.io API Client - READ ONLY"""
+    
+    BASE_URL = "https://api.gateio.ws/api/v4"
+    
+    def __init__(self, api_key: str, api_secret: str):
+        self.api_key = api_key
+        self.api_secret = api_secret
+    
+    def _sign_request(self, method: str, url: str, query_string: str = "", body: str = "") -> Dict:
+        """Sign request with HMAC SHA512"""
+        timestamp = str(int(time.time()))
+        
+        # Hash body if present
+        body_hash = hashlib.sha512(body.encode() if body else b"").hexdigest()
+        
+        # Create signature string
+        sign_string = f"{method}\n{url}\n{query_string}\n{body_hash}\n{timestamp}"
+        
+        signature = hmac.new(
+            self.api_secret.encode(),
+            sign_string.encode(),
+            hashlib.sha512
+        ).hexdigest()
+        
+        return {
+            "KEY": self.api_key,
+            "Timestamp": timestamp,
+            "SIGN": signature
+        }
+    
+    async def _request(self, method: str, endpoint: str, params: Dict = None) -> Any:
+        """Make authenticated request"""
+        query_string = urllib.parse.urlencode(params) if params else ""
+        headers = self._sign_request(method, endpoint, query_string)
+        headers["Content-Type"] = "application/json"
+        
+        url = f"{self.BASE_URL}{endpoint}"
+        if query_string:
+            url += f"?{query_string}"
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.request(
+                method,
+                url,
+                headers=headers,
+                timeout=30.0
+            )
+            response.raise_for_status()
+            return response.json()
+    
+    async def get_deposits(self) -> List[ExchangeTransaction]:
+        """Get deposit history"""
+        try:
+            data = await self._request("GET", "/wallet/deposits")
+            
+            transactions = []
+            for d in data if isinstance(data, list) else []:
+                transactions.append(ExchangeTransaction(
+                    id=d.get('id', ''),
+                    exchange='gateio',
+                    type='deposit',
+                    asset=d.get('currency', ''),
+                    amount=float(d.get('amount', 0)),
+                    timestamp=datetime.fromtimestamp(int(d.get('timestamp', 0))).isoformat() if d.get('timestamp') else '',
+                    tx_hash=d.get('txid'),
+                    address=d.get('address')
+                ))
+            
+            return transactions
+        except Exception as e:
+            logger.error(f"Gate.io get_deposits error: {e}")
+            return []
+    
+    async def get_withdrawals(self) -> List[ExchangeTransaction]:
+        """Get withdrawal history"""
+        try:
+            data = await self._request("GET", "/wallet/withdrawals")
+            
+            transactions = []
+            for w in data if isinstance(data, list) else []:
+                transactions.append(ExchangeTransaction(
+                    id=w.get('id', ''),
+                    exchange='gateio',
+                    type='withdrawal',
+                    asset=w.get('currency', ''),
+                    amount=float(w.get('amount', 0)),
+                    fee=float(w.get('fee', 0)) if w.get('fee') else None,
+                    timestamp=datetime.fromtimestamp(int(w.get('timestamp', 0))).isoformat() if w.get('timestamp') else '',
+                    tx_hash=w.get('txid'),
+                    address=w.get('address')
+                ))
+            
+            return transactions
+        except Exception as e:
+            logger.error(f"Gate.io get_withdrawals error: {e}")
+            return []
+    
+    async def get_deposit_addresses(self) -> List[ExchangeAddress]:
+        """Get deposit addresses"""
+        try:
+            data = await self._request("GET", "/wallet/deposit_address", {"currency": "BTC"})
+            addresses = []
+            
+            if data.get('address'):
+                addresses.append(ExchangeAddress(
+                    address=data['address'],
+                    asset='BTC',
+                    exchange='gateio',
+                    network=data.get('chain')
+                ))
+            
+            return addresses
+        except Exception:
+            return []
+
+
 class MultiExchangeService:
     """
     Unified service for multiple exchange integrations.
     All access is READ-ONLY - cannot move or withdraw funds.
     """
     
-    SUPPORTED_EXCHANGES = ['binance', 'kraken', 'gemini', 'coinbase', 'cryptocom', 'kucoin', 'okx']
+    SUPPORTED_EXCHANGES = ['binance', 'kraken', 'gemini', 'coinbase', 'cryptocom', 'kucoin', 'okx', 'bybit', 'gateio']
     
     def __init__(self):
         self.clients: Dict[str, Any] = {}
@@ -770,6 +1002,10 @@ class MultiExchangeService:
             self.clients[exchange] = KuCoinClient(api_key, api_secret, passphrase)
         elif exchange == 'okx':
             self.clients[exchange] = OKXClient(api_key, api_secret, passphrase)
+        elif exchange == 'bybit':
+            self.clients[exchange] = BybitClient(api_key, api_secret)
+        elif exchange == 'gateio':
+            self.clients[exchange] = GateIOClient(api_key, api_secret)
         else:
             return False
         

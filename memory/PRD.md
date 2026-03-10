@@ -208,6 +208,30 @@ All users must accept Terms of Service before using the platform. The TOS modal 
 - [x] Frontend "PDF Report" button added to results view
 - [x] **Coinbase OAuth Setup Guide** (`/app/COINBASE_OAUTH_SETUP.md`) - NEW
 
+### Phase 12: Support & Help System (Completed - Mar 10, 2026)
+- [x] AI Support Agent (`support_agent_service.py`)
+  - GPT-4o powered help assistant
+  - Answers crypto tax questions
+  - Trained on app features and tax basics
+  - Conversation history tracking
+- [x] Support Modal (`SupportModal.js`)
+  - **AI Assistant tab** - Chat with AI for instant help
+  - **Contact Us tab** - Email form for human support
+  - Suggested questions for quick help
+  - Conversation history persistence
+- [x] API endpoints:
+  - POST `/api/support/ai-chat` - Send message to AI
+  - GET `/api/support/suggested-questions` - Get suggested questions
+  - POST `/api/support/contact` - Submit contact form
+  - GET `/api/support/conversation-history` - Get chat history
+- [x] Help button added to navigation bar
+
+### Phase 13: Additional Exchanges (Completed - Mar 10, 2026)
+- [x] **Bybit** API integration (READ-ONLY)
+- [x] **Gate.io** API integration (READ-ONLY)
+- Total supported exchanges: **8**
+  - Binance, Kraken, Gemini, Crypto.com, KuCoin, OKX, Bybit, Gate.io
+
 ## API Endpoints
 
 ### Authentication
