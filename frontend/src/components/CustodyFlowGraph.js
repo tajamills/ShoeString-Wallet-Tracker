@@ -1,7 +1,8 @@
 /**
- * Custody Flow Graph Component
+ * Custody Flow Graph Component v2.1
  * Visual tree diagram showing how assets flow through wallets
  * Uses React Flow for interactive node-based visualization
+ * Last updated: Mar 10, 2026 - Mobile responsive
  */
 import React, { useMemo, useCallback } from 'react';
 import ReactFlow, {

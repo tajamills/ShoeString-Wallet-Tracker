@@ -9,6 +9,7 @@
  * 
  * Unlimited tier only - designed to be easily separable for government/enterprise licensing.
  */
+// Chain of Custody Modal v2.1 - Mobile Responsive - Last updated: Mar 10, 2026
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,

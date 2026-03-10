@@ -1,6 +1,7 @@
 /**
- * Support Modal Component
+ * Support Modal Component v2.1
  * Provides contact form and AI-powered help for users.
+ * Last updated: Mar 10, 2026 - Mobile responsive
  */
 import React, { useState, useRef, useEffect } from 'react';
 import {

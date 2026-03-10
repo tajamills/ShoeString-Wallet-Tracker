@@ -1,3 +1,4 @@
+// Crypto Bag Tracker v2.1 - Mobile Responsive Update - Mar 10, 2026
 import { useState, useEffect } from 'react';
 import '@/App.css';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
