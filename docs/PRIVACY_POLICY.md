@@ -142,7 +142,7 @@ If you are a California resident, you have the right to:
 - **Opt-out** of the sale of personal information (we do not sell data)
 - **Non-discrimination** for exercising your rights
 
-To exercise these rights, contact us at [privacy@cryptobagtracker.io].
+To exercise these rights, contact us at support@cryptobagtracker.com.
 
 ---
 
@@ -158,7 +158,7 @@ If you are in the European Economic Area, you have the right to:
 - **Object** to processing
 - **Withdraw consent**
 
-To exercise these rights, contact us at [privacy@cryptobagtracker.io].
+To exercise these rights, contact us at support@cryptobagtracker.com.
 
 ---
 
@@ -200,7 +200,8 @@ We may update this Privacy Policy from time to time. We will notify you of chang
 
 If you have questions about this Privacy Policy, contact us at:
 
-**Email:** [privacy@cryptobagtracker.io]  
+**Email:** support@cryptobagtracker.com  
+**Address:** 1557 Buford Dr #492773, Lawrenceville, GA 30043  
 **Website:** https://cryptobagtracker.io
 
 ---

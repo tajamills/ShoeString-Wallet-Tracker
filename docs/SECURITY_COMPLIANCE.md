@@ -317,9 +317,9 @@ In the event of a data breach:
 
 ## 11. Contact Information
 
-**Security Issues:** [security@cryptobagtracker.io]  
-**Compliance Inquiries:** [compliance@cryptobagtracker.io]  
-**General Support:** [support@cryptobagtracker.io]
+**Email:** support@cryptobagtracker.com  
+**Address:** 1557 Buford Dr #492773, Lawrenceville, GA 30043  
+**Website:** https://cryptobagtracker.io
 
 ---
 
