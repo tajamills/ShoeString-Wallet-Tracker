@@ -318,6 +318,7 @@ In the event of a data breach:
 ## 11. Contact Information
 
 **Email:** support@cryptobagtracker.com  
+**Phone:** (404) 954-1182  
 **Address:** 1557 Buford Dr #492773, Lawrenceville, GA 30043  
 **Website:** https://cryptobagtracker.io
 

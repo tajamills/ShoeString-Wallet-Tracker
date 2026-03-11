@@ -220,6 +220,7 @@ We are not liable for failures due to circumstances beyond our control.
 For questions about these Terms:
 
 **Email:** support@cryptobagtracker.com  
+**Phone:** (404) 954-1182  
 **Address:** 1557 Buford Dr #492773, Lawrenceville, GA 30043  
 **Website:** https://cryptobagtracker.io
 

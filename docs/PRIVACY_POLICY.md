@@ -201,6 +201,7 @@ We may update this Privacy Policy from time to time. We will notify you of chang
 If you have questions about this Privacy Policy, contact us at:
 
 **Email:** support@cryptobagtracker.com  
+**Phone:** (404) 954-1182  
 **Address:** 1557 Buford Dr #492773, Lawrenceville, GA 30043  
 **Website:** https://cryptobagtracker.io
 
