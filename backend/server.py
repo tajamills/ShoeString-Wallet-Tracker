@@ -875,6 +875,29 @@ async def handle_stripe_webhook(request: Request):
                 except Exception as email_err:
                     logger.error(f"Failed to send expired email: {str(email_err)}")
         
+        # Handle invoice.upcoming - Stripe sends this ~3 days before renewal
+        elif event_type == 'invoice.upcoming':
+            invoice = event['data']['object']
+            subscription_id = invoice.get('subscription')
+            
+            if subscription_id:
+                user = await db.users.find_one({"stripe_subscription_id": subscription_id})
+                if user:
+                    # Calculate days until renewal
+                    next_payment_date = invoice.get('next_payment_attempt')
+                    if next_payment_date:
+                        days_remaining = max(1, (datetime.fromtimestamp(next_payment_date, tz=timezone.utc) - datetime.now(timezone.utc)).days)
+                    else:
+                        days_remaining = 3  # Default if not available
+                    
+                    # Send our custom expiring email
+                    try:
+                        tier = user.get("subscription_tier", "premium")
+                        await send_subscription_expiring_email(user['email'], days_remaining, tier)
+                        logger.info(f"Sent upcoming renewal email to {user['email']} - {days_remaining} days")
+                    except Exception as email_err:
+                        logger.error(f"Failed to send upcoming email: {str(email_err)}")
+        
         # Handle invoice.payment_failed
         elif event_type == 'invoice.payment_failed':
             invoice = event['data']['object']
