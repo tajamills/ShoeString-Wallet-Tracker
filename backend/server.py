@@ -241,10 +241,15 @@ async def check_usage_limit(user: dict = Depends(get_current_user)) -> dict:
     # Reset daily count if it's a new day
     last_reset = user.get("last_usage_reset")
     if isinstance(last_reset, str):
-        last_reset = datetime.fromisoformat(last_reset)
+        # Handle ISO string - ensure timezone awareness
+        last_reset = datetime.fromisoformat(last_reset.replace('Z', '+00:00'))
+    
+    # Ensure timezone-awareness for comparison
+    if last_reset and last_reset.tzinfo is None:
+        last_reset = last_reset.replace(tzinfo=timezone.utc)
     
     now = datetime.now(timezone.utc)
-    if (now - last_reset).days >= 1:
+    if last_reset and (now - last_reset).days >= 1:
         # Reset usage count
         await db.users.update_one(
             {"id": user["id"]},

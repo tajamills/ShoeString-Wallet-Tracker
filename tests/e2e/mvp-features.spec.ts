@@ -33,7 +33,8 @@ async function login(page: Page, email: string = TEST_EMAIL, password: string = 
   await page.getByTestId('email-input').fill(email);
   await page.getByTestId('password-input').fill(password);
   await page.getByTestId('auth-submit-button').click();
-  await expect(page.getByTestId('user-info-bar')).toBeVisible();
+  // Give enough time for login API response
+  await expect(page.getByTestId('user-info-bar')).toBeVisible({ timeout: 15000 });
 }
 
 test.describe('MVP Auth Flow', () => {
@@ -211,28 +212,10 @@ test.describe('MVP Wallet Analysis', () => {
     // Click analyze button
     await page.getByTestId('analyze-button').click();
     
-    // BUG: Backend returns 500 due to datetime comparison issue in check_usage_limit()
-    // Expected: analysis-results should be visible
-    // Actual: Shows "Failed to analyze wallet" error
-    // This test will FAIL to report the bug to main agent
+    // Wait for analysis results (datetime bug was fixed)
+    await expect(page.getByTestId('analysis-results')).toBeVisible({ timeout: 45000 });
     
-    // Wait for either success or error
-    const errorAlert = page.getByTestId('error-alert');
-    const analysisResults = page.getByTestId('analysis-results');
-    
-    // Check if error appears (indicating the bug)
-    await expect(errorAlert.or(analysisResults)).toBeVisible({ timeout: 30000 });
-    
-    // If error alert is shown, this is the bug - fail the test with clear message
-    if (await errorAlert.isVisible()) {
-      // Get the error text
-      const errorText = await errorAlert.textContent();
-      // This assertion will fail and report the bug
-      expect(false).toBe(true);  // Intentionally fail to report: Backend datetime bug causing "Failed to analyze wallet"
-    }
-    
-    // If we get here, analysis worked
-    await expect(analysisResults).toBeVisible();
+    // Verify key metric cards are displayed
     await expect(page.getByTestId('received-card')).toBeVisible();
     await expect(page.getByTestId('sent-card')).toBeVisible();
     await expect(page.getByTestId('balance-card')).toBeVisible();
@@ -253,21 +236,8 @@ test.describe('MVP Tax Export Features', () => {
     await page.getByTestId('wallet-address-input').fill(TEST_WALLET_ADDRESS);
     await page.getByTestId('analyze-button').click();
     
-    // BUG: Backend returns 500 due to datetime comparison issue
-    // This test depends on wallet analysis working, which is currently broken
-    
-    // Wait for either success or error
-    const errorAlert = page.getByTestId('error-alert');
-    const analysisResults = page.getByTestId('analysis-results');
-    
-    await expect(errorAlert.or(analysisResults)).toBeVisible({ timeout: 30000 });
-    
-    // If error, the backend bug prevents testing this feature
-    if (await errorAlert.isVisible()) {
-      // Skip the rest of this test since wallet analysis is broken
-      test.skip(true, 'Backend datetime bug prevents wallet analysis - cannot test Form 8949 export');
-      return;
-    }
+    // Wait for analysis results (datetime bug was fixed)
+    await expect(page.getByTestId('analysis-results')).toBeVisible({ timeout: 45000 });
     
     // Scroll to see tax section if needed
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
@@ -280,7 +250,7 @@ test.describe('MVP Tax Export Features', () => {
       await expect(page.getByText('Export Form 8949 CSV')).toBeVisible();
     } else {
       // TaxDashboard may only be visible after sufficient transaction data
-      await expect(analysisResults).toBeVisible();
+      await expect(page.getByTestId('analysis-results')).toBeVisible();
     }
   });
 
@@ -291,16 +261,8 @@ test.describe('MVP Tax Export Features', () => {
     await page.getByTestId('wallet-address-input').fill(TEST_WALLET_ADDRESS);
     await page.getByTestId('analyze-button').click();
     
-    // Wait for either success or error
-    const errorAlert = page.getByTestId('error-alert');
-    const analysisResults = page.getByTestId('analysis-results');
-    
-    await expect(errorAlert.or(analysisResults)).toBeVisible({ timeout: 30000 });
-    
-    if (await errorAlert.isVisible()) {
-      test.skip(true, 'Backend datetime bug prevents wallet analysis');
-      return;
-    }
+    // Wait for analysis results (datetime bug was fixed)
+    await expect(page.getByTestId('analysis-results')).toBeVisible({ timeout: 45000 });
     
     // Scroll to see tax section
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
@@ -316,16 +278,8 @@ test.describe('MVP Tax Export Features', () => {
     await page.getByTestId('wallet-address-input').fill(TEST_WALLET_ADDRESS);
     await page.getByTestId('analyze-button').click();
     
-    // Wait for either success or error
-    const errorAlert = page.getByTestId('error-alert');
-    const analysisResults = page.getByTestId('analysis-results');
-    
-    await expect(errorAlert.or(analysisResults)).toBeVisible({ timeout: 30000 });
-    
-    if (await errorAlert.isVisible()) {
-      test.skip(true, 'Backend datetime bug prevents wallet analysis');
-      return;
-    }
+    // Wait for analysis results (datetime bug was fixed)
+    await expect(page.getByTestId('analysis-results')).toBeVisible({ timeout: 45000 });
     
     // Batch Categorize button should NOT be visible (hidden for MVP)
     await expect(page.getByRole('button', { name: /Batch Categorize/i })).not.toBeVisible();
