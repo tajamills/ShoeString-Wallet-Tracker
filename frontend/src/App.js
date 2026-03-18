@@ -347,6 +347,11 @@ function App() {
                               ? `${user.analysis_count || 0}/1` 
                               : 'Unlimited'}
                           </span>
+                          {user.subscription_details?.current_period_end && (
+                            <span className="text-xs text-gray-500">
+                              (renews {new Date(user.subscription_details.current_period_end * 1000).toLocaleDateString()})
+                            </span>
+                          )}
                           {user.subscription_tier !== 'free' && (
                             <button
                               onClick={() => setShowDowngradeModal(true)}

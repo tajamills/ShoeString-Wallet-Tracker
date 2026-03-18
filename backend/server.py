@@ -20,7 +20,7 @@ from stripe_service import StripeService
 from multi_chain_service import MultiChainService
 from multi_chain_service_v2 import multi_chain_service_v2  # New refactored service
 from tax_report_service import tax_report_service
-from email_service import send_welcome_email, send_password_reset_email, send_subscription_upgraded_email, send_subscription_expired_email
+from email_service import send_welcome_email, send_password_reset_email, send_subscription_upgraded_email, send_subscription_expired_email, send_subscription_expiring_email
 from fastapi.responses import Response
 
 
@@ -896,6 +896,94 @@ async def handle_stripe_webhook(request: Request):
     except Exception as e:
         logger.error(f"Stripe webhook processing error: {str(e)}")
         raise HTTPException(status_code=500, detail="Webhook processing failed")
+
+
+@api_router.post("/admin/check-expiring-subscriptions")
+async def check_expiring_subscriptions(
+    request: Request,
+    days_warning: int = 7
+):
+    """
+    Check for expiring subscriptions and send notification emails.
+    This endpoint should be called by a cron job (e.g., daily).
+    
+    Sends emails to users whose subscriptions expire within `days_warning` days.
+    Uses a simple auth token to protect the endpoint.
+    """
+    # Simple auth - check for admin token in header
+    admin_token = request.headers.get("X-Admin-Token")
+    expected_token = os.environ.get("ADMIN_CRON_TOKEN", "cron-secret-token-change-me")
+    
+    if admin_token != expected_token:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    try:
+        import stripe as stripe_lib
+        stripe_lib.api_key = os.environ.get('STRIPE_API_KEY')
+        
+        # Find all users with active Stripe subscriptions
+        users_with_subs = await db.users.find(
+            {"stripe_subscription_id": {"$exists": True, "$ne": None}},
+            {"_id": 0}
+        ).to_list(1000)
+        
+        notifications_sent = 0
+        errors = []
+        
+        for user in users_with_subs:
+            try:
+                # Get subscription from Stripe
+                subscription = stripe_lib.Subscription.retrieve(user['stripe_subscription_id'])
+                
+                # Check if subscription is active and has end date
+                if subscription.status == 'active':
+                    end_timestamp = subscription.current_period_end
+                    end_date = datetime.fromtimestamp(end_timestamp, tz=timezone.utc)
+                    now = datetime.now(timezone.utc)
+                    days_until_expiry = (end_date - now).days
+                    
+                    # Send warning email if within warning period
+                    if 0 < days_until_expiry <= days_warning:
+                        # Check if we already sent a notification today
+                        last_notification = user.get("last_expiry_notification")
+                        if last_notification:
+                            last_notif_date = datetime.fromisoformat(last_notification.replace('Z', '+00:00'))
+                            if (now - last_notif_date).days < 1:
+                                continue  # Skip - already notified today
+                        
+                        # Send email
+                        tier = user.get("subscription_tier", "premium")
+                        await send_subscription_expiring_email(
+                            user['email'], 
+                            days_until_expiry, 
+                            tier
+                        )
+                        
+                        # Update last notification time
+                        await db.users.update_one(
+                            {"id": user["id"]},
+                            {"$set": {"last_expiry_notification": now.isoformat()}}
+                        )
+                        
+                        notifications_sent += 1
+                        logger.info(f"Sent expiry warning to {user['email']} - {days_until_expiry} days remaining")
+                        
+            except Exception as user_err:
+                errors.append(f"User {user.get('email')}: {str(user_err)}")
+                logger.error(f"Error checking subscription for {user.get('email')}: {str(user_err)}")
+        
+        return {
+            "status": "success",
+            "users_checked": len(users_with_subs),
+            "notifications_sent": notifications_sent,
+            "errors": errors[:10] if errors else []  # Limit errors in response
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to check expiring subscriptions: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 
 @api_router.get("/payments/status/{session_id}")
 async def get_payment_status(
