@@ -709,6 +709,7 @@ async def create_upgrade_payment(
         raise HTTPException(status_code=500, detail=f"Payment creation failed: {str(e)}")
 
 @api_router.post("/payments/webhook/stripe")
+@api_router.post("/webhook")  # Alias for Stripe dashboard config
 async def handle_stripe_webhook(request: Request):
     """Handle Stripe webhook for subscriptions"""
     try:
