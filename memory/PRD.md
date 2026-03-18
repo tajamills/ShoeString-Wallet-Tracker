@@ -423,6 +423,29 @@ All users must accept Terms of Service before using the platform. The TOS modal 
   - RISK_ASSESSMENT.md - Risk analysis for insurance
 - [x] Updated all docs with contact info: support@cryptobagtracker.com, (404) 954-1182, 1557 Buford Dr #492773, Lawrenceville, GA 30043
 
+### Phase 16: MVP Finalization (Completed - Mar 2026)
+- [x] **Password Reset Flow** (email via Resend)
+  - Added `/api/auth/forgot-password` endpoint
+  - Added `/api/auth/reset-password` endpoint
+  - Token-based reset with 24-hour expiration
+  - Integrated Resend for transactional emails
+  - Frontend "Forgot your password?" link in AuthModal
+  - Success/error message handling
+- [x] **Welcome Email** sent on new user registration (via Resend)
+- [x] **Sentry Integration** for error monitoring (backend)
+- [x] **UI Simplification** (hiding non-MVP features)
+  - Removed Help/Support button (AI chatbot) from main UI
+  - Simplified TaxDashboard to show only Form 8949 CSV export
+  - Hidden Schedule D export button
+  - Hidden Batch Categorize button  
+  - Hidden "Categorize Transactions for Tax" button
+  - Kept backend logic intact for future use
+- [x] **Critical Bug Fix**: DateTime comparison in check_usage_limit()
+  - Fixed timezone-naive vs timezone-aware datetime comparison
+  - Wallet analysis now works correctly
+- [x] **Deployment Fix**: Removed emergentintegrations from requirements.txt (not available on standard PyPI)
+- [x] **Test Coverage**: Backend 100%, Frontend 70% (3 flaky due to timing)
+
 ## Deployment
 - **Platform**: Render
 - **Domain**: cryptobagtracker.io
