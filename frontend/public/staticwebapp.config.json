@@ -1,0 +1,16 @@
+{
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": ["/api/*", "/static/*", "*.js", "*.css", "*.png", "*.jpg", "*.ico", "*.json"]
+  },
+  "routes": [
+    {
+      "route": "/reset-password",
+      "rewrite": "/index.html"
+    },
+    {
+      "route": "/*",
+      "rewrite": "/index.html"
+    }
+  ]
+}

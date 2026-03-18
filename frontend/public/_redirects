@@ -1,0 +1,8 @@
+# Render/Netlify SPA routing - redirect all routes to index.html
+# This allows React Router to handle client-side routing
+
+# API calls should NOT be redirected (if you have a separate backend)
+/api/*  /api/:splat  200
+
+# All other routes should serve index.html for React Router
+/*    /index.html   200
