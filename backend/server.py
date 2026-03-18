@@ -7,6 +7,8 @@ import os
 import io
 import logging
 import json
+import secrets
+import sentry_sdk
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from typing import List, Dict, Any, Optional
@@ -18,11 +20,23 @@ from stripe_service import StripeService
 from multi_chain_service import MultiChainService
 from multi_chain_service_v2 import multi_chain_service_v2  # New refactored service
 from tax_report_service import tax_report_service
+from email_service import send_welcome_email, send_password_reset_email
 from fastapi.responses import Response
 
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
+
+# Initialize Sentry for error monitoring
+SENTRY_DSN = os.environ.get("SENTRY_DSN")
+if SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        traces_sample_rate=0.2,  # 20% of transactions for performance monitoring
+        environment=os.environ.get("ENVIRONMENT", "production"),
+        send_default_pii=False,  # Don't send PII by default
+    )
+    logging.info("Sentry initialized for error monitoring")
 
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
@@ -129,6 +143,13 @@ class UserRegister(BaseModel):
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+class PasswordResetConfirm(BaseModel):
+    token: str
+    new_password: str
 
 class UserResponse(BaseModel):
     id: str
@@ -289,6 +310,13 @@ async def register(user_data: UserRegister):
     # Generate token
     access_token = auth_service.create_access_token(data={"sub": user.id})
     
+    # Send welcome email (async, non-blocking)
+    try:
+        await send_welcome_email(user.email)
+    except Exception as e:
+        logger.error(f"Failed to send welcome email: {e}")
+        # Don't fail registration if email fails
+    
     # Return response
     user_response = UserResponse(
         id=user.id,
@@ -301,6 +329,73 @@ async def register(user_data: UserRegister):
     )
     
     return TokenResponse(access_token=access_token, user=user_response)
+
+@api_router.post("/auth/forgot-password")
+async def forgot_password(request: PasswordResetRequest):
+    """Request password reset - sends email with reset link"""
+    user = await db.users.find_one({"email": request.email.lower()})
+    
+    # Always return success to prevent email enumeration
+    if not user:
+        return {"message": "If this email exists, a reset link has been sent."}
+    
+    # Generate secure reset token
+    reset_token = secrets.token_urlsafe(32)
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
+    
+    # Store reset token
+    await db.password_resets.update_one(
+        {"user_id": user["id"]},
+        {
+            "$set": {
+                "user_id": user["id"],
+                "token": reset_token,
+                "expires_at": expires_at.isoformat(),
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+        },
+        upsert=True
+    )
+    
+    # Send reset email
+    try:
+        await send_password_reset_email(user["email"], reset_token)
+    except Exception as e:
+        logger.error(f"Failed to send password reset email: {e}")
+    
+    return {"message": "If this email exists, a reset link has been sent."}
+
+@api_router.post("/auth/reset-password")
+async def reset_password(request: PasswordResetConfirm):
+    """Reset password using token from email"""
+    # Find valid reset token
+    reset_record = await db.password_resets.find_one({"token": request.token})
+    
+    if not reset_record:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+    
+    # Check expiration
+    expires_at = datetime.fromisoformat(reset_record["expires_at"])
+    if datetime.now(timezone.utc) > expires_at:
+        await db.password_resets.delete_one({"token": request.token})
+        raise HTTPException(status_code=400, detail="Reset token has expired")
+    
+    # Validate new password
+    is_valid, error_msg = auth_service.validate_password(request.new_password)
+    if not is_valid:
+        raise HTTPException(status_code=400, detail=error_msg)
+    
+    # Update password
+    new_hash = auth_service.get_password_hash(request.new_password)
+    await db.users.update_one(
+        {"id": reset_record["user_id"]},
+        {"$set": {"password_hash": new_hash}}
+    )
+    
+    # Delete used token
+    await db.password_resets.delete_one({"token": request.token})
+    
+    return {"message": "Password successfully reset. You can now log in."}
 
 @api_router.post("/auth/login", response_model=TokenResponse)
 async def login(user_data: UserLogin):

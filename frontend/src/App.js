@@ -325,7 +325,7 @@ function App() {
                     </Button>
                   </div>
                   
-                  {/* Action Buttons Row - Wraps on mobile */}
+                  {/* Action Buttons Row - Simplified for MVP */}
                   <div className="flex flex-wrap gap-2">
                     {user.subscription_tier === 'free' && (
                       <Button 
@@ -345,7 +345,7 @@ function App() {
                         data-testid="exchange-button"
                       >
                         <Link2 className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
-                        Exchanges
+                        Import CSV
                       </Button>
                     )}
                     {user.subscription_tier !== 'free' && (
@@ -356,18 +356,9 @@ function App() {
                         data-testid="custody-button"
                       >
                         <Link2 className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
-                        Custody
+                        Chain of Custody
                       </Button>
                     )}
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setShowAffiliateModal(true)}
-                      className="border-purple-600 text-purple-300 hover:bg-purple-900/30 h-8 text-xs md:text-sm"
-                      data-testid="affiliate-button"
-                    >
-                      <Users className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
-                      Affiliate
-                    </Button>
                     <Button 
                       variant="outline" 
                       onClick={() => setShowSupportModal(true)}
@@ -455,8 +446,8 @@ function App() {
                 <select
                   value={selectedChain}
                   onChange={(e) => {
-                    if (user?.subscription_tier === 'free' && e.target.value !== 'ethereum') {
-                      setError('Multi-chain analysis requires Premium. Upgrade to unlock!');
+                    if (user?.subscription_tier === 'free' && e.target.value !== 'ethereum' && e.target.value !== 'bitcoin') {
+                      setError('Additional chains require Unlimited. Upgrade to unlock!');
                       setShowUpgradeModal(true);
                       return;
                     }
@@ -466,49 +457,29 @@ function App() {
                   className="w-full bg-slate-900 border border-slate-600 text-white rounded-md px-3 py-2"
                   disabled={!user}
                 >
-                  <option value="ethereum">⟠ Ethereum</option>
-                  <option value="bitcoin" disabled={user?.subscription_tier === 'free'}>
-                    ₿ Bitcoin {user?.subscription_tier === 'free' ? '🔒' : ''}
-                  </option>
-                  <option value="polygon" disabled={user?.subscription_tier === 'free'}>
-                    🔺 Polygon {user?.subscription_tier === 'free' ? '🔒' : ''}
-                  </option>
-                  <option value="arbitrum" disabled={user?.subscription_tier === 'free'}>
-                    🔷 Arbitrum {user?.subscription_tier === 'free' ? '🔒' : ''}
-                  </option>
-                  <option value="bsc" disabled={user?.subscription_tier === 'free'}>
-                    🟡 BNB Smart Chain {user?.subscription_tier === 'free' ? '🔒' : ''}
-                  </option>
+                  {/* Primary chains - always visible */}
+                  <option value="ethereum">⟠ Ethereum (ETH)</option>
+                  <option value="bitcoin">₿ Bitcoin (BTC)</option>
                   <option value="solana" disabled={user?.subscription_tier === 'free'}>
-                    ◎ Solana {user?.subscription_tier === 'free' ? '🔒' : ''}
+                    ◎ Solana (SOL) {user?.subscription_tier === 'free' ? '🔒' : ''}
                   </option>
-                  <option value="algorand" disabled={user?.subscription_tier === 'free'}>
-                    🔷 Algorand {user?.subscription_tier === 'free' ? '🔒' : ''}
-                  </option>
-                  <option value="avalanche" disabled={user?.subscription_tier === 'free'}>
-                    🔺 Avalanche {user?.subscription_tier === 'free' ? '🔒' : ''}
-                  </option>
-                  <option value="optimism" disabled={user?.subscription_tier === 'free'}>
-                    🔴 Optimism {user?.subscription_tier === 'free' ? '🔒' : ''}
-                  </option>
-                  <option value="base" disabled={user?.subscription_tier === 'free'}>
-                    🔵 Base {user?.subscription_tier === 'free' ? '🔒' : ''}
-                  </option>
-                  <option value="fantom" disabled={user?.subscription_tier === 'free'}>
-                    👻 Fantom {user?.subscription_tier === 'free' ? '🔒' : ''}
-                  </option>
-                  <option value="dogecoin" disabled={user?.subscription_tier === 'free'}>
-                    🐕 Dogecoin {user?.subscription_tier === 'free' ? '🔒' : ''}
-                  </option>
+                  
+                  {/* Additional chains - only show for paid users */}
+                  {user?.subscription_tier !== 'free' && (
+                    <>
+                      <option disabled>──── More Chains ────</option>
+                      <option value="polygon">🔺 Polygon (MATIC)</option>
+                      <option value="arbitrum">🔷 Arbitrum (ETH)</option>
+                      <option value="bsc">🟡 BNB Chain (BNB)</option>
+                      <option value="base">🔵 Base (ETH)</option>
+                      <option value="optimism">🔴 Optimism (ETH)</option>
+                      <option value="avalanche">🔺 Avalanche (AVAX)</option>
+                      <option value="fantom">👻 Fantom (FTM)</option>
+                      <option value="algorand">🔷 Algorand (ALGO)</option>
+                      <option value="dogecoin">🐕 Dogecoin (DOGE)</option>
+                    </>
+                  )}
                 </select>
-                {(user?.subscription_tier === 'pro' || user?.subscription_tier === 'unlimited') && (
-                  <button
-                    onClick={() => setShowChainRequestModal(true)}
-                    className="text-xs text-purple-400 hover:text-purple-300 underline mt-2"
-                  >
-                    Need a different chain? Request it (48hr turnaround)
-                  </button>
-                )}
               </div>
 
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">

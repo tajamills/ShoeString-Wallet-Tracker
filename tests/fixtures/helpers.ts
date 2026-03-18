@@ -1,6 +1,6 @@
 import { Page, expect } from '@playwright/test';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL || 'https://asset-flow-track.preview.emergentagent.com';
+const API_URL = process.env.REACT_APP_BACKEND_URL || 'https://chain-custody-tool.preview.emergentagent.com';
 
 export async function waitForAppReady(page: Page) {
   await page.waitForLoadState('domcontentloaded');

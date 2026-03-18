@@ -11,7 +11,7 @@ from datetime import datetime
 import sys
 
 # Configuration
-BASE_URL = "https://asset-flow-track.preview.emergentagent.com/api"
+BASE_URL = "https://chain-custody-tool.preview.emergentagent.com/api"
 TIMEOUT = 30
 
 class SpecificChainTester:
