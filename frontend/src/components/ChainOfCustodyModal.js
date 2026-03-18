@@ -235,13 +235,19 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
   };
 
   const analyzeChainOfCustody = async () => {
-    if (!address) {
-      setError('Please enter a wallet address');
+    if (!address.trim()) {
+      setError('Please enter at least one wallet address');
       return;
     }
 
-    if (!address.startsWith('0x') || address.length !== 42) {
-      setError('Invalid EVM address format');
+    // Parse multiple addresses (comma or newline separated)
+    const addresses = address
+      .split(/[\n,]/)
+      .map(a => a.trim().toLowerCase())
+      .filter(a => a.length > 0);
+
+    if (addresses.length === 0) {
+      setError('Please enter at least one valid wallet address');
       return;
     }
 
@@ -250,17 +256,82 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
     setResult(null);
 
     try {
-      const response = await axios.post(
-        `${API}/custody/analyze`,
-        {
-          address: address.toLowerCase(),
+      // If multiple addresses, analyze each and combine results
+      if (addresses.length > 1) {
+        const allResults = [];
+        let summary = {
+          total_links_traced: 0,
+          exchange_origins: 0,
+          dex_origins: 0,
+          dormant_origins: 0,
+          unknown_origins: 0
+        };
+
+        for (const addr of addresses) {
+          try {
+            const response = await axios.post(
+              `${API}/custody/analyze`,
+              {
+                address: addr,
+                chain: chain,
+                max_depth: maxDepth,
+                dormancy_days: dormancyDays
+              },
+              { headers: getAuthHeader() }
+            );
+            
+            if (response.data?.custody_chain) {
+              allResults.push(...response.data.custody_chain.map(link => ({
+                ...link,
+                source_address: addr
+              })));
+              
+              // Aggregate summary
+              if (response.data.summary) {
+                summary.total_links_traced += response.data.summary.total_links_traced || 0;
+                summary.exchange_origins += response.data.summary.exchange_origins || 0;
+                summary.dex_origins += response.data.summary.dex_origins || 0;
+                summary.dormant_origins += response.data.summary.dormant_origins || 0;
+                summary.unknown_origins += response.data.summary.unknown_origins || 0;
+              }
+            }
+          } catch (err) {
+            console.error(`Failed to analyze ${addr}:`, err);
+            // Continue with other addresses
+          }
+        }
+
+        setResult({
+          target_address: `${addresses.length} addresses`,
           chain: chain,
-          max_depth: maxDepth,
-          dormancy_days: dormancyDays
-        },
-        { headers: getAuthHeader() }
-      );
-      setResult(response.data);
+          custody_chain: allResults,
+          summary: summary,
+          multi_address: true,
+          addresses_analyzed: addresses
+        });
+      } else {
+        // Single address - keep original validation for EVM
+        const addr = addresses[0];
+        if (chain !== 'bitcoin' && chain !== 'dogecoin' && chain !== 'solana' && chain !== 'algorand') {
+          if (!addr.startsWith('0x') || addr.length !== 42) {
+            setError('Invalid EVM address format');
+            setLoading(false);
+            return;
+          }
+        }
+
+        const response = await axios.post(
+          `${API}/custody/analyze`,
+          {
+            address: addr,
+            chain: chain,
+            max_depth: maxDepth,
+            dormancy_days: dormancyDays
+          },
+          { headers: getAuthHeader() }
+        );
+        setResult(response.data);
+      }
     } catch (err) {
       if (err.response?.status === 403) {
         setError('Chain of Custody analysis requires Unlimited subscription.');
@@ -839,37 +910,47 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
                   </select>
                 </div>
 
-                {/* Address Input */}
+                {/* Bulk Address Input */}
                 <div>
-                  <label className="text-sm text-gray-400 block mb-2">Wallet Address</label>
-                  <div className="flex gap-2">
-                    <Input
-                      type="text"
-                      placeholder="0x..."
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                      className="flex-1 bg-slate-900 border-slate-600 text-white"
-                      disabled={loading}
-                    />
-                    <Button
-                      onClick={analyzeChainOfCustody}
-                      disabled={loading || !address}
-                      className="bg-blue-600 hover:bg-blue-700"
-                    >
-                      {loading ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Tracing...
-                        </>
-                      ) : (
-                        <>
-                          <Search className="w-4 h-4 mr-2" />
-                          Analyze
-                        </>
-                      )}
-                    </Button>
-                  </div>
+                  <label className="text-sm text-gray-400 block mb-2">
+                    Wallet Addresses 
+                    <span className="text-xs text-gray-500 ml-2">(one per line, or comma-separated)</span>
+                  </label>
+                  <textarea
+                    placeholder="Enter addresses - one per line or comma-separated:
+0x742d35Cc6634C0532925a3b844Bc9e7595f...
+0xAb5801a7D398351b8bE11C439e05C5B3259...
+bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    className="w-full h-32 bg-slate-900 border border-slate-600 text-white rounded-md px-3 py-2 font-mono text-sm resize-none"
+                    disabled={loading}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {address ? `${address.split(/[\n,]/).filter(a => a.trim()).length} address(es) entered` : 'Enter one or multiple addresses'}
+                  </p>
                 </div>
+
+                {/* Analyze Button */}
+                <Button
+                  onClick={analyzeChainOfCustody}
+                  disabled={loading || !address.trim()}
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Tracing Origins...
+                    </>
+                  ) : (
+                    <>
+                      <Search className="w-4 h-4 mr-2" />
+                      Analyze {address.split(/[\n,]/).filter(a => a.trim()).length > 1 
+                        ? `${address.split(/[\n,]/).filter(a => a.trim()).length} Addresses` 
+                        : 'Chain of Custody'}
+                    </>
+                  )}
+                </Button>
 
                 {/* Advanced Options Toggle */}
                 <button
