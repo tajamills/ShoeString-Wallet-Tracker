@@ -1,0 +1,74 @@
+{
+  "summary": "MVP features tested. CRITICAL BUG found: Wallet analysis returns 500 error due to datetime comparison issue in check_usage_limit() function (server.py line 244-247). Auth flows (login, password reset) working. UI simplification verified (Help/Support hidden, Import CSV and Chain of Custody visible for paid users).",
+  "mode": "generate",
+  "baseline_commit": "497c046bfc94aad684b27f36de34eed4a0aaed72",
+  "head_commit": "0c6273d76e6f003a6c4b0de49026a24ca667420f",
+  "specs_created": [
+    "/app/tests/e2e/mvp-features.spec.ts",
+    "/app/backend/tests/test_mvp_features.py"
+  ],
+  "specs_updated": [],
+  "quarantined_tests": [],
+  "test_report_links": [
+    "/app/tests/e2e/mvp-features.spec.ts",
+    "/app/backend/tests/test_mvp_features.py",
+    "/app/test_reports/pytest/pytest_mvp_results.xml"
+  ],
+  "regression_results": {
+    "total_specs": 27,
+    "passed": 21,
+    "failed": 3,
+    "skipped": 3
+  },
+  "issues": [
+    {
+      "id": "BUG-001",
+      "issue_type": "bug",
+      "severity": "CRITICAL",
+      "description": "Wallet analysis returns 500 Internal Server Error due to TypeError in check_usage_limit(): 'can't subtract offset-naive and offset-aware datetimes'. The datetime.fromisoformat() at line 244 returns a naive datetime if the stored ISO string doesn't have timezone info, but datetime.now(timezone.utc) returns an aware datetime.",
+      "endpoint_or_component": "/api/wallet/analyze",
+      "surfaces": ["backend"],
+      "reproduction": "1. Login as any user (e.g., mobiletest@test.com / test123456)\n2. Enter wallet address: 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045\n3. Click Analyze\n4. See error 'Failed to analyze wallet'\nOr via curl: POST /api/wallet/analyze with valid auth token",
+      "affected_test": "test_mvp_features.py::TestWalletAnalysis::test_analyze_wallet_success",
+      "fix_suggestion": "In server.py line 244, ensure the parsed datetime is timezone-aware: if isinstance(last_reset, str): last_reset = datetime.fromisoformat(last_reset.replace('Z', '+00:00')); if last_reset.tzinfo is None: last_reset = last_reset.replace(tzinfo=timezone.utc)"
+    }
+  ],
+  "action_items": [
+    "FIX CRITICAL: Fix datetime comparison bug in server.py check_usage_limit() function (line 244-247). The last_reset datetime parsed from ISO string needs to be timezone-aware."
+  ],
+  "updated_files": [
+    "/app/tests/e2e/mvp-features.spec.ts",
+    "/app/backend/tests/test_mvp_features.py"
+  ],
+  "test_results": {
+    "backend": "88% (15/17 passed, 2 failed due to datetime bug)",
+    "frontend": "60% (6/10 passed, 1 failed due to datetime bug, 3 skipped)"
+  },
+  "seed_data_creation": "Used existing test user mobiletest@test.com with unlimited subscription",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "CRITICAL BUG: Wallet analysis is completely broken due to datetime comparison error in check_usage_limit() at server.py line 244-247. After fix, rerun test_mvp_features.py and mvp-features.spec.ts. Auth flows are working (login, register, forgot password). UI simplification verified (Help/Support hidden, Import CSV and Chain of Custody visible for paid users only).",
+  "features_verified": [
+    "Auth: Login works correctly",
+    "Auth: Password reset request returns success message",
+    "Auth: Login fails with invalid credentials (401 returned)",
+    "Auth: Registration works for new users",
+    "Auth: Registration fails for duplicate email",
+    "UI: Help/Support button is hidden for logged-in users",
+    "UI: Import CSV button visible for paid users (UNLIMITED tier)",
+    "UI: Chain of Custody button visible for paid users",
+    "UI: Upgrade button visible for free users",
+    "UI: Import CSV and Chain of Custody buttons NOT visible for free users",
+    "Tax: Form 8949 export endpoint exists (but untested due to wallet analysis bug)",
+    "BLOCKED: Wallet analysis - returns 500 due to datetime bug"
+  ],
+  "tests_executed": {
+    "backend": {
+      "test_mvp_features.py": "17 tests: 15 passed, 2 failed (wallet analysis blocked by datetime bug)"
+    },
+    "frontend": {
+      "mvp-features.spec.ts": "10 tests: 6 passed, 1 failed (wallet analysis), 3 skipped (depend on wallet analysis)"
+    }
+  },
+  "rca_of_issue": "Root Cause: In server.py check_usage_limit() function, line 244 uses datetime.fromisoformat(last_reset) which may return a naive datetime (without timezone info) if the stored ISO string doesn't include timezone. However, line 246 compares it with datetime.now(timezone.utc) which is timezone-aware. This causes TypeError: can't subtract offset-naive and offset-aware datetimes.\n\nFix: Ensure the parsed datetime is timezone-aware by adding timezone info if missing:\nif last_reset.tzinfo is None:\n    last_reset = last_reset.replace(tzinfo=timezone.utc)"
+}

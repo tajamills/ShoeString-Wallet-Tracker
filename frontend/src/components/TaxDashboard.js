@@ -232,15 +232,15 @@ export const TaxDashboard = ({
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2">
             <FileText className="w-5 h-5 text-green-400" />
-            Export Tax Forms
+            Export Tax Report
           </CardTitle>
           <CardDescription className="text-gray-400">
-            Download IRS-compatible tax reports
+            Download IRS Form 8949 compatible CSV
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {/* Form 8949 */}
+            {/* Form 8949 - Primary Export */}
             <div>
               <h4 className="text-sm font-medium text-gray-300 mb-2">Form 8949 (Sales & Dispositions)</h4>
               <div className="flex flex-wrap gap-3">
@@ -250,7 +250,7 @@ export const TaxDashboard = ({
                   data-testid="export-form-8949-btn"
                 >
                   <Download className="w-4 h-4 mr-2" />
-                  Export Form 8949 (All)
+                  Export Form 8949 CSV
                 </Button>
                 <Button
                   onClick={() => onExportForm8949('short-term')}
@@ -270,37 +270,12 @@ export const TaxDashboard = ({
                 </Button>
               </div>
             </div>
-
-            {/* Schedule D */}
-            <div>
-              <h4 className="text-sm font-medium text-gray-300 mb-2">Schedule D (Capital Gains Summary)</h4>
-              <div className="flex flex-wrap gap-3">
-                <Button
-                  onClick={onExportScheduleD}
-                  variant="outline"
-                  className="border-green-600 text-green-300 hover:bg-green-900/30"
-                  data-testid="export-schedule-d-btn"
-                >
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Export Schedule D
-                </Button>
-                <Button
-                  onClick={onBatchCategorize}
-                  variant="outline"
-                  className="border-purple-600 text-purple-300 hover:bg-purple-900/30"
-                  data-testid="batch-categorize-btn"
-                >
-                  <Wand2 className="w-4 h-4 mr-2" />
-                  Batch Categorize
-                </Button>
-              </div>
-            </div>
           </div>
 
           <Alert className="mt-4 bg-blue-900/20 border-blue-700 text-blue-300">
             <Info className="h-4 w-4" />
             <AlertDescription className="text-sm">
-              Form 8949 reports individual sales. Schedule D summarizes your total gains/losses.
+              Form 8949 reports individual capital gains and losses from crypto sales.
               Consult a tax professional for advice specific to your situation.
             </AlertDescription>
           </Alert>
