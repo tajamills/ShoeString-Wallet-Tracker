@@ -139,3 +139,156 @@ async def send_password_reset_email(to_email: str, reset_token: str) -> dict:
     """
     
     return await send_email(to_email, subject, html_content)
+
+
+
+async def send_subscription_expiring_email(to_email: str, days_remaining: int, tier: str) -> dict:
+    """Send subscription expiration warning email"""
+    subject = f"Your {APP_NAME} {tier.title()} subscription expires in {days_remaining} day{'s' if days_remaining != 1 else ''}"
+    
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+    </head>
+    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #1a1a2e; color: #ffffff;">
+        <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 30px; border-radius: 10px; text-align: center;">
+            <h1 style="margin: 0; color: white;">Subscription Expiring Soon</h1>
+        </div>
+        
+        <div style="padding: 30px; background-color: #16213e; border-radius: 10px; margin-top: 20px;">
+            <p style="color: #e0e0e0; font-size: 16px;">Hi,</p>
+            
+            <p style="color: #e0e0e0; font-size: 16px;">
+                Your <strong>{tier.title()}</strong> subscription to {APP_NAME} will expire in <strong>{days_remaining} day{'s' if days_remaining != 1 else ''}</strong>.
+            </p>
+            
+            <p style="color: #e0e0e0; font-size: 16px;">
+                To continue enjoying unlimited wallet analysis, tax reports, and chain of custody features, please renew your subscription.
+            </p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{APP_URL}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                    Renew Now
+                </a>
+            </div>
+            
+            <p style="color: #888; font-size: 14px;">
+                If you don't renew, your account will revert to the Free tier with limited features.
+            </p>
+        </div>
+        
+        <p style="color: #666; font-size: 11px; text-align: center; margin-top: 20px;">
+            {APP_NAME} | 1557 Buford Dr #492773, Lawrenceville, GA 30043
+        </p>
+    </body>
+    </html>
+    """
+    
+    return await send_email(to_email, subject, html_content)
+
+
+async def send_subscription_expired_email(to_email: str, tier: str) -> dict:
+    """Send subscription expired notification email"""
+    subject = f"Your {APP_NAME} {tier.title()} subscription has expired"
+    
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+    </head>
+    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #1a1a2e; color: #ffffff;">
+        <div style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); padding: 30px; border-radius: 10px; text-align: center;">
+            <h1 style="margin: 0; color: white;">Subscription Expired</h1>
+        </div>
+        
+        <div style="padding: 30px; background-color: #16213e; border-radius: 10px; margin-top: 20px;">
+            <p style="color: #e0e0e0; font-size: 16px;">Hi,</p>
+            
+            <p style="color: #e0e0e0; font-size: 16px;">
+                Your <strong>{tier.title()}</strong> subscription to {APP_NAME} has expired. Your account has been reverted to the Free tier.
+            </p>
+            
+            <p style="color: #e0e0e0; font-size: 16px;">
+                You can still use {APP_NAME} with limited features, or resubscribe to unlock:
+            </p>
+            
+            <ul style="color: #e0e0e0; font-size: 14px;">
+                <li>Unlimited wallet analysis</li>
+                <li>Full tax report generation</li>
+                <li>Chain of custody tracking</li>
+                <li>CSV imports and exports</li>
+            </ul>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{APP_URL}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                    Resubscribe Now
+                </a>
+            </div>
+        </div>
+        
+        <p style="color: #666; font-size: 11px; text-align: center; margin-top: 20px;">
+            {APP_NAME} | 1557 Buford Dr #492773, Lawrenceville, GA 30043
+        </p>
+    </body>
+    </html>
+    """
+    
+    return await send_email(to_email, subject, html_content)
+
+
+async def send_subscription_upgraded_email(to_email: str, tier: str) -> dict:
+    """Send subscription upgrade confirmation email"""
+    subject = f"Welcome to {APP_NAME} {tier.title()}!"
+    
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+    </head>
+    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #1a1a2e; color: #ffffff;">
+        <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; border-radius: 10px; text-align: center;">
+            <h1 style="margin: 0; color: white;">Subscription Activated!</h1>
+        </div>
+        
+        <div style="padding: 30px; background-color: #16213e; border-radius: 10px; margin-top: 20px;">
+            <p style="color: #e0e0e0; font-size: 16px;">Hi,</p>
+            
+            <p style="color: #e0e0e0; font-size: 16px;">
+                Thank you for upgrading to <strong>{APP_NAME} {tier.title()}</strong>! Your subscription is now active.
+            </p>
+            
+            <p style="color: #e0e0e0; font-size: 16px;">
+                You now have access to:
+            </p>
+            
+            <ul style="color: #e0e0e0; font-size: 14px;">
+                <li>Unlimited wallet analysis across all supported chains</li>
+                <li>Full Form 8949 tax report generation</li>
+                <li>Chain of custody tracking and documentation</li>
+                <li>CSV imports from exchanges</li>
+                <li>Priority support</li>
+            </ul>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{APP_URL}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                    Start Tracking
+                </a>
+            </div>
+            
+            <p style="color: #888; font-size: 14px;">
+                Questions? Reply to this email or use the Help feature in the app.
+            </p>
+        </div>
+        
+        <p style="color: #666; font-size: 11px; text-align: center; margin-top: 20px;">
+            {APP_NAME} | 1557 Buford Dr #492773, Lawrenceville, GA 30043
+        </p>
+    </body>
+    </html>
+    """
+    
+    return await send_email(to_email, subject, html_content)

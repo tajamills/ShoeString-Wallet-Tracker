@@ -20,7 +20,7 @@ from stripe_service import StripeService
 from multi_chain_service import MultiChainService
 from multi_chain_service_v2 import multi_chain_service_v2  # New refactored service
 from tax_report_service import tax_report_service
-from email_service import send_welcome_email, send_password_reset_email
+from email_service import send_welcome_email, send_password_reset_email, send_subscription_upgraded_email, send_subscription_expired_email
 from fastapi.responses import Response
 
 
@@ -813,6 +813,15 @@ async def handle_stripe_webhook(request: Request):
                     logger.info(f"Affiliate {affiliate_code} earned $10 for referral of user {user_id}")
                 
                 logger.info(f"User {user_id} subscribed to {tier} (subscription: {subscription_id})")
+                
+                # Send subscription upgrade confirmation email
+                try:
+                    user = await db.users.find_one({"id": user_id})
+                    if user and user.get('email'):
+                        await send_subscription_upgraded_email(user['email'], tier)
+                        logger.info(f"Sent subscription upgrade email to {user['email']}")
+                except Exception as email_err:
+                    logger.error(f"Failed to send upgrade email: {str(email_err)}")
         
         # Handle customer.subscription.updated (subscription changes)
         elif event_type == 'customer.subscription.updated':
@@ -856,6 +865,15 @@ async def handle_stripe_webhook(request: Request):
                     }
                 )
                 logger.info(f"User {user['id']} subscription canceled, downgraded to free")
+                
+                # Send subscription expired email
+                try:
+                    if user.get('email'):
+                        old_tier = user.get('subscription_tier', 'premium')
+                        await send_subscription_expired_email(user['email'], old_tier)
+                        logger.info(f"Sent subscription expired email to {user['email']}")
+                except Exception as email_err:
+                    logger.error(f"Failed to send expired email: {str(email_err)}")
         
         # Handle invoice.payment_failed
         elif event_type == 'invoice.payment_failed':
