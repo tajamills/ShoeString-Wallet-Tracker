@@ -265,6 +265,156 @@ class KrakenClient:
             return []
 
 
+class CoinbaseClient:
+    """Coinbase API Client - READ ONLY (uses API Key, not OAuth)"""
+    
+    BASE_URL = "https://api.coinbase.com"
+    
+    def __init__(self, api_key: str, api_secret: str):
+        self.api_key = api_key
+        self.api_secret = api_secret
+    
+    def _sign_request(self, method: str, path: str, body: str = "") -> Dict[str, str]:
+        """Sign request with HMAC SHA256 for Coinbase API"""
+        timestamp = str(int(time.time()))
+        message = timestamp + method.upper() + path + body
+        
+        signature = hmac.new(
+            self.api_secret.encode('utf-8'),
+            message.encode('utf-8'),
+            hashlib.sha256
+        ).hexdigest()
+        
+        return {
+            "CB-ACCESS-KEY": self.api_key,
+            "CB-ACCESS-SIGN": signature,
+            "CB-ACCESS-TIMESTAMP": timestamp,
+            "CB-VERSION": "2023-01-01",
+            "Content-Type": "application/json"
+        }
+    
+    async def _request(self, method: str, endpoint: str, params: Dict = None) -> Any:
+        """Make authenticated request"""
+        path = endpoint
+        if params and method == "GET":
+            query = urllib.parse.urlencode(params)
+            path = f"{endpoint}?{query}"
+        
+        headers = self._sign_request(method, path)
+        
+        async with httpx.AsyncClient() as client:
+            if method == "GET":
+                response = await client.get(
+                    f"{self.BASE_URL}{path}",
+                    headers=headers,
+                    timeout=30.0
+                )
+            else:
+                response = await client.post(
+                    f"{self.BASE_URL}{endpoint}",
+                    headers=headers,
+                    json=params or {},
+                    timeout=30.0
+                )
+            
+            response.raise_for_status()
+            return response.json()
+    
+    async def get_accounts(self) -> List[Dict]:
+        """Get all accounts/wallets"""
+        try:
+            data = await self._request("GET", "/v2/accounts", {"limit": 100})
+            return data.get('data', [])
+        except Exception as e:
+            logger.error(f"Coinbase get_accounts error: {e}")
+            return []
+    
+    async def get_deposits(self) -> List[ExchangeTransaction]:
+        """Get deposit history from all accounts"""
+        transactions = []
+        
+        try:
+            accounts = await self.get_accounts()
+            
+            for account in accounts:
+                account_id = account.get('id')
+                if not account_id:
+                    continue
+                
+                try:
+                    data = await self._request(
+                        "GET", 
+                        f"/v2/accounts/{account_id}/transactions",
+                        {"limit": 100}
+                    )
+                    
+                    for tx in data.get('data', []):
+                        tx_type = tx.get('type', '')
+                        # Only get deposits (receives from external)
+                        if tx_type in ['send', 'receive'] and tx.get('network', {}).get('status') == 'confirmed':
+                            if tx_type == 'receive' or (tx_type == 'send' and float(tx.get('amount', {}).get('amount', 0)) > 0):
+                                transactions.append(ExchangeTransaction(
+                                    id=tx.get('id', ''),
+                                    exchange='coinbase',
+                                    type='deposit' if tx_type == 'receive' else 'withdrawal',
+                                    asset=tx.get('amount', {}).get('currency', ''),
+                                    amount=abs(float(tx.get('amount', {}).get('amount', 0))),
+                                    timestamp=tx.get('created_at', ''),
+                                    tx_hash=tx.get('network', {}).get('hash'),
+                                    address=tx.get('to', {}).get('address') or tx.get('from', {}).get('address')
+                                ))
+                except Exception as e:
+                    logger.error(f"Coinbase get transactions for account {account_id}: {e}")
+                    continue
+            
+            return transactions
+        except Exception as e:
+            logger.error(f"Coinbase get_deposits error: {e}")
+            return []
+    
+    async def get_withdrawals(self) -> List[ExchangeTransaction]:
+        """Get withdrawal history - combined with deposits above"""
+        # Withdrawals are fetched together with deposits in get_deposits
+        return []
+    
+    async def get_deposit_addresses(self) -> List[ExchangeAddress]:
+        """Get deposit addresses for all accounts"""
+        addresses = []
+        
+        try:
+            accounts = await self.get_accounts()
+            
+            for account in accounts:
+                account_id = account.get('id')
+                currency = account.get('currency', {}).get('code', '')
+                
+                if not account_id or not currency:
+                    continue
+                
+                try:
+                    data = await self._request(
+                        "GET",
+                        f"/v2/accounts/{account_id}/addresses",
+                        {"limit": 10}
+                    )
+                    
+                    for addr in data.get('data', []):
+                        if addr.get('address'):
+                            addresses.append(ExchangeAddress(
+                                address=addr['address'],
+                                asset=currency,
+                                exchange='coinbase',
+                                network=addr.get('network')
+                            ))
+                except Exception:
+                    continue
+            
+            return addresses
+        except Exception as e:
+            logger.error(f"Coinbase get_deposit_addresses error: {e}")
+            return []
+
+
 class GeminiClient:
     """Gemini API Client - READ ONLY"""
     
@@ -996,6 +1146,8 @@ class MultiExchangeService:
             self.clients[exchange] = KrakenClient(api_key, api_secret)
         elif exchange == 'gemini':
             self.clients[exchange] = GeminiClient(api_key, api_secret)
+        elif exchange == 'coinbase':
+            self.clients[exchange] = CoinbaseClient(api_key, api_secret)
         elif exchange == 'cryptocom':
             self.clients[exchange] = CryptoComClient(api_key, api_secret)
         elif exchange == 'kucoin':

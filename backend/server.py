@@ -3401,7 +3401,7 @@ async def connect_exchange_api(
             )
         
         exchange = request.exchange.lower()
-        supported = ['binance', 'kraken', 'gemini', 'cryptocom', 'kucoin', 'okx', 'bybit', 'gateio']
+        supported = ['binance', 'kraken', 'gemini', 'cryptocom', 'kucoin', 'okx', 'bybit', 'gateio', 'coinbase']
         
         if exchange not in supported:
             raise HTTPException(
@@ -3478,6 +3478,31 @@ async def disconnect_exchange_api(exchange: str, user: dict = Depends(get_curren
     except Exception as e:
         logger.error(f"Error disconnecting exchange: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to disconnect exchange")
+
+# Alias endpoints for frontend compatibility
+@api_router.post("/exchange/connect")
+async def connect_exchange_simple(
+    request: ExchangeConnectionRequest,
+    user: dict = Depends(get_current_user)
+):
+    """Alias for /exchanges/connect-api for frontend compatibility"""
+    return await connect_exchange_api(request, user)
+
+@api_router.get("/exchange/addresses/{exchange}")
+async def get_exchange_addresses_simple(
+    exchange: str,
+    user: dict = Depends(get_current_user)
+):
+    """Alias for /exchanges/addresses-for-custody for frontend compatibility"""
+    return await get_exchange_addresses_for_custody(exchange, user)
+
+@api_router.delete("/exchange/disconnect/{exchange}")
+async def disconnect_exchange_simple(
+    exchange: str,
+    user: dict = Depends(get_current_user)
+):
+    """Alias for /exchanges/disconnect-api for frontend compatibility"""
+    return await disconnect_exchange_api(exchange, user)
 
 @api_router.get("/exchanges/addresses-for-custody/{exchange}")
 async def get_exchange_addresses_for_custody(

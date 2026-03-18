@@ -3,13 +3,14 @@
  * Traces the origin of cryptocurrency by following the transaction graph backwards.
  * Helps establish accurate cost basis by finding exchanges, DEXs, and dormant wallet origins.
  * 
- * TWO OPTIONS:
- * 1. Connect Coinbase (OAuth) - Automatically fetch addresses from your Coinbase account
+ * THREE OPTIONS:
+ * 1. Connect Coinbase API Key - Enter YOUR OWN Coinbase API credentials
  * 2. Manual Entry - Enter wallet addresses one by one
+ * 3. Connect Coinbase OAuth (optional) - If app OAuth is configured
  * 
  * Unlimited tier only - designed to be easily separable for government/enterprise licensing.
  */
-// Chain of Custody Modal v2.1 - Mobile Responsive - Last updated: Mar 10, 2026
+// Chain of Custody Modal v2.2 - User API Keys - Last updated: Mar 11, 2026
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -48,7 +49,7 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }) => {
-  // Input method: 'select' (choose method), 'coinbase', or 'manual'
+  // Input method: 'select' (choose method), 'coinbase_api', 'coinbase_oauth', or 'manual'
   const [inputMethod, setInputMethod] = useState('select');
   
   // Manual entry state
@@ -58,7 +59,12 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
   const [dormancyDays, setDormancyDays] = useState(365);
   const [showAdvanced, setShowAdvanced] = useState(false);
   
-  // Coinbase state
+  // Coinbase API Key state (user's own credentials)
+  const [coinbaseApiKey, setCoinbaseApiKey] = useState('');
+  const [coinbaseApiSecret, setCoinbaseApiSecret] = useState('');
+  const [apiKeyConnected, setApiKeyConnected] = useState(false);
+  
+  // Coinbase OAuth state (legacy)
   const [coinbaseConnected, setCoinbaseConnected] = useState(false);
   const [coinbaseAddresses, setCoinbaseAddresses] = useState(null);
   const [selectedCoinbaseAddress, setSelectedCoinbaseAddress] = useState('');
@@ -71,11 +77,17 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
 
   const supportedChains = [
     { id: 'ethereum', name: 'Ethereum', icon: '⟠' },
+    { id: 'bitcoin', name: 'Bitcoin', icon: '₿' },
     { id: 'polygon', name: 'Polygon', icon: '🔺' },
     { id: 'arbitrum', name: 'Arbitrum', icon: '🔷' },
     { id: 'bsc', name: 'BNB Chain', icon: '🟡' },
-    { id: 'base', name: 'Base', icon: '🔵' },
+    { id: 'solana', name: 'Solana', icon: '◎' },
+    { id: 'algorand', name: 'Algorand', icon: '🔷' },
+    { id: 'avalanche', name: 'Avalanche', icon: '🔺' },
     { id: 'optimism', name: 'Optimism', icon: '🔴' },
+    { id: 'base', name: 'Base', icon: '🔵' },
+    { id: 'fantom', name: 'Fantom', icon: '👻' },
+    { id: 'dogecoin', name: 'Dogecoin', icon: '🐕' },
   ];
 
   // Check Coinbase connection status on modal open
@@ -141,6 +153,68 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
       setCoinbaseAddresses(null);
     } catch (err) {
       setError('Failed to disconnect Coinbase');
+    }
+  };
+
+  // Connect using user's own Coinbase API Key
+  const connectCoinbaseApiKey = async () => {
+    if (!coinbaseApiKey || !coinbaseApiSecret) {
+      setError('Please enter both API Key and API Secret');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      // Save the API credentials (encrypted on backend)
+      const response = await axios.post(
+        `${API}/exchange/connect`,
+        {
+          exchange: 'coinbase',
+          api_key: coinbaseApiKey,
+          api_secret: coinbaseApiSecret
+        },
+        { headers: getAuthHeader() }
+      );
+
+      setApiKeyConnected(true);
+      // Fetch addresses using the connected credentials
+      await fetchAddressesFromApiKey();
+      setLoading(false);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to connect Coinbase. Check your API credentials.');
+      setLoading(false);
+    }
+  };
+
+  const fetchAddressesFromApiKey = async () => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await axios.get(`${API}/exchange/addresses/coinbase`, {
+        headers: getAuthHeader()
+      });
+      setCoinbaseAddresses(response.data);
+      setLoading(false);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to fetch addresses from Coinbase');
+      setLoading(false);
+    }
+  };
+
+  const disconnectApiKey = async () => {
+    try {
+      await axios.delete(`${API}/exchange/disconnect/coinbase`, {
+        headers: getAuthHeader()
+      });
+      setApiKeyConnected(false);
+      setCoinbaseAddresses(null);
+      setCoinbaseApiKey('');
+      setCoinbaseApiSecret('');
+    } catch (err) {
+      setError('Failed to disconnect');
     }
   };
 
@@ -303,10 +377,10 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
           {/* Method Selection - Show only when no results */}
           {!result && inputMethod === 'select' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-              {/* Option 1: Connect Coinbase */}
+              {/* Option 1: Connect via API Key (User's own credentials) */}
               <Card 
                 className="bg-slate-800/50 border-slate-700 hover:border-blue-500 cursor-pointer transition-all"
-                onClick={() => setInputMethod('coinbase')}
+                onClick={() => setInputMethod('coinbase_api')}
               >
                 <CardContent className="pt-4 md:pt-6">
                   <div className="flex flex-col items-center text-center space-y-3 md:space-y-4">
@@ -314,14 +388,14 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
                       <Wallet className="w-6 h-6 md:w-8 md:h-8 text-blue-400" />
                     </div>
                     <div>
-                      <h3 className="text-base md:text-lg font-semibold text-white">Connect Coinbase</h3>
+                      <h3 className="text-base md:text-lg font-semibold text-white">Your Coinbase API Key</h3>
                       <p className="text-xs md:text-sm text-gray-400 mt-1 md:mt-2">
-                        Auto-import from your Coinbase account
+                        Enter YOUR OWN API credentials
                       </p>
                     </div>
                     <div className="flex items-center gap-1 md:gap-2 text-green-400 text-xs">
                       <Shield className="w-3 h-3 md:w-4 md:h-4" />
-                      <span>READ-ONLY access</span>
+                      <span>Your data stays yours</span>
                     </div>
                     <Badge className="bg-blue-600 text-xs">Recommended</Badge>
                   </div>
@@ -346,7 +420,7 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
                     </div>
                     <div className="flex items-center gap-1 md:gap-2 text-gray-400 text-xs">
                       <CheckCircle2 className="w-3 h-3 md:w-4 md:h-4" />
-                      <span>No connection required</span>
+                      <span>No credentials needed</span>
                     </div>
                     <Badge variant="outline" className="border-gray-600 text-gray-400 text-xs">Alternative</Badge>
                   </div>
@@ -355,8 +429,186 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
             </div>
           )}
 
-          {/* Coinbase Connection Flow */}
-          {!result && inputMethod === 'coinbase' && (
+          {/* Coinbase API Key Connection */}
+          {!result && inputMethod === 'coinbase_api' && (
+            <Card className="bg-slate-800/50 border-slate-700">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-white text-lg flex items-center gap-2">
+                    <Wallet className="w-5 h-5 text-blue-400" />
+                    Connect Your Coinbase
+                  </CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setInputMethod('select')}
+                    className="text-gray-400 hover:text-white"
+                  >
+                    <ArrowRight className="w-4 h-4 mr-1 rotate-180" />
+                    Back
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Security Notice */}
+                <Alert className="bg-green-900/20 border-green-700">
+                  <Shield className="w-4 h-4 text-green-400" />
+                  <AlertDescription className="text-green-300 text-sm">
+                    <strong>Your credentials, your data.</strong> Your API keys are encrypted and only used to read YOUR account.
+                    We cannot move, send, or withdraw any funds.
+                  </AlertDescription>
+                </Alert>
+
+                {!apiKeyConnected ? (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm text-gray-400 mb-2 block">
+                        How to get your Coinbase API Key:
+                      </label>
+                      <ol className="text-xs text-gray-500 list-decimal list-inside space-y-1 mb-4">
+                        <li>Go to <a href="https://www.coinbase.com/settings/api" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Coinbase API Settings</a></li>
+                        <li>Click "New API Key"</li>
+                        <li>Select only <strong>READ permissions</strong> (view accounts, transactions)</li>
+                        <li>Copy your API Key and API Secret below</li>
+                      </ol>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-sm text-gray-400 mb-1 block">API Key</label>
+                        <Input
+                          type="text"
+                          placeholder="Enter your Coinbase API Key"
+                          value={coinbaseApiKey}
+                          onChange={(e) => setCoinbaseApiKey(e.target.value)}
+                          className="bg-slate-700 border-slate-600 text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm text-gray-400 mb-1 block">API Secret</label>
+                        <Input
+                          type="password"
+                          placeholder="Enter your Coinbase API Secret"
+                          value={coinbaseApiSecret}
+                          onChange={(e) => setCoinbaseApiSecret(e.target.value)}
+                          className="bg-slate-700 border-slate-600 text-white"
+                        />
+                      </div>
+                    </div>
+
+                    <Button
+                      onClick={connectCoinbaseApiKey}
+                      disabled={loading || !coinbaseApiKey || !coinbaseApiSecret}
+                      className="w-full bg-blue-600 hover:bg-blue-700"
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Connecting...
+                        </>
+                      ) : (
+                        <>
+                          <Wallet className="w-4 h-4 mr-2" />
+                          Connect My Coinbase
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-3 bg-green-900/20 rounded-lg border border-green-700">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-5 h-5 text-green-400" />
+                        <span className="text-green-300">Your Coinbase is connected</span>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={disconnectApiKey}
+                        className="border-red-600 text-red-400 hover:bg-red-900/30"
+                      >
+                        Disconnect
+                      </Button>
+                    </div>
+
+                    {!coinbaseAddresses ? (
+                      <Button
+                        onClick={fetchAddressesFromApiKey}
+                        disabled={loading}
+                        className="w-full bg-purple-600 hover:bg-purple-700"
+                      >
+                        {loading ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Fetching Your Addresses...
+                          </>
+                        ) : (
+                          <>
+                            <RefreshCw className="w-4 h-4 mr-2" />
+                            Fetch My Wallet Addresses
+                          </>
+                        )}
+                      </Button>
+                    ) : (
+                      <div className="space-y-3">
+                        <p className="text-sm text-gray-400">Select an address to analyze:</p>
+                        <div className="max-h-48 overflow-y-auto space-y-2">
+                          {coinbaseAddresses.addresses?.map((addr, idx) => (
+                            <div
+                              key={idx}
+                              onClick={() => {
+                                setSelectedCoinbaseAddress(addr.address);
+                                setAddress(addr.address);
+                                setChain(addr.network === 'ethereum' ? 'ethereum' : addr.network || 'ethereum');
+                              }}
+                              className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                                selectedCoinbaseAddress === addr.address
+                                  ? 'bg-purple-900/30 border-purple-500'
+                                  : 'bg-slate-700/50 border-slate-600 hover:border-slate-500'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <span className="text-white font-mono text-sm">{formatAddress(addr.address)}</span>
+                                  <Badge className="ml-2 bg-slate-600 text-xs">{addr.asset}</Badge>
+                                </div>
+                                {addr.network && (
+                                  <Badge variant="outline" className="text-gray-400 text-xs">{addr.network}</Badge>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        
+                        {selectedCoinbaseAddress && (
+                          <Button
+                            onClick={analyzeChainOfCustody}
+                            disabled={loading}
+                            className="w-full bg-purple-600 hover:bg-purple-700"
+                          >
+                            {loading ? (
+                              <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Analyzing...
+                              </>
+                            ) : (
+                              <>
+                                <Search className="w-4 h-4 mr-2" />
+                                Analyze Chain of Custody
+                              </>
+                            )}
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Legacy Coinbase OAuth Flow - Hidden for now */}
+          {!result && inputMethod === 'coinbase_oauth' && (
             <Card className="bg-slate-800/50 border-slate-700">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">

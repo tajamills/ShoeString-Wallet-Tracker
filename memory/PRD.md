@@ -402,6 +402,27 @@ All users must accept Terms of Service before using the platform. The TOS modal 
 - [x] Tablet breakpoint support (768px)
 - [x] Mobile breakpoint support (375px and below)
 
+### Phase 15: User Credentials & Documentation (Completed - Mar 11, 2026)
+- [x] Changed Coinbase integration from OAuth to user API keys
+- [x] Users now enter THEIR OWN Coinbase API credentials
+- [x] Each user's data accessed using their own credentials only
+- [x] Added Coinbase to multi_exchange_service.py with API key support
+- [x] Chain of Custody now supports all 12 blockchains (added BTC, SOL, ALGO, AVAX, FTM, DOGE)
+- [x] Created comprehensive product documentation:
+  - PROCESS_FLOW.md - Visual flow diagrams
+  - PRODUCT_SPEC.md - Product requirements & business model
+  - USER_STORIES.md - 35 user stories with acceptance criteria
+  - BACKLOG.md - Prioritized feature backlog
+  - API_DOCUMENTATION.md - API endpoint reference
+  - TECHNICAL_ARCHITECTURE.md - System architecture
+  - RELEASE_NOTES.md - Version history
+  - EXECUTIVE_SUMMARY.md - One-pager for stakeholders
+  - SECURITY_COMPLIANCE.md - Security controls for insurance
+  - PRIVACY_POLICY.md - User privacy policy
+  - TERMS_OF_SERVICE.md - Legal terms
+  - RISK_ASSESSMENT.md - Risk analysis for insurance
+- [x] Updated all docs with contact info: support@cryptobagtracker.com, (404) 954-1182, 1557 Buford Dr #492773, Lawrenceville, GA 30043
+
 ## Deployment
 - **Platform**: Render
 - **Domain**: cryptobagtracker.io
