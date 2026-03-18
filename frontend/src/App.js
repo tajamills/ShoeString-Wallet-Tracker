@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Wallet, TrendingUp, TrendingDown, DollarSign, Activity, LogOut, User, Crown, Download, Calculator, Tag, Users, Link2 } from 'lucide-react';
+import { Loader2, Wallet, TrendingUp, TrendingDown, DollarSign, Activity, LogOut, User, Crown, Download, Calculator, Tag, Users, Link2, HelpCircle } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAnalysis } from '@/hooks/useAnalysis';
@@ -25,6 +25,7 @@ import { TermsModal } from '@/components/TermsModal';
 import { AffiliateModal } from '@/components/AffiliateModal';
 import { ExchangeModal } from '@/components/ExchangeModal';
 import { ChainOfCustodyModal } from '@/components/ChainOfCustodyModal';
+import { SupportModal } from '@/components/SupportModal';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -101,6 +102,7 @@ function App() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showExchangeModal, setShowExchangeModal] = useState(false);
   const [showCustodyModal, setShowCustodyModal] = useState(false);
+  const [showSupportModal, setShowSupportModal] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [selectedChain, setSelectedChain] = useState('ethereum');
@@ -402,6 +404,15 @@ function App() {
                         Chain of Custody
                       </Button>
                     )}
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setShowSupportModal(true)}
+                      className="border-cyan-600 text-cyan-300 hover:bg-cyan-900/30 h-8 text-xs md:text-sm"
+                      data-testid="support-button"
+                    >
+                      <HelpCircle className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
+                      Help
+                    </Button>
                   </div>
                 </div>
               </CardContent>
@@ -1225,6 +1236,12 @@ function App() {
           onClose={() => setShowCustodyModal(false)}
           getAuthHeader={getAuthHeader}
           userTier={user?.subscription_tier}
+        />
+        <SupportModal
+          isOpen={showSupportModal}
+          onClose={() => setShowSupportModal(false)}
+          getAuthHeader={getAuthHeader}
+          isLoggedIn={!!user}
         />
       </div>
     </div>
