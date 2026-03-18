@@ -48,6 +48,52 @@ import { CustodyFlowGraph } from './CustodyFlowGraph';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+// Auto-detect blockchain from address format
+const detectChainFromAddress = (address) => {
+  if (!address || address.length < 10) return null;
+  
+  const trimmed = address.trim();
+  
+  // EVM addresses (Ethereum, Polygon, Arbitrum, BSC, Base, Optimism, Avalanche, Fantom)
+  if (trimmed.startsWith('0x') && trimmed.length === 42) {
+    return 'ethereum'; // Default to Ethereum for 0x addresses
+  }
+  
+  // Bitcoin addresses
+  if (trimmed.startsWith('bc1q') || trimmed.startsWith('bc1p')) {
+    return 'bitcoin'; // Bech32/Bech32m (SegWit)
+  }
+  if (trimmed.startsWith('1') && trimmed.length >= 26 && trimmed.length <= 34) {
+    return 'bitcoin'; // Legacy P2PKH
+  }
+  if (trimmed.startsWith('3') && trimmed.length >= 26 && trimmed.length <= 34) {
+    return 'bitcoin'; // P2SH (SegWit-compatible)
+  }
+  if (trimmed.startsWith('xpub') || trimmed.startsWith('ypub') || trimmed.startsWith('zpub')) {
+    return 'bitcoin'; // HD wallet extended public keys
+  }
+  
+  // Solana addresses (base58, 32-44 chars, no 0/O/I/l)
+  if (trimmed.length >= 32 && trimmed.length <= 44 && /^[1-9A-HJ-NP-Za-km-z]+$/.test(trimmed)) {
+    // Could be Solana - check if it's not starting with typical BTC patterns
+    if (!trimmed.startsWith('1') && !trimmed.startsWith('3') && !trimmed.startsWith('bc1')) {
+      return 'solana';
+    }
+  }
+  
+  // Algorand addresses (58 chars, base32)
+  if (trimmed.length === 58 && /^[A-Z2-7]+$/.test(trimmed)) {
+    return 'algorand';
+  }
+  
+  // Dogecoin addresses
+  if (trimmed.startsWith('D') && trimmed.length >= 26 && trimmed.length <= 34) {
+    return 'dogecoin';
+  }
+  
+  return null;
+};
+
 export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }) => {
   // Input method: 'select' (choose method), 'coinbase_api', 'coinbase_oauth', or 'manual'
   const [inputMethod, setInputMethod] = useState('select');
@@ -914,21 +960,40 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
                 <div>
                   <label className="text-sm text-gray-400 block mb-2">
                     Wallet Addresses 
-                    <span className="text-xs text-gray-500 ml-2">(one per line, or comma-separated)</span>
+                    <span className="text-xs text-gray-500 ml-2">(auto-detects chain, one per line or comma-separated)</span>
                   </label>
                   <textarea
                     placeholder="Enter addresses - one per line or comma-separated:
 0x742d35Cc6634C0532925a3b844Bc9e7595f...
-0xAb5801a7D398351b8bE11C439e05C5B3259...
-bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh"
+bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
+(Chain is auto-detected from address format)"
                     value={address}
-                    onChange={(e) => setAddress(e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setAddress(value);
+                      
+                      // Auto-detect chain from first valid address
+                      const addresses = value.split(/[\n,]/).map(a => a.trim()).filter(a => a);
+                      if (addresses.length > 0) {
+                        const detectedChain = detectChainFromAddress(addresses[0]);
+                        if (detectedChain && detectedChain !== chain) {
+                          setChain(detectedChain);
+                        }
+                      }
+                    }}
                     className="w-full h-32 bg-slate-900 border border-slate-600 text-white rounded-md px-3 py-2 font-mono text-sm resize-none"
                     disabled={loading}
                   />
-                  <p className="text-xs text-gray-500 mt-1">
-                    {address ? `${address.split(/[\n,]/).filter(a => a.trim()).length} address(es) entered` : 'Enter one or multiple addresses'}
-                  </p>
+                  <div className="flex justify-between items-center mt-1">
+                    <p className="text-xs text-gray-500">
+                      {address ? `${address.split(/[\n,]/).filter(a => a.trim()).length} address(es) entered` : 'Enter one or multiple addresses'}
+                    </p>
+                    {address && detectChainFromAddress(address.split(/[\n,]/)[0]?.trim()) && (
+                      <p className="text-xs text-green-400">
+                        Detected: {detectChainFromAddress(address.split(/[\n,]/)[0]?.trim())?.toUpperCase()}
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 {/* Analyze Button */}

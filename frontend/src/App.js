@@ -29,6 +29,52 @@ import { ChainOfCustodyModal } from '@/components/ChainOfCustodyModal';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+// Auto-detect blockchain from address format
+const detectChainFromAddress = (address) => {
+  if (!address || address.length < 10) return null;
+  
+  const trimmed = address.trim();
+  
+  // EVM addresses (Ethereum, Polygon, Arbitrum, BSC, Base, Optimism, Avalanche, Fantom)
+  if (trimmed.startsWith('0x') && trimmed.length === 42) {
+    return 'ethereum'; // Default to Ethereum for 0x addresses
+  }
+  
+  // Bitcoin addresses
+  if (trimmed.startsWith('bc1q') || trimmed.startsWith('bc1p')) {
+    return 'bitcoin'; // Bech32/Bech32m (SegWit)
+  }
+  if (trimmed.startsWith('1') && trimmed.length >= 26 && trimmed.length <= 34) {
+    return 'bitcoin'; // Legacy P2PKH
+  }
+  if (trimmed.startsWith('3') && trimmed.length >= 26 && trimmed.length <= 34) {
+    return 'bitcoin'; // P2SH (SegWit-compatible)
+  }
+  if (trimmed.startsWith('xpub') || trimmed.startsWith('ypub') || trimmed.startsWith('zpub')) {
+    return 'bitcoin'; // HD wallet extended public keys
+  }
+  
+  // Solana addresses (base58, 32-44 chars, no 0/O/I/l)
+  if (trimmed.length >= 32 && trimmed.length <= 44 && /^[1-9A-HJ-NP-Za-km-z]+$/.test(trimmed)) {
+    // Could be Solana - check if it's not starting with typical BTC patterns
+    if (!trimmed.startsWith('1') && !trimmed.startsWith('3') && !trimmed.startsWith('bc1')) {
+      return 'solana';
+    }
+  }
+  
+  // Algorand addresses (58 chars, base32)
+  if (trimmed.length === 58 && /^[A-Z2-7]+$/.test(trimmed)) {
+    return 'algorand';
+  }
+  
+  // Dogecoin addresses
+  if (trimmed.startsWith('D') && trimmed.length >= 26 && trimmed.length <= 34) {
+    return 'dogecoin';
+  }
+  
+  return null;
+};
+
 function App() {
   const { user, logout, getAuthHeader, loading: authLoading, fetchUserProfile, acceptTerms } = useAuth();
   
@@ -475,22 +521,32 @@ function App() {
                   <Input
                     data-testid="wallet-address-input"
                     type="text"
-                    placeholder={
-                      selectedChain === 'ethereum' || selectedChain === 'polygon' || selectedChain === 'arbitrum' || selectedChain === 'bsc' 
-                        ? '0x...' 
-                        : selectedChain === 'bitcoin' 
-                          ? (user?.subscription_tier === 'pro' ? 'Address or xPub/yPub/zPub (Pro)' : 'Bitcoin address (e.g., 1A1z...)')
-                          : selectedChain === 'solana'
-                            ? 'Solana address (base58)'
-                            : selectedChain === 'algorand'
-                              ? 'Algorand address (58 chars)'
-                              : 'Wallet address'
-                    }
+                    placeholder="Enter any wallet address (auto-detects chain)"
                     value={walletAddress}
-                    onChange={(e) => setWalletAddress(e.target.value)}
+                    onChange={(e) => {
+                      const addr = e.target.value;
+                      setWalletAddress(addr);
+                      
+                      // Auto-detect chain from address format
+                      const detectedChain = detectChainFromAddress(addr);
+                      if (detectedChain && detectedChain !== selectedChain) {
+                        // Check if user has access to this chain
+                        if (user?.subscription_tier === 'free' && detectedChain !== 'ethereum' && detectedChain !== 'bitcoin') {
+                          // Don't auto-switch to locked chains for free users
+                          return;
+                        }
+                        setSelectedChain(detectedChain);
+                        setError('');
+                      }
+                    }}
                     className="bg-slate-700 border-slate-600 text-white placeholder:text-gray-500"
                     disabled={loading}
                   />
+                  {walletAddress && detectChainFromAddress(walletAddress) && (
+                    <p className="text-xs text-green-400 mt-1">
+                      Detected: {detectChainFromAddress(walletAddress)?.toUpperCase()} address
+                    </p>
+                  )}
                   {selectedChain === 'bitcoin' && user?.subscription_tier === 'pro' && (
                     <p className="text-xs text-gray-400 mt-1">
                       💡 Pro tip: Enter your Ledger xPub to analyze your entire wallet
