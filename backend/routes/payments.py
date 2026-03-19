@@ -93,6 +93,22 @@ async def create_upgrade_payment(
         import stripe as stripe_lib
         stripe_lib.api_key = os.environ.get('STRIPE_API_KEY')
         
+        # Create Beta26 coupon if it doesn't exist (50% off forever for first 50 beta customers)
+        try:
+            stripe_lib.Coupon.retrieve("BETA26")
+        except:
+            try:
+                stripe_lib.Coupon.create(
+                    id="BETA26",
+                    percent_off=50,
+                    duration="forever",
+                    name="Beta Tester - 50% Off Forever",
+                    max_redemptions=50  # Only first 50 customers
+                )
+                logger.info("Created BETA26 coupon for beta testers")
+            except Exception as e:
+                logger.warning(f"Could not create BETA26 coupon: {str(e)}")
+        
         session_params = {
             'payment_method_types': ['card'],
             'line_items': [{
@@ -103,8 +119,12 @@ async def create_upgrade_payment(
             'success_url': success_url,
             'cancel_url': cancel_url,
             'metadata': metadata,
-            'allow_promotion_codes': False if coupon_id else True,
+            'allow_promotion_codes': True,  # Allow Beta26 and other promo codes
             'billing_address_collection': 'auto',
+            'subscription_data': {
+                'trial_period_days': 45,
+                'description': 'Beta Testing - 45 Day Free Trial'
+            },
         }
         
         if user.get("stripe_customer_id"):
@@ -112,8 +132,10 @@ async def create_upgrade_payment(
         else:
             session_params['customer_email'] = user["email"]
         
+        # Apply affiliate discount if provided (overrides promo codes)
         if coupon_id and affiliate:
             session_params['discounts'] = [{'coupon': coupon_id}]
+            session_params['allow_promotion_codes'] = False
         
         session = stripe_lib.checkout.Session.create(**session_params)
         
