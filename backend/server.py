@@ -3960,6 +3960,68 @@ async def cleanup_exchange_transactions(user: dict = Depends(get_current_user)):
 
 
 
+@api_router.delete("/admin/clear-exchange-transactions")
+async def clear_exchange_transactions(user: dict = Depends(get_current_user)):
+    """
+    Delete ALL exchange transactions for this user.
+    Use this to clear bad data and start fresh.
+    """
+    try:
+        result = await db.exchange_transactions.delete_many({"user_id": user["id"]})
+        
+        return {
+            "message": "Exchange transactions cleared",
+            "deleted_count": result.deleted_count
+        }
+        
+    except Exception as e:
+        logger.error(f"Clear exchange transactions error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/admin/exchange-transactions-summary")
+async def get_exchange_transactions_summary(user: dict = Depends(get_current_user)):
+    """
+    Get a summary of exchange transactions to see what's stored.
+    """
+    try:
+        # Count total
+        total = await db.exchange_transactions.count_documents({"user_id": user["id"]})
+        
+        # Get asset breakdown
+        pipeline = [
+            {"$match": {"user_id": user["id"]}},
+            {"$group": {
+                "_id": "$asset",
+                "count": {"$sum": 1},
+                "total_amount": {"$sum": "$amount"},
+                "avg_price": {"$avg": "$price_usd"}
+            }},
+            {"$sort": {"count": -1}},
+            {"$limit": 20}
+        ]
+        
+        assets = await db.exchange_transactions.aggregate(pipeline).to_list(20)
+        
+        # Get samples of suspicious data (high amounts)
+        suspicious = await db.exchange_transactions.find(
+            {"user_id": user["id"], "amount": {"$gt": 1000000000}},
+            {"_id": 0, "asset": 1, "amount": 1, "price_usd": 1, "tx_type": 1}
+        ).limit(10).to_list(10)
+        
+        return {
+            "total_transactions": total,
+            "assets": [{"asset": a["_id"], "count": a["count"], "total_amount": a["total_amount"], "avg_price": a["avg_price"]} for a in assets],
+            "suspicious_high_amounts": suspicious
+        }
+        
+    except Exception as e:
+        logger.error(f"Exchange summary error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+
 # ============================================================================
 # Chain of Custody PDF Report Generation
 # ============================================================================
