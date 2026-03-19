@@ -711,6 +711,70 @@ async def create_upgrade_payment(
 @api_router.post("/payments/webhook/stripe")
 @api_router.post("/webhook")  # Alias for Stripe dashboard config
 async def handle_stripe_webhook(request: Request):
+
+
+@api_router.post("/admin/test-email")
+async def send_test_email(
+    request: Request,
+    email_type: str = "renewal",
+    to_email: str = None
+):
+    """
+    Send a test email for verification.
+    
+    email_type: "renewal", "expired", "upgraded", "welcome", "reset"
+    to_email: Email address to send to (defaults to authenticated user)
+    """
+    # Check for admin token or authenticated user
+    admin_token = request.headers.get("X-Admin-Token")
+    expected_token = os.environ.get("ADMIN_CRON_TOKEN", "cron-secret-token-change-me")
+    
+    # Try to get authenticated user if no admin token
+    auth_header = request.headers.get("Authorization", "")
+    user_email = to_email
+    
+    if admin_token == expected_token:
+        if not to_email:
+            raise HTTPException(status_code=400, detail="to_email required with admin token")
+    elif auth_header.startswith("Bearer "):
+        try:
+            token = auth_header.split(" ")[1]
+            payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+            user = await db.users.find_one({"id": payload.get("user_id")})
+            if user:
+                user_email = to_email or user.get("email")
+            else:
+                raise HTTPException(status_code=401, detail="User not found")
+        except:
+            raise HTTPException(status_code=401, detail="Invalid token")
+    else:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    if not user_email:
+        raise HTTPException(status_code=400, detail="No email address provided")
+    
+    try:
+        if email_type == "renewal":
+            result = await send_subscription_expiring_email(user_email, days_remaining=3, tier="unlimited")
+        elif email_type == "expired":
+            result = await send_subscription_expired_email(user_email, tier="unlimited")
+        elif email_type == "upgraded":
+            result = await send_subscription_upgraded_email(user_email, tier="unlimited")
+        elif email_type == "welcome":
+            result = await send_welcome_email(user_email)
+        elif email_type == "reset":
+            result = await send_password_reset_email(user_email, reset_token="TEST-TOKEN-12345")
+        else:
+            raise HTTPException(status_code=400, detail=f"Unknown email type: {email_type}")
+        
+        return {"status": "sent", "email_type": email_type, "to": user_email, "result": result}
+    
+    except Exception as e:
+        logger.error(f"Failed to send test email: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
     """Handle Stripe webhook for subscriptions"""
     try:
         # Get request body and signature
