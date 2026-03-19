@@ -15,7 +15,15 @@ const CHAIN_ICONS = {
   polygon: '🔺',
   arbitrum: '🔷',
   bsc: '🟡',
-  solana: '◎'
+  solana: '◎',
+  algorand: '🔷',
+  avalanche: '🔺',
+  optimism: '🔴',
+  base: '🔵',
+  fantom: '👻',
+  dogecoin: '🐕',
+  xrp: '💧',
+  xlm: '⭐'
 };
 
 const CHAIN_COLORS = {
@@ -24,7 +32,32 @@ const CHAIN_COLORS = {
   polygon: 'bg-purple-500',
   arbitrum: 'bg-cyan-500',
   bsc: 'bg-yellow-500',
-  solana: 'bg-indigo-500'
+  solana: 'bg-indigo-500',
+  algorand: 'bg-teal-500',
+  avalanche: 'bg-red-500',
+  optimism: 'bg-red-600',
+  base: 'bg-blue-600',
+  fantom: 'bg-blue-400',
+  dogecoin: 'bg-yellow-400',
+  xrp: 'bg-gray-500',
+  xlm: 'bg-blue-300'
+};
+
+const CHAIN_NAMES = {
+  ethereum: 'Ethereum',
+  bitcoin: 'Bitcoin',
+  polygon: 'Polygon',
+  arbitrum: 'Arbitrum',
+  bsc: 'BNB Chain',
+  solana: 'Solana',
+  algorand: 'Algorand',
+  avalanche: 'Avalanche',
+  optimism: 'Optimism',
+  base: 'Base',
+  fantom: 'Fantom',
+  dogecoin: 'Dogecoin',
+  xrp: 'XRP',
+  xlm: 'Stellar'
 };
 
 export const SavedWallets = ({ getAuthHeader, onSelectWallet, userTier }) => {
@@ -160,18 +193,22 @@ export const SavedWallets = ({ getAuthHeader, onSelectWallet, userTier }) => {
               className="bg-slate-800/50 rounded-lg border border-slate-700 p-4 hover:border-purple-500 transition-all"
             >
               <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <span className={`w-8 h-8 rounded-full ${CHAIN_COLORS[wallet.chain]} flex items-center justify-center text-white text-lg`}>
-                    {CHAIN_ICONS[wallet.chain]}
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <span className={`w-8 h-8 rounded-full ${CHAIN_COLORS[wallet.chain] || 'bg-gray-500'} flex items-center justify-center text-white text-lg flex-shrink-0`}>
+                    {CHAIN_ICONS[wallet.chain] || '●'}
                   </span>
-                  <div>
-                    <h4 className="text-white font-semibold">{wallet.nickname}</h4>
-                    <p className="text-xs text-gray-400 capitalize">{wallet.chain}</p>
+                  <div className="min-w-0 flex-1">
+                    <h4 className="text-white font-semibold truncate">
+                      {wallet.nickname || 'Unnamed Wallet'}
+                    </h4>
+                    <p className="text-xs text-gray-400">
+                      {CHAIN_NAMES[wallet.chain] || wallet.chain}
+                    </p>
                   </div>
                 </div>
                 <button
                   onClick={() => handleDeleteWallet(wallet.id)}
-                  className="text-red-400 hover:text-red-300"
+                  className="text-red-400 hover:text-red-300 flex-shrink-0 ml-2"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -226,22 +263,19 @@ export const SavedWallets = ({ getAuthHeader, onSelectWallet, userTier }) => {
                 onChange={(e) => setNewWallet({...newWallet, chain: e.target.value})}
                 className="w-full bg-slate-900 border border-slate-600 text-white rounded-md px-3 py-2"
               >
-                <option value="ethereum">Ethereum</option>
-                <option value="bitcoin" disabled={userTier === 'free'}>
-                  Bitcoin {userTier === 'free' ? '🔒 Premium' : ''}
-                </option>
-                <option value="polygon" disabled={userTier === 'free'}>
-                  Polygon {userTier === 'free' ? '🔒 Premium' : ''}
-                </option>
-                <option value="arbitrum" disabled={userTier === 'free'}>
-                  Arbitrum {userTier === 'free' ? '🔒 Premium' : ''}
-                </option>
-                <option value="bsc" disabled={userTier === 'free'}>
-                  BNB Smart Chain {userTier === 'free' ? '🔒 Premium' : ''}
-                </option>
-                <option value="solana" disabled={userTier === 'free'}>
-                  Solana {userTier === 'free' ? '🔒 Premium' : ''}
-                </option>
+                <option value="ethereum">⟠ Ethereum</option>
+                <option value="bitcoin">₿ Bitcoin</option>
+                <option value="solana">◎ Solana</option>
+                <option value="polygon">🔺 Polygon</option>
+                <option value="arbitrum">🔷 Arbitrum</option>
+                <option value="bsc">🟡 BNB Chain</option>
+                <option value="base">🔵 Base</option>
+                <option value="optimism">🔴 Optimism</option>
+                <option value="avalanche">🔺 Avalanche</option>
+                <option value="algorand">🔷 Algorand</option>
+                <option value="dogecoin">🐕 Dogecoin</option>
+                <option value="xrp">💧 XRP</option>
+                <option value="xlm">⭐ Stellar</option>
               </select>
             </div>
 
