@@ -150,6 +150,7 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
   useEffect(() => {
     if (isOpen) {
       checkCoinbaseStatus();
+      checkApiKeyStatus();
     }
   }, [isOpen]);
 
@@ -161,6 +162,23 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
       setCoinbaseConnected(response.data.connected);
     } catch (err) {
       setCoinbaseConnected(false);
+    }
+  };
+
+  const checkApiKeyStatus = async () => {
+    try {
+      const response = await axios.get(`${API}/exchanges/api-connections`, {
+        headers: getAuthHeader()
+      });
+      const connections = response.data.connections || [];
+      const coinbaseConn = connections.find(c => c.exchange === 'coinbase');
+      if (coinbaseConn) {
+        setApiKeyConnected(true);
+        // Auto-fetch addresses if connected
+        await fetchAddressesFromApiKey();
+      }
+    } catch (err) {
+      setApiKeyConnected(false);
     }
   };
 
