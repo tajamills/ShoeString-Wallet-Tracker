@@ -1,8 +1,9 @@
 """Tax routes - Form 8949, categorization, unified tax calculations"""
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import Response
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from datetime import datetime, timezone
+from pydantic import BaseModel
 import uuid
 import io
 import logging
@@ -97,9 +98,15 @@ async def export_form_8949(
             ]
         
         # Generate CSV
-        csv_content = tax_report_service.generate_form_8949_csv(realized_gains)
+        csv_content = tax_report_service.generate_form_8949_csv(
+            realized_gains=realized_gains,
+            symbol=symbol,
+            address=address or "exchange",
+            filter_type=request.filter_type
+        )
         
-        filename = f"Form_8949_{request.tax_year or 'All'}_{data_source}.csv"
+        addr_prefix = address[:8] if address else "exchange"
+        filename = f"form-8949-{addr_prefix}-{request.filter_type}-{datetime.now().strftime('%Y%m%d')}.csv"
         
         return Response(
             content=csv_content,
@@ -526,3 +533,249 @@ async def get_unified_assets_summary(user: dict = Depends(get_current_user)):
     except Exception as e:
         logger.error(f"Error getting assets summary: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to get assets summary")
+
+
+
+# Additional missing models
+class TransactionCategoryRequest(BaseModel):
+    address: str
+    chain: str = "ethereum"
+    categories: Dict[str, str]  # tx_hash -> category
+
+
+class ScheduleDRequest(BaseModel):
+    address: str = ""
+    chain: str = "ethereum"
+    tax_year: int
+    format: str = "text"  # text or csv
+    data_source: str = "combined"  # wallet_only, exchange_only, combined
+
+
+@router.post("/export-summary")
+async def export_tax_summary(
+    request: Form8949Request,
+    user: dict = Depends(get_current_user)
+):
+    """Export comprehensive tax summary CSV (Premium/Pro feature)"""
+    try:
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier == 'free':
+            raise HTTPException(
+                status_code=403,
+                detail="Tax summary export is a Premium feature."
+            )
+        
+        address = request.address.strip()
+        chain = request.chain.lower()
+        
+        # Get wallet analysis with tax data
+        analysis_data = multi_chain_service.analyze_wallet(
+            address,
+            chain=chain,
+            user_tier=user_tier
+        )
+        
+        tax_data = analysis_data.get('tax_data')
+        if not tax_data:
+            raise HTTPException(
+                status_code=400,
+                detail="No tax data available."
+            )
+        
+        symbol_map = {
+            'ethereum': 'ETH',
+            'bitcoin': 'BTC',
+            'polygon': 'MATIC',
+            'arbitrum': 'ETH',
+            'bsc': 'BNB',
+            'solana': 'SOL'
+        }
+        symbol = symbol_map.get(chain, 'ETH')
+        
+        csv_content = tax_report_service.generate_tax_summary_csv(
+            tax_data=tax_data,
+            symbol=symbol,
+            address=address
+        )
+        
+        filename = f"tax-summary-{address[:8]}-{datetime.now().strftime('%Y%m%d')}.csv"
+        
+        return Response(
+            content=csv_content,
+            media_type="text/csv",
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"'
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error exporting tax summary: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to export tax summary: {str(e)}")
+
+
+@router.post("/save-categories")
+async def save_transaction_categories(
+    request: TransactionCategoryRequest,
+    user: dict = Depends(get_current_user)
+):
+    """Save transaction categories for tax purposes (Premium/Pro feature)"""
+    try:
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier == 'free':
+            raise HTTPException(
+                status_code=403,
+                detail="Transaction categorization is a Premium feature."
+            )
+        
+        # Store categories in database
+        category_doc = {
+            "id": str(uuid.uuid4()),
+            "user_id": user["id"],
+            "address": request.address.lower(),
+            "chain": request.chain.lower(),
+            "categories": request.categories,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        # Upsert - update if exists, insert if not
+        await db.transaction_categories.update_one(
+            {
+                "user_id": user["id"],
+                "address": request.address.lower(),
+                "chain": request.chain.lower()
+            },
+            {"$set": category_doc},
+            upsert=True
+        )
+        
+        logger.info(f"Saved {len(request.categories)} transaction categories for user {user['id']}")
+        
+        return {
+            "message": "Categories saved successfully",
+            "count": len(request.categories)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error saving categories: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to save categories")
+
+
+@router.post("/export-schedule-d")
+async def export_schedule_d(
+    request: ScheduleDRequest,
+    user: dict = Depends(get_current_user)
+):
+    """Export Schedule D (Capital Gains Summary) for a specific tax year (Premium/Pro)"""
+    try:
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier == 'free':
+            raise HTTPException(
+                status_code=403,
+                detail="Schedule D export is a Premium feature."
+            )
+        
+        # Validate tax year
+        current_year = datetime.now().year
+        if request.tax_year < 2020 or request.tax_year > current_year:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Tax year must be between 2020 and {current_year}"
+            )
+        
+        address = request.address.strip() if request.address else None
+        chain = request.chain.lower()
+        data_source = request.data_source
+        
+        symbol_map = {
+            'ethereum': 'ETH',
+            'bitcoin': 'BTC',
+            'polygon': 'MATIC',
+            'arbitrum': 'ETH',
+            'bsc': 'BNB',
+            'solana': 'SOL'
+        }
+        symbol = symbol_map.get(chain, 'ETH')
+        
+        wallet_transactions = []
+        exchange_transactions = []
+        current_balance = 0
+        current_price = 0
+        
+        # Get wallet data if needed
+        if data_source in ["wallet_only", "combined"] and address:
+            analysis_data = multi_chain_service.analyze_wallet(
+                address=address,
+                chain=chain,
+                user_tier=user_tier
+            )
+            wallet_transactions = analysis_data.get('recentTransactions', [])
+            current_balance = analysis_data.get('currentBalance', 0)
+            current_price = analysis_data.get('current_price_usd', 0)
+        
+        # Get exchange transactions if needed
+        if data_source in ["exchange_only", "combined"]:
+            exchange_txs = await db.exchange_transactions.find(
+                {"user_id": user["id"]},
+                {"_id": 0}
+            ).to_list(10000)
+            exchange_transactions = exchange_txs
+        
+        # Calculate unified tax data
+        tax_data = unified_tax_service.calculate_unified_tax_data(
+            wallet_transactions=wallet_transactions,
+            exchange_transactions=exchange_transactions,
+            symbol=symbol,
+            current_price=current_price,
+            current_balance=current_balance
+        )
+        
+        # Filter by tax year
+        realized_gains = [
+            g for g in tax_data.get('realized_gains', [])
+            if g.get('sell_date', '').startswith(str(request.tax_year))
+        ]
+        
+        if not realized_gains:
+            raise HTTPException(
+                status_code=400,
+                detail=f"No realized gains found for tax year {request.tax_year}."
+            )
+        
+        # Generate based on format
+        addr_prefix = address[:8] if address else "exchange"
+        if request.format == 'csv':
+            content = tax_report_service.generate_schedule_d_csv(
+                realized_gains=realized_gains,
+                tax_year=request.tax_year,
+                symbol=symbol,
+                address=address or "exchange"
+            )
+            media_type = "text/csv"
+            filename = f"schedule-d-{addr_prefix}-{request.tax_year}.csv"
+        else:
+            content = tax_report_service.generate_schedule_d_summary(
+                realized_gains=realized_gains,
+                tax_year=request.tax_year,
+                symbol=symbol,
+                address=address or "exchange"
+            )
+            media_type = "text/plain"
+            filename = f"schedule-d-{addr_prefix}-{request.tax_year}.txt"
+        
+        return Response(
+            content=content,
+            media_type=media_type,
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"'
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error exporting Schedule D: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to export Schedule D: {str(e)}")
