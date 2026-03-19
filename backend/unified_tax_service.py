@@ -320,18 +320,10 @@ class UnifiedTaxService:
         asset_filter: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        Calculate comprehensive tax data from all transaction sources
+        Calculate comprehensive tax data from all transaction sources.
         
-        Args:
-            wallet_transactions: On-chain transactions
-            exchange_transactions: Exchange CSV transactions
-            symbol: Asset symbol
-            current_price: Current USD price
-            current_balance: Current on-chain balance (optional)
-            asset_filter: Filter for specific asset
-        
-        Returns:
-            Comprehensive tax data with realized/unrealized gains
+        CRITICAL: FIFO is calculated PER ASSET. Buys of BTC only match sells of BTC.
+        This prevents cross-asset matching which produces nonsensical results.
         """
         try:
             # Merge all transactions and detect transfers
@@ -345,40 +337,25 @@ class UnifiedTaxService:
             if not all_transactions:
                 return self._empty_tax_data()
             
-            # Separate buys and sells
-            buys = []
-            sells = []
+            # Classify and validate transactions
+            valid_transactions = []
             skipped_bad_transactions = 0
             
-            # VALIDATION: Max reasonable values per transaction
-            MAX_AMOUNT = 10_000_000_000  # 10 billion units max
-            MAX_PRICE = 1_000_000  # $1M per unit max
-            MAX_TOTAL = 100_000_000_000  # $100B per transaction max
+            MAX_AMOUNT = 10_000_000_000
+            MAX_PRICE = 1_000_000
+            MAX_TOTAL = 100_000_000_000
             
             for tx in all_transactions:
-                tx_type = tx['tx_type'].lower()
                 amount = tx.get('amount', 0)
                 price = tx.get('price_usd') or 0
                 total = tx.get('total_usd') or (amount * price)
                 
-                # VALIDATION: Skip transactions with unreasonable values
-                if amount > MAX_AMOUNT:
-                    logger.error(f"SKIPPING bad tx - amount too large: {amount:,.0f} {tx.get('asset')} (tx: {tx.get('tx_id', 'unknown')})")
-                    skipped_bad_transactions += 1
-                    continue
-                if price > MAX_PRICE:
-                    logger.error(f"SKIPPING bad tx - price too high: ${price:,.0f} for {tx.get('asset')} (tx: {tx.get('tx_id', 'unknown')})")
-                    skipped_bad_transactions += 1
-                    continue
-                if abs(total) > MAX_TOTAL:
-                    logger.error(f"SKIPPING bad tx - total too large: ${total:,.0f} for {tx.get('asset')} (tx: {tx.get('tx_id', 'unknown')})")
+                if amount > MAX_AMOUNT or price > MAX_PRICE or abs(total) > MAX_TOTAL:
                     skipped_bad_transactions += 1
                     continue
                 
                 # Enrich with price data if missing
                 if not tx['price_usd'] and tx['amount'] > 0:
-                    # For unknown tokens, use $0 instead of native chain price
-                    from price_service import price_service
                     asset = tx.get('asset', symbol)
                     token_price = price_service.get_current_price(asset)
                     
@@ -387,39 +364,80 @@ class UnifiedTaxService:
                         tx['total_usd'] = tx['amount'] * token_price
                         tx['price_source'] = 'lookup_current'
                     elif asset.upper() == symbol.upper():
-                        # Native token - use chain's current price
                         tx['price_usd'] = current_price
                         tx['total_usd'] = tx['amount'] * current_price
                         tx['price_source'] = 'fallback_native'
                     else:
-                        # Unknown token - skip it, don't use native chain price!
-                        logger.warning(f"Skipping unknown token {asset} - no price available (tx: {tx.get('tx_id', 'unknown')})")
+                        logger.warning(f"Skipping unknown token {asset} - no price available")
                         skipped_bad_transactions += 1
                         continue
                 else:
                     tx['price_source'] = 'original'
                 
-                if tx_type in ['buy', 'receive', 'received', 'deposit', 'reward', 'staking', 'airdrop']:
-                    buys.append(tx)
-                elif tx_type in ['sell', 'send', 'sent', 'withdrawal', 'trade']:
-                    sells.append(tx)
+                valid_transactions.append(tx)
             
             if skipped_bad_transactions > 0:
                 logger.warning(f"Skipped {skipped_bad_transactions} bad transactions during tax calculation")
             
-            # Calculate realized gains using FIFO
-            realized_gains = self._calculate_fifo_gains(buys, sells)
+            # GROUP TRANSACTIONS BY ASSET for per-asset FIFO calculation
+            asset_groups = {}
+            for tx in valid_transactions:
+                asset = tx.get('asset', symbol).upper()
+                if asset not in asset_groups:
+                    asset_groups[asset] = {'buys': [], 'sells': []}
+                
+                tx_type = tx['tx_type'].lower()
+                if tx_type in ['buy', 'receive', 'received', 'deposit', 'reward', 'staking', 'airdrop']:
+                    asset_groups[asset]['buys'].append(tx)
+                elif tx_type in ['sell', 'send', 'sent', 'withdrawal', 'trade']:
+                    asset_groups[asset]['sells'].append(tx)
             
-            # Calculate unrealized gains from remaining lots
-            remaining_lots = self._get_remaining_lots(buys, sells)
-            unrealized_gains = self._calculate_unrealized(remaining_lots, current_price)
+            # Run FIFO PER ASSET and aggregate results
+            all_realized_gains = []
+            all_remaining_lots = []
+            total_buys = 0
+            total_sells = 0
+            
+            for asset, groups in asset_groups.items():
+                buys = groups['buys']
+                sells = groups['sells']
+                total_buys += len(buys)
+                total_sells += len(sells)
+                
+                if buys or sells:
+                    asset_realized = self._calculate_fifo_gains(buys, sells)
+                    all_realized_gains.extend(asset_realized)
+                    
+                    # Get current price for this specific asset for unrealized calc
+                    if asset.upper() == symbol.upper():
+                        asset_current_price = current_price
+                    else:
+                        asset_current_price = price_service.get_current_price(asset) or 0
+                    
+                    asset_remaining = self._get_remaining_lots(buys, sells)
+                    # Calculate unrealized per asset with correct current price
+                    for lot in asset_remaining:
+                        lot['current_price'] = asset_current_price
+                        lot['current_value'] = lot['amount'] * asset_current_price
+                        lot['unrealized_gain'] = lot['current_value'] - lot['cost_basis']
+                    all_remaining_lots.extend(asset_remaining)
+            
+            # Calculate unrealized gains from all remaining lots
+            total_unrealized_cost = sum(lot.get('cost_basis', 0) for lot in all_remaining_lots)
+            total_unrealized_value = sum(lot.get('current_value', 0) for lot in all_remaining_lots)
+            unrealized_gains = {
+                'lots': all_remaining_lots,
+                'total_cost_basis': total_unrealized_cost,
+                'total_current_value': total_unrealized_value,
+                'total_gain': total_unrealized_value - total_unrealized_cost,
+                'total_gain_percentage': ((total_unrealized_value - total_unrealized_cost) / total_unrealized_cost * 100) if total_unrealized_cost > 0 else 0
+            }
             
             # Calculate totals
-            total_realized = sum(g['gain_loss'] for g in realized_gains)
-            short_term = sum(g['gain_loss'] for g in realized_gains if g['holding_period'] == 'short-term')
-            long_term = sum(g['gain_loss'] for g in realized_gains if g['holding_period'] == 'long-term')
+            total_realized = sum(g['gain_loss'] for g in all_realized_gains)
+            short_term = sum(g['gain_loss'] for g in all_realized_gains if g['holding_period'] == 'short-term')
+            long_term = sum(g['gain_loss'] for g in all_realized_gains if g['holding_period'] == 'long-term')
             
-            # Count transfers detected
             transfers_count = len(detected_transfers)
             transfer_assets = list(set(t.get('asset', '') for t in detected_transfers))
             
@@ -428,29 +446,30 @@ class UnifiedTaxService:
                 'sources': {
                     'wallet_count': len([t for t in all_transactions if t['source'] == 'wallet']),
                     'exchange_count': len([t for t in all_transactions if t['source'].startswith('exchange:')]),
-                    'skipped_bad_data': skipped_bad_transactions
+                    'skipped_bad_data': skipped_bad_transactions,
+                    'assets_tracked': len(asset_groups)
                 },
                 'detected_transfers': {
                     'count': transfers_count,
                     'assets': transfer_assets,
                     'details': detected_transfers[:20]
                 },
-                'realized_gains': realized_gains,
+                'realized_gains': all_realized_gains,
                 'unrealized_gains': unrealized_gains,
-                'remaining_lots': remaining_lots,
+                'remaining_lots': all_remaining_lots,
                 'summary': {
                     'total_realized_gain': total_realized,
                     'total_unrealized_gain': unrealized_gains.get('total_gain', 0),
                     'total_gain': total_realized + unrealized_gains.get('total_gain', 0),
                     'short_term_gains': short_term,
                     'long_term_gains': long_term,
-                    'total_transactions': len(buys) + len(sells),
-                    'buy_count': len(buys),
-                    'sell_count': len(sells),
+                    'total_transactions': total_buys + total_sells,
+                    'buy_count': total_buys,
+                    'sell_count': total_sells,
                     'transfers_detected': transfers_count,
                     'skipped_bad_transactions': skipped_bad_transactions
                 },
-                'all_transactions': all_transactions
+                'all_transactions': valid_transactions
             }
             
         except Exception as e:

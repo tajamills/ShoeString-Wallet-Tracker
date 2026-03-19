@@ -44,7 +44,7 @@ export const UnifiedTaxDashboard = ({
   const [selectedYear, setSelectedYear] = useState(null);
   const [showSources, setShowSources] = useState(false);
   const [showRealizedDetails, setShowRealizedDetails] = useState(false);
-  const [dataSource, setDataSource] = useState('combined');
+  const [dataSource, setDataSource] = useState(walletAddress ? 'wallet_only' : (hasExchangeData ? 'exchange_only' : 'wallet_only'));
   const [dataSourcesUsed, setDataSourcesUsed] = useState(null);
   const [detectedTransfers, setDetectedTransfers] = useState(null);
 

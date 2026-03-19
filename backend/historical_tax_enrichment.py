@@ -234,14 +234,13 @@ class HistoricalTaxEnrichment:
         if not enriched:
             return self._empty_tax_data()
         
-        # Separate buys and sells
-        buys = []
-        sells = []
+        # Group transactions by asset for per-asset FIFO calculation
+        asset_groups = {}
         total_validation_issues = []
         
         for tx in enriched:
             tx_type = tx.get('type', '').lower()
-            tx_asset = tx.get('asset', symbol)  # Use the actual asset, not just the chain symbol
+            tx_asset = tx.get('asset', symbol).upper()
             
             # Skip unknown tokens with $0 price from tax calculations
             if tx.get('price_source') == 'unknown_token':
@@ -252,43 +251,69 @@ class HistoricalTaxEnrichment:
             if tx.get('validation_warnings'):
                 total_validation_issues.extend(tx['validation_warnings'])
             
+            tx_record = {
+                'tx_id': tx.get('hash', f"wallet_{id(tx)}"),
+                'source': 'on-chain',
+                'date': self._format_date(tx.get('timestamp')),
+                'timestamp': tx.get('timestamp'),
+                'amount': tx.get('amount', 0),
+                'price_usd': tx.get('price_usd', 0),
+                'total_usd': tx.get('total_usd', 0),
+                'asset': tx_asset,
+                'price_source': tx.get('price_source', 'unknown')
+            }
+            
+            if tx_asset not in asset_groups:
+                asset_groups[tx_asset] = {'buys': [], 'sells': []}
+            
             if tx_type in ['received', 'buy', 'deposit', 'reward', 'staking', 'airdrop']:
-                buys.append({
-                    'tx_id': tx.get('hash', f"wallet_{id(tx)}"),
-                    'source': 'on-chain',
-                    'date': self._format_date(tx.get('timestamp')),
-                    'timestamp': tx.get('timestamp'),
-                    'amount': tx.get('amount', 0),
-                    'price_usd': tx.get('price_usd', 0),
-                    'total_usd': tx.get('total_usd', 0),
-                    'asset': tx_asset,
-                    'price_source': tx.get('price_source', 'unknown')
-                })
+                asset_groups[tx_asset]['buys'].append(tx_record)
             elif tx_type in ['sent', 'sell', 'send', 'withdrawal']:
-                sells.append({
-                    'tx_id': tx.get('hash', f"wallet_{id(tx)}"),
-                    'source': 'on-chain',
-                    'date': self._format_date(tx.get('timestamp')),
-                    'timestamp': tx.get('timestamp'),
-                    'amount': tx.get('amount', 0),
-                    'price_usd': tx.get('price_usd', 0),
-                    'total_usd': tx.get('total_usd', 0),
-                    'asset': tx_asset,
-                    'price_source': tx.get('price_source', 'unknown')
-                })
+                asset_groups[tx_asset]['sells'].append(tx_record)
         
-        # Sort by timestamp (oldest first for FIFO)
-        buys.sort(key=lambda x: x.get('timestamp', 0) or 0)
-        sells.sort(key=lambda x: x.get('timestamp', 0) or 0)
+        # Run FIFO per asset and aggregate
+        all_realized_gains = []
+        all_remaining_lots = []
+        all_buys = []
+        all_sells = []
         
-        # Calculate realized gains using FIFO
-        realized_gains = self._calculate_fifo_gains(buys.copy(), sells.copy())
+        for asset, groups in asset_groups.items():
+            buys = sorted(groups['buys'], key=lambda x: x.get('timestamp', 0) or 0)
+            sells = sorted(groups['sells'], key=lambda x: x.get('timestamp', 0) or 0)
+            all_buys.extend(buys)
+            all_sells.extend(sells)
+            
+            if buys or sells:
+                asset_realized = self._calculate_fifo_gains(buys.copy(), sells.copy())
+                all_realized_gains.extend(asset_realized)
+                
+                asset_remaining = self._get_remaining_lots(buys.copy(), sells.copy())
+                # Use correct current price for each asset
+                if asset == symbol.upper():
+                    asset_price = current_price
+                else:
+                    from price_service import price_service as ps
+                    asset_price = ps.get_current_price(asset) or 0
+                
+                for lot in asset_remaining:
+                    lot['current_price'] = asset_price
+                    lot['current_value'] = lot['amount'] * asset_price
+                    lot['unrealized_gain'] = lot['current_value'] - lot.get('cost_basis', 0)
+                all_remaining_lots.extend(asset_remaining)
         
-        # Calculate remaining lots
-        remaining_lots = self._get_remaining_lots(buys.copy(), sells.copy())
+        realized_gains = all_realized_gains
+        remaining_lots = all_remaining_lots
         
-        # Calculate unrealized gains
-        unrealized = self._calculate_unrealized(remaining_lots, current_price)
+        # Calculate unrealized totals
+        total_unrealized_cost = sum(lot.get('cost_basis', 0) for lot in remaining_lots)
+        total_unrealized_value = sum(lot.get('current_value', 0) for lot in remaining_lots)
+        unrealized = {
+            'lots': remaining_lots,
+            'total_cost_basis': total_unrealized_cost,
+            'total_current_value': total_unrealized_value,
+            'total_gain': total_unrealized_value - total_unrealized_cost,
+            'total_gain_percentage': ((total_unrealized_value - total_unrealized_cost) / total_unrealized_cost * 100) if total_unrealized_cost > 0 else 0
+        }
         
         # Calculate totals with validation
         total_realized = sum(g['gain_loss'] for g in realized_gains)
@@ -306,8 +331,9 @@ class HistoricalTaxEnrichment:
             'symbol': symbol,
             'sources': {
                 'on_chain_count': len(enriched),
-                'buys_count': len(buys),
-                'sells_count': len(sells),
+                'buys_count': len(all_buys),
+                'sells_count': len(all_sells),
+                'assets_tracked': len(asset_groups),
                 'historical_prices_used': sum(1 for tx in enriched if tx.get('price_source') == 'historical'),
                 'current_prices_used': sum(1 for tx in enriched if tx.get('price_source') == 'current')
             },
@@ -321,15 +347,15 @@ class HistoricalTaxEnrichment:
                 'short_term_gains': short_term,
                 'long_term_gains': long_term,
                 'total_transactions': len(enriched),
-                'buy_count': len(buys),
-                'sell_count': len(sells),
+                'buy_count': len(all_buys),
+                'sell_count': len(all_sells),
                 'current_balance': current_balance,
                 'current_price': current_price,
                 'current_value': current_balance * current_price
             },
             'validation': {
                 'has_issues': len(total_validation_issues) > 0,
-                'issues': total_validation_issues[:20]  # Limit to first 20
+                'issues': total_validation_issues[:20]
             },
             'enriched_transactions': enriched
         }
