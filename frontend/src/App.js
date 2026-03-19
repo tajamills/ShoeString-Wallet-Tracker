@@ -327,6 +327,19 @@ function App() {
           </p>
         </div>
 
+        {/* Beta Testing Banner */}
+        <div className="max-w-3xl mx-auto mb-6">
+          <div className="bg-gradient-to-r from-purple-900/80 to-indigo-900/80 border border-purple-500/50 rounded-lg p-4 text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <span className="bg-purple-500 text-white text-xs font-bold px-2 py-1 rounded-full animate-pulse">BETA</span>
+              <h2 className="text-white font-semibold text-lg">Beta Testing Program</h2>
+            </div>
+            <p className="text-purple-200 text-sm">
+              Welcome to the beta! Your feedback helps us improve. Report bugs or suggestions using the Help button.
+            </p>
+          </div>
+        </div>
+
         {/* Payment Success Alert */}
         {paymentSuccess && (
           <div className="max-w-3xl mx-auto mb-6">
