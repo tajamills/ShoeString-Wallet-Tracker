@@ -68,7 +68,37 @@ EXCHANGE_SIGNATURES = {
 
 
 class ExchangeTransaction:
-    """Standardized transaction format"""
+    """Standardized transaction format with amount validation"""
+    
+    # Max circulating supply for common coins (to detect raw unit imports)
+    # Keep these TIGHT to catch bad data
+    MAX_REASONABLE_AMOUNTS = {
+        'BTC': 21_000_000,  # Max BTC supply
+        'ETH': 150_000_000,  # ~120M supply
+        'SOL': 600_000_000,  # ~580M supply
+        'XRP': 100_000_000_000,  # 100B max supply
+        'XLM': 50_000_000_000,  # ~50B supply
+        'DOGE': 150_000_000_000,  # Large supply
+        'ALGO': 10_000_000_000,
+        'MATIC': 10_000_000_000,
+        'AVAX': 1_000_000_000,
+        'ADA': 50_000_000_000,
+        'DOT': 1_500_000_000,
+    }
+    
+    # For unknown tokens, be very conservative
+    DEFAULT_MAX_AMOUNT = 100_000_000_000  # 100B max for unknown tokens
+    
+    # Decimals for detecting raw unit values
+    CHAIN_DECIMALS = {
+        'BTC': 8,   # satoshis
+        'ETH': 18,  # wei
+        'SOL': 9,   # lamports
+        'MATIC': 18,
+        'AVAX': 18,
+        'ALGO': 6,  # microalgos
+    }
+    
     def __init__(
         self,
         exchange: str,
@@ -86,14 +116,38 @@ class ExchangeTransaction:
         self.exchange = exchange
         self.tx_id = tx_id
         self.tx_type = tx_type
-        self.asset = asset
-        self.amount = amount
+        self.asset = asset.upper() if asset else ''
+        self.amount = self._validate_and_fix_amount(amount, self.asset)
         self.price_usd = price_usd
         self.total_usd = total_usd
         self.fee = fee
         self.fee_asset = fee_asset
         self.timestamp = timestamp
         self.raw_data = raw_data
+    
+    def _validate_and_fix_amount(self, amount: float, asset: str) -> float:
+        """Validate amount and auto-convert if it looks like raw units (satoshis, lamports, etc.)"""
+        if amount <= 0:
+            return 0
+        
+        max_amount = self.MAX_REASONABLE_AMOUNTS.get(asset, self.DEFAULT_MAX_AMOUNT)
+        decimals = self.CHAIN_DECIMALS.get(asset, 0)
+        
+        # If amount exceeds max supply, it might be in raw units
+        if amount > max_amount:
+            if decimals > 0:
+                converted = amount / (10 ** decimals)
+                
+                # Only accept conversion if result is reasonable
+                if converted <= max_amount:
+                    logger.warning(f"Auto-converting {asset} amount from {amount:,.0f} to {converted:.8f} (detected raw units)")
+                    return converted
+            
+            # Can't convert or still too large - skip it
+            logger.error(f"Skipping unreasonable {asset} amount: {amount:,.0f} (max allowed: {max_amount:,})")
+            return 0
+        
+        return amount
 
     def to_dict(self) -> Dict[str, Any]:
         return {
