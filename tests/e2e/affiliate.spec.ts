@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const BASE_URL = process.env.REACT_APP_BACKEND_URL || 'https://chain-custody-tool.preview.emergentagent.com';
+const BASE_URL = process.env.REACT_APP_BACKEND_URL || 'https://crypto-tax-mvp.preview.emergentagent.com';
 
 // Helper function to register a new user and accept terms
 async function registerAndLogin(page, email: string, password: string = 'TestPass123!') {

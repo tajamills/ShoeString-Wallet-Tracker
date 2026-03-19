@@ -11,7 +11,7 @@ from datetime import datetime
 import sys
 
 # Configuration
-BASE_URL = "https://chain-custody-tool.preview.emergentagent.com/api"
+BASE_URL = "https://crypto-tax-mvp.preview.emergentagent.com/api"
 TIMEOUT = 30
 
 class SpecificChainTester:

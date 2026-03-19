@@ -12,7 +12,7 @@ import os
 import uuid
 from datetime import datetime
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://chain-custody-tool.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://crypto-tax-mvp.preview.emergentagent.com').rstrip('/')
 
 # Test credentials from problem statement
 TEST_EMAIL = "mobiletest@test.com"

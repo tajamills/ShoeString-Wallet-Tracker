@@ -169,7 +169,7 @@ class MultiChainService:
             return analysis
     
     def add_tax_data(self, analysis: Dict[str, Any], symbol: str) -> Dict[str, Any]:
-        """Add tax calculations including cost basis and capital gains"""
+        """Add tax calculations including cost basis and capital gains using historical prices"""
         try:
             current_price = analysis.get('current_price_usd')
             current_balance = analysis.get('currentBalance', analysis.get('netEth', 0))
@@ -178,13 +178,30 @@ class MultiChainService:
             if not current_price or not transactions:
                 return analysis
             
-            # Calculate tax data
-            tax_data = tax_service.calculate_tax_data(
-                transactions=transactions,
-                current_balance=current_balance,
-                current_price=current_price,
-                symbol=symbol
-            )
+            # Use the new historical tax enrichment service for accurate cost basis
+            try:
+                from historical_tax_enrichment import historical_tax_enrichment
+                
+                tax_data = historical_tax_enrichment.calculate_on_chain_tax_data(
+                    transactions=transactions,
+                    symbol=symbol,
+                    current_price=current_price,
+                    current_balance=current_balance
+                )
+                
+                logger.info(f"Tax data calculated with historical prices: "
+                           f"{tax_data.get('sources', {}).get('historical_prices_used', 0)} historical, "
+                           f"{tax_data.get('sources', {}).get('current_prices_used', 0)} current")
+                
+            except ImportError:
+                # Fallback to old tax service if historical enrichment not available
+                logger.warning("Historical tax enrichment not available, using fallback")
+                tax_data = tax_service.calculate_tax_data(
+                    transactions=transactions,
+                    current_balance=current_balance,
+                    current_price=current_price,
+                    symbol=symbol
+                )
             
             # Add to analysis
             analysis['tax_data'] = tax_data
@@ -251,8 +268,8 @@ class MultiChainService:
         # Add USD values
         analysis = self.add_usd_values(analysis, symbol)
         
-        # Add tax calculations (Premium/Pro feature)
-        if user_tier in ['premium', 'pro']:
+        # Add tax calculations (Unlimited/Premium/Pro feature)
+        if user_tier in ['premium', 'pro', 'unlimited']:
             analysis = self.add_tax_data(analysis, symbol)
         
         return analysis
@@ -400,6 +417,17 @@ class MultiChainService:
                 to_metadata = tx.get('metadata') or {}
                 to_label = to_metadata.get('exchangeName') or to_metadata.get('contractName') or None
                 
+                # Extract timestamp from metadata (Alchemy provides blockTimestamp)
+                block_timestamp = to_metadata.get('blockTimestamp', '')
+                timestamp = None
+                if block_timestamp:
+                    try:
+                        from datetime import datetime
+                        dt = datetime.fromisoformat(block_timestamp.replace('Z', '+00:00'))
+                        timestamp = int(dt.timestamp())
+                    except:
+                        pass
+                
                 all_txs.append({
                     "hash": tx.get('hash', ''),
                     "type": "sent",
@@ -408,6 +436,7 @@ class MultiChainService:
                     "to": to_address,
                     "to_label": to_label,
                     "blockNum": tx.get('blockNum', ''),
+                    "timestamp": timestamp,
                     "category": tx.get('category', '')
                 })
             
@@ -420,6 +449,17 @@ class MultiChainService:
                 from_metadata = tx.get('metadata') or {}
                 from_label = from_metadata.get('exchangeName') or from_metadata.get('contractName') or None
                 
+                # Extract timestamp from metadata
+                block_timestamp = from_metadata.get('blockTimestamp', '')
+                timestamp = None
+                if block_timestamp:
+                    try:
+                        from datetime import datetime
+                        dt = datetime.fromisoformat(block_timestamp.replace('Z', '+00:00'))
+                        timestamp = int(dt.timestamp())
+                    except:
+                        pass
+                
                 all_txs.append({
                     "hash": tx.get('hash', ''),
                     "type": "received",
@@ -428,6 +468,7 @@ class MultiChainService:
                     "from": from_address,
                     "from_label": from_label,
                     "blockNum": tx.get('blockNum', ''),
+                    "timestamp": timestamp,
                     "category": tx.get('category', '')
                 })
             

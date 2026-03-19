@@ -36,7 +36,9 @@ class PriceService:
             'DAI': 'dai',
             'WETH': 'weth',
             'WBTC': 'wrapped-bitcoin',
-            'ARB': 'arbitrum'
+            'ARB': 'arbitrum',
+            'XRP': 'ripple',
+            'XLM': 'stellar'
         }
         
         # Fallback prices - more comprehensive and updated
@@ -56,7 +58,9 @@ class PriceService:
             'DAI': 1.0,
             'WETH': 3500.0,
             'WBTC': 95000.0,
-            'ARB': 1.20
+            'ARB': 1.20,
+            'XRP': 2.50,
+            'XLM': 0.40
         }
     
     def _rate_limit_wait(self):

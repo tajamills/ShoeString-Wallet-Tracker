@@ -109,7 +109,7 @@ ALCHEMY_API_KEY="U2_F7nkCGFY73wbiIFpum"
 
 **Frontend (.env)**
 ```
-REACT_APP_BACKEND_URL=https://chain-custody-tool.preview.emergentagent.com
+REACT_APP_BACKEND_URL=https://crypto-tax-mvp.preview.emergentagent.com
 ```
 
 ## How It Works

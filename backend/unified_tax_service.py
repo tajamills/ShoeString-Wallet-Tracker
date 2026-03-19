@@ -142,7 +142,11 @@ class UnifiedTaxService:
         return matches
     
     def normalize_exchange_transaction(self, tx: Dict) -> Dict:
-        """Convert exchange CSV transaction to unified format"""
+        """Convert exchange CSV transaction to unified format with validation"""
+        # Validation thresholds
+        MAX_REASONABLE_AMOUNT = 1_000_000_000_000  # 1 trillion units
+        MAX_REASONABLE_PRICE = 1_000_000  # $1M per unit
+        
         # Parse timestamp
         timestamp_str = tx.get('timestamp', '')
         try:
@@ -153,15 +157,47 @@ class UnifiedTaxService:
         except:
             dt = datetime.now(timezone.utc)
         
+        # Parse and validate amount
+        try:
+            amount = abs(float(tx.get('amount', 0)))
+        except (ValueError, TypeError):
+            amount = 0
+            logger.warning(f"Invalid amount in exchange transaction: {tx.get('amount')}")
+        
+        # VALIDATION: Flag suspicious amounts
+        if amount > MAX_REASONABLE_AMOUNT:
+            logger.error(f"VALIDATION BUG: Suspicious exchange transaction amount: {amount}")
+            logger.error(f"  Transaction details: {tx.get('tx_id', 'unknown')}, asset: {tx.get('asset')}")
+            logger.error(f"  Exchange: {tx.get('exchange')}, type: {tx.get('tx_type')}")
+        
+        # Parse and validate price
+        price_usd = tx.get('price_usd')
+        if price_usd:
+            try:
+                price_usd = float(price_usd)
+                if price_usd > MAX_REASONABLE_PRICE:
+                    logger.error(f"VALIDATION BUG: Suspicious exchange transaction price: ${price_usd}")
+                    logger.error(f"  Transaction details: {tx.get('tx_id', 'unknown')}, asset: {tx.get('asset')}")
+            except (ValueError, TypeError):
+                price_usd = None
+        
+        # Parse total_usd
+        total_usd = tx.get('total_usd') or tx.get('value_usd')
+        if total_usd:
+            try:
+                total_usd = float(total_usd)
+            except (ValueError, TypeError):
+                total_usd = None
+        
         return {
             'source': f"exchange:{tx.get('exchange', 'unknown')}",
             'tx_id': tx.get('tx_id', f"exchange_{id(tx)}"),
             'tx_type': tx.get('tx_type', 'unknown'),
             'asset': tx.get('asset', ''),
-            'amount': abs(float(tx.get('amount', 0))),
-            'price_usd': tx.get('price_usd'),
-            'total_usd': tx.get('total_usd') or tx.get('value_usd'),
-            'fee': float(tx.get('fee', 0)),
+            'amount': amount,
+            'price_usd': price_usd,
+            'total_usd': total_usd,
+            'fee': float(tx.get('fee', 0)) if tx.get('fee') else 0,
             'fee_asset': tx.get('fee_asset', 'USD'),
             'timestamp': dt,
             'date': dt.strftime('%Y-%m-%d'),
@@ -352,20 +388,34 @@ class UnifiedTaxService:
             return self._empty_tax_data()
     
     def _calculate_fifo_gains(self, buys: List[Dict], sells: List[Dict]) -> List[Dict]:
-        """Calculate realized gains using FIFO method"""
+        """Calculate realized gains using FIFO method with validation logging"""
         realized = []
+        
+        # Validation thresholds
+        MAX_REASONABLE_GAIN = 10_000_000_000  # $10B - flag anything larger
+        MAX_REASONABLE_PRICE = 1_000_000  # $1M per unit
+        MAX_REASONABLE_AMOUNT = 1_000_000_000_000  # 1 trillion units
         
         # Create a queue of buy lots
         buy_queue = []
         for buy in buys:
+            amount = buy['amount']
+            price = buy['price_usd'] or 0
+            
+            # VALIDATION: Flag suspicious buy transactions
+            if amount > MAX_REASONABLE_AMOUNT:
+                logger.error(f"VALIDATION BUG: Suspicious buy amount: {amount} (tx: {buy.get('tx_id', 'unknown')})")
+            if price > MAX_REASONABLE_PRICE:
+                logger.error(f"VALIDATION BUG: Suspicious buy price: ${price} (tx: {buy.get('tx_id', 'unknown')})")
+            
             buy_queue.append({
                 'tx_id': buy['tx_id'],
                 'source': buy['source'],
                 'date': buy['date'],
                 'timestamp': buy['timestamp'],
-                'amount': buy['amount'],
-                'remaining': buy['amount'],
-                'price_usd': buy['price_usd'] or 0,
+                'amount': amount,
+                'remaining': amount,
+                'price_usd': price,
                 'asset': buy['asset']
             })
         
@@ -376,6 +426,12 @@ class UnifiedTaxService:
             sell_date = sell['date']
             sell_timestamp = sell['timestamp']
             remaining_to_sell = sell_amount
+            
+            # VALIDATION: Flag suspicious sell transactions
+            if sell_amount > MAX_REASONABLE_AMOUNT:
+                logger.error(f"VALIDATION BUG: Suspicious sell amount: {sell_amount} (tx: {sell.get('tx_id', 'unknown')})")
+            if sell_price > MAX_REASONABLE_PRICE:
+                logger.error(f"VALIDATION BUG: Suspicious sell price: ${sell_price} (tx: {sell.get('tx_id', 'unknown')})")
             
             while remaining_to_sell > 0 and buy_queue:
                 lot = buy_queue[0]
@@ -391,6 +447,17 @@ class UnifiedTaxService:
                 proceeds = matched * sell_price
                 cost_basis = matched * lot['price_usd']
                 gain_loss = proceeds - cost_basis
+                
+                # VALIDATION: Flag suspiciously large gains/losses (like the -$37B bug)
+                if abs(gain_loss) > MAX_REASONABLE_GAIN:
+                    logger.error(f"VALIDATION BUG: Suspiciously large gain/loss detected!")
+                    logger.error(f"  Transaction: sell_id={sell.get('tx_id', 'unknown')}, buy_id={lot['tx_id']}")
+                    logger.error(f"  Amount matched: {matched}")
+                    logger.error(f"  Buy price: ${lot['price_usd']}, Sell price: ${sell_price}")
+                    logger.error(f"  Proceeds: ${proceeds:,.2f}, Cost basis: ${cost_basis:,.2f}")
+                    logger.error(f"  Gain/Loss: ${gain_loss:,.2f}")
+                    logger.error(f"  Asset: {sell['asset']}, Buy date: {lot['date']}, Sell date: {sell_date}")
+                    logger.error(f"  Source: buy={lot['source']}, sell={sell.get('source', 'unknown')}")
                 
                 # Determine holding period
                 holding_period = self._get_holding_period(lot['timestamp'], sell_timestamp)
@@ -418,6 +485,16 @@ class UnifiedTaxService:
                 
                 if lot['remaining'] <= 0:
                     buy_queue.pop(0)
+        
+        # VALIDATION: Log total realized gains
+        total_realized = sum(g['gain_loss'] for g in realized)
+        if abs(total_realized) > MAX_REASONABLE_GAIN:
+            logger.error(f"VALIDATION BUG: Total realized gains are suspiciously large: ${total_realized:,.2f}")
+            logger.error(f"  Number of realized gain events: {len(realized)}")
+            # Log top 5 largest gain/loss events
+            sorted_by_size = sorted(realized, key=lambda x: abs(x['gain_loss']), reverse=True)[:5]
+            for i, r in enumerate(sorted_by_size):
+                logger.error(f"  Top {i+1}: ${r['gain_loss']:,.2f} - {r['asset']} {r['amount']} units (buy: ${r['buy_price']}, sell: ${r['sell_price']})")
         
         return realized
     

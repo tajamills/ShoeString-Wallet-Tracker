@@ -2,7 +2,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://chain-custody-tool.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://crypto-tax-mvp.preview.emergentagent.com').rstrip('/')
 
 @pytest.fixture
 def api_client():
@@ -15,8 +15,8 @@ def api_client():
 def premium_auth_token(api_client):
     """Get authentication token for premium user"""
     response = api_client.post(f"{BASE_URL}/api/auth/login", json={
-        "email": "taxtest@test.com",
-        "password": "TestPass123!"
+        "email": "mobiletest@test.com",
+        "password": "test123456"
     })
     if response.status_code == 200:
         return response.json().get("access_token")

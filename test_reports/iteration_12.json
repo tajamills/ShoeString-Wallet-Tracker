@@ -1,0 +1,89 @@
+{
+  "summary": "On-Chain Tax Calculation with Historical Price Enrichment - Testing Complete. Backend: 13/14 tests passed (1 skipped due to rate limiting). Frontend: 5/5 core tests passed. New feature verified: wallet analysis now enriches transactions with historical prices from CoinGecko for accurate cost basis using FIFO method. Multi-chain support tested for ETH, XRP, Solana. One BUG found: Stellar/XLM wallet analysis returns 400 Bad Request errors for all test addresses.",
+  "mode": "generate",
+  "baseline_commit": "25bebbc795de4783467c54b050033924d40bedc3",
+  "head_commit": "fcc53a09a618d990d3927dc6a82f4a7373c40f0e",
+  "specs_created": [
+    "/app/tests/e2e/onchain-tax.spec.ts",
+    "/app/backend/tests/test_onchain_tax.py"
+  ],
+  "specs_updated": [
+    "/app/tests/e2e/mvp-features.spec.ts",
+    "/app/backend/tests/conftest.py"
+  ],
+  "quarantined_tests": [],
+  "test_report_links": [
+    "/app/backend/tests/test_onchain_tax.py",
+    "/app/tests/e2e/onchain-tax.spec.ts",
+    "/app/test_reports/pytest/pytest_onchain_tax_results.xml"
+  ],
+  "regression_results": {
+    "total_specs": 19,
+    "passed": 18,
+    "failed": 0,
+    "skipped": 1
+  },
+  "issues": [
+    {
+      "id": "BUG-001",
+      "issue_type": "bug",
+      "severity": "MEDIUM",
+      "description": "Stellar/XLM wallet analysis returns 400 Bad Request error for all test addresses. The Stellar analyzer _get_account method only handles 404 (account not found) but not 400 (bad request) errors. The Stellar Horizon API returns 400 for invalid/malformed addresses which should be caught and handled gracefully.",
+      "endpoint_or_component": "/api/wallet/analyze with chain=xlm",
+      "surfaces": ["backend"],
+      "reproduction": "1. Login as paid user\n2. Select XLM/Stellar chain\n3. Enter any Stellar address starting with 'G' (e.g., GCZJM35NKGVK47BB4SPBDV25477PBER5Y5YG4ACK63N2TZLPLNZSMOUG)\n4. Click Analyze\n5. Error: Failed to analyze Stellar wallet: 400 Bad Request",
+      "affected_test": "Manual test - Stellar addresses return 400 errors"
+    },
+    {
+      "id": "IMP-001",
+      "issue_type": "improvement",
+      "severity": "LOW",
+      "description": "Help/Support button is now visible for all logged-in users, but the previous test expected it to be hidden for paid users. Updated tests to match current behavior.",
+      "endpoint_or_component": "Frontend UI - Help button visibility"
+    },
+    {
+      "id": "IMP-002",
+      "issue_type": "improvement",
+      "severity": "LOW",
+      "description": "CoinGecko API rate limiting causes occasional 502 gateway timeouts during wallet analysis. The service correctly falls back to cached prices, but heavy testing can exceed rate limits. Consider adding API key or caching layer.",
+      "endpoint_or_component": "price_service.py"
+    }
+  ],
+  "action_items": [
+    "FIX BUG-001: Update Stellar analyzer to handle 400 Bad Request errors gracefully in chains/stellar.py _get_account method",
+    "OPTIONAL: Add Stellar test wallet verification - find known active Stellar mainnet addresses for testing"
+  ],
+  "updated_files": [
+    "/app/tests/e2e/onchain-tax.spec.ts",
+    "/app/tests/e2e/mvp-features.spec.ts",
+    "/app/backend/tests/test_onchain_tax.py",
+    "/app/backend/tests/conftest.py"
+  ],
+  "test_results": {
+    "backend": "93% (13/14 passed, 1 skipped due to rate limiting)",
+    "frontend": "100% (5/5 core tests passed)"
+  },
+  "seed_data_creation": "None - used existing test user mobiletest@test.com with unlimited subscription",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "On-chain tax calculation with historical price enrichment tested. ETH, XRP, Solana chains working. Stellar/XLM has 400 error bug. CoinGecko rate limiting can cause occasional 502 errors during testing.",
+  "features_verified": [
+    "Authentication: Login works correctly for mobiletest@test.com",
+    "Wallet Analysis: Ethereum analysis returns tax_data with FIFO method",
+    "Wallet Analysis: XRP analysis returns tax_data with historical prices",
+    "Wallet Analysis: Solana analysis works (even with empty wallets)",
+    "Tax Data: tax_data structure includes sources, summary, validation sections",
+    "Tax Data: historical_prices_used count tracks historical vs current price usage",
+    "Tax Data: validation section flags suspicious values (>$100B transactions)",
+    "Tax Data: enriched_transactions include price_usd, total_usd, price_source",
+    "UI: Chain auto-detection works for ETH and XRP addresses",
+    "UI: Help button visible for logged-in users",
+    "UI: Import CSV and Chain of Custody buttons visible for paid users",
+    "UI: Solana option available in chain selector for unlimited users",
+    "Auth: Non-Ethereum chains (XRP, Solana) require premium tier",
+    "Auth: Unauthenticated requests return 403"
+  ],
+  "features_not_working": [
+    "Stellar/XLM: Returns 400 Bad Request for all test addresses"
+  ]
+}

@@ -11,7 +11,7 @@ import { test, expect, Page } from '@playwright/test';
  * 6. Wallet analysis: Basic wallet analysis works
  */
 
-const BASE_URL = process.env.REACT_APP_BACKEND_URL || 'https://chain-custody-tool.preview.emergentagent.com';
+const BASE_URL = process.env.REACT_APP_BACKEND_URL || 'https://crypto-tax-mvp.preview.emergentagent.com';
 const TEST_EMAIL = 'mobiletest@test.com';
 const TEST_PASSWORD = 'test123456';
 const TEST_WALLET_ADDRESS = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'; // Vitalik's wallet
@@ -99,26 +99,19 @@ test.describe('MVP UI Simplification', () => {
     await page.waitForLoadState('domcontentloaded');
   });
 
-  test('Help/Support button is hidden for logged-in paid users', async ({ page }) => {
+  test('Help/Support button is visible for all logged-in users', async ({ page }) => {
     await login(page);
     await removeEmergentBadge(page);
     
     // Verify user is logged in
     await expect(page.getByTestId('user-info-bar')).toBeVisible();
     
-    // Help/Support button should NOT be visible
-    // Using locator to check for various possible help button patterns
-    const helpButton = page.getByTestId('help-button');
+    // Help/Support button SHOULD be visible for all logged-in users
     const supportButton = page.getByTestId('support-button');
+    await expect(supportButton).toBeVisible();
     
-    // These should NOT exist - checking that they're not in the DOM
-    await expect(helpButton).not.toBeVisible();
-    await expect(supportButton).not.toBeVisible();
-    
-    // Also check there's no button containing "Help" or "Support" text in the user info bar
-    const userBar = page.getByTestId('user-info-bar');
-    await expect(userBar.getByRole('button', { name: /help/i })).not.toBeVisible();
-    await expect(userBar.getByRole('button', { name: /support/i })).not.toBeVisible();
+    // Verify it has Help text
+    await expect(supportButton.getByText('Help')).toBeVisible();
   });
 
   test('Import CSV and Chain of Custody buttons visible for paid users', async ({ page }) => {

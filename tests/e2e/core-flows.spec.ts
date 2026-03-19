@@ -5,7 +5,7 @@ import { test, expect, Page } from '@playwright/test';
  * Tests core user journeys after App.js refactoring with useAnalysis and usePayment hooks
  */
 
-const BASE_URL = process.env.REACT_APP_BACKEND_URL || 'https://chain-custody-tool.preview.emergentagent.com';
+const BASE_URL = process.env.REACT_APP_BACKEND_URL || 'https://crypto-tax-mvp.preview.emergentagent.com';
 const TEST_EMAIL = 'coretest@test.com';
 const TEST_PASSWORD = 'TestPass123!';
 const TEST_WALLET_ADDRESS = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'; // Vitalik's wallet

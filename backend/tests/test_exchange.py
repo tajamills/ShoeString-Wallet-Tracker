@@ -16,7 +16,7 @@ import os
 import uuid
 import io
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://chain-custody-tool.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://crypto-tax-mvp.preview.emergentagent.com').rstrip('/')
 
 
 class TestExchangeSupportedEndpoint:
