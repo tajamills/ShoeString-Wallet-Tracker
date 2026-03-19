@@ -523,3 +523,6 @@ REACT_APP_BACKEND_URL=https://...
 - CoinGecko API rate limits (fallback prices used when rate-limited)
 - Form 8949 export requires realized gains (sell transactions)
 - Historical prices for past transactions use current prices as fallback
+
+## Backlog
+- [ ] **CoinGecko Rate Limit Improvement** - Add paid API key support, better caching, or alternative price provider to ensure historical prices are always fetched accurately
