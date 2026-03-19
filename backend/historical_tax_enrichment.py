@@ -119,13 +119,13 @@ class HistoricalTaxEnrichment:
         
         For each transaction:
         - If timestamp exists, fetch historical price for that date
-        - If no timestamp, use current price (with warning)
-        - Validate data and log any suspicious values
+        - If no timestamp and it's the native token, use current price
+        - For unknown tokens, assign $0 (don't use native chain price!)
         
         Args:
             transactions: List of wallet transactions from chain analyzer
             symbol: Asset symbol (ETH, BTC, etc.)
-            current_price: Current price (fallback)
+            current_price: Current price for the native token (fallback for native token only)
         
         Returns:
             List of enriched transactions with price_usd and total_usd
@@ -139,21 +139,41 @@ class HistoricalTaxEnrichment:
             if value <= 0:
                 continue
             
+            # Get the actual asset for this transaction
+            tx_asset = tx.get('asset', symbol).upper()
+            
             # Get timestamp
             timestamp = tx.get('timestamp') or tx.get('blockTime')
             
-            # Determine price
-            if timestamp and timestamp > 0:
-                price = self._get_historical_price(symbol, int(timestamp))
-                price_source = 'historical'
-            else:
-                price = None
-                price_source = 'current'
+            # Determine price based on asset type
+            price = None
+            price_source = 'none'
             
-            # Fallback to current price
+            if timestamp and timestamp > 0:
+                # Try to get historical price for this specific asset
+                price = self._get_historical_price(tx_asset, int(timestamp))
+                if price:
+                    price_source = 'historical'
+            
+            # Fallback logic - ONLY for native tokens, NOT for random ERC-20s
             if not price:
-                price = current_price
-                price_source = 'current'
+                is_native_token = tx_asset == symbol.upper()
+                
+                if is_native_token:
+                    # For native token (ETH, BTC, etc.), use current price as fallback
+                    price = current_price
+                    price_source = 'current_native'
+                else:
+                    # For ERC-20 tokens, try to get current price
+                    from price_service import price_service
+                    price = price_service.get_current_price(tx_asset)
+                    if price:
+                        price_source = 'current_lookup'
+                    else:
+                        # Unknown token - assign $0 to avoid billion-dollar bugs
+                        price = 0
+                        price_source = 'unknown_token'
+                        logger.warning(f"Unknown token {tx_asset} - assigned $0 price")
             
             # Calculate total USD value
             total_usd = value * price if price else 0
@@ -163,9 +183,10 @@ class HistoricalTaxEnrichment:
                 **tx,
                 'price_usd': price,
                 'total_usd': total_usd,
-                'value_usd': total_usd,  # Alias for compatibility
+                'value_usd': total_usd,
                 'price_source': price_source,
-                'amount': value,  # Ensure amount field exists
+                'amount': value,
+                'asset': tx_asset,  # Preserve the actual asset
             }
             
             # Validate
@@ -220,6 +241,12 @@ class HistoricalTaxEnrichment:
         
         for tx in enriched:
             tx_type = tx.get('type', '').lower()
+            tx_asset = tx.get('asset', symbol)  # Use the actual asset, not just the chain symbol
+            
+            # Skip unknown tokens with $0 price from tax calculations
+            if tx.get('price_source') == 'unknown_token':
+                logger.info(f"Skipping unknown token {tx_asset} from tax calculations")
+                continue
             
             # Collect validation warnings
             if tx.get('validation_warnings'):
@@ -234,7 +261,7 @@ class HistoricalTaxEnrichment:
                     'amount': tx.get('amount', 0),
                     'price_usd': tx.get('price_usd', 0),
                     'total_usd': tx.get('total_usd', 0),
-                    'asset': symbol,
+                    'asset': tx_asset,
                     'price_source': tx.get('price_source', 'unknown')
                 })
             elif tx_type in ['sent', 'sell', 'send', 'withdrawal']:
@@ -246,7 +273,7 @@ class HistoricalTaxEnrichment:
                     'amount': tx.get('amount', 0),
                     'price_usd': tx.get('price_usd', 0),
                     'total_usd': tx.get('total_usd', 0),
-                    'asset': symbol,
+                    'asset': tx_asset,
                     'price_source': tx.get('price_source', 'unknown')
                 })
         
