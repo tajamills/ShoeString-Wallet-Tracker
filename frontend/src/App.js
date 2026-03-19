@@ -333,9 +333,10 @@ function App() {
             <div className="flex items-center justify-center gap-2 mb-2">
               <span className="bg-purple-500 text-white text-xs font-bold px-2 py-1 rounded-full animate-pulse">BETA</span>
               <h2 className="text-white font-semibold text-lg">Beta Testing Program</h2>
+              <span className="text-purple-300 text-xs">(March - April 2026)</span>
             </div>
             <p className="text-purple-200 text-sm">
-              Welcome to the beta! Your feedback helps us improve. Report bugs or suggestions using the Help button.
+              Welcome to our 1-month beta! Your feedback helps us improve. Report bugs or suggestions using the Help button.
             </p>
           </div>
         </div>
