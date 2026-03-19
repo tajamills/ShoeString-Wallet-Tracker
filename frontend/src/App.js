@@ -604,7 +604,7 @@ function App() {
                     )}
                   </Button>
                   
-                  {user?.subscription_tier === 'pro' && (
+                  {(user?.subscription_tier === 'pro' || user?.subscription_tier === 'unlimited') && (
                     <Button
                       onClick={analyzeAllChains}
                       disabled={loading || analyzingAll || !user}
@@ -613,12 +613,12 @@ function App() {
                       {analyzingAll ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          <span className="hidden sm:inline">Analyzing All...</span>
+                          <span className="hidden sm:inline">Scanning All Chains...</span>
                         </>
                       ) : (
                         <>
                           <Crown className="mr-1 sm:mr-2 h-4 w-4" />
-                          <span className="hidden sm:inline">Analyze All Chains</span>
+                          <span className="hidden sm:inline">Scan All EVM Chains</span>
                           <span className="sm:hidden">All</span>
                         </>
                       )}

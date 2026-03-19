@@ -1225,12 +1225,12 @@ async def analyze_wallet(request: WalletAnalysisRequest, user: dict = Depends(ch
 async def analyze_all_chains(request: WalletAnalysisRequest, user: dict = Depends(check_usage_limit)):
     """Analyze wallet across all supported chains (Unlimited feature)"""
     try:
-        # Check if user has Unlimited
+        # Check if user has Unlimited or Pro
         user_tier = user.get('subscription_tier', 'free')
         if user_tier not in ['unlimited', 'pro']:
             raise HTTPException(
                 status_code=403, 
-                detail="Analyze All Chains is an Unlimited feature. Upgrade to analyze across all blockchains simultaneously."
+                detail="Scan All Chains is a Premium feature. Upgrade to analyze your MetaMask wallet across all EVM blockchains simultaneously."
             )
         
         address = request.address.strip()
