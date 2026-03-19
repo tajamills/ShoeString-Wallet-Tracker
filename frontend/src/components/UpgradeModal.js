@@ -3,14 +3,17 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Crown, Check, Zap, Shield, FileText, Globe, Gift } from 'lucide-react';
+import { Loader2, Crown, Check, Zap, Shield, FileText, Globe, Gift } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import axios from 'axios';
 
-// Direct Stripe Payment Link with 45-day free trial
-const STRIPE_PAYMENT_LINK = 'https://buy.stripe.com/6oU3cu0D2bB7bVC2Sr3gk06';
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
 
 export const UpgradeModal = ({ isOpen, onClose }) => {
-  const { user } = useAuth();
+  const { user, getAuthHeader } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const features = [
     { icon: Globe, text: 'Unlimited wallet analyses' },
@@ -24,13 +27,33 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
     { icon: Check, text: 'Priority support' },
   ];
 
-  const handleUpgrade = () => {
-    // Add user email as prefill if available
-    let paymentUrl = STRIPE_PAYMENT_LINK;
-    if (user?.email) {
-      paymentUrl += `?prefilled_email=${encodeURIComponent(user.email)}`;
+  const handleUpgrade = async () => {
+    setError('');
+    setLoading(true);
+
+    try {
+      const originUrl = window.location.origin;
+      
+      const response = await axios.post(
+        `${API}/payments/create-upgrade`,
+        { 
+          tier: 'unlimited',
+          origin_url: originUrl
+        },
+        { headers: getAuthHeader() }
+      );
+      
+      // Redirect to Stripe Checkout
+      if (response.data.url) {
+        window.location.href = response.data.url;
+      } else {
+        throw new Error('No checkout URL received');
+      }
+      
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to create payment. Please try again.');
+      setLoading(false);
     }
-    window.location.href = paymentUrl;
   };
 
   // Check if user already has unlimited
@@ -90,6 +113,12 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
             </ul>
           </div>
 
+          {error && (
+            <Alert className="bg-red-900/20 border-red-900 text-red-300" data-testid="payment-error">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
           <div className="flex items-center justify-center gap-2 text-gray-400 text-sm">
             <Shield className="w-5 h-5 text-green-400" />
             <span>Secure payment powered by Stripe</span>
@@ -105,11 +134,21 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
           ) : (
             <Button
               onClick={handleUpgrade}
+              disabled={loading}
               className="w-full bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 h-14 text-lg font-semibold"
               data-testid="create-payment-button"
             >
-              <Crown className="mr-2 h-5 w-5" />
-              Start 45-Day Free Trial
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Creating Checkout...
+                </>
+              ) : (
+                <>
+                  <Crown className="mr-2 h-5 w-5" />
+                  Start 45-Day Free Trial
+                </>
+              )}
             </Button>
           )}
 
