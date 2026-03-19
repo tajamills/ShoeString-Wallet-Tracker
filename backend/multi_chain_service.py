@@ -157,10 +157,21 @@ class MultiChainService:
                 analysis['total_sent_usd'] = analysis.get('totalEthSent', 0) * current_price
                 analysis['total_gas_fees_usd'] = analysis.get('totalGasFees', 0) * current_price
             
-            # Add USD value to each transaction (if we have timestamp)
+            # Add USD value to each transaction - ONLY for native token
             for tx in analysis.get('recentTransactions', []):
-                if current_price:
+                tx_asset = tx.get('asset', symbol).upper()
+                is_native = tx_asset == symbol.upper()
+                
+                if is_native and current_price:
+                    # Native token (ETH, SOL, etc.) - use chain's price
                     tx['value_usd'] = float(tx.get('value', 0)) * current_price
+                else:
+                    # ERC-20/SPL token - look up specific price or set to 0
+                    token_price = price_service.get_current_price(tx_asset)
+                    if token_price:
+                        tx['value_usd'] = float(tx.get('value', 0)) * token_price
+                    else:
+                        tx['value_usd'] = 0  # Unknown token - don't assign native chain price!
             
             return analysis
             

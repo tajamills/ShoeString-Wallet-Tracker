@@ -3880,6 +3880,86 @@ async def debug_coinbase_connection(user: dict = Depends(get_current_user)):
         return {"error": str(e), "step": "api_call"}
 
 
+
+@api_router.post("/admin/cleanup-transactions")
+async def cleanup_exchange_transactions(user: dict = Depends(get_current_user)):
+    """
+    Clean up existing exchange transactions by applying validation rules.
+    This removes or fixes bad data that was imported before the validation fix.
+    """
+    try:
+        from csv_parser_service import ExchangeTransaction
+        
+        # Get all user's exchange transactions
+        transactions = await db.exchange_transactions.find(
+            {"user_id": user["id"]}
+        ).to_list(50000)
+        
+        if not transactions:
+            return {"message": "No exchange transactions found", "cleaned": 0, "removed": 0}
+        
+        cleaned_count = 0
+        removed_count = 0
+        removed_details = []
+        
+        for tx in transactions:
+            tx_id = tx.get('_id')
+            asset = tx.get('asset', '').upper()
+            original_amount = tx.get('amount', 0)
+            
+            # Create a temporary ExchangeTransaction to validate the amount
+            from datetime import datetime
+            temp_tx = ExchangeTransaction(
+                exchange=tx.get('exchange', 'unknown'),
+                tx_id=tx.get('tx_id', ''),
+                tx_type=tx.get('tx_type', 'unknown'),
+                asset=asset,
+                amount=original_amount,
+                price_usd=tx.get('price_usd'),
+                total_usd=tx.get('total_usd'),
+                fee=tx.get('fee', 0),
+                fee_asset=tx.get('fee_asset', 'USD'),
+                timestamp=datetime.now(),
+                raw_data={}
+            )
+            
+            validated_amount = temp_tx.amount
+            
+            if validated_amount == 0 and original_amount > 0:
+                # Transaction should be removed (unreasonable amount)
+                await db.exchange_transactions.delete_one({"_id": tx_id})
+                removed_count += 1
+                removed_details.append({
+                    "asset": asset,
+                    "original_amount": original_amount,
+                    "reason": "amount exceeded maximum allowed"
+                })
+            elif validated_amount != original_amount:
+                # Transaction amount was converted (e.g., from raw units)
+                await db.exchange_transactions.update_one(
+                    {"_id": tx_id},
+                    {"$set": {
+                        "amount": validated_amount,
+                        "original_amount": original_amount,
+                        "amount_cleaned": True
+                    }}
+                )
+                cleaned_count += 1
+        
+        return {
+            "message": "Transaction cleanup complete",
+            "total_transactions": len(transactions),
+            "cleaned": cleaned_count,
+            "removed": removed_count,
+            "removed_samples": removed_details[:10]
+        }
+        
+    except Exception as e:
+        logger.error(f"Transaction cleanup error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
 # ============================================================================
 # Chain of Custody PDF Report Generation
 # ============================================================================
