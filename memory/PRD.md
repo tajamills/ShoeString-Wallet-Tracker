@@ -525,4 +525,4 @@ REACT_APP_BACKEND_URL=https://...
 - Historical prices for past transactions use current prices as fallback
 
 ## Backlog
-- [ ] **CoinGecko Rate Limit Improvement** - Add paid API key support, better caching, or alternative price provider to ensure historical prices are always fetched accurately
+- [ ] **CoinGecko Rate Limit Improvement** - ~~Add paid API key support, better caching, or alternative price provider~~ DONE - Integrated CryptoCompare for historical prices

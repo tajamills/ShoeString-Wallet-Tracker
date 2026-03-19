@@ -1,229 +1,246 @@
+"""
+Price Service - Fetches cryptocurrency prices from multiple sources.
+- Current prices: Binance.US (fast) → CoinGecko (fallback)
+- Historical prices: CryptoCompare (best free data) → CoinGecko (fallback)
+"""
+
 import requests
 import logging
 from typing import Dict, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 import time
 import threading
 
 logger = logging.getLogger(__name__)
 
+
 class PriceService:
-    """Service for fetching cryptocurrency prices from CoinGecko API with aggressive caching"""
-    
     def __init__(self):
-        self.base_url = "https://api.coingecko.com/api/v3"
-        self.cache = {}  # Simple in-memory cache
-        self.cache_duration = 60  # 60 seconds for current prices (was 300)
-        self.historical_cache_duration = 86400  # 24 hours for historical
+        self.binance_url = "https://api.binance.us/api/v3"
+        self.cryptocompare_url = "https://min-api.cryptocompare.com/data/v2"
+        self.coingecko_url = "https://api.coingecko.com/api/v3"
+        self.cache = {}
+        self.cache_duration = 60
+        self.historical_cache_duration = 86400 * 7
         self._lock = threading.Lock()
-        self._last_request_time = 0
-        self._min_request_interval = 1.5  # 1.5 seconds between requests (rate limit protection)
+        self._last_coingecko_request = 0
+        self._min_coingecko_interval = 1.5
         
-        # Map chain symbols to CoinGecko IDs
-        self.coin_ids = {
-            'ETH': 'ethereum',
-            'BTC': 'bitcoin',
-            'MATIC': 'polygon-ecosystem-token',
-            'BNB': 'binancecoin',
-            'SOL': 'solana',
-            'ALGO': 'algorand',
-            'AVAX': 'avalanche-2',
-            'FTM': 'fantom',
-            'DOGE': 'dogecoin',
-            'OP': 'optimism',
-            'USDT': 'tether',
-            'USDC': 'usd-coin',
-            'DAI': 'dai',
-            'WETH': 'weth',
-            'WBTC': 'wrapped-bitcoin',
-            'ARB': 'arbitrum',
-            'XRP': 'ripple',
-            'XLM': 'stellar'
+        # Binance.US pairs (USD)
+        self.binance_symbols = {
+            'ETH': 'ETHUSD', 'BTC': 'BTCUSD', 'SOL': 'SOLUSD',
+            'DOGE': 'DOGEUSD', 'XRP': 'XRPUSD', 'ADA': 'ADAUSD',
+            'MATIC': 'MATICUSD', 'DOT': 'DOTUSD', 'LINK': 'LINKUSD',
+            'AVAX': 'AVAXUSD', 'ATOM': 'ATOMUSD', 'LTC': 'LTCUSD',
+            'ALGO': 'ALGOUSD', 'XLM': 'XLMUSD', 'UNI': 'UNIUSD'
         }
         
-        # Fallback prices - more comprehensive and updated
+        # CoinGecko IDs
+        self.coin_ids = {
+            'ETH': 'ethereum', 'BTC': 'bitcoin', 'SOL': 'solana',
+            'MATIC': 'polygon-ecosystem-token', 'BNB': 'binancecoin',
+            'ALGO': 'algorand', 'AVAX': 'avalanche-2', 'FTM': 'fantom',
+            'DOGE': 'dogecoin', 'OP': 'optimism', 'ARB': 'arbitrum',
+            'XRP': 'ripple', 'XLM': 'stellar', 'WETH': 'weth',
+            'WBTC': 'wrapped-bitcoin', 'USDT': 'tether', 'USDC': 'usd-coin'
+        }
+        
+        # Fallback prices
         self.fallback_prices = {
-            'ETH': 3500.0,
-            'BTC': 95000.0,
-            'MATIC': 0.45,
-            'BNB': 650.0,
-            'SOL': 180.0,
-            'ALGO': 0.25,
-            'AVAX': 35.0,
-            'FTM': 0.70,
-            'DOGE': 0.35,
-            'OP': 2.50,
-            'USDT': 1.0,
-            'USDC': 1.0,
-            'DAI': 1.0,
-            'WETH': 3500.0,
-            'WBTC': 95000.0,
-            'ARB': 1.20,
-            'XRP': 2.50,
-            'XLM': 0.40
+            'ETH': 2200.0, 'BTC': 85000.0, 'SOL': 140.0, 'BNB': 600.0,
+            'MATIC': 0.40, 'ALGO': 0.22, 'AVAX': 25.0, 'FTM': 0.50,
+            'DOGE': 0.18, 'OP': 2.00, 'ARB': 0.80, 'XRP': 2.30,
+            'XLM': 0.35, 'USDT': 1.0, 'USDC': 1.0, 'DAI': 1.0
         }
     
-    def _rate_limit_wait(self):
-        """Ensure we don't exceed rate limits"""
+    def _coingecko_rate_limit(self):
         with self._lock:
-            elapsed = time.time() - self._last_request_time
-            if elapsed < self._min_request_interval:
-                time.sleep(self._min_request_interval - elapsed)
-            self._last_request_time = time.time()
+            elapsed = time.time() - self._last_coingecko_request
+            if elapsed < self._min_coingecko_interval:
+                time.sleep(self._min_coingecko_interval - elapsed)
+            self._last_coingecko_request = time.time()
+    
+    def _get_from_cache(self, key: str) -> Optional[float]:
+        with self._lock:
+            if key in self.cache:
+                value, expiry = self.cache[key]
+                if time.time() < expiry:
+                    return value
+                del self.cache[key]
+        return None
+    
+    def _set_cache(self, key: str, value: float, duration: int):
+        with self._lock:
+            self.cache[key] = (value, time.time() + duration)
+    
+    # ========== BINANCE ==========
+    
+    def get_current_price_binance(self, symbol: str) -> Optional[float]:
+        binance_pair = self.binance_symbols.get(symbol.upper())
+        if not binance_pair:
+            return None
+        try:
+            response = requests.get(
+                f"{self.binance_url}/ticker/price",
+                params={'symbol': binance_pair},
+                timeout=5
+            )
+            if response.status_code == 200:
+                price = float(response.json().get('price', 0))
+                if price > 0:
+                    return price
+        except Exception as e:
+            logger.debug(f"Binance price failed for {symbol}: {e}")
+        return None
+    
+    # ========== CRYPTOCOMPARE ==========
+    
+    def get_historical_price_cryptocompare(self, symbol: str, timestamp: int) -> Optional[float]:
+        """CryptoCompare has excellent free historical data going back to 2010"""
+        try:
+            response = requests.get(
+                f"{self.cryptocompare_url}/histoday",
+                params={'fsym': symbol.upper(), 'tsym': 'USD', 'limit': 1, 'toTs': timestamp},
+                timeout=10
+            )
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('Response') == 'Success':
+                    history = data.get('Data', {}).get('Data', [])
+                    if history:
+                        close_price = history[0].get('close', 0)
+                        if close_price > 0:
+                            logger.info(f"CryptoCompare: {symbol} at {timestamp} = ${close_price:.4f}")
+                            return float(close_price)
+        except Exception as e:
+            logger.warning(f"CryptoCompare failed for {symbol}: {e}")
+        return None
+    
+    # ========== COINGECKO ==========
+    
+    def _get_current_price_coingecko(self, symbol: str) -> Optional[float]:
+        coin_id = self.coin_ids.get(symbol.upper())
+        if not coin_id:
+            return None
+        try:
+            self._coingecko_rate_limit()
+            response = requests.get(
+                f"{self.coingecko_url}/simple/price",
+                params={'ids': coin_id, 'vs_currencies': 'usd'},
+                timeout=10
+            )
+            if response.status_code == 200:
+                price = response.json().get(coin_id, {}).get('usd')
+                if price:
+                    return float(price)
+            elif response.status_code == 429:
+                logger.warning(f"CoinGecko rate limited for {symbol}")
+        except Exception as e:
+            logger.warning(f"CoinGecko price failed for {symbol}: {e}")
+        return None
+    
+    def _get_historical_price_coingecko(self, symbol: str, date_str: str) -> Optional[float]:
+        coin_id = self.coin_ids.get(symbol.upper())
+        if not coin_id:
+            return None
+        try:
+            self._coingecko_rate_limit()
+            response = requests.get(
+                f"{self.coingecko_url}/coins/{coin_id}/history",
+                params={'date': date_str, 'localization': 'false'},
+                timeout=15
+            )
+            if response.status_code == 200:
+                price = response.json().get('market_data', {}).get('current_price', {}).get('usd')
+                if price:
+                    return float(price)
+            elif response.status_code == 429:
+                logger.warning(f"CoinGecko rate limited for historical {symbol}")
+        except Exception as e:
+            logger.warning(f"CoinGecko historical failed for {symbol}: {e}")
+        return None
+    
+    # ========== PUBLIC API ==========
     
     def get_current_price(self, symbol: str) -> Optional[float]:
-        """Get current USD price for a cryptocurrency with aggressive caching"""
+        """Get current price: Binance → CoinGecko → Fallback"""
         symbol_upper = symbol.upper()
         
-        try:
-            # Check cache first
-            cache_key = f"current_{symbol_upper}"
-            if cache_key in self.cache:
-                cached_data, cached_time = self.cache[cache_key]
-                if time.time() - cached_time < self.cache_duration:
-                    return cached_data
-            
-            # Get CoinGecko ID
-            coin_id = self.coin_ids.get(symbol_upper)
-            if not coin_id:
-                logger.debug(f"No CoinGecko ID for symbol: {symbol}, using fallback")
-                return self.fallback_prices.get(symbol_upper)
-            
-            # Rate limit protection
-            self._rate_limit_wait()
-            
-            # Fetch from CoinGecko
-            url = f"{self.base_url}/simple/price"
-            params = {
-                'ids': coin_id,
-                'vs_currencies': 'usd'
-            }
-            
-            response = requests.get(url, params=params, timeout=10)
-            
-            # Handle rate limiting explicitly
-            if response.status_code == 429:
-                logger.warning(f"CoinGecko rate limited, using fallback for {symbol}")
-                return self.fallback_prices.get(symbol_upper)
-            
-            response.raise_for_status()
-            data = response.json()
-            
-            price = data.get(coin_id, {}).get('usd')
-            
-            # Cache result
-            if price:
-                self.cache[cache_key] = (price, time.time())
-                # Also update fallback price
-                self.fallback_prices[symbol_upper] = price
-            
-            return price or self.fallback_prices.get(symbol_upper)
-            
-        except requests.exceptions.Timeout:
-            logger.warning(f"Timeout fetching price for {symbol}, using fallback")
-            return self.fallback_prices.get(symbol_upper)
-        except Exception as e:
-            logger.warning(f"Error fetching price for {symbol}: {str(e)}. Using fallback.")
-            return self.fallback_prices.get(symbol_upper)
-    
-    def get_historical_price(self, symbol: str, date: str) -> Optional[float]:
-        """
-        Get historical USD price for a cryptocurrency on a specific date
-        Date format: DD-MM-YYYY (e.g., '01-01-2024')
-        """
-        try:
-            # Check cache
-            cache_key = f"historical_{symbol}_{date}"
-            if cache_key in self.cache:
-                cached_data, cached_time = self.cache[cache_key]
-                # Historical prices don't change, cache forever
-                return cached_data
-            
-            # Get CoinGecko ID
-            coin_id = self.coin_ids.get(symbol.upper())
-            if not coin_id:
-                logger.warning(f"No CoinGecko ID for symbol: {symbol}")
-                return None
-            
-            # Fetch from CoinGecko
-            url = f"{self.base_url}/coins/{coin_id}/history"
-            params = {
-                'date': date,
-                'localization': 'false'
-            }
-            
-            response = requests.get(url, params=params, timeout=10)
-            response.raise_for_status()
-            data = response.json()
-            
-            price = data.get('market_data', {}).get('current_price', {}).get('usd')
-            
-            # Cache result (historical prices don't change)
-            if price:
-                self.cache[cache_key] = (price, time.time())
-            
+        if symbol_upper in ['USDT', 'USDC', 'DAI', 'BUSD']:
+            return 1.0
+        
+        cache_key = f"current_{symbol_upper}"
+        cached = self._get_from_cache(cache_key)
+        if cached:
+            return cached
+        
+        # Try Binance
+        price = self.get_current_price_binance(symbol_upper)
+        if price:
+            self._set_cache(cache_key, price, self.cache_duration)
             return price
-            
+        
+        # Try CoinGecko
+        price = self._get_current_price_coingecko(symbol_upper)
+        if price:
+            self._set_cache(cache_key, price, self.cache_duration)
+            return price
+        
+        # Fallback
+        return self.fallback_prices.get(symbol_upper)
+    
+    def get_historical_price(self, symbol: str, date_str: str) -> Optional[float]:
+        """Get historical price: CryptoCompare → CoinGecko (date format: DD-MM-YYYY)"""
+        symbol_upper = symbol.upper()
+        
+        if symbol_upper in ['USDT', 'USDC', 'DAI', 'BUSD']:
+            return 1.0
+        
+        cache_key = f"historical_{symbol_upper}_{date_str}"
+        cached = self._get_from_cache(cache_key)
+        if cached:
+            return cached
+        
+        # Convert date to timestamp
+        try:
+            dt = datetime.strptime(date_str, '%d-%m-%Y')
+            timestamp = int(dt.replace(tzinfo=timezone.utc).timestamp())
+        except ValueError:
+            logger.warning(f"Invalid date: {date_str}")
+            return None
+        
+        # Try CryptoCompare (best historical data)
+        price = self.get_historical_price_cryptocompare(symbol_upper, timestamp)
+        if price:
+            self._set_cache(cache_key, price, self.historical_cache_duration)
+            return price
+        
+        # Try CoinGecko
+        price = self._get_historical_price_coingecko(symbol_upper, date_str)
+        if price:
+            self._set_cache(cache_key, price, self.historical_cache_duration)
+            return price
+        
+        logger.warning(f"No price for {symbol} on {date_str}")
+        return None
+    
+    def get_price_at_block(self, symbol: str, timestamp: int) -> Optional[float]:
+        """Get price at Unix timestamp"""
+        try:
+            dt = datetime.fromtimestamp(timestamp, tz=timezone.utc)
+            return self.get_historical_price(symbol, dt.strftime('%d-%m-%Y'))
         except Exception as e:
-            logger.error(f"Error fetching historical price for {symbol} on {date}: {str(e)}")
+            logger.error(f"Error in get_price_at_block: {e}")
             return None
     
     def get_multiple_prices(self, symbols: list) -> Dict[str, float]:
-        """Get current prices for multiple cryptocurrencies"""
-        try:
-            # Filter to valid symbols
-            coin_ids = []
-            symbol_to_id = {}
-            
-            for symbol in symbols:
-                coin_id = self.coin_ids.get(symbol.upper())
-                if coin_id:
-                    coin_ids.append(coin_id)
-                    symbol_to_id[coin_id] = symbol.upper()
-            
-            if not coin_ids:
-                return {}
-            
-            # Fetch from CoinGecko
-            url = f"{self.base_url}/simple/price"
-            params = {
-                'ids': ','.join(coin_ids),
-                'vs_currencies': 'usd'
-            }
-            
-            response = requests.get(url, params=params, timeout=10)
-            response.raise_for_status()
-            data = response.json()
-            
-            # Map back to symbols
-            result = {}
-            for coin_id, price_data in data.items():
-                symbol = symbol_to_id.get(coin_id)
-                if symbol:
-                    result[symbol] = price_data.get('usd')
-            
-            return result
-            
-        except Exception as e:
-            logger.error(f"Error fetching multiple prices: {str(e)}")
-            return {}
+        """Get current prices for multiple symbols"""
+        return {s.upper(): p for s in symbols if (p := self.get_current_price(s))}
     
     def add_coin_mapping(self, symbol: str, coingecko_id: str):
-        """Add a custom token mapping"""
+        """Add custom token mapping"""
         self.coin_ids[symbol.upper()] = coingecko_id
-    
-    def get_price_at_block(self, symbol: str, timestamp: int) -> Optional[float]:
-        """Get price at a specific timestamp (Unix timestamp)"""
-        try:
-            # Convert timestamp to date format DD-MM-YYYY
-            dt = datetime.fromtimestamp(timestamp)
-            date_str = dt.strftime('%d-%m-%Y')
-            
-            return self.get_historical_price(symbol, date_str)
-            
-        except Exception as e:
-            logger.error(f"Error getting price at block: {str(e)}")
-            return None
 
-# Initialize global price service
+
+# Global instance
 price_service = PriceService()
