@@ -348,27 +348,64 @@ class UnifiedTaxService:
             # Separate buys and sells
             buys = []
             sells = []
+            skipped_bad_transactions = 0
+            
+            # VALIDATION: Max reasonable values per transaction
+            MAX_AMOUNT = 10_000_000_000  # 10 billion units max
+            MAX_PRICE = 1_000_000  # $1M per unit max
+            MAX_TOTAL = 100_000_000_000  # $100B per transaction max
             
             for tx in all_transactions:
                 tx_type = tx['tx_type'].lower()
+                amount = tx.get('amount', 0)
+                price = tx.get('price_usd') or 0
+                total = tx.get('total_usd') or (amount * price)
+                
+                # VALIDATION: Skip transactions with unreasonable values
+                if amount > MAX_AMOUNT:
+                    logger.error(f"SKIPPING bad tx - amount too large: {amount:,.0f} {tx.get('asset')} (tx: {tx.get('tx_id', 'unknown')})")
+                    skipped_bad_transactions += 1
+                    continue
+                if price > MAX_PRICE:
+                    logger.error(f"SKIPPING bad tx - price too high: ${price:,.0f} for {tx.get('asset')} (tx: {tx.get('tx_id', 'unknown')})")
+                    skipped_bad_transactions += 1
+                    continue
+                if abs(total) > MAX_TOTAL:
+                    logger.error(f"SKIPPING bad tx - total too large: ${total:,.0f} for {tx.get('asset')} (tx: {tx.get('tx_id', 'unknown')})")
+                    skipped_bad_transactions += 1
+                    continue
                 
                 # Enrich with price data if missing
                 if not tx['price_usd'] and tx['amount'] > 0:
-                    # Log the missing price for debugging
-                    logger.warning(f"Missing price for tx {tx.get('tx_id', 'unknown')}: "
-                                 f"{tx['amount']} {tx['asset']} on {tx.get('date', 'unknown')}, "
-                                 f"using current price ${current_price}")
-                    tx['price_usd'] = current_price
-                    tx['total_usd'] = tx['amount'] * current_price
-                    tx['price_source'] = 'fallback_current'
+                    # For unknown tokens, use $0 instead of native chain price
+                    from price_service import price_service
+                    asset = tx.get('asset', symbol)
+                    token_price = price_service.get_current_price(asset)
+                    
+                    if token_price:
+                        tx['price_usd'] = token_price
+                        tx['total_usd'] = tx['amount'] * token_price
+                        tx['price_source'] = 'lookup_current'
+                    elif asset.upper() == symbol.upper():
+                        # Native token - use chain's current price
+                        tx['price_usd'] = current_price
+                        tx['total_usd'] = tx['amount'] * current_price
+                        tx['price_source'] = 'fallback_native'
+                    else:
+                        # Unknown token - skip it, don't use native chain price!
+                        logger.warning(f"Skipping unknown token {asset} - no price available (tx: {tx.get('tx_id', 'unknown')})")
+                        skipped_bad_transactions += 1
+                        continue
                 else:
                     tx['price_source'] = 'original'
                 
                 if tx_type in ['buy', 'receive', 'received', 'deposit', 'reward', 'staking', 'airdrop']:
                     buys.append(tx)
                 elif tx_type in ['sell', 'send', 'sent', 'withdrawal', 'trade']:
-                    # For trades, check if it's a sell (disposing of asset)
                     sells.append(tx)
+            
+            if skipped_bad_transactions > 0:
+                logger.warning(f"Skipped {skipped_bad_transactions} bad transactions during tax calculation")
             
             # Calculate realized gains using FIFO
             realized_gains = self._calculate_fifo_gains(buys, sells)
@@ -390,12 +427,13 @@ class UnifiedTaxService:
                 'method': self.method,
                 'sources': {
                     'wallet_count': len([t for t in all_transactions if t['source'] == 'wallet']),
-                    'exchange_count': len([t for t in all_transactions if t['source'].startswith('exchange:')])
+                    'exchange_count': len([t for t in all_transactions if t['source'].startswith('exchange:')]),
+                    'skipped_bad_data': skipped_bad_transactions
                 },
                 'detected_transfers': {
                     'count': transfers_count,
                     'assets': transfer_assets,
-                    'details': detected_transfers[:20]  # Limit to 20 for response size
+                    'details': detected_transfers[:20]
                 },
                 'realized_gains': realized_gains,
                 'unrealized_gains': unrealized_gains,
@@ -406,10 +444,11 @@ class UnifiedTaxService:
                     'total_gain': total_realized + unrealized_gains.get('total_gain', 0),
                     'short_term_gains': short_term,
                     'long_term_gains': long_term,
-                    'total_transactions': len(all_transactions),
+                    'total_transactions': len(buys) + len(sells),
                     'buy_count': len(buys),
                     'sell_count': len(sells),
-                    'transfers_detected': transfers_count
+                    'transfers_detected': transfers_count,
+                    'skipped_bad_transactions': skipped_bad_transactions
                 },
                 'all_transactions': all_transactions
             }
