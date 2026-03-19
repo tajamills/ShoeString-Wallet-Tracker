@@ -508,8 +508,10 @@ All users must accept Terms of Service before using the platform. The TOS modal 
 ### Phase 20: Exchange Deposit Address Detection (Completed - Mar 19, 2026)
 - [x] **Detection Logic** in `multi_chain_service.py`: Detects exchange deposit address pattern (receive then immediate sweep to exchange main wallet) based on balance ~0, total_in ≈ total_out, and sweep timing
 - [x] **Backend Response Model**: Added `exchange_deposit_warning` field to `WalletAnalysisResponse` Pydantic model in `server.py`
-- [x] **Frontend Alert** in `App.js`: Shows prominent amber warning when exchange deposit address is detected, explains why balance shows $0, and guides user to use Exchange API or CSV import
-- [x] **Import Fix**: Added `AlertTriangle` to lucide-react imports in App.js
+- [x] **Frontend Alert** in `App.js`: Shows prominent amber warning when exchange deposit address is detected, with "Import Exchange CSV" and "Connect Exchange API" action buttons
+- [x] **Coinbase Transaction Sync**: New endpoint `POST /api/exchanges/sync-coinbase` fetches all buys/sells/trades from connected Coinbase API and stores as exchange_transactions
+- [x] **Sync UI Button**: Added "Sync All Transactions from Coinbase" button in Chain of Custody modal
+- [x] **Test Coverage**: 11/11 tests passed (iteration 15)
 
 ## Deployment
 - **Platform**: Render
