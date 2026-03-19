@@ -330,18 +330,25 @@ function App() {
         {/* Beta Testing Banner */}
         <div className="max-w-3xl mx-auto mb-6">
           <div className="bg-gradient-to-r from-purple-900/80 to-indigo-900/80 border border-purple-500/50 rounded-lg p-4 text-center">
-            <div className="flex items-center justify-center gap-2 mb-2">
+            <div className="flex items-center justify-center gap-2 mb-3">
               <span className="bg-purple-500 text-white text-xs font-bold px-2 py-1 rounded-full animate-pulse">BETA</span>
               <h2 className="text-white font-semibold text-lg">Beta Testing Program</h2>
               <span className="text-purple-300 text-xs">(March - April 2026)</span>
             </div>
-            <div className="bg-green-900/50 border border-green-500/50 rounded-md px-4 py-2 mb-2 inline-block">
-              <p className="text-green-300 text-sm font-medium">
-                🎉 Use code <span className="bg-green-700 text-white px-2 py-0.5 rounded font-bold mx-1">Beta2026</span> for FREE access during beta!
-              </p>
+            <div className="space-y-2 mb-3">
+              <div className="bg-green-900/50 border border-green-500/50 rounded-md px-4 py-2 inline-block">
+                <p className="text-green-300 text-sm font-medium">
+                  🎉 Sign up now and get <span className="text-white font-bold">45 days FREE</span> — no code needed!
+                </p>
+              </div>
+              <div className="bg-yellow-900/50 border border-yellow-500/50 rounded-md px-4 py-2 inline-block">
+                <p className="text-yellow-300 text-sm font-medium">
+                  ⭐ First 50 customers: Use code <span className="bg-yellow-700 text-white px-2 py-0.5 rounded font-bold mx-1">Beta26</span> for <span className="text-white font-bold">50% off FOREVER</span>
+                </p>
+              </div>
             </div>
             <p className="text-purple-200 text-sm">
-              Welcome to our 1-month beta! Your feedback helps us improve. Report bugs or suggestions using the Help button.
+              Your feedback helps us improve. Report bugs or suggestions using the Help button.
             </p>
           </div>
         </div>
