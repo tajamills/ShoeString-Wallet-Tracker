@@ -770,13 +770,27 @@ function App() {
                 <AlertTriangle className="w-5 h-5 text-amber-400" />
                 <AlertDescription className="text-amber-200">
                   <p className="font-semibold text-amber-300 mb-2">Exchange Deposit Address Detected</p>
-                  <p className="text-sm mb-2">{analysis.exchange_deposit_warning.message}</p>
-                  <p className="text-sm font-medium text-amber-300 mb-1">{analysis.exchange_deposit_warning.suggestion}</p>
-                  <ul className="list-disc list-inside text-sm space-y-1 ml-2">
-                    {analysis.exchange_deposit_warning.options?.map((opt, i) => (
-                      <li key={i}>{opt}</li>
-                    ))}
-                  </ul>
+                  <p className="text-sm mb-3">{analysis.exchange_deposit_warning.message}</p>
+                  <div className="flex gap-3 flex-wrap">
+                    <Button
+                      size="sm"
+                      onClick={() => setShowExchangeModal(true)}
+                      className="bg-amber-700 hover:bg-amber-600 text-white"
+                      data-testid="import-csv-from-warning"
+                    >
+                      <Link2 className="w-4 h-4 mr-1" />
+                      Import Exchange CSV
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowCustodyModal(true)}
+                      className="border-amber-600 text-amber-300 hover:bg-amber-900/30"
+                      data-testid="connect-api-from-warning"
+                    >
+                      Connect Exchange API
+                    </Button>
+                  </div>
                 </AlertDescription>
               </Alert>
             )}

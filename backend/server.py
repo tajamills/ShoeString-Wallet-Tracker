@@ -3884,6 +3884,85 @@ async def debug_coinbase_connection(user: dict = Depends(get_current_user)):
         return {"error": str(e), "step": "api_call"}
 
 
+@api_router.post("/exchanges/sync-coinbase")
+async def sync_coinbase_transactions(user: dict = Depends(get_current_user)):
+    """
+    Sync all transactions from connected Coinbase account.
+    Fetches buys, sells, sends, receives and stores as exchange_transactions.
+    """
+    try:
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier not in ['unlimited', 'pro', 'premium']:
+            raise HTTPException(status_code=403, detail="Exchange sync requires a paid subscription.")
+        
+        # Get connection
+        connection = await db.exchange_connections.find_one({
+            "user_id": user["id"],
+            "exchange": "coinbase"
+        })
+        
+        if not connection:
+            raise HTTPException(status_code=400, detail="No Coinbase connection found. Connect your API key first.")
+        
+        # Decrypt credentials
+        api_key = connection['api_key']
+        api_secret = connection['api_secret']
+        
+        if connection.get('encrypted', False):
+            api_key = encryption_service.decrypt(api_key)
+            api_secret = encryption_service.decrypt(api_secret)
+        
+        # Fetch all transactions
+        from multi_exchange_service import CoinbaseClient
+        client = CoinbaseClient(api_key, api_secret)
+        transactions = await client.get_all_transactions()
+        
+        if not transactions:
+            return {
+                "message": "No transactions found in Coinbase",
+                "synced_count": 0,
+                "skipped_count": 0
+            }
+        
+        # Store in exchange_transactions (upsert to avoid duplicates)
+        synced = 0
+        skipped = 0
+        
+        for tx in transactions:
+            # Skip incomplete or pending transactions
+            if tx.get('status') != 'completed' or tx.get('amount', 0) <= 0:
+                skipped += 1
+                continue
+            
+            tx['user_id'] = user['id']
+            
+            result = await db.exchange_transactions.update_one(
+                {"user_id": user["id"], "tx_id": tx['tx_id']},
+                {"$set": tx},
+                upsert=True
+            )
+            synced += 1
+        
+        # Get summary of what was synced
+        asset_counts = {}
+        for tx in transactions:
+            asset = tx.get('asset', 'UNKNOWN')
+            asset_counts[asset] = asset_counts.get(asset, 0) + 1
+        
+        return {
+            "message": f"Synced {synced} transactions from Coinbase",
+            "synced_count": synced,
+            "skipped_count": skipped,
+            "assets": asset_counts,
+            "total_fetched": len(transactions)
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Coinbase sync error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Sync failed: {str(e)}")
+
 
 @api_router.post("/admin/cleanup-transactions")
 async def cleanup_exchange_transactions(user: dict = Depends(get_current_user)):

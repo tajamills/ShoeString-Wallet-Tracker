@@ -120,6 +120,7 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
   const [coinbaseApiSecret, setCoinbaseApiSecret] = useState('');
   const [apiKeyConnected, setApiKeyConnected] = useState(false);
   const [debugInfo, setDebugInfo] = useState(null);
+  const [syncStatus, setSyncStatus] = useState(null);
   
   // Coinbase OAuth state (legacy)
   const [coinbaseConnected, setCoinbaseConnected] = useState(false);
@@ -275,6 +276,23 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
       setLoading(false);
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to fetch addresses from Coinbase');
+      setLoading(false);
+    }
+  };
+
+  const syncCoinbaseTransactions = async () => {
+    setLoading(true);
+    setError('');
+    setSyncStatus(null);
+
+    try {
+      const response = await axios.post(`${API}/exchanges/sync-coinbase`, {}, {
+        headers: getAuthHeader()
+      });
+      setSyncStatus(response.data);
+      setLoading(false);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to sync transactions from Coinbase');
       setLoading(false);
     }
   };
@@ -722,6 +740,43 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
                         <p className="text-xs text-gray-500 text-center">
                           If no addresses appear, check that you have generated deposit addresses in Coinbase.
                         </p>
+
+                        {/* Sync Transactions Button */}
+                        <div className="pt-3 border-t border-gray-700">
+                          <Button
+                            onClick={syncCoinbaseTransactions}
+                            disabled={loading}
+                            className="w-full bg-green-600 hover:bg-green-700"
+                            data-testid="sync-coinbase-btn"
+                          >
+                            {loading ? (
+                              <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Syncing Transactions...
+                              </>
+                            ) : (
+                              <>
+                                <Download className="w-4 h-4 mr-2" />
+                                Sync All Transactions from Coinbase
+                              </>
+                            )}
+                          </Button>
+                          <p className="text-xs text-gray-500 text-center mt-1">
+                            Fetches all buys, sells, and trades from your Coinbase account for tax calculations.
+                          </p>
+                          {syncStatus && (
+                            <Alert className="mt-2 bg-green-900/30 border-green-700">
+                              <AlertDescription className="text-green-300 text-sm">
+                                {syncStatus.message}
+                                {syncStatus.assets && Object.keys(syncStatus.assets).length > 0 && (
+                                  <span className="block mt-1 text-xs text-gray-400">
+                                    Assets: {Object.entries(syncStatus.assets).map(([a, c]) => `${a} (${c})`).join(', ')}
+                                  </span>
+                                )}
+                              </AlertDescription>
+                            </Alert>
+                          )}
+                        </div>
                       </div>
                     ) : (
                       <div className="space-y-3">

@@ -372,6 +372,94 @@ class CoinbaseClient:
             logger.error(f"Coinbase get_deposits error: {e}")
             return []
     
+    async def get_all_transactions(self) -> List[Dict]:
+        """Fetch ALL transactions (buys, sells, sends, receives) from all Coinbase accounts"""
+        all_txs = []
+        
+        try:
+            accounts = await self.get_accounts()
+            logger.info(f"Coinbase sync: found {len(accounts)} accounts")
+            
+            for account in accounts:
+                account_id = account.get('id')
+                currency = account.get('currency', {}).get('code', '')
+                
+                if not account_id or not currency:
+                    continue
+                
+                # Skip fiat accounts
+                if currency in ['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY']:
+                    continue
+                
+                try:
+                    # Fetch all transactions for this account (paginated)
+                    next_uri = f"/v2/accounts/{account_id}/transactions"
+                    page_params = {"limit": 100, "order": "desc"}
+                    
+                    while next_uri:
+                        data = await self._request("GET", next_uri, page_params if '?' not in next_uri else None)
+                        
+                        for tx in data.get('data', []):
+                            tx_type = tx.get('type', '')
+                            amount_data = tx.get('amount', {})
+                            native_amount = tx.get('native_amount', {})
+                            
+                            amount = abs(float(amount_data.get('amount', 0)))
+                            usd_total = abs(float(native_amount.get('amount', 0)))
+                            price_usd = usd_total / amount if amount > 0 else 0
+                            
+                            # Map Coinbase types to our standard types
+                            type_map = {
+                                'buy': 'buy',
+                                'sell': 'sell',
+                                'send': 'sell',  # Sending out = disposition
+                                'receive': 'buy',  # Receiving = acquisition
+                                'trade': 'buy',  # Trade - determine by sign
+                                'staking_reward': 'buy',
+                                'inflation_reward': 'buy',
+                                'interest': 'buy',
+                                'learning_reward': 'buy',
+                            }
+                            
+                            mapped_type = type_map.get(tx_type)
+                            if not mapped_type:
+                                continue
+                            
+                            # For sends, if amount is negative in the original, it's an outgoing tx
+                            original_amount = float(amount_data.get('amount', 0))
+                            if tx_type == 'trade':
+                                mapped_type = 'buy' if original_amount > 0 else 'sell'
+                            
+                            all_txs.append({
+                                'tx_id': tx.get('id', ''),
+                                'exchange': 'coinbase',
+                                'tx_type': mapped_type,
+                                'asset': currency,
+                                'amount': amount,
+                                'price_usd': price_usd,
+                                'total_usd': usd_total,
+                                'timestamp': tx.get('created_at', ''),
+                                'source': f"exchange:coinbase",
+                                'notes': f"Coinbase {tx_type}",
+                                'status': tx.get('status', 'completed')
+                            })
+                        
+                        # Handle pagination
+                        pagination = data.get('pagination', {})
+                        next_uri = pagination.get('next_uri')
+                        page_params = None  # next_uri already has params
+                        
+                except Exception as e:
+                    logger.warning(f"Coinbase: error fetching transactions for {currency}: {e}")
+                    continue
+            
+            logger.info(f"Coinbase sync: fetched {len(all_txs)} total transactions")
+            return all_txs
+            
+        except Exception as e:
+            logger.error(f"Coinbase get_all_transactions error: {e}")
+            return []
+    
     async def get_withdrawals(self) -> List[ExchangeTransaction]:
         """Get withdrawal history - combined with deposits above"""
         # Withdrawals are fetched together with deposits in get_deposits
