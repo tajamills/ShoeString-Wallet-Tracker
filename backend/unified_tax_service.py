@@ -329,9 +329,15 @@ class UnifiedTaxService:
                 
                 # Enrich with price data if missing
                 if not tx['price_usd'] and tx['amount'] > 0:
-                    # Try to get historical price or use current
+                    # Log the missing price for debugging
+                    logger.warning(f"Missing price for tx {tx.get('tx_id', 'unknown')}: "
+                                 f"{tx['amount']} {tx['asset']} on {tx.get('date', 'unknown')}, "
+                                 f"using current price ${current_price}")
                     tx['price_usd'] = current_price
                     tx['total_usd'] = tx['amount'] * current_price
+                    tx['price_source'] = 'fallback_current'
+                else:
+                    tx['price_source'] = 'original'
                 
                 if tx_type in ['buy', 'receive', 'received', 'deposit', 'reward', 'staking', 'airdrop']:
                     buys.append(tx)

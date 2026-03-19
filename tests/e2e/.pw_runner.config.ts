@@ -2,13 +2,13 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: '/app/tests/e2e',
-  outputDir: '/root/.emergent/automation_output/20260319_020632/test-results',
+  outputDir: '/root/.emergent/automation_output/20260319_025225/test-results',
   timeout: 60000,
   retries: 0,
   workers: 1,
   reporter: [
     ['line'],
-    ['json', { outputFile: '/root/.emergent/automation_output/20260319_020632/results.json' }],
+    ['json', { outputFile: '/root/.emergent/automation_output/20260319_025225/results.json' }],
   ],
   use: {
     baseURL: 'https://crypto-tax-mvp.preview.emergentagent.com',

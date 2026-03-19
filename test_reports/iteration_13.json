@@ -1,0 +1,59 @@
+{
+  "summary": "Bug Fix Verification Complete - XLM/XRP symbols, Chain of Custody modal table view, and Coinbase API addresses all verified working. Backend: 14/14 tests passed. Frontend: 23+ tests passed across specs. New bug-fixes-verification.spec.ts created with 8 passing tests covering all reported fixes.",
+  "mode": "update",
+  "baseline_commit": "fcc53a09a618d990d3927dc6a82f4a7373c40f0e",
+  "head_commit": "d38edb532a0d951de9303fe7bf324e38cba026c0",
+  "specs_created": [
+    "/app/tests/e2e/bug-fixes-verification.spec.ts"
+  ],
+  "specs_updated": [],
+  "quarantined_tests": [],
+  "test_report_links": [
+    "/app/tests/e2e/bug-fixes-verification.spec.ts",
+    "/app/backend/tests/test_onchain_tax.py"
+  ],
+  "regression_results": {
+    "total_specs": 8,
+    "passed": 8,
+    "failed": 0,
+    "skipped": 0
+  },
+  "issues": [
+    {
+      "id": "IMP-001",
+      "issue_type": "improvement",
+      "severity": "LOW",
+      "description": "Login tests are flaky - some tests fail due to 'Logging in...' spinner hanging after button click. The auth API works correctly (verified via curl), but Playwright tests occasionally timeout waiting for user-info-bar. This appears to be network/timing-related, not a code bug.",
+      "endpoint_or_component": "AuthModal login flow"
+    }
+  ],
+  "action_items": [],
+  "updated_files": [
+    "/app/tests/e2e/bug-fixes-verification.spec.ts"
+  ],
+  "test_results": {
+    "backend": "100% (14/14 passed)",
+    "frontend_bug_fixes": "100% (8/8 passed)"
+  },
+  "seed_data_creation": "None - used existing test user mobiletest@test.com with unlimited subscription",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Bug fixes verified: 1) XLM shows correct symbol (XLM not ETH), 2) XRP shows correct symbol (XRP not ETH), 3) Chain of Custody modal shows table view (no blank screen), 4) Coinbase API addresses use correct key mapping (wallet_addresses). Login tests have intermittent flakiness not related to code bugs.",
+  "features_verified": [
+    "XLM chain selector shows correct XLM symbol (not ETH)",
+    "XRP chain selector shows correct XRP symbol (not ETH)",
+    "XLM address auto-detection shows 'Detected: XLM address'",
+    "XRP address auto-detection shows 'Detected: XRP address'",
+    "Chain of Custody modal opens without blank screen",
+    "Chain of Custody manual entry view shows all UI elements",
+    "Chain of Custody Coinbase API Key form shows correctly",
+    "XRP wallet analysis API returns chain='xrp'",
+    "XLM wallet analysis API returns chain='xlm'"
+  ],
+  "bugs_fixed_verified": [
+    "BUG-FIX-1: XLM/XRP symbols in getChainSymbol() - VERIFIED",
+    "BUG-FIX-2: XLM/XRP icons in getChainIcon() - VERIFIED",
+    "BUG-FIX-3: Chain of Custody table view (removed graph toggle) - VERIFIED",
+    "BUG-FIX-4: Coinbase addresses using wallet_addresses key - VERIFIED"
+  ]
+}

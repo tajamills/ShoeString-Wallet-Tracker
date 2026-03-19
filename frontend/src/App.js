@@ -154,9 +154,11 @@ function App() {
       optimism: 'ETH',
       base: 'ETH',
       fantom: 'FTM',
-      dogecoin: 'DOGE'
+      dogecoin: 'DOGE',
+      xrp: 'XRP',
+      xlm: 'XLM'
     };
-    return symbols[chain] || 'ETH';
+    return symbols[chain] || chain?.toUpperCase() || 'UNKNOWN';
   };
 
   const getChainIcon = (chain) => {
@@ -172,9 +174,11 @@ function App() {
       optimism: '🔴',
       base: '🔵',
       fantom: '👻',
-      dogecoin: '🐕'
+      dogecoin: '🐕',
+      xrp: '💧',
+      xlm: '★'
     };
-    return icons[chain] || '⟠';
+    return icons[chain] || '●';
   };
 
   // Wrapper to use the hook's analyze functions

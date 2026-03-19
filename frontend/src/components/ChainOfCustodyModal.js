@@ -680,7 +680,7 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
                       <div className="space-y-3">
                         <p className="text-sm text-gray-400">Select an address to analyze:</p>
                         <div className="max-h-48 overflow-y-auto space-y-2">
-                          {coinbaseAddresses.addresses?.map((addr, idx) => (
+                          {(coinbaseAddresses.wallet_addresses || coinbaseAddresses.addresses || []).map((addr, idx) => (
                             <div
                               key={idx}
                               onClick={() => {
@@ -1139,27 +1139,10 @@ bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
                 </Card>
               </div>
 
-              {/* View Toggle and Export */}
+              {/* View Toggle and Export - TABLE ONLY */}
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant={viewMode === 'graph' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setViewMode('graph')}
-                    className={`text-xs ${viewMode === 'graph' ? 'bg-purple-600 hover:bg-purple-700' : 'border-slate-600 text-gray-300'}`}
-                  >
-                    <GitBranch className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
-                    Graph
-                  </Button>
-                  <Button
-                    variant={viewMode === 'table' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setViewMode('table')}
-                    className={`text-xs ${viewMode === 'table' ? 'bg-purple-600 hover:bg-purple-700' : 'border-slate-600 text-gray-300'}`}
-                  >
-                    <Table className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
-                    Table
-                  </Button>
+                <div className="text-sm text-gray-400">
+                  Showing custody chain data
                 </div>
                 <div className="flex gap-2">
                   <Button
@@ -1188,13 +1171,8 @@ bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
                 </div>
               </div>
 
-              {/* Flow Graph View */}
-              {viewMode === 'graph' && (
-                <CustodyFlowGraph result={result} chain={chain} />
-              )}
-
               {/* Table View - Exchange Endpoints */}
-              {viewMode === 'table' && result.exchange_endpoints.length > 0 && (
+              {result.exchange_endpoints && result.exchange_endpoints.length > 0 && (
                 <Card className="bg-slate-800/50 border-slate-700">
                   <CardHeader>
                     <CardTitle className="text-white flex items-center gap-2">
@@ -1252,7 +1230,7 @@ bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
               )}
 
               {/* DEX Endpoints - Table View */}
-              {viewMode === 'table' && result.dex_endpoints.length > 0 && (
+              {result.dex_endpoints && result.dex_endpoints.length > 0 && (
                 <Card className="bg-slate-800/50 border-slate-700">
                   <CardHeader>
                     <CardTitle className="text-white flex items-center gap-2">
@@ -1309,8 +1287,8 @@ bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
                 </Card>
               )}
 
-              {/* Full Chain Table - Table View */}
-              {viewMode === 'table' && result.custody_chain.length > 0 && (
+              {/* Full Chain Table - Always Show */}
+              {result.custody_chain && result.custody_chain.length > 0 && (
                 <Card className="bg-slate-800/50 border-slate-700">
                   <CardHeader>
                     <CardTitle className="text-white flex items-center gap-2">
