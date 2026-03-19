@@ -462,15 +462,40 @@ All users must accept Terms of Service before using the platform. The TOS modal 
 ### Chain Verification Results (Mar 2026)
 | Chain | Status | Notes |
 |-------|--------|-------|
-| Ethereum | ✅ Working | Full support |
+| Ethereum | ✅ Working | Full support with historical prices |
 | BSC/BNB | ✅ Working | Fixed API params |
-| Solana | ✅ Working | Fixed value parsing |
+| Solana | ✅ Working | Fixed value parsing, historical prices |
 | Bitcoin | ✅ Working | Full support |
 | Polygon | ✅ Working | Full support |
 | Algorand | ✅ Working | Full support |
-| Dogecoin | ⚠️ Limited | API may be rate-limited |
-| XRP | 🔜 Detected | Not yet analyzed |
-| XLM/Stellar | 🔜 Detected | Not yet analyzed |
+| Dogecoin | ✅ Working | Full support with historical prices |
+| XRP | ✅ Working | Full support with historical prices |
+| XLM/Stellar | ✅ Working | Fixed 400 error handling |
+
+### Phase 18: On-Chain Tax Calculation (Completed - Mar 2026)
+- [x] **Historical Tax Enrichment Service** (`historical_tax_enrichment.py`)
+  - Fetches historical prices from CoinGecko for each transaction timestamp
+  - Enriches wallet transactions with accurate cost basis
+  - Implements FIFO matching for realized gains calculation
+  - Calculates unrealized gains for remaining holdings
+  - Validates transactions to catch anomalies (>$100B values)
+- [x] **Price Service Updates** (`price_service.py`)
+  - Added XRP and XLM to CoinGecko ID mappings
+  - Updated fallback prices for new chains
+- [x] **Multi-Chain Service Updates** (`multi_chain_service.py`)
+  - Now uses historical_tax_enrichment for tax calculations
+  - Added timestamp extraction from EVM transaction metadata
+  - Fixed tier check to include 'unlimited' for tax data
+- [x] **Unified Tax Service Validation** (`unified_tax_service.py`)
+  - Added validation logging for suspicious transactions
+  - Logs transactions with amounts/prices >$10B
+  - Helps identify data bugs like the -$37B issue
+- [x] **Stellar Analyzer Fix** (`chains/stellar.py`)
+  - Fixed 400 Bad Request error handling
+  - Gracefully handles invalid addresses
+- [x] **Dead Code Removal**
+  - Removed obsolete `/api/admin/check-expiring-subscriptions` endpoint
+  - Subscription warnings now handled by Stripe webhooks
 
 ## Deployment
 - **Platform**: Render

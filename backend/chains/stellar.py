@@ -32,14 +32,23 @@ class StellarAnalyzer(BaseChainAnalyzer):
         """Get account info including balances"""
         url = f"{self.api_url}/accounts/{address}"
         
-        response = requests.get(url, timeout=30)
-        
-        if response.status_code == 404:
-            # Account not found
+        try:
+            response = requests.get(url, timeout=30)
+            
+            if response.status_code == 404:
+                # Account not found - unfunded or doesn't exist
+                return None
+            
+            if response.status_code == 400:
+                # Bad request - invalid address format
+                logger.warning(f"Stellar address invalid format: {address}")
+                return None
+            
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error fetching Stellar account: {str(e)}")
             return None
-        
-        response.raise_for_status()
-        return response.json()
     
     def _get_payments(self, address: str, limit: int = 50) -> List[Dict]:
         """Get account payment operations"""
@@ -49,15 +58,19 @@ class StellarAnalyzer(BaseChainAnalyzer):
             "order": "desc"  # Most recent first
         }
         
-        response = requests.get(url, params=params, timeout=30)
-        
-        if response.status_code == 404:
+        try:
+            response = requests.get(url, params=params, timeout=30)
+            
+            if response.status_code in [404, 400]:
+                return []
+            
+            response.raise_for_status()
+            data = response.json()
+            
+            return data.get('_embedded', {}).get('records', [])
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error fetching Stellar payments: {str(e)}")
             return []
-        
-        response.raise_for_status()
-        data = response.json()
-        
-        return data.get('_embedded', {}).get('records', [])
     
     def _get_transactions(self, address: str, limit: int = 50) -> List[Dict]:
         """Get account transactions for fee calculation"""
@@ -67,15 +80,19 @@ class StellarAnalyzer(BaseChainAnalyzer):
             "order": "desc"
         }
         
-        response = requests.get(url, params=params, timeout=30)
-        
-        if response.status_code == 404:
+        try:
+            response = requests.get(url, params=params, timeout=30)
+            
+            if response.status_code in [404, 400]:
+                return []
+            
+            response.raise_for_status()
+            data = response.json()
+            
+            return data.get('_embedded', {}).get('records', [])
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error fetching Stellar transactions: {str(e)}")
             return []
-        
-        response.raise_for_status()
-        data = response.json()
-        
-        return data.get('_embedded', {}).get('records', [])
     
     def analyze_wallet(
         self,
