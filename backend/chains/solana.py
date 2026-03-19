@@ -60,14 +60,17 @@ class SolanaAnalyzer(BaseChainAnalyzer):
         try:
             # Get current balance
             balance = self._get_balance(address)
+            print(f"SOLANA DEBUG: Balance for {address}: {balance}")
             
             # Get transaction signatures
             signatures = self._get_signatures(address)
+            print(f"SOLANA DEBUG: Got {len(signatures)} signatures")
             
             # Get transaction details
             transactions, total_sent, total_received = self._process_signatures(
                 signatures, address
             )
+            print(f"SOLANA DEBUG: Processed - sent={total_sent}, received={total_received}, txs={len(transactions)}")
             
             return self.format_analysis_result(
                 address=address,
@@ -145,6 +148,8 @@ class SolanaAnalyzer(BaseChainAnalyzer):
         total_sent = 0.0
         total_received = 0.0
         
+        logger.info(f"Processing {len(signatures)} signatures for {address}")
+        
         for sig_info in signatures[:20]:  # Limit to avoid rate limits
             signature = sig_info.get('signature')
             if not signature:
@@ -152,6 +157,7 @@ class SolanaAnalyzer(BaseChainAnalyzer):
             
             tx = self._get_transaction(signature)
             if not tx:
+                logger.warning(f"Could not fetch transaction {signature}")
                 continue
             
             # Parse transaction
@@ -182,9 +188,12 @@ class SolanaAnalyzer(BaseChainAnalyzer):
                 if change > 0:
                     tx_type = 'received'
                     total_received += change_sol
-                else:
+                elif change < 0:
                     tx_type = 'sent'
                     total_sent += change_sol
+                else:
+                    # No balance change for this address - likely just a fee payer or signer
+                    tx_type = 'transaction'
                 
                 transactions.append({
                     'hash': signature,
@@ -195,9 +204,27 @@ class SolanaAnalyzer(BaseChainAnalyzer):
                     'blockTime': tx.get('blockTime', 0),
                     'fee': self.lamports_to_sol(meta.get('fee', 0))
                 })
+                
+                logger.debug(f"TX {signature[:20]}...: {tx_type} {change_sol} SOL (pre={pre}, post={post})")
+            else:
+                # Address not found in this transaction's accounts
+                # This can happen with complex transactions - add as generic tx
+                fee = self.lamports_to_sol(meta.get('fee', 0))
+                transactions.append({
+                    'hash': signature,
+                    'type': 'transaction',
+                    'value': 0.0,
+                    'asset': 'SOL',
+                    'blockNum': str(tx.get('slot', '')),
+                    'blockTime': tx.get('blockTime', 0),
+                    'fee': fee
+                })
+                logger.debug(f"TX {signature[:20]}...: address not found in account keys")
         
         # Sort by block time (newest first)
         transactions.sort(key=lambda x: x.get('blockTime', 0), reverse=True)
+        
+        logger.info(f"Processed: sent={total_sent} SOL, received={total_received} SOL, {len(transactions)} txs")
         
         return transactions, total_sent, total_received
 

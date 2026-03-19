@@ -683,61 +683,15 @@ class MultiChainService:
         start_date: Optional[str] = None,
         end_date: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Analyze Solana wallet using Alchemy"""
+        """Analyze Solana wallet using the dedicated Solana analyzer"""
         try:
-            rpc_url = self.chains['solana']['alchemy_url']
+            from chains.solana import create_solana_analyzer
             
-            # Get balance
-            balance_payload = {
-                "jsonrpc": "2.0",
-                "id": 1,
-                "method": "getBalance",
-                "params": [address]
-            }
+            analyzer = create_solana_analyzer()
+            result = analyzer.analyze_wallet(address, start_date, end_date)
             
-            balance_response = requests.post(rpc_url, json=balance_payload, timeout=30)
-            balance_response.raise_for_status()
-            balance_data = balance_response.json()
-            balance_lamports = balance_data.get('result', {}).get('value', 0)
-            balance_sol = balance_lamports / 10**9
-            
-            # Get recent signatures
-            sig_payload = {
-                "jsonrpc": "2.0",
-                "id": 1,
-                "method": "getSignaturesForAddress",
-                "params": [address, {"limit": 10}]
-            }
-            
-            sig_response = requests.post(rpc_url, json=sig_payload, timeout=30)
-            sig_response.raise_for_status()
-            sig_data = sig_response.json()
-            signatures = sig_data.get('result', [])
-            
-            recent_transactions = []
-            for sig in signatures:
-                recent_transactions.append({
-                    "hash": sig.get('signature', ''),
-                    "type": "transaction",
-                    "value": 0.0,  # Would need to parse tx details for exact amount
-                    "asset": "SOL",
-                    "blockNum": str(sig.get('slot', '')),
-                    "category": "external"
-                })
-            
-            return {
-                'address': address,
-                'chain': 'solana',
-                'totalEthSent': 0.0,
-                'totalEthReceived': balance_sol,
-                'totalGasFees': 0.0,
-                'netEth': balance_sol,
-                'outgoingTransactionCount': len(signatures),
-                'incomingTransactionCount': len(signatures),
-                'tokensSent': {},
-                'tokensReceived': {},
-                'recentTransactions': recent_transactions
-            }
+            # Result is already in the correct format from format_analysis_result
+            return result
             
         except Exception as e:
             logger.error(f"Error analyzing Solana wallet: {str(e)}")
