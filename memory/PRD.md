@@ -497,6 +497,14 @@ All users must accept Terms of Service before using the platform. The TOS modal 
   - Removed obsolete `/api/admin/check-expiring-subscriptions` endpoint
   - Subscription warnings now handled by Stripe webhooks
 
+### Phase 19: Critical FIFO Bug Fix - Per-Asset Calculation (Completed - Mar 19, 2026)
+- [x] **ROOT CAUSE IDENTIFIED**: FIFO calculation was mixing ALL assets (BTC, ETH, SOL, DOGE, etc.) into a single queue, causing cross-asset matching (e.g., BTC sells matched against DOGE buys) which produced astronomical and incorrect gains/losses
+- [x] **Fix in `unified_tax_service.py`**: `calculate_unified_tax_data()` now groups transactions by asset symbol, runs FIFO independently per asset, then aggregates results
+- [x] **Fix in `historical_tax_enrichment.py`**: `calculate_on_chain_tax_data()` same per-asset FIFO fix applied
+- [x] **Form 8949 Export Fix** (`tax_report_service.py`): Now shows correct asset names (BTC, ETH, SOL) in description column instead of chain symbol; header shows "Multiple (N assets)" for multi-asset reports
+- [x] **Frontend Default Data Source**: Changed from "combined" to "wallet_only" when a wallet address is active in `UnifiedTaxDashboard.js`
+- [x] **Test Coverage**: 11/11 backend tests passed, frontend verified via Playwright
+
 ## Deployment
 - **Platform**: Render
 - **Domain**: cryptobagtracker.io
@@ -518,6 +526,7 @@ REACT_APP_BACKEND_URL=https://...
 
 ## Test Users
 - `taxtest@test.com` / `TestPass123!` - Premium tier (for testing tax features)
+- `mobiletest@test.com` / `test123456` - Unlimited tier
 
 ## Known Limitations
 - CoinGecko API rate limits (fallback prices used when rate-limited)
@@ -526,3 +535,9 @@ REACT_APP_BACKEND_URL=https://...
 
 ## Backlog
 - [ ] **CoinGecko Rate Limit Improvement** - ~~Add paid API key support, better caching, or alternative price provider~~ DONE - Integrated CryptoCompare for historical prices
+- [ ] Coinbase API key connection debugging (needs user verification)
+- [ ] Large wallet performance optimization
+- [ ] Portfolio History Charts
+- [ ] DeFi Position Tracking
+- [ ] NFT Portfolio Tracking
+- [ ] Refactor server.py and multi_chain_service.py
