@@ -95,6 +95,46 @@ class PriceService:
     
     # ========== CRYPTOCOMPARE ==========
     
+    def get_bulk_historical_prices(self, symbol: str, days: int = 2000) -> Dict[str, float]:
+        """
+        Fetch up to 2000 days of daily prices in a SINGLE API call.
+        Returns: {timestamp_str: price} dict for fast lookups.
+        Much faster than individual get_historical_price calls.
+        """
+        cache_key = f"bulk_{symbol.upper()}_{days}"
+        cached = self._get_from_cache(cache_key)
+        if cached:
+            return cached
+        
+        try:
+            response = requests.get(
+                f"{self.cryptocompare_url}/histoday",
+                params={'fsym': symbol.upper(), 'tsym': 'USD', 'limit': min(days, 2000)},
+                timeout=15
+            )
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('Response') == 'Success':
+                    history = data.get('Data', {}).get('Data', [])
+                    prices = {}
+                    for point in history:
+                        ts = point.get('time', 0)
+                        close = point.get('close', 0)
+                        if ts and close > 0:
+                            # Store by date string for easy lookup
+                            from datetime import datetime, timezone
+                            dt = datetime.fromtimestamp(ts, tz=timezone.utc)
+                            date_str = dt.strftime('%d-%m-%Y')
+                            prices[date_str] = float(close)
+                    
+                    if prices:
+                        logger.info(f"CryptoCompare bulk: {symbol} fetched {len(prices)} daily prices")
+                        self._set_cache(cache_key, prices, 3600)
+                        return prices
+        except Exception as e:
+            logger.warning(f"CryptoCompare bulk failed for {symbol}: {e}")
+        return {}
+    
     def get_historical_price_cryptocompare(self, symbol: str, timestamp: int) -> Optional[float]:
         """CryptoCompare has excellent free historical data going back to 2010"""
         try:

@@ -101,6 +101,7 @@ class WalletAnalysisResponse(BaseModel):
     tokensSent: Dict[str, float]
     tokensReceived: Dict[str, float]
     recentTransactions: List[Dict[str, Any]]
+    total_transaction_count: Optional[int] = None
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     # USD values
     current_price_usd: Optional[float] = None
@@ -1097,6 +1098,14 @@ async def analyze_wallet(request: WalletAnalysisRequest, user: dict = Depends(ch
         )
         
         # Create response object
+        # Keep ALL transactions for tax calculations but limit display to latest 100
+        all_transactions = analysis_data['recentTransactions']
+        display_transactions = sorted(
+            all_transactions, 
+            key=lambda x: x.get('blockTime') or x.get('timestamp') or 0, 
+            reverse=True
+        )[:100]
+        
         analysis_response = WalletAnalysisResponse(
             address=analysis_data['address'],
             chain=analysis_data.get('chain'),
@@ -1110,7 +1119,8 @@ async def analyze_wallet(request: WalletAnalysisRequest, user: dict = Depends(ch
             incomingTransactionCount=analysis_data['incomingTransactionCount'],
             tokensSent=analysis_data['tokensSent'],
             tokensReceived=analysis_data['tokensReceived'],
-            recentTransactions=analysis_data['recentTransactions'],
+            recentTransactions=display_transactions,
+            total_transaction_count=len(all_transactions),
             # USD values
             current_price_usd=analysis_data.get('current_price_usd'),
             total_value_usd=analysis_data.get('total_value_usd'),
@@ -1123,10 +1133,16 @@ async def analyze_wallet(request: WalletAnalysisRequest, user: dict = Depends(ch
             exchange_deposit_warning=analysis_data.get('exchange_deposit_warning')
         )
         
-        # Store in database with user info
+        # Store in database with user info (lightweight version)
         doc = analysis_response.model_dump()
         doc['timestamp'] = doc['timestamp'].isoformat()
         doc['user_id'] = user['id']
+        # Remove heavy tax data fields from storage (recalculated on demand)
+        if doc.get('tax_data'):
+            doc['tax_data'].pop('all_transactions', None)
+            doc['tax_data'].pop('enriched_transactions', None)
+            doc['tax_data'].pop('realized_gains', None)
+            doc['tax_data'].pop('remaining_lots', None)
         await db.wallet_analyses.insert_one(doc)
         
         # Increment user's usage counts

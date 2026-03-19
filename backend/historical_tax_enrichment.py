@@ -31,7 +31,7 @@ class HistoricalTaxEnrichment:
     
     def __init__(self):
         self.price_cache = {}
-        self.rate_limit_delay = 1.5  # seconds between API calls
+        self.rate_limit_delay = 0.3  # Reduced from 1.5s - CryptoCompare allows higher rates
         self.last_api_call = 0
     
     def _rate_limit(self):
@@ -116,23 +116,74 @@ class HistoricalTaxEnrichment:
     ) -> List[Dict]:
         """
         Enrich wallet transactions with historical prices.
-        
-        For each transaction:
-        - If timestamp exists, fetch historical price for that date
-        - If no timestamp and it's the native token, use current price
-        - For unknown tokens, assign $0 (don't use native chain price!)
-        
-        Args:
-            transactions: List of wallet transactions from chain analyzer
-            symbol: Asset symbol (ETH, BTC, etc.)
-            current_price: Current price for the native token (fallback for native token only)
-        
-        Returns:
-            List of enriched transactions with price_usd and total_usd
+        Uses batch price lookup to minimize API calls for large wallets.
         """
         enriched = []
         validation_warnings = []
         
+        if not transactions:
+            return enriched
+        
+        # BATCH OPTIMIZATION: Collect all unique (asset, date) pairs first
+        price_requests = {}
+        for tx in transactions:
+            value = tx.get('value', 0) or tx.get('amount', 0)
+            if not value or value <= 0:
+                continue
+            
+            tx_asset = tx.get('asset', symbol).upper()
+            timestamp = tx.get('timestamp') or tx.get('blockTime')
+            
+            if timestamp and timestamp > 0:
+                try:
+                    dt = datetime.fromtimestamp(int(timestamp), tz=timezone.utc)
+                    date_str = dt.strftime('%d-%m-%Y')
+                    cache_key = f"{tx_asset}_{date_str}"
+                    if cache_key not in self.price_cache:
+                        price_requests[cache_key] = (tx_asset, int(timestamp))
+                except (ValueError, OSError):
+                    pass
+        
+        # Limit price lookups to avoid excessive API calls
+        MAX_PRICE_LOOKUPS = 200
+        if len(price_requests) > MAX_PRICE_LOOKUPS:
+            logger.warning(f"Limiting price lookups from {len(price_requests)} to {MAX_PRICE_LOOKUPS}")
+            native_keys = {k: v for k, v in price_requests.items() if v[0] == symbol.upper()}
+            other_keys = {k: v for k, v in price_requests.items() if v[0] != symbol.upper()}
+            price_requests = {**native_keys, **dict(list(other_keys.items())[:MAX_PRICE_LOOKUPS - len(native_keys)])}
+        
+        # BULK OPTIMIZATION: Use bulk historical price fetch for native token
+        # One API call gets 2000 days of prices instead of 200+ individual calls
+        unique_assets = set(v[0] for v in price_requests.values())
+        for asset in unique_assets:
+            bulk_prices = price_service.get_bulk_historical_prices(asset)
+            if bulk_prices:
+                for cache_key, (req_asset, req_ts) in list(price_requests.items()):
+                    if req_asset == asset:
+                        date_str = cache_key.split('_', 1)[1] if '_' in cache_key else ''
+                        if date_str in bulk_prices:
+                            self.price_cache[cache_key] = bulk_prices[date_str]
+                            del price_requests[cache_key]
+        
+        # Fetch remaining prices individually (only for dates not covered by bulk)
+        # Limit to avoid timeout - skip very old dates that won't have API data
+        remaining = len(price_requests)
+        if remaining > 50:
+            logger.warning(f"Skipping {remaining - 50} price lookups for very old dates, using current price as fallback")
+            # Sort by timestamp and keep only the 50 most recent
+            sorted_requests = sorted(price_requests.items(), key=lambda x: x[1][1], reverse=True)
+            price_requests = dict(sorted_requests[:50])
+        
+        logger.info(f"Price enrichment: {len(transactions)} txs, {len(price_requests)} prices still needed after bulk fetch")
+        
+        for cache_key, (asset, ts) in price_requests.items():
+            if cache_key in self.price_cache:
+                continue
+            price = self._get_historical_price(asset, ts)
+            if price:
+                self.price_cache[cache_key] = price
+        
+        # Now enrich all transactions using cached prices
         for tx in transactions:
             # Skip transactions with zero value
             value = float(tx.get('value', 0))
@@ -145,15 +196,20 @@ class HistoricalTaxEnrichment:
             # Get timestamp
             timestamp = tx.get('timestamp') or tx.get('blockTime')
             
-            # Determine price based on asset type
+            # Determine price based on asset type - use pre-fetched batch cache
             price = None
             price_source = 'none'
             
             if timestamp and timestamp > 0:
-                # Try to get historical price for this specific asset
-                price = self._get_historical_price(tx_asset, int(timestamp))
-                if price:
-                    price_source = 'historical'
+                try:
+                    dt = datetime.fromtimestamp(int(timestamp), tz=timezone.utc)
+                    date_str = dt.strftime('%d-%m-%Y')
+                    cache_key = f"{tx_asset}_{date_str}"
+                    price = self.price_cache.get(cache_key)
+                    if price:
+                        price_source = 'historical'
+                except (ValueError, OSError):
+                    pass
             
             # Fallback logic - ONLY for native tokens, NOT for random ERC-20s
             if not price:
@@ -165,7 +221,6 @@ class HistoricalTaxEnrichment:
                     price_source = 'current_native'
                 else:
                     # For ERC-20 tokens, try to get current price
-                    from price_service import price_service
                     price = price_service.get_current_price(tx_asset)
                     if price:
                         price_source = 'current_lookup'
@@ -213,23 +268,29 @@ class HistoricalTaxEnrichment:
         """
         Calculate comprehensive tax data from on-chain transactions only.
         
-        This is the core function for "chain of custody" tax analysis:
-        1. Enrich transactions with historical prices
-        2. Separate buys (receives) and sells (sends)
-        3. Calculate FIFO cost basis and gains
-        4. Return detailed tax data
-        
-        Args:
-            transactions: List of wallet transactions from chain analyzer
-            symbol: Asset symbol (ETH, BTC, etc.)
-            current_price: Current price for unrealized gains
-            current_balance: Current on-chain balance
-        
-        Returns:
-            Comprehensive tax data structure
+        For large wallets (1000+ txs), filters to native token + top tokens
+        to avoid thousands of price API calls for obscure ERC-20 tokens.
         """
+        # For large wallets, filter to native token + top tokens by tx count
+        filtered_txs = transactions
+        if len(transactions) > 500:
+            # Count transactions per asset
+            asset_counts = {}
+            for tx in transactions:
+                asset = (tx.get('asset') or symbol).upper()
+                asset_counts[asset] = asset_counts.get(asset, 0) + 1
+            
+            # Keep native token + top 10 tokens by frequency
+            top_assets = sorted(asset_counts.items(), key=lambda x: -x[1])[:10]
+            top_asset_names = {a[0] for a in top_assets}
+            top_asset_names.add(symbol.upper())
+            
+            filtered_txs = [tx for tx in transactions if (tx.get('asset') or symbol).upper() in top_asset_names]
+            logger.info(f"Large wallet optimization: {len(transactions)} txs -> {len(filtered_txs)} txs "
+                       f"(tracking {len(top_asset_names)} assets: {', '.join(list(top_asset_names)[:5])}...)")
+        
         # Enrich transactions with historical prices
-        enriched = self.enrich_wallet_transactions(transactions, symbol, current_price)
+        enriched = self.enrich_wallet_transactions(filtered_txs, symbol, current_price)
         
         if not enriched:
             return self._empty_tax_data()
@@ -292,8 +353,7 @@ class HistoricalTaxEnrichment:
                 if asset == symbol.upper():
                     asset_price = current_price
                 else:
-                    from price_service import price_service as ps
-                    asset_price = ps.get_current_price(asset) or 0
+                    asset_price = price_service.get_current_price(asset) or 0
                 
                 for lot in asset_remaining:
                     lot['current_price'] = asset_price

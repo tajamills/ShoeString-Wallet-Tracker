@@ -81,7 +81,7 @@ class SolanaAnalyzer(BaseChainAnalyzer):
                 gas_fees=0.0,
                 outgoing_count=len([t for t in transactions if t['type'] == 'sent']),
                 incoming_count=len([t for t in transactions if t['type'] == 'received']),
-                recent_transactions=transactions[:10]
+                recent_transactions=transactions
             )
             
         except Exception as e:
@@ -103,7 +103,7 @@ class SolanaAnalyzer(BaseChainAnalyzer):
         
         return self.lamports_to_sol(result.get('value', 0))
     
-    def _get_signatures(self, address: str, limit: int = 100) -> List[Dict]:
+    def _get_signatures(self, address: str, limit: int = 500) -> List[Dict]:
         """Get transaction signatures for address"""
         payload = {
             "jsonrpc": "2.0",
@@ -143,83 +143,142 @@ class SolanaAnalyzer(BaseChainAnalyzer):
         signatures: List[Dict],
         address: str
     ) -> tuple:
-        """Process transaction signatures and calculate totals"""
+        """Process transaction signatures with batch RPC for performance"""
         transactions = []
         total_sent = 0.0
         total_received = 0.0
         
-        logger.info(f"Processing {len(signatures)} signatures for {address}")
+        # Process ALL signatures, not just first 20
+        sigs_to_process = signatures[:200]  # Up to 200 transactions
+        logger.info(f"Processing {len(sigs_to_process)} signatures for {address}")
         
-        for sig_info in signatures[:20]:  # Limit to avoid rate limits
-            signature = sig_info.get('signature')
-            if not signature:
+        # Batch fetch transactions using batch RPC
+        batch_size = 20
+        for batch_start in range(0, len(sigs_to_process), batch_size):
+            batch_sigs = sigs_to_process[batch_start:batch_start + batch_size]
+            batch_payload = []
+            
+            for i, sig_info in enumerate(batch_sigs):
+                signature = sig_info.get('signature')
+                if not signature:
+                    continue
+                batch_payload.append({
+                    "jsonrpc": "2.0",
+                    "id": i,
+                    "method": "getTransaction",
+                    "params": [signature, {"encoding": "jsonParsed", "maxSupportedTransactionVersion": 0}]
+                })
+            
+            if not batch_payload:
                 continue
             
-            tx = self._get_transaction(signature)
-            if not tx:
-                logger.warning(f"Could not fetch transaction {signature}")
-                continue
-            
-            # Parse transaction
-            meta = tx.get('meta', {})
-            if meta.get('err'):
-                continue  # Skip failed transactions
-            
-            # Get balance changes
-            pre_balances = meta.get('preBalances', [])
-            post_balances = meta.get('postBalances', [])
-            account_keys = tx.get('transaction', {}).get('message', {}).get('accountKeys', [])
-            
-            # Find our address index
-            address_idx = None
-            for i, key in enumerate(account_keys):
-                key_str = key.get('pubkey', key) if isinstance(key, dict) else key
-                if key_str == address:
-                    address_idx = i
-                    break
-            
-            if address_idx is not None and address_idx < len(pre_balances) and address_idx < len(post_balances):
-                pre = pre_balances[address_idx]
-                post = post_balances[address_idx]
-                change = post - pre
+            try:
+                response = requests.post(self.alchemy_url, json=batch_payload, timeout=30)
+                response.raise_for_status()
+                results = response.json()
+                if not isinstance(results, list):
+                    results = [results]
                 
-                change_sol = self.lamports_to_sol(abs(change))
+                for idx, result in enumerate(results):
+                    tx = result.get('result')
+                    if not tx:
+                        continue
+                    
+                    sig_idx = batch_start + idx
+                    if sig_idx < len(sigs_to_process):
+                        signature = sigs_to_process[sig_idx].get('signature', '')
+                    else:
+                        signature = ''
+                    
+                    meta = tx.get('meta', {})
+                    if meta.get('err'):
+                        continue
+                    
+                    pre_balances = meta.get('preBalances', [])
+                    post_balances = meta.get('postBalances', [])
+                    
+                    account_keys = tx.get('transaction', {}).get('message', {}).get('accountKeys', [])
+                    address_index = None
+                    for i_key, key in enumerate(account_keys):
+                        key_str = key.get('pubkey', key) if isinstance(key, dict) else key
+                        if key_str == address:
+                            address_index = i_key
+                            break
+                    
+                    if address_index is None or address_index >= len(pre_balances):
+                        continue
+                    
+                    pre_balance = pre_balances[address_index]
+                    post_balance = post_balances[address_index]
+                    change_lamports = post_balance - pre_balance
+                    change_sol = abs(self.lamports_to_sol(change_lamports))
+                    
+                    if change_lamports > 0:
+                        tx_type = 'received'
+                        total_received += change_sol
+                    elif change_lamports < 0:
+                        tx_type = 'sent'
+                        total_sent += change_sol
+                    else:
+                        continue
+                    
+                    transactions.append({
+                        'hash': signature,
+                        'type': tx_type,
+                        'value': change_sol,
+                        'asset': 'SOL',
+                        'blockNum': str(tx.get('slot', '')),
+                        'blockTime': tx.get('blockTime', 0),
+                        'timestamp': tx.get('blockTime', 0),
+                        'fee': self.lamports_to_sol(meta.get('fee', 0))
+                    })
                 
-                if change > 0:
-                    tx_type = 'received'
-                    total_received += change_sol
-                elif change < 0:
-                    tx_type = 'sent'
-                    total_sent += change_sol
-                else:
-                    # No balance change for this address - likely just a fee payer or signer
-                    tx_type = 'transaction'
-                
-                transactions.append({
-                    'hash': signature,
-                    'type': tx_type,
-                    'value': change_sol,
-                    'asset': 'SOL',
-                    'blockNum': str(tx.get('slot', '')),
-                    'blockTime': tx.get('blockTime', 0),
-                    'fee': self.lamports_to_sol(meta.get('fee', 0))
-                })
-                
-                logger.debug(f"TX {signature[:20]}...: {tx_type} {change_sol} SOL (pre={pre}, post={post})")
-            else:
-                # Address not found in this transaction's accounts
-                # This can happen with complex transactions - add as generic tx
-                fee = self.lamports_to_sol(meta.get('fee', 0))
-                transactions.append({
-                    'hash': signature,
-                    'type': 'transaction',
-                    'value': 0.0,
-                    'asset': 'SOL',
-                    'blockNum': str(tx.get('slot', '')),
-                    'blockTime': tx.get('blockTime', 0),
-                    'fee': fee
-                })
-                logger.debug(f"TX {signature[:20]}...: address not found in account keys")
+            except Exception as e:
+                logger.warning(f"Batch transaction fetch failed: {e}")
+                # Fall back to individual fetches for this batch
+                for sig_info in batch_sigs:
+                    signature = sig_info.get('signature')
+                    if not signature:
+                        continue
+                    tx = self._get_transaction(signature)
+                    if not tx:
+                        continue
+                    meta = tx.get('meta', {})
+                    if meta.get('err'):
+                        continue
+                    pre_balances = meta.get('preBalances', [])
+                    post_balances = meta.get('postBalances', [])
+                    account_keys = tx.get('transaction', {}).get('message', {}).get('accountKeys', [])
+                    address_index = None
+                    for i_key, key in enumerate(account_keys):
+                        key_str = key.get('pubkey', key) if isinstance(key, dict) else key
+                        if key_str == address:
+                            address_index = i_key
+                            break
+                    if address_index is None or address_index >= len(pre_balances):
+                        continue
+                    pre_balance = pre_balances[address_index]
+                    post_balance = post_balances[address_index]
+                    change_lamports = post_balance - pre_balance
+                    change_sol = abs(self.lamports_to_sol(change_lamports))
+                    if change_lamports > 0:
+                        tx_type = 'received'
+                        total_received += change_sol
+                    elif change_lamports < 0:
+                        tx_type = 'sent'
+                        total_sent += change_sol
+                    else:
+                        continue
+                    transactions.append({
+                        'hash': signature,
+                        'type': tx_type,
+                        'value': change_sol,
+                        'asset': 'SOL',
+                        'blockNum': str(tx.get('slot', '')),
+                        'blockTime': tx.get('blockTime', 0),
+                        'timestamp': tx.get('blockTime', 0),
+                        'fee': self.lamports_to_sol(meta.get('fee', 0))
+                    })
         
         # Sort by block time (newest first)
         transactions.sort(key=lambda x: x.get('blockTime', 0), reverse=True)

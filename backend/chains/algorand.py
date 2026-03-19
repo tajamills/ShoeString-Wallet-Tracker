@@ -131,7 +131,7 @@ class AlgorandAnalyzer(BaseChainAnalyzer):
         address: str,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
-        limit: int = 100
+        limit: int = 500
     ) -> tuple:
         """Get transaction history for address"""
         transactions = []

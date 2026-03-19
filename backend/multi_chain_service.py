@@ -2,6 +2,7 @@ import os
 import requests
 from typing import Dict, List, Any, Optional
 from decimal import Decimal
+from datetime import datetime
 import logging
 from price_service import price_service
 from tax_service import tax_service
@@ -159,7 +160,7 @@ class MultiChainService:
             
             # Add USD value to each transaction - ONLY for native token
             for tx in analysis.get('recentTransactions', []):
-                tx_asset = tx.get('asset', symbol).upper()
+                tx_asset = (tx.get('asset') or symbol).upper()
                 is_native = tx_asset == symbol.upper()
                 
                 if is_native and current_price:
@@ -399,10 +400,45 @@ class MultiChainService:
             out_result = response_out.json().get('result')
             outgoing_txs = out_result.get('transfers', []) if out_result else []
             
+            # Paginate outgoing transfers for large wallets
+            page_key = out_result.get('pageKey') if out_result else None
+            max_pages = 5
+            page = 0
+            while page_key and page < max_pages:
+                page += 1
+                page_params = dict(out_params)
+                page_params['pageKey'] = page_key
+                page_payload = {"jsonrpc": "2.0", "id": 1, "method": "alchemy_getAssetTransfers", "params": [page_params]}
+                try:
+                    resp = requests.post(alchemy_url, json=page_payload, timeout=30)
+                    r = resp.json().get('result', {})
+                    outgoing_txs.extend(r.get('transfers', []))
+                    page_key = r.get('pageKey')
+                except Exception:
+                    break
+            
             response_in = requests.post(alchemy_url, json=payload_in, timeout=30)
             response_in.raise_for_status()
             in_result = response_in.json().get('result')
             incoming_txs = in_result.get('transfers', []) if in_result else []
+            
+            # Paginate incoming transfers
+            page_key = in_result.get('pageKey') if in_result else None
+            page = 0
+            while page_key and page < max_pages:
+                page += 1
+                page_params = dict(in_params)
+                page_params['pageKey'] = page_key
+                page_payload = {"jsonrpc": "2.0", "id": 2, "method": "alchemy_getAssetTransfers", "params": [page_params]}
+                try:
+                    resp = requests.post(alchemy_url, json=page_payload, timeout=30)
+                    r = resp.json().get('result', {})
+                    incoming_txs.extend(r.get('transfers', []))
+                    page_key = r.get('pageKey')
+                except Exception:
+                    break
+            
+            logger.info(f"EVM analysis: {len(outgoing_txs)} outgoing, {len(incoming_txs)} incoming transfers")
             
             # Get CURRENT BALANCE from blockchain
             balance_payload = {
@@ -415,7 +451,7 @@ class MultiChainService:
             balance_response.raise_for_status()
             current_balance_hex = balance_response.json().get('result', '0x0')
             current_balance_wei = int(current_balance_hex, 16)
-            current_balance = current_balance_wei / 1e18  # Convert wei to ETH
+            current_balance = current_balance_wei / 1e18
             
             # Calculate statistics
             total_sent = 0.0
@@ -423,30 +459,32 @@ class MultiChainService:
             total_gas = 0.0
             tokens_sent = {}
             tokens_received = {}
-            recent_transactions = []
             
-            # Get transaction receipts for gas fees (only for sent transactions)
-            for tx in outgoing_txs[:100]:  # Limit to first 100 to avoid rate limits
-                tx_hash = tx.get('hash')
-                if tx_hash and tx.get('asset') == symbol:
-                    try:
-                        receipt_payload = {
-                            "jsonrpc": "2.0",
-                            "id": 1,
-                            "method": "eth_getTransactionReceipt",
-                            "params": [tx_hash]
-                        }
-                        receipt_response = requests.post(alchemy_url, json=receipt_payload, timeout=10)
-                        receipt_data = receipt_response.json().get('result', {})
-                        
-                        if receipt_data:
-                            gas_used = int(receipt_data.get('gasUsed', '0x0'), 16)
-                            effective_gas_price = int(receipt_data.get('effectiveGasPrice', '0x0'), 16)
-                            gas_cost_wei = gas_used * effective_gas_price
-                            gas_cost_eth = gas_cost_wei / 10**18
-                            total_gas += gas_cost_eth
-                    except:
-                        pass  # Skip if can't get receipt
+            # BATCH gas fee calculation (instead of 100 individual calls)
+            native_out_hashes = [tx.get('hash') for tx in outgoing_txs if tx.get('hash') and tx.get('asset') == symbol]
+            sample_hashes = native_out_hashes[:20]
+            if sample_hashes:
+                batch_payload = [
+                    {"jsonrpc": "2.0", "id": i, "method": "eth_getTransactionReceipt", "params": [h]}
+                    for i, h in enumerate(sample_hashes)
+                ]
+                try:
+                    batch_resp = requests.post(alchemy_url, json=batch_payload, timeout=30)
+                    results = batch_resp.json() if batch_resp.status_code == 200 else []
+                    sampled_gas = 0.0
+                    sampled_count = 0
+                    for r in results:
+                        receipt = r.get('result', {})
+                        if receipt:
+                            gas_used = int(receipt.get('gasUsed', '0x0'), 16)
+                            gas_price = int(receipt.get('effectiveGasPrice', '0x0'), 16)
+                            sampled_gas += (gas_used * gas_price) / 1e18
+                            sampled_count += 1
+                    if sampled_count > 0:
+                        avg_gas = sampled_gas / sampled_count
+                        total_gas = avg_gas * len(native_out_hashes)
+                except Exception as e:
+                    logger.warning(f"Batch gas fee error: {e}")
             
             # Process outgoing
             for tx in outgoing_txs:
@@ -470,26 +508,20 @@ class MultiChainService:
                     token = tx.get('asset', 'UNKNOWN')
                     tokens_received[token] = tokens_received.get(token, 0) + float(value)
             
-            # Get recent transactions (last 10) with metadata
+            # Build ALL transactions for tax calculations
             all_txs = []
-            for tx in outgoing_txs[:10]:
+            for tx in outgoing_txs:
                 value = tx.get('value', 0)
-                to_address = tx.get('to', '')
+                metadata = tx.get('metadata') or {}
+                to_label = metadata.get('exchangeName') or metadata.get('contractName')
                 
-                # Get metadata for the address (exchange, contract name, etc.)
-                # Handle None case for BSC and other chains
-                to_metadata = tx.get('metadata') or {}
-                to_label = to_metadata.get('exchangeName') or to_metadata.get('contractName') or None
-                
-                # Extract timestamp from metadata (Alchemy provides blockTimestamp)
-                block_timestamp = to_metadata.get('blockTimestamp', '')
+                block_timestamp = metadata.get('blockTimestamp', '')
                 timestamp = None
                 if block_timestamp:
                     try:
-                        from datetime import datetime
                         dt = datetime.fromisoformat(block_timestamp.replace('Z', '+00:00'))
                         timestamp = int(dt.timestamp())
-                    except:
+                    except Exception:
                         pass
                 
                 all_txs.append({
@@ -497,31 +529,26 @@ class MultiChainService:
                     "type": "sent",
                     "value": float(value) if value is not None else 0.0,
                     "asset": tx.get('asset', symbol),
-                    "to": to_address,
+                    "to": tx.get('to', ''),
                     "to_label": to_label,
                     "blockNum": tx.get('blockNum', ''),
+                    "blockTime": timestamp,
                     "timestamp": timestamp,
                     "category": tx.get('category', '')
                 })
             
-            for tx in incoming_txs[:10]:
+            for tx in incoming_txs:
                 value = tx.get('value', 0)
-                from_address = tx.get('from', '')
+                metadata = tx.get('metadata') or {}
+                from_label = metadata.get('exchangeName') or metadata.get('contractName')
                 
-                # Get metadata for the address
-                # Handle None case for BSC and other chains
-                from_metadata = tx.get('metadata') or {}
-                from_label = from_metadata.get('exchangeName') or from_metadata.get('contractName') or None
-                
-                # Extract timestamp from metadata
-                block_timestamp = from_metadata.get('blockTimestamp', '')
+                block_timestamp = metadata.get('blockTimestamp', '')
                 timestamp = None
                 if block_timestamp:
                     try:
-                        from datetime import datetime
                         dt = datetime.fromisoformat(block_timestamp.replace('Z', '+00:00'))
                         timestamp = int(dt.timestamp())
-                    except:
+                    except Exception:
                         pass
                 
                 all_txs.append({
@@ -529,29 +556,16 @@ class MultiChainService:
                     "type": "received",
                     "value": float(value) if value is not None else 0.0,
                     "asset": tx.get('asset', symbol),
-                    "from": from_address,
+                    "from": tx.get('from', ''),
                     "from_label": from_label,
                     "blockNum": tx.get('blockNum', ''),
+                    "blockTime": timestamp,
                     "timestamp": timestamp,
                     "category": tx.get('category', '')
                 })
             
-            # Sort transactions by block number (oldest first for running balance calculation)
-            all_transactions_sorted = sorted(all_txs, key=lambda x: self.safe_parse_block_num(x['blockNum']), reverse=False)
-            
-            # Calculate running balance for each transaction
-            running_balance = current_balance
-            for tx in reversed(all_transactions_sorted):  # Work backwards from most recent
-                if tx['type'] == 'sent':
-                    # Before this send, balance was higher
-                    running_balance += float(tx['value']) + float(tx.get('gasFee', 0))
-                else:
-                    # Before this receive, balance was lower
-                    running_balance -= float(tx['value'])
-                tx['running_balance'] = running_balance
-            
-            # Now sort for display (newest first) and take top 10
-            recent_transactions = sorted(all_transactions_sorted, key=lambda x: self.safe_parse_block_num(x['blockNum']), reverse=True)[:10]
+            # Sort ALL by block number, newest first
+            recent_transactions = sorted(all_txs, key=lambda x: self.safe_parse_block_num(x['blockNum']), reverse=True)
             
             return {
                 'address': address,

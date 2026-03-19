@@ -50,7 +50,7 @@ class StellarAnalyzer(BaseChainAnalyzer):
             logger.error(f"Error fetching Stellar account: {str(e)}")
             return None
     
-    def _get_payments(self, address: str, limit: int = 50) -> List[Dict]:
+    def _get_payments(self, address: str, limit: int = 200) -> List[Dict]:
         """Get account payment operations"""
         url = f"{self.api_url}/accounts/{address}/payments"
         params = {
@@ -72,7 +72,7 @@ class StellarAnalyzer(BaseChainAnalyzer):
             logger.error(f"Error fetching Stellar payments: {str(e)}")
             return []
     
-    def _get_transactions(self, address: str, limit: int = 50) -> List[Dict]:
+    def _get_transactions(self, address: str, limit: int = 200) -> List[Dict]:
         """Get account transactions for fee calculation"""
         url = f"{self.api_url}/accounts/{address}/transactions"
         params = {

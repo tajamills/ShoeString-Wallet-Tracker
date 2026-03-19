@@ -69,7 +69,7 @@ class XRPAnalyzer(BaseChainAnalyzer):
         
         return result.get('result', {}).get('account_data', {})
     
-    def _get_transactions(self, address: str, limit: int = 50) -> List[Dict]:
+    def _get_transactions(self, address: str, limit: int = 200) -> List[Dict]:
         """Get account transactions"""
         payload = {
             "method": "account_tx",

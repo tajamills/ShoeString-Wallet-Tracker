@@ -102,7 +102,7 @@ class BitcoinAnalyzer(BaseChainAnalyzer):
             current_balance = total_received - total_sent
             
             # Process recent transactions
-            recent_transactions = self._process_transactions(transactions[:20], address)
+            recent_transactions = self._process_transactions(transactions[:200], address)
             
             return self.format_analysis_result(
                 address=address,
@@ -125,7 +125,7 @@ class BitcoinAnalyzer(BaseChainAnalyzer):
     
     def _analyze_via_blockchain_info(self, address: str) -> Dict[str, Any]:
         """Fallback analysis using blockchain.info API"""
-        url = f"{self.api_url}/rawaddr/{address}?limit=50"
+        url = f"{self.api_url}/rawaddr/{address}?limit=200"
         response = requests.get(url, timeout=30)
         response.raise_for_status()
         data = response.json()
@@ -199,6 +199,8 @@ class BitcoinAnalyzer(BaseChainAnalyzer):
                 'value': self.satoshi_to_btc(value),
                 'asset': 'BTC',
                 'blockNum': str(tx.get('status', {}).get('block_height', '')),
+                'blockTime': tx.get('status', {}).get('block_time', 0),
+                'timestamp': tx.get('status', {}).get('block_time', 0),
                 'confirmed': tx.get('status', {}).get('confirmed', False)
             })
         
