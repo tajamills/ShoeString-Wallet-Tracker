@@ -505,6 +505,12 @@ All users must accept Terms of Service before using the platform. The TOS modal 
 - [x] **Frontend Default Data Source**: Changed from "combined" to "wallet_only" when a wallet address is active in `UnifiedTaxDashboard.js`
 - [x] **Test Coverage**: 11/11 backend tests passed, frontend verified via Playwright
 
+### Phase 20: Exchange Deposit Address Detection (Completed - Mar 19, 2026)
+- [x] **Detection Logic** in `multi_chain_service.py`: Detects exchange deposit address pattern (receive then immediate sweep to exchange main wallet) based on balance ~0, total_in ≈ total_out, and sweep timing
+- [x] **Backend Response Model**: Added `exchange_deposit_warning` field to `WalletAnalysisResponse` Pydantic model in `server.py`
+- [x] **Frontend Alert** in `App.js`: Shows prominent amber warning when exchange deposit address is detected, explains why balance shows $0, and guides user to use Exchange API or CSV import
+- [x] **Import Fix**: Added `AlertTriangle` to lucide-react imports in App.js
+
 ## Deployment
 - **Platform**: Render
 - **Domain**: cryptobagtracker.io

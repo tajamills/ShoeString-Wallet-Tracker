@@ -223,6 +223,56 @@ class MultiChainService:
             logger.error(f"Error adding tax data: {str(e)}")
             return analysis
     
+    def _detect_exchange_deposit_address(self, analysis: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Detect if a wallet is an exchange deposit address (e.g., Coinbase).
+        Exchange deposit addresses: receive funds then immediately sweep to main wallet.
+        """
+        txs = analysis.get('recentTransactions', [])
+        balance = analysis.get('currentBalance', 0) or 0
+        total_in = analysis.get('totalEthReceived', 0) or 0
+        total_out = analysis.get('totalEthSent', 0) or 0
+        
+        if not txs or len(txs) < 2 or total_in == 0:
+            return analysis
+        
+        receives = [t for t in txs if t.get('type') in ['received', 'receive']]
+        sends = [t for t in txs if t.get('type') in ['sent', 'send']]
+        
+        if not receives or not sends:
+            return analysis
+        
+        # Check: every send happens shortly after a receive (within 30 min)
+        sweep_sends = 0
+        for send in sends:
+            send_time = send.get('blockTime', 0) or 0
+            for recv in receives:
+                recv_time = recv.get('blockTime', 0) or 0
+                if 0 < (send_time - recv_time) < 1800:  # Send within 30 min after receive
+                    sweep_sends += 1
+                    break
+        
+        # Heuristic: exchange deposit if balance ~0 and total in ≈ total out
+        is_exchange_deposit = (
+            balance < 0.01 and
+            abs(total_in - total_out) / total_in < 0.02 and
+            sweep_sends >= len(sends) * 0.5 and
+            len(sends) >= 1
+        )
+        
+        if is_exchange_deposit:
+            analysis['exchange_deposit_warning'] = {
+                'detected': True,
+                'message': 'This appears to be an exchange deposit address (e.g., Coinbase). Exchanges sweep deposited funds to their main wallets immediately, so the on-chain balance shows $0. Your actual balance is held by the exchange internally.',
+                'suggestion': 'To see your real holdings and calculate accurate tax gains, use one of these methods:',
+                'options': [
+                    'Connect your exchange via API key (Settings > Exchange Connections)',
+                    'Import your exchange transaction history CSV (Download from your exchange, then upload here)'
+                ]
+            }
+        
+        return analysis
+
     def analyze_wallet(
         self,
         address: str,
@@ -278,6 +328,9 @@ class MultiChainService:
         
         # Add USD values
         analysis = self.add_usd_values(analysis, symbol)
+        
+        # Detect exchange deposit address pattern
+        analysis = self._detect_exchange_deposit_address(analysis)
         
         # Add tax calculations (Unlimited/Premium/Pro feature)
         if user_tier in ['premium', 'pro', 'unlimited']:

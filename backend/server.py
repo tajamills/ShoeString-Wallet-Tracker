@@ -110,6 +110,8 @@ class WalletAnalysisResponse(BaseModel):
     total_gas_fees_usd: Optional[float] = None
     # Tax data (Premium/Pro feature)
     tax_data: Optional[Dict[str, Any]] = None
+    # Exchange deposit address detection
+    exchange_deposit_warning: Optional[Dict[str, Any]] = None
 
 # Initialize services
 wallet_service = WalletService()
@@ -1116,7 +1118,9 @@ async def analyze_wallet(request: WalletAnalysisRequest, user: dict = Depends(ch
             total_sent_usd=analysis_data.get('total_sent_usd'),
             total_gas_fees_usd=analysis_data.get('total_gas_fees_usd'),
             # Tax data
-            tax_data=analysis_data.get('tax_data')
+            tax_data=analysis_data.get('tax_data'),
+            # Exchange deposit address warning
+            exchange_deposit_warning=analysis_data.get('exchange_deposit_warning')
         )
         
         # Store in database with user info

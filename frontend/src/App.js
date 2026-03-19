@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Wallet, TrendingUp, TrendingDown, DollarSign, Activity, LogOut, User, Crown, Download, Calculator, Tag, Users, Link2, HelpCircle } from 'lucide-react';
+import { Loader2, Wallet, TrendingUp, TrendingDown, DollarSign, Activity, LogOut, User, Crown, Download, Calculator, Tag, Users, Link2, HelpCircle, AlertTriangle } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAnalysis } from '@/hooks/useAnalysis';
@@ -763,6 +763,23 @@ function App() {
               </Badge>
               <span className="text-gray-400 text-sm">Analyzing {getChainSymbol(analysis.chain || selectedChain)} wallet</span>
             </div>
+
+            {/* Exchange Deposit Address Warning */}
+            {analysis.exchange_deposit_warning?.detected && (
+              <Alert className="bg-amber-900/30 border-amber-600" data-testid="exchange-deposit-warning">
+                <AlertTriangle className="w-5 h-5 text-amber-400" />
+                <AlertDescription className="text-amber-200">
+                  <p className="font-semibold text-amber-300 mb-2">Exchange Deposit Address Detected</p>
+                  <p className="text-sm mb-2">{analysis.exchange_deposit_warning.message}</p>
+                  <p className="text-sm font-medium text-amber-300 mb-1">{analysis.exchange_deposit_warning.suggestion}</p>
+                  <ul className="list-disc list-inside text-sm space-y-1 ml-2">
+                    {analysis.exchange_deposit_warning.options?.map((opt, i) => (
+                      <li key={i}>{opt}</li>
+                    ))}
+                  </ul>
+                </AlertDescription>
+              </Alert>
+            )}
 
             {/* Portfolio Value Header */}
             {analysis.total_value_usd !== undefined && (
