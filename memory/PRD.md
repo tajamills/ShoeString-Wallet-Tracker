@@ -446,6 +446,32 @@ All users must accept Terms of Service before using the platform. The TOS modal 
 - [x] **Deployment Fix**: Removed emergentintegrations from requirements.txt (not available on standard PyPI)
 - [x] **Test Coverage**: Backend 100%, Frontend 70% (3 flaky due to timing)
 
+### Phase 17: Chain Analyzer Fixes (Completed - Mar 2026)
+- [x] **Solana Analyzer**: Fixed to properly parse transaction values using dedicated analyzer
+- [x] **BSC/BNB Analyzer**: Fixed API parameters (BSC doesn't support withMetadata/excludeZeroValue)
+- [x] **BSC Metadata Fix**: Fixed NoneType error when metadata is null
+- [x] **Algorand Analyzer**: Fixed to use dedicated analyzer format
+- [x] **Dogecoin Analyzer**: Fixed to use dedicated analyzer format
+- [x] **Address Detection**: Added XRP (r prefix) and XLM/Stellar (G prefix, 56 chars) detection
+- [x] **Form 8949 Export**: Updated to use unified tax service (wallet + exchange combined)
+- [x] **Schedule D Export**: Updated to use unified tax service (wallet + exchange combined)
+- [x] **Password Reset Page**: Created /reset-password route for email links
+- [x] **Email Notifications**: Added subscription upgrade, expiring, expired emails
+- [x] **Stripe Webhook**: Added invoice.upcoming listener for renewal reminders
+
+### Chain Verification Results (Mar 2026)
+| Chain | Status | Notes |
+|-------|--------|-------|
+| Ethereum | ✅ Working | Full support |
+| BSC/BNB | ✅ Working | Fixed API params |
+| Solana | ✅ Working | Fixed value parsing |
+| Bitcoin | ✅ Working | Full support |
+| Polygon | ✅ Working | Full support |
+| Algorand | ✅ Working | Full support |
+| Dogecoin | ⚠️ Limited | API may be rate-limited |
+| XRP | 🔜 Detected | Not yet analyzed |
+| XLM/Stellar | 🔜 Detected | Not yet analyzed |
+
 ## Deployment
 - **Platform**: Render
 - **Domain**: cryptobagtracker.io

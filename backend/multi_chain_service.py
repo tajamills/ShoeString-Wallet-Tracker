@@ -252,45 +252,56 @@ class MultiChainService:
             
             address = address.lower()
             
+            # BSC has different API parameter support
+            is_bsc = chain == 'bsc'
+            
             # Get outgoing transactions
+            out_params = {
+                "fromBlock": "0x0",
+                "toBlock": "latest",
+                "fromAddress": address,
+                "category": ["external"] if is_bsc else ["external", "internal", "erc20"],
+                "maxCount": "0x3e8"
+            }
+            if not is_bsc:
+                out_params["withMetadata"] = True
+                out_params["excludeZeroValue"] = False
+                
             payload_out = {
                 "jsonrpc": "2.0",
                 "id": 1,
                 "method": "alchemy_getAssetTransfers",
-                "params": [{
-                    "fromBlock": "0x0",
-                    "toBlock": "latest",
-                    "fromAddress": address,
-                    "category": ["external", "internal", "erc20"],
-                    "withMetadata": True,
-                    "excludeZeroValue": False,
-                    "maxCount": "0x3e8"
-                }]
+                "params": [out_params]
             }
             
             # Get incoming transactions
+            in_params = {
+                "fromBlock": "0x0",
+                "toBlock": "latest",
+                "toAddress": address,
+                "category": ["external"] if is_bsc else ["external", "internal", "erc20"],
+                "maxCount": "0x3e8"
+            }
+            if not is_bsc:
+                in_params["withMetadata"] = True
+                in_params["excludeZeroValue"] = False
+                
             payload_in = {
                 "jsonrpc": "2.0",
                 "id": 2,
                 "method": "alchemy_getAssetTransfers",
-                "params": [{
-                    "fromBlock": "0x0",
-                    "toBlock": "latest",
-                    "toAddress": address,
-                    "category": ["external", "internal", "erc20"],
-                    "withMetadata": True,
-                    "excludeZeroValue": False,
-                    "maxCount": "0x3e8"
-                }]
+                "params": [in_params]
             }
             
             response_out = requests.post(alchemy_url, json=payload_out, timeout=30)
             response_out.raise_for_status()
-            outgoing_txs = response_out.json().get('result', {}).get('transfers', [])
+            out_result = response_out.json().get('result')
+            outgoing_txs = out_result.get('transfers', []) if out_result else []
             
             response_in = requests.post(alchemy_url, json=payload_in, timeout=30)
             response_in.raise_for_status()
-            incoming_txs = response_in.json().get('result', {}).get('transfers', [])
+            in_result = response_in.json().get('result')
+            incoming_txs = in_result.get('transfers', []) if in_result else []
             
             # Get CURRENT BALANCE from blockchain
             balance_payload = {
@@ -365,7 +376,8 @@ class MultiChainService:
                 to_address = tx.get('to', '')
                 
                 # Get metadata for the address (exchange, contract name, etc.)
-                to_metadata = tx.get('metadata', {})
+                # Handle None case for BSC and other chains
+                to_metadata = tx.get('metadata') or {}
                 to_label = to_metadata.get('exchangeName') or to_metadata.get('contractName') or None
                 
                 all_txs.append({
@@ -384,7 +396,8 @@ class MultiChainService:
                 from_address = tx.get('from', '')
                 
                 # Get metadata for the address
-                from_metadata = tx.get('metadata', {})
+                # Handle None case for BSC and other chains
+                from_metadata = tx.get('metadata') or {}
                 from_label = from_metadata.get('exchangeName') or from_metadata.get('contractName') or None
                 
                 all_txs.append({
@@ -703,30 +716,15 @@ class MultiChainService:
         start_date: Optional[str] = None,
         end_date: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Analyze Algorand wallet using public indexer API"""
+        """Analyze Algorand wallet using the dedicated Algorand analyzer"""
         try:
             from chains.algorand import create_algorand_analyzer
             
             analyzer = create_algorand_analyzer()
             result = analyzer.analyze_wallet(address, start_date, end_date)
             
-            # Convert to standard format - format_analysis_result uses camelCase
-            return {
-                'address': address,
-                'chain': 'algorand',
-                'totalSent': result.get('totalEthSent', 0),
-                'totalReceived': result.get('totalEthReceived', 0),
-                'currentBalance': result.get('currentBalance', 0),
-                'gasFees': result.get('totalGasFees', 0),
-                'transactionCount': result.get('outgoingTransactionCount', 0) + result.get('incomingTransactionCount', 0),
-                'outgoingCount': result.get('outgoingTransactionCount', 0),
-                'incomingCount': result.get('incomingTransactionCount', 0),
-                'firstTransaction': result.get('first_transaction'),
-                'lastTransaction': result.get('last_transaction'),
-                'tokensSent': result.get('tokensSent', {}),
-                'tokensReceived': result.get('tokensReceived', {}),
-                'recentTransactions': result.get('recentTransactions', [])
-            }
+            # Result is already in the correct format from format_analysis_result
+            return result
             
         except Exception as e:
             logger.error(f"Error analyzing Algorand wallet: {str(e)}")
@@ -738,30 +736,15 @@ class MultiChainService:
         start_date: Optional[str] = None,
         end_date: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Analyze Dogecoin wallet using public API"""
+        """Analyze Dogecoin wallet using the dedicated Dogecoin analyzer"""
         try:
             from chains.dogecoin import create_dogecoin_analyzer
             
             analyzer = create_dogecoin_analyzer()
             result = analyzer.analyze_wallet(address, start_date, end_date)
             
-            # Convert to standard format - format_analysis_result uses camelCase
-            return {
-                'address': address,
-                'chain': 'dogecoin',
-                'totalSent': result.get('totalEthSent', 0),
-                'totalReceived': result.get('totalEthReceived', 0),
-                'currentBalance': result.get('currentBalance', 0),
-                'gasFees': result.get('totalGasFees', 0),
-                'transactionCount': result.get('outgoingTransactionCount', 0) + result.get('incomingTransactionCount', 0),
-                'outgoingCount': result.get('outgoingTransactionCount', 0),
-                'incomingCount': result.get('incomingTransactionCount', 0),
-                'firstTransaction': result.get('first_transaction'),
-                'lastTransaction': result.get('last_transaction'),
-                'tokensSent': result.get('tokensSent', {}),
-                'tokensReceived': result.get('tokensReceived', {}),
-                'recentTransactions': result.get('recentTransactions', [])
-            }
+            # Result is already in the correct format from format_analysis_result
+            return result
             
         except Exception as e:
             logger.error(f"Error analyzing Dogecoin wallet: {str(e)}")
