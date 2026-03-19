@@ -387,10 +387,17 @@ class UnifiedTaxService:
                     asset_groups[asset] = {'buys': [], 'sells': []}
                 
                 tx_type = tx['tx_type'].lower()
+                # CRITICAL: Only actual sales trigger realized gains
+                # Sends and withdrawals are transfers - NOT taxable events
                 if tx_type in ['buy', 'receive', 'received', 'deposit', 'reward', 'staking', 'airdrop']:
                     asset_groups[asset]['buys'].append(tx)
-                elif tx_type in ['sell', 'send', 'sent', 'withdrawal', 'trade']:
+                elif tx_type in ['sell', 'trade']:
+                    # Only actual sales and trades are taxable dispositions
                     asset_groups[asset]['sells'].append(tx)
+                # 'send', 'sent', 'withdrawal' are transfers - NOT taxable
+                # They should NOT create realized gains
+                elif tx_type in ['send', 'sent', 'withdrawal']:
+                    logger.debug(f"Transfer ignored for tax calc: {tx_type} {tx.get('amount', 0)} {asset}")
             
             # Run FIFO PER ASSET and aggregate results
             all_realized_gains = []

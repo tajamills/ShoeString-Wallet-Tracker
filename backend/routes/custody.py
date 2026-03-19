@@ -30,26 +30,54 @@ async def analyze_chain_of_custody(
                 detail="Chain of Custody analysis requires Unlimited subscription."
             )
         
-        address = request.address.strip().lower()
-        if not address.startswith('0x') or len(address) != 42:
+        address = request.address.strip()
+        chain = request.chain.lower()
+        
+        # Validate address format based on chain
+        evm_chains = ['ethereum', 'polygon', 'arbitrum', 'bsc', 'base', 'optimism']
+        
+        if chain in evm_chains:
+            address = address.lower()
+            if not address.startswith('0x') or len(address) != 42:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid EVM address format. Must start with 0x and be 42 characters."
+                )
+            
+            # EVM chains are fully supported
+            result = custody_service.analyze_chain_of_custody(
+                address=address,
+                chain=chain,
+                max_depth=request.max_depth,
+                dormancy_days=request.dormancy_days
+            )
+        elif chain == 'solana':
+            # Solana addresses are base58, typically 32-44 chars
+            if len(address) < 32 or len(address) > 44:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid Solana address format. Must be 32-44 characters."
+                )
             raise HTTPException(
                 status_code=400,
-                detail="Invalid EVM address format. Must start with 0x and be 42 characters."
+                detail="Solana chain of custody analysis is coming soon! Currently only EVM chains (Ethereum, Polygon, Arbitrum, BSC, Base, Optimism) are supported."
             )
-        
-        supported_chains = ['ethereum', 'polygon', 'arbitrum', 'bsc', 'base', 'optimism']
-        if request.chain not in supported_chains:
+        elif chain == 'bitcoin':
+            # Bitcoin addresses vary: legacy (26-35), segwit (42-62)
+            if len(address) < 26 or len(address) > 62:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid Bitcoin address format."
+                )
             raise HTTPException(
                 status_code=400,
-                detail=f"Chain not supported for custody analysis. Supported: {', '.join(supported_chains)}"
+                detail="Bitcoin chain of custody analysis is coming soon! Currently only EVM chains (Ethereum, Polygon, Arbitrum, BSC, Base, Optimism) are supported."
             )
-        
-        result = custody_service.analyze_chain_of_custody(
-            address=address,
-            chain=request.chain,
-            max_depth=request.max_depth,
-            dormancy_days=request.dormancy_days
-        )
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Chain '{chain}' is not yet supported for custody analysis. Supported: {', '.join(evm_chains)}. Solana and Bitcoin coming soon!"
+            )
         
         analysis_record = {
             "id": str(uuid.uuid4()),

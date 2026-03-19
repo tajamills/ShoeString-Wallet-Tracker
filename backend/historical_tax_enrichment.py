@@ -329,8 +329,13 @@ class HistoricalTaxEnrichment:
             
             if tx_type in ['received', 'buy', 'deposit', 'reward', 'staking', 'airdrop']:
                 asset_groups[tx_asset]['buys'].append(tx_record)
-            elif tx_type in ['sent', 'sell', 'send', 'withdrawal']:
+            elif tx_type in ['sell']:
+                # CRITICAL: Only actual sales trigger realized gains
+                # Transfers (sent/send/withdrawal) are NOT taxable events
                 asset_groups[tx_asset]['sells'].append(tx_record)
+            # 'sent', 'send', 'withdrawal' are wallet transfers - NOT taxable disposals
+            elif tx_type in ['sent', 'send', 'withdrawal']:
+                logger.debug(f"Wallet transfer ignored for tax calc: {tx_type} {tx_record.get('amount', 0)} {tx_asset}")
         
         # Run FIFO per asset and aggregate
         all_realized_gains = []

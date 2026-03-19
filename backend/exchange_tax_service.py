@@ -84,10 +84,20 @@ class ExchangeTaxService:
                 assets[asset] = {'buys': [], 'sells': []}
             
             tx_type = tx['tx_type'].lower()
+            # CRITICAL: Only actual sales should trigger realized gains
+            # Buys, deposits, rewards = acquisition (add to cost basis)
+            # Sells, trades = disposal (triggers capital gains)
+            # Sends, withdrawals = transfers (NOT taxable - moves between wallets)
             if tx_type in ['buy', 'receive', 'deposit', 'reward', 'staking', 'airdrop']:
                 assets[asset]['buys'].append(tx)
-            elif tx_type in ['sell', 'send', 'withdrawal', 'trade']:
+            elif tx_type in ['sell', 'trade']:
+                # Only actual sales and trades are taxable events
                 assets[asset]['sells'].append(tx)
+            # 'send' and 'withdrawal' are transfers - NOT taxable dispositions
+            # They should not create realized gains
+            elif tx_type in ['send', 'withdrawal']:
+                # Log for debugging but don't treat as sale
+                logger.debug(f"Skipping transfer (not taxable): {tx_type} {tx['amount']} {asset}")
         
         # Calculate gains for each asset
         all_realized = []
