@@ -537,6 +537,8 @@ function App() {
                       <option value="fantom">👻 Fantom (FTM)</option>
                       <option value="algorand">🔷 Algorand (ALGO)</option>
                       <option value="dogecoin">🐕 Dogecoin (DOGE)</option>
+                      <option value="xrp">💧 XRP/Ripple (XRP)</option>
+                      <option value="xlm">⭐ Stellar (XLM)</option>
                     </>
                   )}
                 </select>
@@ -569,15 +571,8 @@ function App() {
                     disabled={loading}
                   />
                   {walletAddress && detectChainFromAddress(walletAddress) && (
-                    <p className={`text-xs mt-1 ${
-                      ['xrp', 'xlm'].includes(detectChainFromAddress(walletAddress)) 
-                        ? 'text-yellow-400' 
-                        : 'text-green-400'
-                    }`}>
-                      {['xrp', 'xlm'].includes(detectChainFromAddress(walletAddress))
-                        ? `Detected: ${detectChainFromAddress(walletAddress)?.toUpperCase()} address (not yet supported)`
-                        : `Detected: ${detectChainFromAddress(walletAddress)?.toUpperCase()} address`
-                      }
+                    <p className="text-xs mt-1 text-green-400">
+                      Detected: {detectChainFromAddress(walletAddress)?.toUpperCase()} address
                     </p>
                   )}
                   {selectedChain === 'bitcoin' && user?.subscription_tier === 'pro' && (

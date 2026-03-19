@@ -99,6 +99,20 @@ class MultiChainService:
                 "decimals": 8,
                 "symbol": "DOGE",
                 "explorer": "https://dogechain.info"
+            },
+            "xrp": {
+                "name": "XRP/Ripple",
+                "api_url": "https://xrplcluster.com",
+                "decimals": 6,
+                "symbol": "XRP",
+                "explorer": "https://xrpscan.com"
+            },
+            "xlm": {
+                "name": "Stellar/XLM",
+                "api_url": "https://horizon.stellar.org",
+                "decimals": 7,
+                "symbol": "XLM",
+                "explorer": "https://stellarchain.io"
             }
         }
     
@@ -223,6 +237,12 @@ class MultiChainService:
         elif chain == "dogecoin":
             analysis = self._analyze_dogecoin_wallet(address, start_date, end_date)
             symbol = 'DOGE'
+        elif chain == "xrp":
+            analysis = self._analyze_xrp_wallet(address, start_date, end_date)
+            symbol = 'XRP'
+        elif chain == "xlm":
+            analysis = self._analyze_xlm_wallet(address, start_date, end_date)
+            symbol = 'XLM'
         else:
             # EVM chains (ethereum, polygon, arbitrum, bsc)
             analysis = self._analyze_evm_wallet(address, chain, start_date, end_date)
@@ -749,6 +769,45 @@ class MultiChainService:
         except Exception as e:
             logger.error(f"Error analyzing Dogecoin wallet: {str(e)}")
             raise Exception(f"Failed to analyze Dogecoin wallet: {str(e)}")
+
+    def _analyze_xrp_wallet(
+        self,
+        address: str,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Analyze XRP wallet using the dedicated XRP analyzer"""
+        try:
+            from chains.xrp import create_xrp_analyzer
+            
+            analyzer = create_xrp_analyzer()
+            result = analyzer.analyze_wallet(address, start_date, end_date)
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error analyzing XRP wallet: {str(e)}")
+            raise Exception(f"Failed to analyze XRP wallet: {str(e)}")
+    
+    def _analyze_xlm_wallet(
+        self,
+        address: str,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Analyze Stellar/XLM wallet using the dedicated Stellar analyzer"""
+        try:
+            from chains.stellar import create_stellar_analyzer
+            
+            analyzer = create_stellar_analyzer()
+            result = analyzer.analyze_wallet(address, start_date, end_date)
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error analyzing Stellar wallet: {str(e)}")
+            raise Exception(f"Failed to analyze Stellar wallet: {str(e)}")
+
     
     def get_supported_chains(self) -> List[Dict[str, str]]:
         """Get list of supported chains"""
