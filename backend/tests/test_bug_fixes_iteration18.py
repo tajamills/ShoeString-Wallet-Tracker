@@ -23,10 +23,14 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://tax-report-crypto.pr
 class TestCustodyAddressValidation:
     """Tests for Chain of Custody address validation bug fix"""
     
-    def test_solana_address_shows_coming_soon_not_evm_error(self, authenticated_premium_client):
+    def test_solana_address_now_works(self, authenticated_premium_client):
         """
-        BUG FIX TEST: Solana addresses should show 'coming soon' message, 
-        NOT 'Invalid EVM address format' error
+        UPDATED: Solana Chain of Custody now fully implemented!
+        Solana addresses should return valid analysis (200), NOT 'coming soon' error.
+        
+        Original bug (iteration 18): Solana showed 'Invalid EVM address format'
+        First fix: Showed 'coming soon' instead of EVM error  
+        Current fix (iteration 19): Solana actually WORKS with full custody analysis!
         """
         # Valid Solana address format (base58, 32-44 chars)
         solana_address = "9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin"
@@ -39,15 +43,17 @@ class TestCustodyAddressValidation:
             }
         )
         
-        assert response.status_code == 400
+        # Solana now WORKS - should return 200 with valid analysis
+        assert response.status_code == 200, f"Solana should work now. Got {response.status_code}: {response.text}"
         data = response.json()
-        detail = data.get("detail", "")
         
-        # Should say "coming soon", NOT "Invalid EVM address format" validation error
-        assert "coming soon" in detail.lower(), f"Expected 'coming soon' but got: {detail}"
-        # The key bug was showing "Invalid EVM address format" - should NOT show that
-        assert "invalid evm address format" not in detail.lower(), \
-            f"Should NOT show 'Invalid EVM address format' error: {detail}"
+        # Verify valid Solana custody analysis response
+        assert data.get("chain") == "solana"
+        assert "custody_chain" in data
+        assert "origin_points" in data
+        assert "summary" in data
+        # Should NOT show any EVM-related errors
+        assert "evm" not in str(data).lower() or "address format" not in str(data).lower()
         
     def test_solana_invalid_address_shows_solana_format_error(self, authenticated_premium_client):
         """

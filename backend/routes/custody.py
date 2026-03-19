@@ -43,14 +43,6 @@ async def analyze_chain_of_custody(
                     status_code=400,
                     detail="Invalid EVM address format. Must start with 0x and be 42 characters."
                 )
-            
-            # EVM chains are fully supported
-            result = custody_service.analyze_chain_of_custody(
-                address=address,
-                chain=chain,
-                max_depth=request.max_depth,
-                dormancy_days=request.dormancy_days
-            )
         elif chain == 'solana':
             # Solana addresses are base58, typically 32-44 chars
             if len(address) < 32 or len(address) > 44:
@@ -58,10 +50,6 @@ async def analyze_chain_of_custody(
                     status_code=400,
                     detail="Invalid Solana address format. Must be 32-44 characters."
                 )
-            raise HTTPException(
-                status_code=400,
-                detail="Solana chain of custody analysis is coming soon! Currently only EVM chains (Ethereum, Polygon, Arbitrum, BSC, Base, Optimism) are supported."
-            )
         elif chain == 'bitcoin':
             # Bitcoin addresses vary: legacy (26-35), segwit (42-62)
             if len(address) < 26 or len(address) > 62:
@@ -71,13 +59,21 @@ async def analyze_chain_of_custody(
                 )
             raise HTTPException(
                 status_code=400,
-                detail="Bitcoin chain of custody analysis is coming soon! Currently only EVM chains (Ethereum, Polygon, Arbitrum, BSC, Base, Optimism) are supported."
+                detail="Bitcoin chain of custody analysis is coming soon! Currently EVM chains and Solana are supported."
             )
         else:
             raise HTTPException(
                 status_code=400,
-                detail=f"Chain '{chain}' is not yet supported for custody analysis. Supported: {', '.join(evm_chains)}. Solana and Bitcoin coming soon!"
+                detail=f"Chain '{chain}' is not yet supported for custody analysis. Supported: {', '.join(evm_chains + ['solana'])}."
             )
+        
+        # Run custody analysis
+        result = custody_service.analyze_chain_of_custody(
+            address=address,
+            chain=chain,
+            max_depth=request.max_depth,
+            dormancy_days=request.dormancy_days
+        )
         
         analysis_record = {
             "id": str(uuid.uuid4()),

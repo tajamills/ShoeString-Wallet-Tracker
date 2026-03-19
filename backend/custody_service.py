@@ -77,9 +77,33 @@ class ChainOfCustodyService:
             'bsc': f"https://bnb-mainnet.g.alchemy.com/v2/{self.alchemy_api_key}",
             'base': f"https://base-mainnet.g.alchemy.com/v2/{self.alchemy_api_key}",
             'optimism': f"https://opt-mainnet.g.alchemy.com/v2/{self.alchemy_api_key}",
+            'solana': f"https://solana-mainnet.g.alchemy.com/v2/{self.alchemy_api_key}",
         }
         # Default dormancy threshold (days without movement)
         self.dormancy_threshold_days = 365
+        
+        # Known Solana exchange addresses
+        self.known_solana_exchanges = {
+            'GmNuJuwECDfsmKu4o4g2Db1Dy1JEqQNZ4FQJJx5Lpnpe': 'Coinbase',
+            '5tzFkiKscXHK5ZXCGbXZxdw7gTjjD1mBwuoFbhUvuAi9': 'Coinbase',
+            'BmFdpraQhkiDQE6SnfG5PFLk91m1j1W3BCVR9VbXeGgR': 'Coinbase',
+            '9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM': 'Binance',
+            'AC5RDfQFmDS1deWZos921JfqscXdByf8BKHs5ACWgVd9': 'FTX',
+            '2ojv9BAiHUrvsm9gxDe7fJSzbNZSJcxZvf8dqmWGHG8S': 'Kraken',
+            'FWABont4RWQ87LBU1xdqLdSSM7qs1JDjPDBSmtNwB7a8': 'Kraken',
+            'CuieVDEDtLo7FypA9SbLM9saXFdb1dsshEkyErMqkRQq': 'Bybit',
+            '2AQdpHJ2JpcEgPiATUXjQxA8QmafFegfQwSLWSprPicm': 'Gate.io',
+        }
+        
+        # Known Solana DEX addresses
+        self.known_solana_dexes = {
+            'JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4': 'Jupiter',
+            '675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8': 'Raydium',
+            'whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc': 'Orca (Whirlpool)',
+            '9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP': 'Orca',
+            'SSwpkEEcbUqx4vtoEByFjSkhKdCT862DNVb52nZg1UZ': 'Saber',
+            'MERLuDFBMmsHnsBPZw2sDQZHvXFMwp8EdjudcU2HKky': 'Mercurial',
+        }
     
     def analyze_chain_of_custody(
         self,
@@ -105,6 +129,12 @@ class ChainOfCustodyService:
             raise ValueError(f"Chain {chain} not supported for custody analysis")
         
         self.dormancy_threshold_days = dormancy_days
+        
+        # Handle Solana differently (non-EVM)
+        if chain == 'solana':
+            return self._analyze_solana_custody(address, max_depth, dormancy_days)
+        
+        # EVM chains
         address = address.lower()
         
         # Results storage
@@ -327,15 +357,251 @@ class ChainOfCustodyService:
     
     def get_address_label(self, address: str) -> Optional[str]:
         """Get a label for a known address"""
-        address = address.lower()
+        address_lower = address.lower() if address.startswith('0x') else address
         
-        if address in KNOWN_EXCHANGE_ADDRESSES:
-            return f"Exchange: {KNOWN_EXCHANGE_ADDRESSES[address]}"
+        if address_lower in KNOWN_EXCHANGE_ADDRESSES:
+            return f"Exchange: {KNOWN_EXCHANGE_ADDRESSES[address_lower]}"
         
-        if address in KNOWN_DEX_ADDRESSES:
-            return f"DEX: {KNOWN_DEX_ADDRESSES[address]}"
+        if address_lower in KNOWN_DEX_ADDRESSES:
+            return f"DEX: {KNOWN_DEX_ADDRESSES[address_lower]}"
+        
+        # Check Solana addresses (case-sensitive)
+        if address in self.known_solana_exchanges:
+            return f"Exchange: {self.known_solana_exchanges[address]}"
+        
+        if address in self.known_solana_dexes:
+            return f"DEX: {self.known_solana_dexes[address]}"
         
         return None
+    
+    def _analyze_solana_custody(
+        self,
+        address: str,
+        max_depth: int,
+        dormancy_days: int
+    ) -> Dict[str, Any]:
+        """
+        Analyze chain of custody for a Solana wallet.
+        Traces SOL transfers backwards to find origin points.
+        """
+        custody_chain = []
+        origin_points = []
+        visited = set()
+        
+        queue = deque([(address, 0)])  # (address, depth)
+        visited.add(address)
+        
+        exchange_count = 0
+        dex_count = 0
+        dormant_count = 0
+        
+        while queue:
+            current_address, depth = queue.popleft()
+            
+            # Respect max_depth (0 = unlimited)
+            if max_depth > 0 and depth >= max_depth:
+                continue
+            
+            # Get incoming transactions for this address
+            incoming_txs = self._get_solana_incoming_transfers(current_address)
+            
+            for tx in incoming_txs:
+                sender = tx.get('from_address')
+                if not sender or sender in visited:
+                    continue
+                
+                # Record this link in the custody chain
+                link = {
+                    'from': sender,
+                    'to': current_address,
+                    'value': tx.get('amount', 0),
+                    'asset': 'SOL',
+                    'tx_hash': tx.get('signature', ''),
+                    'timestamp': tx.get('timestamp'),
+                    'depth': depth + 1,
+                    'origin_type': None,
+                    'exchange_name': None,
+                    'dex_name': None
+                }
+                
+                # Check if sender is a known exchange
+                if sender in self.known_solana_exchanges:
+                    link['origin_type'] = 'exchange'
+                    link['exchange_name'] = self.known_solana_exchanges[sender]
+                    origin_points.append({
+                        'address': sender,
+                        'type': 'exchange',
+                        'name': self.known_solana_exchanges[sender],
+                        'depth': depth + 1,
+                        'value': tx.get('amount', 0),
+                        'timestamp': tx.get('timestamp')
+                    })
+                    exchange_count += 1
+                
+                # Check if sender is a known DEX
+                elif sender in self.known_solana_dexes:
+                    link['origin_type'] = 'dex'
+                    link['dex_name'] = self.known_solana_dexes[sender]
+                    origin_points.append({
+                        'address': sender,
+                        'type': 'dex',
+                        'name': self.known_solana_dexes[sender],
+                        'depth': depth + 1,
+                        'value': tx.get('amount', 0),
+                        'timestamp': tx.get('timestamp')
+                    })
+                    dex_count += 1
+                
+                # Check for dormancy
+                elif tx.get('timestamp') and self._is_dormant(tx['timestamp']):
+                    link['origin_type'] = 'dormant'
+                    origin_points.append({
+                        'address': sender,
+                        'type': 'dormant',
+                        'name': 'Dormant Wallet',
+                        'depth': depth + 1,
+                        'value': tx.get('amount', 0),
+                        'timestamp': tx.get('timestamp')
+                    })
+                    dormant_count += 1
+                else:
+                    # Unknown sender - add to queue for further tracing
+                    link['origin_type'] = 'unknown'
+                    if depth + 1 < max_depth or max_depth == 0:
+                        queue.append((sender, depth + 1))
+                
+                custody_chain.append(link)
+                visited.add(sender)
+                
+                # Limit to prevent runaway queries
+                if len(custody_chain) >= 100:
+                    break
+            
+            if len(custody_chain) >= 100:
+                break
+        
+        return {
+            'analyzed_address': address,
+            'chain': 'solana',
+            'custody_chain': custody_chain,
+            'origin_points': origin_points,
+            'summary': {
+                'total_links_traced': len(custody_chain),
+                'exchange_origin_count': exchange_count,
+                'dex_origin_count': dex_count,
+                'dormant_origin_count': dormant_count,
+                'unknown_origin_count': len([op for op in origin_points if op['type'] == 'unknown']),
+                'max_depth_reached': max(link['depth'] for link in custody_chain) if custody_chain else 0,
+                'addresses_analyzed': len(visited)
+            },
+            'settings': {
+                'max_depth': max_depth,
+                'dormancy_days': dormancy_days
+            }
+        }
+    
+    def _get_solana_incoming_transfers(self, address: str) -> List[Dict]:
+        """Get incoming SOL transfers for a Solana address"""
+        try:
+            alchemy_url = self.alchemy_urls.get('solana')
+            if not alchemy_url:
+                return []
+            
+            # Get recent signatures for the address
+            payload = {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "getSignaturesForAddress",
+                "params": [
+                    address,
+                    {"limit": 50}
+                ]
+            }
+            
+            response = requests.post(alchemy_url, json=payload, timeout=30)
+            response.raise_for_status()
+            signatures = response.json().get('result', [])
+            
+            incoming_transfers = []
+            
+            for sig_info in signatures[:20]:  # Limit to 20 to avoid rate limits
+                signature = sig_info.get('signature')
+                if not signature:
+                    continue
+                
+                # Get transaction details
+                tx_payload = {
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": "getTransaction",
+                    "params": [
+                        signature,
+                        {"encoding": "jsonParsed", "maxSupportedTransactionVersion": 0}
+                    ]
+                }
+                
+                try:
+                    tx_response = requests.post(alchemy_url, json=tx_payload, timeout=10)
+                    tx_data = tx_response.json().get('result', {})
+                    
+                    if not tx_data:
+                        continue
+                    
+                    # Parse the transaction to find transfers TO this address
+                    meta = tx_data.get('meta', {})
+                    pre_balances = meta.get('preBalances', [])
+                    post_balances = meta.get('postBalances', [])
+                    account_keys = tx_data.get('transaction', {}).get('message', {}).get('accountKeys', [])
+                    
+                    if not account_keys:
+                        continue
+                    
+                    # Find the index of our address
+                    our_index = None
+                    for i, key in enumerate(account_keys):
+                        key_str = key.get('pubkey', key) if isinstance(key, dict) else key
+                        if key_str == address:
+                            our_index = i
+                            break
+                    
+                    if our_index is None:
+                        continue
+                    
+                    # Calculate the change for our address
+                    if our_index < len(pre_balances) and our_index < len(post_balances):
+                        change = post_balances[our_index] - pre_balances[our_index]
+                        
+                        if change > 0:  # Incoming transfer
+                            # Find the sender (who decreased the most)
+                            sender = None
+                            max_decrease = 0
+                            for i, (pre, post) in enumerate(zip(pre_balances, post_balances)):
+                                decrease = pre - post
+                                if decrease > max_decrease and i != our_index:
+                                    max_decrease = decrease
+                                    key = account_keys[i]
+                                    sender = key.get('pubkey', key) if isinstance(key, dict) else key
+                            
+                            if sender:
+                                block_time = tx_data.get('blockTime')
+                                timestamp = datetime.utcfromtimestamp(block_time).isoformat() if block_time else None
+                                
+                                incoming_transfers.append({
+                                    'from_address': sender,
+                                    'amount': change / 1e9,  # Convert lamports to SOL
+                                    'signature': signature,
+                                    'timestamp': timestamp
+                                })
+                
+                except Exception as e:
+                    logger.debug(f"Error parsing Solana transaction {signature}: {e}")
+                    continue
+            
+            return incoming_transfers
+            
+        except Exception as e:
+            logger.error(f"Error fetching Solana transfers for {address}: {e}")
+            return []
 
 
 # Global service instance
