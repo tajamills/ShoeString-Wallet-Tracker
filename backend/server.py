@@ -1627,9 +1627,11 @@ async def request_chain(
 
 # Tax Report Routes
 class Form8949Request(BaseModel):
-    address: str
+    address: str = ""
     chain: str = "ethereum"
     filter_type: str = "all"  # all, short-term, long-term
+    data_source: str = "combined"  # wallet_only, exchange_only, combined
+    tax_year: int = None
 
 @api_router.post("/tax/export-form-8949")
 async def export_form_8949(
@@ -1646,23 +1648,9 @@ async def export_form_8949(
                 detail="Form 8949 export is a Premium feature. Upgrade to access tax reports."
             )
         
-        address = request.address.strip()
+        address = request.address.strip() if request.address else None
         chain = request.chain.lower()
-        
-        # Get wallet analysis with tax data
-        analysis_data = multi_chain_service.analyze_wallet(
-            address,
-            chain=chain,
-            user_tier=user_tier
-        )
-        
-        # Check if tax data exists
-        tax_data = analysis_data.get('tax_data')
-        if not tax_data or not tax_data.get('realized_gains'):
-            raise HTTPException(
-                status_code=400,
-                detail="No tax data available. Analyze the wallet first to generate tax information."
-            )
+        data_source = request.data_source
         
         # Get chain symbol
         symbol_map = {
@@ -1675,16 +1663,65 @@ async def export_form_8949(
         }
         symbol = symbol_map.get(chain, 'ETH')
         
+        wallet_transactions = []
+        exchange_transactions = []
+        current_balance = 0
+        current_price = 0
+        
+        # Get wallet data if needed
+        if data_source in ["wallet_only", "combined"] and address:
+            analysis_data = multi_chain_service.analyze_wallet(
+                address=address,
+                chain=chain,
+                user_tier=user_tier
+            )
+            wallet_transactions = analysis_data.get('recentTransactions', [])
+            current_balance = analysis_data.get('currentBalance', 0)
+            current_price = analysis_data.get('current_price_usd', 0)
+        
+        # Get exchange transactions if needed
+        if data_source in ["exchange_only", "combined"]:
+            exchange_txs = await db.exchange_transactions.find(
+                {"user_id": user["id"]},
+                {"_id": 0}
+            ).to_list(10000)
+            exchange_transactions = exchange_txs
+        
+        # Calculate unified tax data
+        tax_data = unified_tax_service.calculate_unified_tax_data(
+            wallet_transactions=wallet_transactions,
+            exchange_transactions=exchange_transactions,
+            symbol=symbol,
+            current_price=current_price,
+            current_balance=current_balance
+        )
+        
+        realized_gains = tax_data.get('realized_gains', [])
+        
+        if not realized_gains:
+            raise HTTPException(
+                status_code=400,
+                detail="No realized gains found. Import exchange transactions or analyze a wallet with transactions first."
+            )
+        
+        # Filter by tax year if specified
+        if request.tax_year:
+            realized_gains = [
+                g for g in realized_gains
+                if g.get('sell_date', '').startswith(str(request.tax_year))
+            ]
+        
         # Generate Form 8949 CSV
         csv_content = tax_report_service.generate_form_8949_csv(
-            realized_gains=tax_data['realized_gains'],
+            realized_gains=realized_gains,
             symbol=symbol,
-            address=address,
+            address=address or "exchange",
             filter_type=request.filter_type
         )
         
         # Return as downloadable CSV
-        filename = f"form-8949-{address[:8]}-{request.filter_type}-{datetime.now().strftime('%Y%m%d')}.csv"
+        addr_prefix = address[:8] if address else "exchange"
+        filename = f"form-8949-{addr_prefix}-{request.filter_type}-{datetime.now().strftime('%Y%m%d')}.csv"
         
         return Response(
             content=csv_content,
@@ -1844,10 +1881,11 @@ async def get_transaction_categories(
 
 # Schedule D Export
 class ScheduleDRequest(BaseModel):
-    address: str
+    address: str = ""
     chain: str = "ethereum"
     tax_year: int
     format: str = "text"  # text or csv
+    data_source: str = "combined"  # wallet_only, exchange_only, combined
 
 @api_router.post("/tax/export-schedule-d")
 async def export_schedule_d(
@@ -1871,24 +1909,9 @@ async def export_schedule_d(
                 detail=f"Tax year must be between 2020 and {current_year}"
             )
         
-        address = request.address.strip()
+        address = request.address.strip() if request.address else None
         chain = request.chain.lower()
-        
-        # Get wallet analysis with tax data
-        analysis_data = multi_chain_service.analyze_wallet(
-            address,
-            chain=chain,
-            user_tier=user_tier
-        )
-        
-        tax_data = analysis_data.get('tax_data')
-        if not tax_data:
-            raise HTTPException(
-                status_code=400,
-                detail="No tax data available for this wallet."
-            )
-        
-        realized_gains = tax_data.get('realized_gains', [])
+        data_source = request.data_source
         
         symbol_map = {
             'ethereum': 'ETH',
@@ -1900,25 +1923,71 @@ async def export_schedule_d(
         }
         symbol = symbol_map.get(chain, 'ETH')
         
+        wallet_transactions = []
+        exchange_transactions = []
+        current_balance = 0
+        current_price = 0
+        
+        # Get wallet data if needed
+        if data_source in ["wallet_only", "combined"] and address:
+            analysis_data = multi_chain_service.analyze_wallet(
+                address=address,
+                chain=chain,
+                user_tier=user_tier
+            )
+            wallet_transactions = analysis_data.get('recentTransactions', [])
+            current_balance = analysis_data.get('currentBalance', 0)
+            current_price = analysis_data.get('current_price_usd', 0)
+        
+        # Get exchange transactions if needed
+        if data_source in ["exchange_only", "combined"]:
+            exchange_txs = await db.exchange_transactions.find(
+                {"user_id": user["id"]},
+                {"_id": 0}
+            ).to_list(10000)
+            exchange_transactions = exchange_txs
+        
+        # Calculate unified tax data
+        tax_data = unified_tax_service.calculate_unified_tax_data(
+            wallet_transactions=wallet_transactions,
+            exchange_transactions=exchange_transactions,
+            symbol=symbol,
+            current_price=current_price,
+            current_balance=current_balance
+        )
+        
+        # Filter by tax year
+        realized_gains = [
+            g for g in tax_data.get('realized_gains', [])
+            if g.get('sell_date', '').startswith(str(request.tax_year))
+        ]
+        
+        if not realized_gains:
+            raise HTTPException(
+                status_code=400,
+                detail=f"No realized gains found for tax year {request.tax_year}."
+            )
+        
         # Generate based on format
+        addr_prefix = address[:8] if address else "exchange"
         if request.format == 'csv':
             content = tax_report_service.generate_schedule_d_csv(
                 realized_gains=realized_gains,
                 tax_year=request.tax_year,
                 symbol=symbol,
-                address=address
+                address=address or "exchange"
             )
             media_type = "text/csv"
-            filename = f"schedule-d-{address[:8]}-{request.tax_year}.csv"
+            filename = f"schedule-d-{addr_prefix}-{request.tax_year}.csv"
         else:
             content = tax_report_service.generate_schedule_d_summary(
                 realized_gains=realized_gains,
                 tax_year=request.tax_year,
                 symbol=symbol,
-                address=address
+                address=address or "exchange"
             )
             media_type = "text/plain"
-            filename = f"schedule-d-{address[:8]}-{request.tax_year}.txt"
+            filename = f"schedule-d-{addr_prefix}-{request.tax_year}.txt"
         
         return Response(
             content=content,
