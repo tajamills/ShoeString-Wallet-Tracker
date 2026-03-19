@@ -73,22 +73,32 @@ const detectChainFromAddress = (address) => {
     return 'bitcoin'; // HD wallet extended public keys
   }
   
-  // Solana addresses (base58, 32-44 chars, no 0/O/I/l)
-  if (trimmed.length >= 32 && trimmed.length <= 44 && /^[1-9A-HJ-NP-Za-km-z]+$/.test(trimmed)) {
-    // Could be Solana - check if it's not starting with typical BTC patterns
-    if (!trimmed.startsWith('1') && !trimmed.startsWith('3') && !trimmed.startsWith('bc1')) {
-      return 'solana';
-    }
+  // XRP/Ripple addresses (start with 'r', base58, 25-35 chars)
+  if (trimmed.startsWith('r') && trimmed.length >= 25 && trimmed.length <= 35 && /^r[1-9A-HJ-NP-Za-km-z]+$/.test(trimmed)) {
+    return 'xrp';
   }
   
-  // Algorand addresses (58 chars, base32)
-  if (trimmed.length === 58 && /^[A-Z2-7]+$/.test(trimmed)) {
+  // XLM/Stellar addresses (start with 'G', 56 chars, uppercase)
+  if (trimmed.startsWith('G') && trimmed.length === 56 && /^G[A-Z2-7]+$/.test(trimmed)) {
+    return 'xlm';
+  }
+  
+  // Algorand addresses (58 chars, uppercase base32, starts with A-Z)
+  if (trimmed.length === 58 && /^[A-Z2-7]+$/.test(trimmed) && !trimmed.startsWith('G')) {
     return 'algorand';
   }
   
-  // Dogecoin addresses
+  // Dogecoin addresses (start with 'D', 34 chars)
   if (trimmed.startsWith('D') && trimmed.length >= 26 && trimmed.length <= 34) {
     return 'dogecoin';
+  }
+  
+  // Solana addresses (base58, 32-44 chars, mixed case, no 0/O/I/l)
+  if (trimmed.length >= 32 && trimmed.length <= 44 && /^[1-9A-HJ-NP-Za-km-z]+$/.test(trimmed)) {
+    // Additional check: Solana addresses are typically 43-44 chars and mixed case
+    if (!trimmed.startsWith('r') && !trimmed.startsWith('D')) {
+      return 'solana';
+    }
   }
   
   return null;
