@@ -3,7 +3,7 @@
 ## Base URL
 
 **Production:** `https://api.cryptobagtracker.io`  
-**Preview:** `https://crypto-tax-mvp.preview.emergentagent.com`
+**Preview:** `https://crypto-bag-tracker.preview.emergentagent.com`
 
 ## Authentication
 

@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL || 'https://crypto-tax-mvp.preview.emergentagent.com';
+const API_URL = process.env.REACT_APP_BACKEND_URL || 'https://crypto-bag-tracker.preview.emergentagent.com';
 
 /**
  * Helper function to accept Terms of Service modal if it appears

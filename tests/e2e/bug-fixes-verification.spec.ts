@@ -9,7 +9,7 @@ import { test, expect, Page } from '@playwright/test';
  * 4. Coinbase API integration shows addresses when connected
  */
 
-const BASE_URL = process.env.REACT_APP_BACKEND_URL || 'https://crypto-tax-mvp.preview.emergentagent.com';
+const BASE_URL = process.env.REACT_APP_BACKEND_URL || 'https://crypto-bag-tracker.preview.emergentagent.com';
 const TEST_EMAIL = 'mobiletest@test.com';
 const TEST_PASSWORD = 'test123456';
 const TEST_XRP_WALLET = 'rEb8TK3gBgk5auZkwc6sHnwrGVJH8DuaLh';

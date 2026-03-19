@@ -10,7 +10,7 @@ import { test, expect, Page } from '@playwright/test';
  * 4. Multi-chain wallet analysis (ETH, XRP, SOL)
  */
 
-const BASE_URL = process.env.REACT_APP_BACKEND_URL || 'https://crypto-tax-mvp.preview.emergentagent.com';
+const BASE_URL = process.env.REACT_APP_BACKEND_URL || 'https://crypto-bag-tracker.preview.emergentagent.com';
 const TEST_EMAIL = 'mobiletest@test.com';
 const TEST_PASSWORD = 'test123456';
 const TEST_ETH_WALLET = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'; // Vitalik's wallet
