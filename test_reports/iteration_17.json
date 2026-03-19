@@ -1,0 +1,79 @@
+{
+  "summary": "Tested server.py refactoring into route modules. 25 backend tests pass verifying all major API endpoints work. CRITICAL BUG FOUND: routes/tax.py is missing 3 endpoints (export-summary, save-categories, export-schedule-d) and export-form-8949 has incorrect function call (missing symbol, address, filter_type arguments).",
+  "mode": "update",
+  "baseline_commit": "d38edb532a0d951de9303fe7bf324e38cba026c0",
+  "head_commit": "a16c146c52b442f1ba6fab3accd04214f5d2eeeb",
+  "specs_created": [],
+  "specs_updated": [],
+  "quarantined_tests": [],
+  "test_report_links": [
+    "/app/backend/tests/test_refactored_routes.py",
+    "/app/test_reports/pytest/refactored_routes_results.xml"
+  ],
+  "regression_results": {
+    "total_specs": 25,
+    "passed": 25,
+    "failed": 0,
+    "skipped": 0
+  },
+  "issues": [
+    {
+      "id": "BUG-001",
+      "issue_type": "bug",
+      "severity": "CRITICAL",
+      "description": "Missing endpoints in routes/tax.py: /api/tax/export-summary, /api/tax/save-categories, /api/tax/export-schedule-d. These endpoints existed in the original server.py but were not included in the refactored routes/tax.py module.",
+      "endpoint_or_component": "/app/backend/routes/tax.py",
+      "surfaces": ["backend"],
+      "reproduction": "curl -X POST https://tax-report-crypto.preview.emergentagent.com/api/tax/export-summary -H 'Authorization: Bearer <token>' returns 404",
+      "affected_test": "test_tax_features.py::TestTaxSummaryExport - returns 404 instead of 200/403"
+    },
+    {
+      "id": "BUG-002",
+      "issue_type": "bug",
+      "severity": "CRITICAL",
+      "description": "Incorrect function call in export-form-8949 endpoint. generate_form_8949_csv() is called with only realized_gains argument, but it requires symbol, address, and filter_type arguments. Original code: tax_report_service.generate_form_8949_csv(realized_gains=..., symbol=..., address=..., filter_type=...). Current broken code: tax_report_service.generate_form_8949_csv(realized_gains)",
+      "endpoint_or_component": "/app/backend/routes/tax.py line 100",
+      "surfaces": ["backend"],
+      "reproduction": "curl -X POST https://tax-report-crypto.preview.emergentagent.com/api/tax/export-form-8949 -H 'Authorization: Bearer <token>' -d '{...}' returns 500 with 'missing 2 required positional arguments: symbol and address'",
+      "affected_test": "Documented in test_refactored_routes.py::TestTaxRoutes::test_export_form_8949_bug_documented"
+    },
+    {
+      "id": "IMP-001",
+      "issue_type": "improvement",
+      "severity": "LOW",
+      "description": "Inconsistent endpoint naming in routes/wallets.py: /wallet/analyze (singular) vs /wallets/saved (plural). Consider using consistent naming convention.",
+      "endpoint_or_component": "/app/backend/routes/wallets.py"
+    }
+  ],
+  "action_items": [
+    "Add missing endpoints to routes/tax.py: export-summary, save-categories, export-schedule-d (copy from git show d38edb532a0d951de9303fe7bf324e38cba026c0:backend/server.py)",
+    "Fix export-form-8949 endpoint to pass correct arguments: generate_form_8949_csv(realized_gains=realized_gains, symbol=symbol, address=address or 'exchange', filter_type=request.filter_type)"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_refactored_routes.py"
+  ],
+  "test_results": {
+    "backend": "100% (25/25 new tests pass)",
+    "frontend": "N/A - No frontend changes in this refactoring"
+  },
+  "seed_data_creation": "None",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Server.py was refactored into 10 route modules under /app/backend/routes/. Most endpoints work correctly after refactoring. CRITICAL: routes/tax.py is missing 3 endpoints and has a bug in export-form-8949. After fixing, run test_tax_features.py to verify the missing endpoints work. The test file test_refactored_routes.py verifies all working route modules.",
+  "endpoints_verified_working": {
+    "auth": ["/api/auth/login", "/api/auth/register", "/api/auth/me"],
+    "wallet": ["/api/wallet/analyze", "/api/wallet/analyze-all", "/api/wallets/saved"],
+    "tax": ["/api/tax/supported-years", "/api/tax/unified", "/api/tax/detect-transfers", "/api/tax/unified/assets", "/api/tax/categories/{address}", "/api/tax/batch-categorize", "/api/tax/auto-categorize"],
+    "exchange": ["/api/exchanges/supported", "/api/exchanges/import-csv", "/api/exchanges/transactions", "/api/exchanges/export-instructions/{exchange}"],
+    "affiliate": ["/api/affiliate/register", "/api/affiliate/me", "/api/affiliate/validate/{code}"],
+    "custody": ["/api/custody/analyze", "/api/custody/history"],
+    "support": ["/api/support/contact", "/api/support/chat"],
+    "payments": ["/api/payments/create-checkout-session"]
+  },
+  "endpoints_broken": [
+    "/api/tax/export-summary (404 - missing)",
+    "/api/tax/save-categories (404 - missing)",
+    "/api/tax/export-schedule-d (404 - missing)",
+    "/api/tax/export-form-8949 (500 - incorrect function call)"
+  ]
+}

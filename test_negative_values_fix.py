@@ -9,7 +9,7 @@ import time
 from datetime import datetime
 
 # Configuration
-BASE_URL = "https://crypto-bag-tracker.preview.emergentagent.com/api"
+BASE_URL = "https://tax-report-crypto.preview.emergentagent.com/api"
 TIMEOUT = 30
 
 def test_negative_values_fix():
