@@ -378,41 +378,116 @@ class CoinbaseClient:
         return []
     
     async def get_deposit_addresses(self) -> List[ExchangeAddress]:
-        """Get deposit addresses for all accounts"""
+        """Get deposit addresses for all accounts, including from transactions"""
         addresses = []
+        seen_addresses = set()
         
         try:
             accounts = await self.get_accounts()
+            logger.info(f"Coinbase: Found {len(accounts)} accounts")
             
             for account in accounts:
                 account_id = account.get('id')
                 currency = account.get('currency', {}).get('code', '')
+                account_name = account.get('name', '')
+                balance = account.get('balance', {}).get('amount', '0')
                 
-                if not account_id or not currency:
+                if not account_id:
                     continue
                 
+                logger.debug(f"Coinbase account: {account_name} ({currency}) - balance: {balance}")
+                
+                # Skip fiat accounts - they don't have blockchain addresses
+                if currency in ['USD', 'EUR', 'GBP', 'CAD', 'AUD']:
+                    continue
+                
+                # Try to get deposit addresses for this account
                 try:
                     data = await self._request(
                         "GET",
                         f"/v2/accounts/{account_id}/addresses",
-                        {"limit": 10}
+                        {"limit": 25}
                     )
                     
                     for addr in data.get('data', []):
-                        if addr.get('address'):
+                        address = addr.get('address')
+                        if address and address not in seen_addresses:
+                            seen_addresses.add(address)
+                            network = addr.get('network') or self._guess_network(currency)
                             addresses.append(ExchangeAddress(
-                                address=addr['address'],
+                                address=address,
                                 asset=currency,
                                 exchange='coinbase',
-                                network=addr.get('network')
+                                network=network
                             ))
-                except Exception:
-                    continue
+                            logger.info(f"Coinbase address found: {address[:16]}... ({currency})")
+                except httpx.HTTPStatusError as e:
+                    # 404 means no addresses created for this account - that's OK
+                    if e.response.status_code != 404:
+                        logger.warning(f"Coinbase addresses error for {currency}: {e}")
+                except Exception as e:
+                    logger.debug(f"No addresses for {currency}: {e}")
+                
+                # Also get addresses from transactions (sends/receives)
+                try:
+                    tx_data = await self._request(
+                        "GET",
+                        f"/v2/accounts/{account_id}/transactions",
+                        {"limit": 50}
+                    )
+                    
+                    for tx in tx_data.get('data', []):
+                        tx_type = tx.get('type', '')
+                        network_data = tx.get('network', {})
+                        
+                        # Get address from transaction
+                        if tx_type == 'send':
+                            to_addr = tx.get('to', {})
+                            address = to_addr.get('address') if isinstance(to_addr, dict) else None
+                        elif tx_type in ['receive', 'deposit']:
+                            from_addr = tx.get('from', {})
+                            address = from_addr.get('address') if isinstance(from_addr, dict) else None
+                            # Also check network.transaction_url for address
+                            if not address and network_data:
+                                # Try to extract from hash
+                                pass
+                        else:
+                            continue
+                        
+                        if address and address not in seen_addresses:
+                            seen_addresses.add(address)
+                            network = network_data.get('name') or self._guess_network(currency)
+                            addresses.append(ExchangeAddress(
+                                address=address,
+                                asset=currency,
+                                exchange='coinbase',
+                                network=network
+                            ))
+                except Exception as e:
+                    logger.debug(f"Transaction fetch failed for {currency}: {e}")
             
+            logger.info(f"Coinbase: Total {len(addresses)} addresses found")
             return addresses
+            
         except Exception as e:
             logger.error(f"Coinbase get_deposit_addresses error: {e}")
             return []
+    
+    def _guess_network(self, currency: str) -> str:
+        """Guess the network based on currency"""
+        network_map = {
+            'BTC': 'bitcoin',
+            'ETH': 'ethereum',
+            'SOL': 'solana',
+            'DOGE': 'dogecoin',
+            'LTC': 'litecoin',
+            'XRP': 'xrp',
+            'XLM': 'stellar',
+            'ALGO': 'algorand',
+            'MATIC': 'polygon',
+            'AVAX': 'avalanche',
+        }
+        return network_map.get(currency.upper(), 'ethereum')
 
 
 class GeminiClient:

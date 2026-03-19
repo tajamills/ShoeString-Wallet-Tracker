@@ -119,6 +119,7 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
   const [coinbaseApiKey, setCoinbaseApiKey] = useState('');
   const [coinbaseApiSecret, setCoinbaseApiSecret] = useState('');
   const [apiKeyConnected, setApiKeyConnected] = useState(false);
+  const [debugInfo, setDebugInfo] = useState(null);
   
   // Coinbase OAuth state (legacy)
   const [coinbaseConnected, setCoinbaseConnected] = useState(false);
@@ -676,24 +677,52 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
                       </Button>
                     </div>
 
+                    {/* Debug info section */}
+                    {debugInfo && (
+                      <div className="p-3 bg-slate-700/50 rounded-lg text-xs">
+                        <p className="text-gray-400 mb-1">Debug Info:</p>
+                        <pre className="text-gray-300 whitespace-pre-wrap">{JSON.stringify(debugInfo, null, 2)}</pre>
+                      </div>
+                    )}
+
                     {!coinbaseAddresses ? (
-                      <Button
-                        onClick={fetchAddressesFromApiKey}
-                        disabled={loading}
-                        className="w-full bg-purple-600 hover:bg-purple-700"
-                      >
-                        {loading ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Fetching Your Addresses...
-                          </>
-                        ) : (
-                          <>
-                            <RefreshCw className="w-4 h-4 mr-2" />
-                            Fetch My Wallet Addresses
-                          </>
-                        )}
-                      </Button>
+                      <div className="space-y-2">
+                        <Button
+                          onClick={async () => {
+                            setLoading(true);
+                            try {
+                              // First get debug info
+                              const debugRes = await axios.get(`${API}/exchanges/debug-coinbase`, {
+                                headers: getAuthHeader()
+                              });
+                              setDebugInfo(debugRes.data);
+                              // Then fetch addresses
+                              await fetchAddressesFromApiKey();
+                            } catch (err) {
+                              setDebugInfo({ error: err.response?.data?.detail || err.message });
+                              setError(err.response?.data?.detail || 'Failed to fetch addresses');
+                            }
+                            setLoading(false);
+                          }}
+                          disabled={loading}
+                          className="w-full bg-purple-600 hover:bg-purple-700"
+                        >
+                          {loading ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Fetching Your Addresses...
+                            </>
+                          ) : (
+                            <>
+                              <RefreshCw className="w-4 h-4 mr-2" />
+                              Fetch My Wallet Addresses
+                            </>
+                          )}
+                        </Button>
+                        <p className="text-xs text-gray-500 text-center">
+                          If no addresses appear, check that you have generated deposit addresses in Coinbase.
+                        </p>
+                      </div>
                     ) : (
                       <div className="space-y-3">
                         <p className="text-sm text-gray-400">Select an address to analyze:</p>

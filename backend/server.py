@@ -3802,15 +3802,83 @@ async def get_exchange_addresses_for_custody(
         )
         
         # Fetch addresses
+        logger.info(f"Fetching addresses from {exchange} for user {user['id']}")
         result = await service.get_addresses_for_custody(exchange.lower())
+        
+        # Log results
+        wallet_count = len(result.get('wallet_addresses', []))
+        logger.info(f"Found {wallet_count} wallet addresses from {exchange}")
+        
+        if wallet_count == 0:
+            logger.warning(f"No addresses found from {exchange} - user may need to generate deposit addresses in Coinbase first")
         
         return result
     
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error fetching {exchange} addresses: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch {exchange} data")
+        logger.error(f"Error fetching {exchange} addresses: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to fetch {exchange} data: {str(e)}")
+
+
+@api_router.get("/exchanges/debug-coinbase")
+async def debug_coinbase_connection(user: dict = Depends(get_current_user)):
+    """Debug endpoint to test Coinbase connection and see what's happening"""
+    try:
+        # Get the connection
+        connection = await db.exchange_connections.find_one({
+            "user_id": user["id"],
+            "exchange": "coinbase"
+        })
+        
+        if not connection:
+            return {"error": "No Coinbase connection found", "step": "connection_lookup"}
+        
+        # Decrypt credentials
+        api_key = connection['api_key']
+        api_secret = connection['api_secret']
+        
+        if connection.get('encrypted', False):
+            api_key = encryption_service.decrypt(api_key)
+            api_secret = encryption_service.decrypt(api_secret)
+        
+        # Test the connection
+        from multi_exchange_service import CoinbaseClient
+        client = CoinbaseClient(api_key, api_secret)
+        
+        # Try to get accounts
+        accounts = await client.get_accounts()
+        account_summary = []
+        for acc in accounts[:10]:
+            account_summary.append({
+                "id": acc.get('id', '')[:10] + "...",
+                "name": acc.get('name', ''),
+                "currency": acc.get('currency', {}).get('code', ''),
+                "balance": acc.get('balance', {}).get('amount', '0')
+            })
+        
+        # Try to get addresses
+        addresses = await client.get_deposit_addresses()
+        address_summary = []
+        for addr in addresses[:10]:
+            address_summary.append({
+                "address": addr.address[:20] + "..." if len(addr.address) > 20 else addr.address,
+                "asset": addr.asset,
+                "network": addr.network
+            })
+        
+        return {
+            "status": "connected",
+            "accounts_found": len(accounts),
+            "accounts_sample": account_summary,
+            "addresses_found": len(addresses),
+            "addresses_sample": address_summary
+        }
+        
+    except Exception as e:
+        logger.error(f"Debug coinbase error: {e}", exc_info=True)
+        return {"error": str(e), "step": "api_call"}
+
 
 # ============================================================================
 # Chain of Custody PDF Report Generation
