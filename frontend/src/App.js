@@ -335,6 +335,11 @@ function App() {
               <h2 className="text-white font-semibold text-lg">Beta Testing Program</h2>
               <span className="text-purple-300 text-xs">(March - April 2026)</span>
             </div>
+            <div className="bg-green-900/50 border border-green-500/50 rounded-md px-4 py-2 mb-2 inline-block">
+              <p className="text-green-300 text-sm font-medium">
+                🎉 Use code <span className="bg-green-700 text-white px-2 py-0.5 rounded font-bold mx-1">Beta2026</span> for FREE access during beta!
+              </p>
+            </div>
             <p className="text-purple-200 text-sm">
               Welcome to our 1-month beta! Your feedback helps us improve. Report bugs or suggestions using the Help button.
             </p>
