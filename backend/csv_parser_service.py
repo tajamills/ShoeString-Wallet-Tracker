@@ -50,7 +50,16 @@ EXCHANGE_SIGNATURES = {
     },
     ExchangeFormat.KRAKEN: {
         "required": ["txid", "refid", "time", "type", "asset", "amount"],
-        "optional": ["fee", "balance"]
+        "optional": ["fee", "balance"],
+        # Alternative Kraken formats (tax reports, ledgers, etc.)
+        "alt_signatures": [
+            # Kraken Ledger/Transaction Report (new format)
+            ["Date", "Type", "Transaction ID", "Received Quantity", "Received Currency"],
+            # Kraken Income Report
+            ["Asset Amount", "Asset Name", "Received Date", "Income", "Type"],
+            # Kraken Gains Report (capital gains)
+            ["Asset Amount", "Asset Name", "Received Date", "Date Sold", "Proceeds (USD)", "Cost Basis (USD)", "Gain (USD)"],
+        ]
     },
     ExchangeFormat.GEMINI: {
         "required": ["Date", "Time (UTC)", "Type", "Symbol", "Amount"],
@@ -690,9 +699,25 @@ class CSVParserService:
         return transactions
     
     def _parse_kraken(self, rows: List[Dict], headers: List[str], format_variant: str = "primary") -> List[ExchangeTransaction]:
-        """Parse Kraken CSV format"""
+        """Parse Kraken CSV format - supports multiple export types"""
         transactions = []
         
+        # Detect which Kraken format we're dealing with
+        headers_lower = [h.lower() for h in headers]
+        
+        # Format 1: Ledger/Transaction Report (new format with Date, Type, Transaction ID)
+        if "date" in headers_lower and "transaction id" in headers_lower and "received quantity" in headers_lower:
+            return self._parse_kraken_ledger(rows, headers)
+        
+        # Format 2: Income Report (Asset Amount, Asset Name, Received Date, Income, Type)
+        if "asset amount" in headers_lower and "asset name" in headers_lower and "income" in headers_lower:
+            return self._parse_kraken_income(rows, headers)
+        
+        # Format 3: Gains Report (Asset Amount, Asset Name, Received Date, Date Sold, Proceeds)
+        if "asset amount" in headers_lower and "date sold" in headers_lower and "proceeds (usd)" in headers_lower:
+            return self._parse_kraken_gains(rows, headers)
+        
+        # Original/Legacy Kraken format (txid, refid, time, type, asset, amount)
         for i, row in enumerate(rows):
             try:
                 tx_id = row.get("txid", f"kr_{i}")
@@ -736,6 +761,235 @@ class CSVParserService:
                 ))
             except Exception as e:
                 logger.warning(f"Error parsing Kraken row {i}: {e}")
+                continue
+        
+        return transactions
+    
+    def _parse_kraken_ledger(self, rows: List[Dict], headers: List[str]) -> List[ExchangeTransaction]:
+        """Parse Kraken Ledger/Transaction Report format"""
+        transactions = []
+        
+        for i, row in enumerate(rows):
+            try:
+                tx_id = row.get("Transaction ID", f"kr_led_{i}")
+                timestamp_str = row.get("Date", "")
+                tx_type = row.get("Type", "").lower()
+                
+                # Get received side
+                received_qty = self._parse_float(row.get("Received Quantity", "0"))
+                received_currency = row.get("Received Currency", "").upper()
+                received_cost = self._parse_float(row.get("Received Cost Basis (USD)", "0"))
+                
+                # Get sent side
+                sent_qty = self._parse_float(row.get("Sent Quantity", "0"))
+                sent_currency = row.get("Sent Currency", "").upper()
+                sent_cost = self._parse_float(row.get("Sent Cost Basis (USD)", "0"))
+                
+                # Get fee
+                fee_amount = self._parse_float(row.get("Fee Amount", "0"))
+                fee_currency = row.get("Fee Currency", "").upper()
+                
+                timestamp = self._parse_timestamp(timestamp_str)
+                
+                # Clean currency names
+                for old, new in [(".HOLD", ""), ("USD.HOLD", "USD")]:
+                    received_currency = received_currency.replace(old.upper(), new)
+                    sent_currency = sent_currency.replace(old.upper(), new)
+                    fee_currency = fee_currency.replace(old.upper(), new)
+                
+                # Map transaction types
+                type_map = {
+                    "trade": "trade",
+                    "deposit": "deposit",
+                    "withdrawal": "withdrawal",
+                    "transfer": "transfer",
+                    "income": "reward",
+                    "staking": "staking",
+                }
+                std_type = type_map.get(tx_type, tx_type)
+                
+                # For trades, create transaction for the received asset (the buy side)
+                if tx_type == "trade" and received_qty > 0 and received_currency and received_currency != "USD":
+                    transactions.append(ExchangeTransaction(
+                        exchange="kraken",
+                        tx_id=f"{tx_id}_buy",
+                        tx_type="buy",
+                        asset=received_currency,
+                        amount=received_qty,
+                        price_usd=sent_cost / received_qty if received_qty and sent_cost else None,
+                        total_usd=sent_cost if sent_cost else None,
+                        fee=fee_amount if fee_currency == "USD" else 0,
+                        fee_asset=fee_currency or "USD",
+                        timestamp=timestamp or datetime.now(timezone.utc),
+                        raw_data=row
+                    ))
+                
+                # For trades where we're selling crypto for USD
+                elif tx_type == "trade" and sent_qty > 0 and sent_currency and sent_currency != "USD" and received_currency == "USD":
+                    transactions.append(ExchangeTransaction(
+                        exchange="kraken",
+                        tx_id=f"{tx_id}_sell",
+                        tx_type="sell",
+                        asset=sent_currency,
+                        amount=sent_qty,
+                        price_usd=received_qty / sent_qty if sent_qty else None,
+                        total_usd=received_qty,
+                        fee=fee_amount if fee_currency == "USD" else 0,
+                        fee_asset=fee_currency or "USD",
+                        timestamp=timestamp or datetime.now(timezone.utc),
+                        raw_data=row
+                    ))
+                
+                # For income/rewards
+                elif tx_type == "income" and received_qty > 0 and received_currency:
+                    transactions.append(ExchangeTransaction(
+                        exchange="kraken",
+                        tx_id=tx_id,
+                        tx_type="reward",
+                        asset=received_currency,
+                        amount=received_qty,
+                        price_usd=None,
+                        total_usd=received_cost if received_cost else None,
+                        fee=fee_amount,
+                        fee_asset=fee_currency or received_currency,
+                        timestamp=timestamp or datetime.now(timezone.utc),
+                        raw_data=row
+                    ))
+                
+                # For deposits
+                elif tx_type == "deposit" and received_qty > 0 and received_currency:
+                    transactions.append(ExchangeTransaction(
+                        exchange="kraken",
+                        tx_id=tx_id,
+                        tx_type="deposit",
+                        asset=received_currency,
+                        amount=received_qty,
+                        price_usd=None,
+                        total_usd=received_cost if received_cost else None,
+                        fee=fee_amount,
+                        fee_asset=fee_currency or "USD",
+                        timestamp=timestamp or datetime.now(timezone.utc),
+                        raw_data=row
+                    ))
+                
+                # For withdrawals
+                elif tx_type == "withdrawal" and sent_qty > 0 and sent_currency:
+                    transactions.append(ExchangeTransaction(
+                        exchange="kraken",
+                        tx_id=tx_id,
+                        tx_type="withdrawal",
+                        asset=sent_currency,
+                        amount=sent_qty,
+                        price_usd=None,
+                        total_usd=sent_cost if sent_cost else None,
+                        fee=fee_amount,
+                        fee_asset=fee_currency or sent_currency,
+                        timestamp=timestamp or datetime.now(timezone.utc),
+                        raw_data=row
+                    ))
+                
+                # For transfers (internal moves between wallets)
+                elif tx_type == "transfer" and received_qty > 0 and received_currency:
+                    transactions.append(ExchangeTransaction(
+                        exchange="kraken",
+                        tx_id=tx_id,
+                        tx_type="transfer",
+                        asset=received_currency,
+                        amount=received_qty,
+                        price_usd=None,
+                        total_usd=received_cost if received_cost else None,
+                        fee=0,
+                        fee_asset=received_currency,
+                        timestamp=timestamp or datetime.now(timezone.utc),
+                        raw_data=row
+                    ))
+                
+            except Exception as e:
+                logger.warning(f"Error parsing Kraken ledger row {i}: {e}")
+                continue
+        
+        return transactions
+    
+    def _parse_kraken_income(self, rows: List[Dict], headers: List[str]) -> List[ExchangeTransaction]:
+        """Parse Kraken Income Report format"""
+        transactions = []
+        
+        for i, row in enumerate(rows):
+            try:
+                amount = self._parse_float(row.get("Asset Amount", "0"))
+                asset = row.get("Asset Name", "").upper()
+                date_str = row.get("Received Date", "")
+                income_usd = self._parse_float(row.get("Income", "0"))
+                tx_type = row.get("Type", "income").lower()
+                
+                timestamp = self._parse_timestamp(date_str)
+                
+                if not asset or amount == 0:
+                    continue
+                
+                transactions.append(ExchangeTransaction(
+                    exchange="kraken",
+                    tx_id=f"kr_inc_{i}_{asset}",
+                    tx_type="reward",
+                    asset=asset,
+                    amount=amount,
+                    price_usd=income_usd / amount if amount and income_usd else None,
+                    total_usd=income_usd if income_usd else None,
+                    fee=0,
+                    fee_asset="USD",
+                    timestamp=timestamp or datetime.now(timezone.utc),
+                    raw_data=row
+                ))
+            except Exception as e:
+                logger.warning(f"Error parsing Kraken income row {i}: {e}")
+                continue
+        
+        return transactions
+    
+    def _parse_kraken_gains(self, rows: List[Dict], headers: List[str]) -> List[ExchangeTransaction]:
+        """Parse Kraken Gains Report format (capital gains export)"""
+        transactions = []
+        
+        for i, row in enumerate(rows):
+            try:
+                amount = self._parse_float(row.get("Asset Amount", "0"))
+                asset = row.get("Asset Name", "").upper()
+                acquired_date = row.get("Received Date", "")
+                sold_date = row.get("Date Sold", "")
+                proceeds = self._parse_float(row.get("Proceeds (USD)", "0"))
+                cost_basis = self._parse_float(row.get("Cost Basis (USD)", "0"))
+                gain = self._parse_float(row.get("Gain (USD)", "0"))
+                holding_type = row.get("Type", "")  # "Long Term" or "Short Term"
+                
+                # Parse the sell date as the transaction timestamp
+                timestamp = self._parse_timestamp(sold_date)
+                acquired_timestamp = self._parse_timestamp(acquired_date)
+                
+                if not asset or amount == 0:
+                    continue
+                
+                # This is a sell transaction with known cost basis
+                transactions.append(ExchangeTransaction(
+                    exchange="kraken",
+                    tx_id=f"kr_gain_{i}_{asset}",
+                    tx_type="sell",
+                    asset=asset,
+                    amount=amount,
+                    price_usd=proceeds / amount if amount else None,
+                    total_usd=proceeds,
+                    fee=0,
+                    fee_asset="USD",
+                    timestamp=timestamp or datetime.now(timezone.utc),
+                    raw_data={
+                        **row,
+                        "cost_basis": cost_basis,
+                        "gain_loss": gain,
+                        "holding_period": holding_type,
+                        "acquired_date": acquired_date
+                    }
+                ))
+            except Exception as e:
+                logger.warning(f"Error parsing Kraken gains row {i}: {e}")
                 continue
         
         return transactions
