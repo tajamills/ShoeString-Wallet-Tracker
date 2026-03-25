@@ -72,6 +72,23 @@ async def root():
     return {"message": "Crypto Bag Tracker API v2.0", "status": "healthy"}
 
 
+@api_router.get("/download/converted-csv")
+async def download_converted_csv():
+    """Public endpoint to download the converted Ledger CSV in CoinTracker format"""
+    from fastapi.responses import FileResponse
+    import os
+    
+    file_path = ROOT_DIR / "static" / "downloads" / "cointracker_output.csv"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="No converted file available")
+    
+    return FileResponse(
+        path=str(file_path),
+        filename="ledger_to_cointracker.csv",
+        media_type="text/csv"
+    )
+
+
 @api_router.post("/status", response_model=StatusCheck)
 async def create_status_check(input: StatusCheckCreate):
     status_dict = input.model_dump()
