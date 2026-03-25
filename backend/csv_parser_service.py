@@ -1187,12 +1187,15 @@ class CSVParserService:
                 timestamp = self._parse_timestamp(timestamp_str)
                 
                 # Determine transaction type
-                # IN = received crypto (buy/receive)
-                # OUT = sent crypto (sell/send)
+                # IN = received crypto - likely a transfer from exchange, NOT a new buy
+                # OUT = sent crypto - transfer out, NOT a sell
+                # Ledger wallet transactions are typically transfers, not actual purchases
                 if op_type == "IN":
-                    tx_type = "buy"  # Treat as acquisition (could be purchase, transfer in, etc.)
+                    # Mark as receive/transfer, NOT a buy
+                    # The original cost basis comes from where the crypto was purchased
+                    tx_type = "receive"  # NOT "buy" - this avoids double-counting cost basis
                 elif op_type == "OUT":
-                    tx_type = "send"  # Treat as transfer/send, NOT as sell (preserves cost basis)
+                    tx_type = "send"  # Transfer out, NOT a sell (preserves cost basis)
                 else:
                     tx_type = op_type.lower()
                 
