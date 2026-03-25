@@ -78,49 +78,38 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal }) => {
           byExchange[exchange] = { count: 0, gainLoss: 0, portfolioValue: 0, assets: {} };
         }
         byExchange[exchange].count++;
-        
-        // Calculate holdings based on transaction types (IN/OUT)
-        const asset = tx.asset;
-        const amount = parseFloat(tx.amount) || 0;
-        const txType = (tx.tx_type || '').toLowerCase();
-        
-        if (!byExchange[exchange].assets[asset]) {
-          byExchange[exchange].assets[asset] = { amount: 0, value: 0 };
-        }
-        
-        // Track net holdings: IN adds, OUT subtracts
-        if (txType === 'buy' || txType === 'receive' || txType === 'deposit' || txType === 'reward' || txType === 'staking') {
-          byExchange[exchange].assets[asset].amount += amount;
-        } else if (txType === 'sell' || txType === 'send' || txType === 'withdrawal') {
-          byExchange[exchange].assets[asset].amount -= amount;
-        }
       });
 
-      // Fetch current prices to calculate portfolio values
+      // Fetch portfolio data from backend (calculates net holdings correctly)
       try {
-        const pricesResponse = await axios.get(`${API}/prices/current`, {
+        const portfolioResponse = await axios.get(`${API}/portfolio/by-exchange`, {
           headers: getAuthHeader()
         });
-        const prices = pricesResponse.data.prices || {};
+        const portfolioData = portfolioResponse.data;
         
-        // Calculate portfolio value based on net holdings
-        Object.keys(byExchange).forEach(exchange => {
-          let totalValue = 0;
-          const assets = byExchange[exchange].assets;
-          
-          Object.entries(assets).forEach(([asset, data]) => {
-            const netAmount = Math.max(0, data.amount); // Only positive holdings
-            const price = prices[asset.toUpperCase()] || prices[asset.toLowerCase()] || 0;
-            const value = netAmount * price;
-            data.value = value;
-            data.amount = netAmount;
-            totalValue += value;
-          });
-          
-          byExchange[exchange].portfolioValue = totalValue;
+        // Merge portfolio values into exchange summary
+        (portfolioData.exchanges || []).forEach(exData => {
+          const exchange = exData.exchange.toLowerCase();
+          if (byExchange[exchange]) {
+            byExchange[exchange].portfolioValue = exData.portfolio_value || 0;
+            byExchange[exchange].assets = {};
+            (exData.assets || []).forEach(a => {
+              byExchange[exchange].assets[a.asset] = { amount: a.amount, value: a.value };
+            });
+          } else {
+            byExchange[exchange] = {
+              count: 0,
+              gainLoss: 0,
+              portfolioValue: exData.portfolio_value || 0,
+              assets: {}
+            };
+            (exData.assets || []).forEach(a => {
+              byExchange[exchange].assets[a.asset] = { amount: a.amount, value: a.value };
+            });
+          }
         });
-      } catch (priceError) {
-        console.log('Could not fetch current prices for portfolio calculation');
+      } catch (portfolioError) {
+        console.log('Could not fetch portfolio data:', portfolioError);
       }
 
       // Also include remaining lots if available (fallback)

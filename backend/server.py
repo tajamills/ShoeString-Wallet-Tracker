@@ -16,6 +16,9 @@ import uuid
 import sentry_sdk
 from pathlib import Path
 
+# Import auth dependency
+from routes.dependencies import get_current_user
+
 # Load environment variables
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -95,14 +98,11 @@ async def get_current_prices():
     import aiohttp
     
     try:
-        # Common crypto symbols to fetch
-        symbols = ['BTC', 'ETH', 'XRP', 'SOL', 'USDT', 'USDC', 'BNB', 'XLM', 'MATIC', 'ALGO', 'DOGE', 'DOT', 'ADA', 'AVAX', 'LINK']
-        
         prices = {}
         
-        # Try CoinGecko first
+        # Try CoinGecko first - expanded list
         async with aiohttp.ClientSession() as session:
-            ids = 'bitcoin,ethereum,ripple,solana,tether,usd-coin,binancecoin,stellar,matic-network,algorand,dogecoin,polkadot,cardano,avalanche-2,chainlink'
+            ids = 'bitcoin,ethereum,ripple,solana,tether,usd-coin,binancecoin,stellar,matic-network,algorand,dogecoin,polkadot,cardano,avalanche-2,chainlink,litecoin,bitcoin-cash,zcash,quant-network,canton,turbo'
             url = f'https://api.coingecko.com/api/v3/simple/price?ids={ids}&vs_currencies=usd'
             
             async with session.get(url, timeout=10) as resp:
@@ -115,7 +115,9 @@ async def get_current_prices():
                         'solana': 'SOL', 'tether': 'USDT', 'usd-coin': 'USDC',
                         'binancecoin': 'BNB', 'stellar': 'XLM', 'matic-network': 'MATIC',
                         'algorand': 'ALGO', 'dogecoin': 'DOGE', 'polkadot': 'DOT',
-                        'cardano': 'ADA', 'avalanche-2': 'AVAX', 'chainlink': 'LINK'
+                        'cardano': 'ADA', 'avalanche-2': 'AVAX', 'chainlink': 'LINK',
+                        'litecoin': 'LTC', 'bitcoin-cash': 'BCH', 'zcash': 'ZEC',
+                        'quant-network': 'QNT', 'canton': 'CANTON', 'turbo': 'TURBO'
                     }
                     
                     for cg_id, symbol in id_to_symbol.items():
@@ -142,6 +144,126 @@ async def get_current_prices():
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "fallback": True
         }
+
+
+@api_router.get("/portfolio/by-exchange")
+async def get_portfolio_by_exchange(
+    user: dict = Depends(get_current_user)
+):
+    """Calculate portfolio value by exchange based on net holdings"""
+    import aiohttp
+    from pymongo import MongoClient
+    
+    try:
+        user_id = user["id"]
+        
+        # Use sync MongoDB client for this query
+        mongo_url = os.environ.get('MONGO_URL')
+        sync_client = MongoClient(mongo_url)
+        sync_db = sync_client[os.environ['DB_NAME']]
+        
+        # Get all transactions
+        transactions = list(sync_db.exchange_transactions.find(
+            {"user_id": user_id},
+            {"_id": 0}
+        ))
+        
+        sync_client.close()
+        
+        if not transactions:
+            return {"exchanges": [], "total_portfolio_value": 0}
+        
+        # Calculate net holdings per exchange per asset
+        holdings = {}  # {exchange: {asset: amount}}
+        
+        for tx in transactions:
+            exchange = (tx.get('exchange') or 'unknown').lower()
+            asset = (tx.get('asset') or '').upper()
+            amount = float(tx.get('amount') or 0)
+            tx_type = (tx.get('tx_type') or '').lower()
+            
+            if not asset:
+                continue
+                
+            if exchange not in holdings:
+                holdings[exchange] = {}
+            if asset not in holdings[exchange]:
+                holdings[exchange][asset] = 0
+            
+            # IN transactions add to holdings
+            if tx_type in ['buy', 'receive', 'deposit', 'reward', 'staking', 'airdrop', 'interest']:
+                holdings[exchange][asset] += amount
+            # OUT transactions subtract from holdings
+            elif tx_type in ['sell', 'send', 'withdrawal']:
+                holdings[exchange][asset] -= amount
+        
+        # Fetch current prices
+        prices = {}
+        try:
+            async with aiohttp.ClientSession() as session:
+                ids = 'bitcoin,ethereum,ripple,solana,tether,usd-coin,binancecoin,stellar,matic-network,algorand,dogecoin,polkadot,cardano,avalanche-2,chainlink,litecoin,bitcoin-cash,zcash,quant-network'
+                url = f'https://api.coingecko.com/api/v3/simple/price?ids={ids}&vs_currencies=usd'
+                
+                async with session.get(url, timeout=10) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        id_to_symbol = {
+                            'bitcoin': 'BTC', 'ethereum': 'ETH', 'ripple': 'XRP',
+                            'solana': 'SOL', 'tether': 'USDT', 'usd-coin': 'USDC',
+                            'binancecoin': 'BNB', 'stellar': 'XLM', 'matic-network': 'MATIC',
+                            'algorand': 'ALGO', 'dogecoin': 'DOGE', 'polkadot': 'DOT',
+                            'cardano': 'ADA', 'avalanche-2': 'AVAX', 'chainlink': 'LINK',
+                            'litecoin': 'LTC', 'bitcoin-cash': 'BCH', 'zcash': 'ZEC',
+                            'quant-network': 'QNT'
+                        }
+                        for cg_id, symbol in id_to_symbol.items():
+                            if cg_id in data and 'usd' in data[cg_id]:
+                                prices[symbol] = data[cg_id]['usd']
+        except:
+            pass
+        
+        # Stablecoins
+        prices['USDT'] = 1.0
+        prices['USDC'] = 1.0
+        prices['DAI'] = 1.0
+        
+        # Calculate portfolio values
+        exchanges_data = []
+        total_value = 0
+        
+        for exchange, assets in holdings.items():
+            exchange_value = 0
+            asset_breakdown = []
+            
+            for asset, amount in assets.items():
+                net_amount = max(0, amount)  # Only positive holdings
+                if net_amount > 0.00001:  # Filter dust
+                    price = prices.get(asset, 0)
+                    value = net_amount * price
+                    exchange_value += value
+                    asset_breakdown.append({
+                        "asset": asset,
+                        "amount": net_amount,
+                        "price": price,
+                        "value": value
+                    })
+            
+            total_value += exchange_value
+            exchanges_data.append({
+                "exchange": exchange,
+                "portfolio_value": exchange_value,
+                "assets": sorted(asset_breakdown, key=lambda x: x['value'], reverse=True)
+            })
+        
+        return {
+            "exchanges": sorted(exchanges_data, key=lambda x: x['portfolio_value'], reverse=True),
+            "total_portfolio_value": total_value,
+            "prices": prices
+        }
+        
+    except Exception as e:
+        logger.error(f"Error calculating portfolio: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @api_router.post("/status", response_model=StatusCheck)
