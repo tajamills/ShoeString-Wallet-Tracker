@@ -14,6 +14,7 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal }) => {
   const [taxData, setTaxData] = useState(null);
   const [connections, setConnections] = useState([]);
   const [exchangeSummary, setExchangeSummary] = useState([]);
+  const [portfolioByExchange, setPortfolioByExchange] = useState({});
 
   useEffect(() => {
     fetchTaxSummary();
@@ -50,9 +51,49 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal }) => {
       transactions.forEach(tx => {
         const exchange = (tx.exchange || 'unknown').toLowerCase();
         if (!byExchange[exchange]) {
-          byExchange[exchange] = { count: 0, gainLoss: 0 };
+          byExchange[exchange] = { count: 0, gainLoss: 0, portfolioValue: 0, assets: {} };
         }
         byExchange[exchange].count++;
+      });
+
+      // Calculate portfolio value from remaining lots (unrealized)
+      const remainingLots = data?.tax_data?.unrealized?.lots || [];
+      const portfolioData = {};
+      
+      remainingLots.forEach(lot => {
+        const exchange = (lot.exchange || 'unknown').toLowerCase();
+        const asset = lot.asset;
+        const currentValue = lot.current_value || 0;
+        const amount = lot.amount || 0;
+        
+        if (!portfolioData[exchange]) {
+          portfolioData[exchange] = { totalValue: 0, assets: {} };
+        }
+        
+        portfolioData[exchange].totalValue += currentValue;
+        
+        if (!portfolioData[exchange].assets[asset]) {
+          portfolioData[exchange].assets[asset] = { amount: 0, value: 0 };
+        }
+        portfolioData[exchange].assets[asset].amount += amount;
+        portfolioData[exchange].assets[asset].value += currentValue;
+      });
+      
+      setPortfolioByExchange(portfolioData);
+      
+      // Add portfolio value to exchange summary
+      Object.keys(portfolioData).forEach(exchange => {
+        if (byExchange[exchange]) {
+          byExchange[exchange].portfolioValue = portfolioData[exchange].totalValue;
+          byExchange[exchange].assets = portfolioData[exchange].assets;
+        } else {
+          byExchange[exchange] = { 
+            count: 0, 
+            gainLoss: 0, 
+            portfolioValue: portfolioData[exchange].totalValue,
+            assets: portfolioData[exchange].assets
+          };
+        }
       });
 
       // Add gain/loss from realized gains
@@ -119,9 +160,11 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal }) => {
         .map(([name, data]) => ({
           name,
           transactions: data.count,
-          gainLoss: data.gainLoss
+          gainLoss: data.gainLoss,
+          portfolioValue: data.portfolioValue || 0,
+          assets: data.assets || {}
         }))
-        .sort((a, b) => b.transactions - a.transactions)
+        .sort((a, b) => b.portfolioValue - a.portfolioValue || b.transactions - a.transactions)
       );
 
     } catch (err) {
@@ -229,14 +272,15 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal }) => {
             <thead>
               <tr className="border-b border-gray-200">
                 <th className="text-left py-4 px-6 text-sm font-medium text-gray-500">Account</th>
-                <th className="text-center py-4 px-6 text-sm font-medium text-gray-500">2025 transactions</th>
-                <th className="text-right py-4 px-6 text-sm font-medium text-gray-500">Preliminary gain/loss</th>
+                <th className="text-center py-4 px-6 text-sm font-medium text-gray-500">Transactions</th>
+                <th className="text-right py-4 px-6 text-sm font-medium text-gray-500">Portfolio Value</th>
+                <th className="text-right py-4 px-6 text-sm font-medium text-gray-500">Gain/Loss</th>
               </tr>
             </thead>
             <tbody>
               {exchangeSummary.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="py-8 text-center text-gray-500">
+                  <td colSpan={4} className="py-8 text-center text-gray-500">
                     No accounts connected yet.{' '}
                     <button 
                       onClick={onOpenExchangeModal}
@@ -249,7 +293,7 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal }) => {
               ) : (
                 <>
                   {exchangeSummary.map((exchange, idx) => (
-                    <tr key={idx} className="border-b border-gray-100">
+                    <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
@@ -257,10 +301,20 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal }) => {
                               {exchange.name.charAt(0).toUpperCase()}
                             </span>
                           </div>
-                          <span className="font-medium text-gray-900 capitalize">{exchange.name}</span>
+                          <div>
+                            <span className="font-medium text-gray-900 capitalize">{exchange.name}</span>
+                            {Object.keys(exchange.assets || {}).length > 0 && (
+                              <p className="text-xs text-gray-500">
+                                {Object.keys(exchange.assets).length} asset{Object.keys(exchange.assets).length !== 1 ? 's' : ''}
+                              </p>
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td className="py-4 px-6 text-center text-gray-700">{exchange.transactions}</td>
+                      <td className="py-4 px-6 text-right font-medium text-gray-900">
+                        {formatCurrency(exchange.portfolioValue)}
+                      </td>
                       <td className={`py-4 px-6 text-right font-medium ${exchange.gainLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {formatCurrency(exchange.gainLoss)}
                       </td>
@@ -269,6 +323,9 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal }) => {
                   <tr className="bg-gray-50">
                     <td className="py-4 px-6 font-semibold text-gray-900">Total</td>
                     <td className="py-4 px-6 text-center font-semibold text-gray-900">{totalTransactions}</td>
+                    <td className="py-4 px-6 text-right font-semibold text-gray-900">
+                      {formatCurrency(exchangeSummary.reduce((sum, ex) => sum + (ex.portfolioValue || 0), 0))}
+                    </td>
                     <td className={`py-4 px-6 text-right font-semibold ${totalGainLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {formatCurrency(totalGainLoss)}
                     </td>
