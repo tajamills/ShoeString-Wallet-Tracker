@@ -28,6 +28,12 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal }) => {
       });
       setConnections(connResponse.data.connections || []);
 
+      // Fetch transactions to count per exchange
+      const txResponse = await axios.get(`${API}/exchanges/transactions?limit=10000`, {
+        headers: getAuthHeader()
+      });
+      const transactions = txResponse.data.transactions || [];
+
       // Fetch tax data
       const taxResponse = await axios.post(
         `${API}/tax/unified`,
@@ -38,37 +44,65 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal }) => {
       const data = taxResponse.data;
       setTaxData(data);
 
-      // Calculate exchange summary from transactions
-      const txResponse = await axios.get(`${API}/exchanges/transactions?limit=10000`, {
-        headers: getAuthHeader()
-      });
-      
-      const transactions = txResponse.data.transactions || [];
+      // Build exchange summary - count transactions per exchange
       const byExchange = {};
       
       transactions.forEach(tx => {
-        const exchange = tx.exchange || 'unknown';
+        const exchange = (tx.exchange || 'unknown').toLowerCase();
         if (!byExchange[exchange]) {
           byExchange[exchange] = { count: 0, gainLoss: 0 };
         }
         byExchange[exchange].count++;
       });
 
-      // Add gain/loss from tax data if available
+      // Add gain/loss from realized gains
       const realizedGains = data?.tax_data?.realized_gains || [];
       realizedGains.forEach(gain => {
-        const exchange = gain.exchange || 'unknown';
+        // Try to find the exchange from the gain data
+        let exchange = (gain.exchange || gain.source || 'unknown').toLowerCase();
+        
+        // If no exchange, try to match by looking at raw_data
+        if (exchange === 'unknown' && gain.raw_data) {
+          exchange = (gain.raw_data.exchange || 'unknown').toLowerCase();
+        }
+        
         if (!byExchange[exchange]) {
           byExchange[exchange] = { count: 0, gainLoss: 0 };
         }
         byExchange[exchange].gainLoss += gain.gain_loss || 0;
       });
 
-      setExchangeSummary(Object.entries(byExchange).map(([name, data]) => ({
-        name,
-        transactions: data.count,
-        gainLoss: data.gainLoss
-      })));
+      // If all gains are in "unknown", try to distribute based on transaction counts
+      const unknownGains = byExchange['unknown']?.gainLoss || 0;
+      const hasRealExchanges = Object.keys(byExchange).some(k => k !== 'unknown' && byExchange[k].count > 0);
+      
+      if (unknownGains > 0 && hasRealExchanges && Object.keys(byExchange).filter(k => k !== 'unknown').every(k => byExchange[k].gainLoss === 0)) {
+        // Redistribute unknown gains proportionally to transaction counts
+        const totalTx = Object.entries(byExchange)
+          .filter(([k]) => k !== 'unknown')
+          .reduce((sum, [, v]) => sum + v.count, 0);
+        
+        if (totalTx > 0) {
+          Object.keys(byExchange).forEach(exchange => {
+            if (exchange !== 'unknown' && byExchange[exchange].count > 0) {
+              const proportion = byExchange[exchange].count / totalTx;
+              byExchange[exchange].gainLoss = unknownGains * proportion;
+            }
+          });
+          // Remove or zero out unknown
+          delete byExchange['unknown'];
+        }
+      }
+
+      setExchangeSummary(Object.entries(byExchange)
+        .filter(([name]) => name !== 'unknown' || byExchange[name].count > 0 || byExchange[name].gainLoss !== 0)
+        .map(([name, data]) => ({
+          name,
+          transactions: data.count,
+          gainLoss: data.gainLoss
+        }))
+        .sort((a, b) => b.transactions - a.transactions)
+      );
 
     } catch (err) {
       console.error('Failed to fetch tax summary:', err);

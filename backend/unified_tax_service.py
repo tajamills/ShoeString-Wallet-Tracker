@@ -566,11 +566,17 @@ class UnifiedTaxService:
                 # Determine holding period
                 holding_period = self._get_holding_period(lot['timestamp'], sell_timestamp)
                 
+                # Extract exchange name from source
+                sell_exchange = sell['source'].replace('exchange:', '') if sell['source'].startswith('exchange:') else sell['source']
+                buy_exchange = lot['source'].replace('exchange:', '') if lot['source'].startswith('exchange:') else lot['source']
+                
                 realized.append({
                     'sell_id': sell['tx_id'],
                     'buy_id': lot['tx_id'],
                     'sell_source': sell['source'],
                     'buy_source': lot['source'],
+                    'exchange': sell_exchange,  # Add exchange field for easier attribution
+                    'buy_exchange': buy_exchange,
                     'asset': sell['asset'],
                     'amount': matched,
                     'buy_price': lot['price_usd'],
