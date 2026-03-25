@@ -73,6 +73,12 @@ class ExchangeTaxService:
         
         logger.info(f"Processing {len(normalized)} crypto transactions (excluded {excluded_stablecoin_count} stablecoin transactions)")
         
+        # Match transfers before processing
+        from transfer_matcher_service import transfer_matcher_service
+        match_result = transfer_matcher_service.match_transfers(normalized)
+        normalized = match_result['transactions']
+        logger.info(f"Transfer matching: {match_result['matched_count']} pairs matched")
+        
         # Sort by timestamp (oldest first for FIFO)
         normalized.sort(key=lambda x: x['timestamp'])
         

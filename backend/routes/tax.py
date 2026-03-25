@@ -779,3 +779,64 @@ async def export_schedule_d(
     except Exception as e:
         logger.error(f"Error exporting Schedule D: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to export Schedule D: {str(e)}")
+
+
+
+@router.get("/detected-transfers")
+async def get_detected_transfers(
+    user: dict = Depends(get_current_user)
+):
+    """
+    Get list of detected transfer pairs between user's wallets/exchanges.
+    
+    This helps users verify that transfers are being correctly identified
+    and not being double-counted in cost basis calculations.
+    """
+    try:
+        user_id = user["id"]
+        
+        # Get all exchange transactions for this user
+        transactions = list(db.exchange_transactions.find(
+            {"user_id": user_id},
+            {"_id": 0}
+        ))
+        
+        if not transactions:
+            return {
+                "matched_pairs": [],
+                "matched_count": 0,
+                "unmatched_sends": 0,
+                "unmatched_receives": 0,
+                "message": "No transactions found"
+            }
+        
+        # Run transfer matching
+        from transfer_matcher_service import transfer_matcher_service
+        result = transfer_matcher_service.match_transfers(transactions)
+        
+        # Format for response
+        formatted_pairs = []
+        for pair in result.get('matched_pairs', []):
+            send = pair.get('send', {})
+            receive = pair.get('receive', {})
+            formatted_pairs.append({
+                "asset": pair.get('asset'),
+                "amount": pair.get('amount'),
+                "send_source": pair.get('send_source'),
+                "receive_source": pair.get('receive_source'),
+                "send_time": send.get('timestamp'),
+                "receive_time": receive.get('timestamp'),
+                "confidence": round(pair.get('confidence', 0) * 100, 1)
+            })
+        
+        return {
+            "matched_pairs": formatted_pairs,
+            "matched_count": result.get('matched_count', 0),
+            "unmatched_sends": result.get('unmatched_sends', 0),
+            "unmatched_receives": result.get('unmatched_receives', 0),
+            "message": f"Found {result.get('matched_count', 0)} transfer pairs that will not create duplicate cost basis"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error detecting transfers: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to detect transfers: {str(e)}")
