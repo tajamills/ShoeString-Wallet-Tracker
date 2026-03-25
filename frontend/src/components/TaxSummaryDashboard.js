@@ -54,45 +54,60 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal }) => {
           byExchange[exchange] = { count: 0, gainLoss: 0, portfolioValue: 0, assets: {} };
         }
         byExchange[exchange].count++;
+        
+        // Calculate holdings based on transaction types (IN/OUT)
+        const asset = tx.asset;
+        const amount = parseFloat(tx.amount) || 0;
+        const txType = (tx.tx_type || '').toLowerCase();
+        
+        if (!byExchange[exchange].assets[asset]) {
+          byExchange[exchange].assets[asset] = { amount: 0, value: 0 };
+        }
+        
+        // Track net holdings: IN adds, OUT subtracts
+        if (txType === 'buy' || txType === 'receive' || txType === 'deposit' || txType === 'reward' || txType === 'staking') {
+          byExchange[exchange].assets[asset].amount += amount;
+        } else if (txType === 'sell' || txType === 'send' || txType === 'withdrawal') {
+          byExchange[exchange].assets[asset].amount -= amount;
+        }
       });
 
-      // Calculate portfolio value from remaining lots (unrealized)
+      // Fetch current prices to calculate portfolio values
+      try {
+        const pricesResponse = await axios.get(`${API}/prices/current`, {
+          headers: getAuthHeader()
+        });
+        const prices = pricesResponse.data.prices || {};
+        
+        // Calculate portfolio value based on net holdings
+        Object.keys(byExchange).forEach(exchange => {
+          let totalValue = 0;
+          const assets = byExchange[exchange].assets;
+          
+          Object.entries(assets).forEach(([asset, data]) => {
+            const netAmount = Math.max(0, data.amount); // Only positive holdings
+            const price = prices[asset.toUpperCase()] || prices[asset.toLowerCase()] || 0;
+            const value = netAmount * price;
+            data.value = value;
+            data.amount = netAmount;
+            totalValue += value;
+          });
+          
+          byExchange[exchange].portfolioValue = totalValue;
+        });
+      } catch (priceError) {
+        console.log('Could not fetch current prices for portfolio calculation');
+      }
+
+      // Also include remaining lots if available (fallback)
       const remainingLots = data?.tax_data?.unrealized?.lots || [];
-      const portfolioData = {};
-      
       remainingLots.forEach(lot => {
         const exchange = (lot.exchange || 'unknown').toLowerCase();
-        const asset = lot.asset;
         const currentValue = lot.current_value || 0;
-        const amount = lot.amount || 0;
         
-        if (!portfolioData[exchange]) {
-          portfolioData[exchange] = { totalValue: 0, assets: {} };
-        }
-        
-        portfolioData[exchange].totalValue += currentValue;
-        
-        if (!portfolioData[exchange].assets[asset]) {
-          portfolioData[exchange].assets[asset] = { amount: 0, value: 0 };
-        }
-        portfolioData[exchange].assets[asset].amount += amount;
-        portfolioData[exchange].assets[asset].value += currentValue;
-      });
-      
-      setPortfolioByExchange(portfolioData);
-      
-      // Add portfolio value to exchange summary
-      Object.keys(portfolioData).forEach(exchange => {
-        if (byExchange[exchange]) {
-          byExchange[exchange].portfolioValue = portfolioData[exchange].totalValue;
-          byExchange[exchange].assets = portfolioData[exchange].assets;
-        } else {
-          byExchange[exchange] = { 
-            count: 0, 
-            gainLoss: 0, 
-            portfolioValue: portfolioData[exchange].totalValue,
-            assets: portfolioData[exchange].assets
-          };
+        // Only add if we don't already have portfolio data from transactions
+        if (byExchange[exchange] && byExchange[exchange].portfolioValue === 0) {
+          byExchange[exchange].portfolioValue += currentValue;
         }
       });
 
@@ -340,7 +355,38 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal }) => {
       {/* Export Button */}
       {exchangeSummary.length > 0 && (
         <div className="flex justify-end">
-          <Button className="bg-purple-600 hover:bg-purple-700 text-white">
+          <Button 
+            className="bg-purple-600 hover:bg-purple-700 text-white"
+            onClick={async () => {
+              try {
+                const response = await axios.post(
+                  `${API}/tax/export-form-8949`,
+                  { 
+                    tax_year: new Date().getFullYear(),
+                    format: 'csv',
+                    data_source: 'exchange_only'
+                  },
+                  { 
+                    headers: getAuthHeader(),
+                    responseType: 'blob'
+                  }
+                );
+                
+                // Create download link
+                const url = window.URL.createObjectURL(new Blob([response.data]));
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', `tax-report-${new Date().getFullYear()}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                window.URL.revokeObjectURL(url);
+              } catch (err) {
+                console.error('Export failed:', err);
+                alert('Export failed. Please try again or check if you have transactions to export.');
+              }
+            }}
+          >
             <Download className="w-4 h-4 mr-2" />
             Download Tax Report
           </Button>

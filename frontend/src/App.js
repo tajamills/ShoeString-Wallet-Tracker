@@ -528,16 +528,7 @@ function App() {
           </div>
         )}
 
-        {/* Tax Summary Dashboard - Show for paid users */}
-        {user && user.subscription_tier !== 'free' && (
-          <div className="max-w-4xl mx-auto mb-8">
-            <TaxSummaryDashboard 
-              onOpenExchangeModal={() => setShowExchangeConnectionModal(true)}
-            />
-          </div>
-        )}
-
-        {/* Input Section */}
+        {/* Input Section - MOVED ABOVE Tax Dashboard */}
         <Card className="max-w-3xl mx-auto mb-8 bg-slate-800/50 border-slate-700" data-testid="wallet-input-card">
           <CardHeader>
             <CardTitle className="text-white">Analyze Wallet</CardTitle>
@@ -714,6 +705,15 @@ function App() {
             )}
           </CardContent>
         </Card>
+
+        {/* Tax Summary Dashboard - Show for paid users (BELOW Analyze Wallet) */}
+        {user && user.subscription_tier !== 'free' && (
+          <div className="max-w-4xl mx-auto mb-8">
+            <TaxSummaryDashboard 
+              onOpenExchangeModal={() => setShowExchangeConnectionModal(true)}
+            />
+          </div>
+        )}
 
         {/* Multi-Chain Analysis Results */}
         {multiChainResults && (

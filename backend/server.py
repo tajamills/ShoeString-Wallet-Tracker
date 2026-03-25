@@ -89,6 +89,61 @@ async def download_converted_csv():
     )
 
 
+@api_router.get("/prices/current")
+async def get_current_prices():
+    """Get current prices for common cryptocurrencies"""
+    import aiohttp
+    
+    try:
+        # Common crypto symbols to fetch
+        symbols = ['BTC', 'ETH', 'XRP', 'SOL', 'USDT', 'USDC', 'BNB', 'XLM', 'MATIC', 'ALGO', 'DOGE', 'DOT', 'ADA', 'AVAX', 'LINK']
+        
+        prices = {}
+        
+        # Try CoinGecko first
+        async with aiohttp.ClientSession() as session:
+            ids = 'bitcoin,ethereum,ripple,solana,tether,usd-coin,binancecoin,stellar,matic-network,algorand,dogecoin,polkadot,cardano,avalanche-2,chainlink'
+            url = f'https://api.coingecko.com/api/v3/simple/price?ids={ids}&vs_currencies=usd'
+            
+            async with session.get(url, timeout=10) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    
+                    # Map CoinGecko IDs to symbols
+                    id_to_symbol = {
+                        'bitcoin': 'BTC', 'ethereum': 'ETH', 'ripple': 'XRP',
+                        'solana': 'SOL', 'tether': 'USDT', 'usd-coin': 'USDC',
+                        'binancecoin': 'BNB', 'stellar': 'XLM', 'matic-network': 'MATIC',
+                        'algorand': 'ALGO', 'dogecoin': 'DOGE', 'polkadot': 'DOT',
+                        'cardano': 'ADA', 'avalanche-2': 'AVAX', 'chainlink': 'LINK'
+                    }
+                    
+                    for cg_id, symbol in id_to_symbol.items():
+                        if cg_id in data and 'usd' in data[cg_id]:
+                            prices[symbol] = data[cg_id]['usd']
+        
+        # Set stablecoins to 1.0
+        prices['USDT'] = 1.0
+        prices['USDC'] = 1.0
+        prices['DAI'] = 1.0
+        prices['BUSD'] = 1.0
+        
+        return {"prices": prices, "timestamp": datetime.now(timezone.utc).isoformat()}
+        
+    except Exception as e:
+        logger.error(f"Error fetching prices: {e}")
+        # Return fallback prices
+        return {
+            "prices": {
+                "BTC": 70000, "ETH": 2000, "XRP": 0.50, "SOL": 150,
+                "USDT": 1.0, "USDC": 1.0, "BNB": 300, "XLM": 0.10,
+                "MATIC": 0.50, "ALGO": 0.15, "DOGE": 0.08
+            },
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "fallback": True
+        }
+
+
 @api_router.post("/status", response_model=StatusCheck)
 async def create_status_check(input: StatusCheckCreate):
     status_dict = input.model_dump()
