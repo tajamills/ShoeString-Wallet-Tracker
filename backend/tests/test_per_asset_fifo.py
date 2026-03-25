@@ -13,7 +13,7 @@ import requests
 import os
 import io
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://tax-report-crypto.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://wallet-gains-calc.preview.emergentagent.com').rstrip('/')
 
 # Multi-asset Coinbase CSV for testing per-asset FIFO
 # Contains buys and sells for BTC, ETH, SOL, ALGO at different prices
