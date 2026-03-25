@@ -27,6 +27,7 @@ import { ExchangeModal } from '@/components/ExchangeModal';
 import { ChainOfCustodyModal } from '@/components/ChainOfCustodyModal';
 import { SupportModal } from '@/components/SupportModal';
 import { ExchangeConnectionModal } from '@/components/ExchangeConnectionModal';
+import { TaxSummaryDashboard } from '@/components/TaxSummaryDashboard';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -524,6 +525,15 @@ function App() {
                 />
               </CardContent>
             </Card>
+          </div>
+        )}
+
+        {/* Tax Summary Dashboard - Show for paid users */}
+        {user && user.subscription_tier !== 'free' && (
+          <div className="max-w-4xl mx-auto mb-8">
+            <TaxSummaryDashboard 
+              onOpenExchangeModal={() => setShowExchangeConnectionModal(true)}
+            />
           </div>
         )}
 
