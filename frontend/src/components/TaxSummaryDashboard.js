@@ -1,12 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, CheckCircle, RefreshCw, Download, Lock } from 'lucide-react';
+import { Loader2, CheckCircle, RefreshCw, Download, Lock, Calendar } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import axios from 'axios';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+
+// Get available tax years (current year back to 2020)
+const getAvailableYears = () => {
+  const currentYear = new Date().getFullYear();
+  const years = [];
+  for (let year = currentYear; year >= 2020; year--) {
+    years.push(year);
+  }
+  return years;
+};
 
 export const TaxSummaryDashboard = ({ onOpenExchangeModal }) => {
   const { getAuthHeader, user } = useAuth();
@@ -15,10 +25,12 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal }) => {
   const [connections, setConnections] = useState([]);
   const [exchangeSummary, setExchangeSummary] = useState([]);
   const [portfolioByExchange, setPortfolioByExchange] = useState({});
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const availableYears = getAvailableYears();
 
   useEffect(() => {
     fetchTaxSummary();
-  }, []);
+  }, [selectedYear]); // Refetch when year changes
 
   const fetchTaxSummary = async () => {
     setLoading(true);
@@ -33,12 +45,24 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal }) => {
       const txResponse = await axios.get(`${API}/exchanges/transactions?limit=10000`, {
         headers: getAuthHeader()
       });
-      const transactions = txResponse.data.transactions || [];
+      const allTransactions = txResponse.data.transactions || [];
+      
+      // Filter transactions by selected year
+      const yearStart = new Date(selectedYear, 0, 1);
+      const yearEnd = new Date(selectedYear, 11, 31, 23, 59, 59);
+      
+      const transactions = allTransactions.filter(tx => {
+        const txDate = new Date(tx.timestamp);
+        return txDate >= yearStart && txDate <= yearEnd;
+      });
 
-      // Fetch tax data
+      // Fetch tax data with year filter
       const taxResponse = await axios.post(
         `${API}/tax/unified`,
-        { data_source: 'exchange_only' },
+        { 
+          data_source: 'exchange_only',
+          tax_year: selectedYear
+        },
         { headers: getAuthHeader() }
       );
       
@@ -219,10 +243,21 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal }) => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header with Year Selector */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-semibold text-gray-900">You're on track to file with confidence</h2>
+          <div className="flex items-center gap-3 mb-1">
+            <h2 className="text-2xl font-semibold text-gray-900">Tax Summary</h2>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+              className="bg-white border border-gray-300 text-gray-700 rounded-md px-3 py-1 text-sm font-medium focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+            >
+              {availableYears.map(year => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
+          </div>
           <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
             <span className="flex items-center gap-1">
               <CheckCircle className="w-4 h-4 text-green-500" />
@@ -230,7 +265,7 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal }) => {
             </span>
             <span className="flex items-center gap-1">
               <CheckCircle className="w-4 h-4 text-green-500" />
-              {totalTransactions} transactions tracked
+              {totalTransactions} transactions in {selectedYear}
             </span>
           </div>
         </div>
@@ -362,7 +397,7 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal }) => {
                 const response = await axios.post(
                   `${API}/tax/export-form-8949`,
                   { 
-                    tax_year: new Date().getFullYear(),
+                    tax_year: selectedYear,
                     format: 'csv',
                     data_source: 'exchange_only'
                   },
@@ -376,19 +411,19 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal }) => {
                 const url = window.URL.createObjectURL(new Blob([response.data]));
                 const link = document.createElement('a');
                 link.href = url;
-                link.setAttribute('download', `tax-report-${new Date().getFullYear()}.csv`);
+                link.setAttribute('download', `tax-report-${selectedYear}.csv`);
                 document.body.appendChild(link);
                 link.click();
                 link.remove();
                 window.URL.revokeObjectURL(url);
               } catch (err) {
                 console.error('Export failed:', err);
-                alert('Export failed. Please try again or check if you have transactions to export.');
+                alert(`No tax data found for ${selectedYear}. Try selecting a different year.`);
               }
             }}
           >
             <Download className="w-4 h-4 mr-2" />
-            Download Tax Report
+            Download {selectedYear} Tax Report
           </Button>
         </div>
       )}
