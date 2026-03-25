@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Loader2, Key, Link2, Unlink, CheckCircle, AlertCircle, 
-  Upload, ExternalLink, RefreshCw, Shield
+  Upload, ExternalLink, RefreshCw, Shield, List, ArrowUpRight, ArrowDownLeft
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import axios from 'axios';
@@ -39,10 +39,14 @@ export const ExchangeConnectionModal = ({ isOpen, onClose }) => {
   const [success, setSuccess] = useState('');
   const [connections, setConnections] = useState([]);
   const [loadingConnections, setLoadingConnections] = useState(true);
+  const [transactions, setTransactions] = useState([]);
+  const [loadingTransactions, setLoadingTransactions] = useState(false);
+  const [txSummary, setTxSummary] = useState(null);
 
   useEffect(() => {
     if (isOpen) {
       fetchConnections();
+      fetchTransactions();
     }
   }, [isOpen]);
 
@@ -57,6 +61,21 @@ export const ExchangeConnectionModal = ({ isOpen, onClose }) => {
       console.error('Failed to fetch connections:', err);
     } finally {
       setLoadingConnections(false);
+    }
+  };
+
+  const fetchTransactions = async () => {
+    setLoadingTransactions(true);
+    try {
+      const response = await axios.get(`${API}/exchanges/transactions?limit=100`, {
+        headers: getAuthHeader()
+      });
+      setTransactions(response.data.transactions || []);
+      setTxSummary(response.data.summary || null);
+    } catch (err) {
+      console.error('Failed to fetch transactions:', err);
+    } finally {
+      setLoadingTransactions(false);
     }
   };
 
@@ -123,6 +142,7 @@ export const ExchangeConnectionModal = ({ isOpen, onClose }) => {
         { headers: getAuthHeader() }
       );
       setSuccess(`Synced ${response.data.synced_count} transactions from ${exchangeId}`);
+      fetchTransactions(); // Refresh transactions after sync
     } catch (err) {
       setError(err.response?.data?.detail || `Failed to sync ${exchangeId} transactions`);
     } finally {
@@ -130,19 +150,53 @@ export const ExchangeConnectionModal = ({ isOpen, onClose }) => {
     }
   };
 
+  const formatDate = (dateStr) => {
+    if (!dateStr) return 'N/A';
+    return new Date(dateStr).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getTxTypeIcon = (txType) => {
+    const type = txType?.toLowerCase();
+    if (['buy', 'receive', 'deposit', 'reward'].includes(type)) {
+      return <ArrowDownLeft className="w-4 h-4 text-green-400" />;
+    }
+    return <ArrowUpRight className="w-4 h-4 text-red-400" />;
+  };
+
+  const getTxTypeBadge = (txType) => {
+    const type = txType?.toLowerCase();
+    const colors = {
+      buy: 'bg-green-600',
+      sell: 'bg-red-600',
+      deposit: 'bg-blue-600',
+      withdrawal: 'bg-orange-600',
+      reward: 'bg-purple-600',
+      trade: 'bg-yellow-600',
+      receive: 'bg-green-600',
+      send: 'bg-red-600',
+    };
+    return colors[type] || 'bg-gray-600';
+  };
+
   const selectedExchangeInfo = SUPPORTED_EXCHANGES.find(e => e.id === selectedExchange);
   const isPaidUser = user?.subscription_tier !== 'free';
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl bg-slate-800 border-slate-700 max-h-[90vh] overflow-y-auto" data-testid="exchange-connection-modal">
+      <DialogContent className="sm:max-w-3xl bg-slate-800 border-slate-700 max-h-[90vh] overflow-y-auto" data-testid="exchange-connection-modal">
         <DialogHeader>
           <DialogTitle className="text-white text-xl flex items-center gap-2">
             <Key className="w-5 h-5 text-purple-400" />
-            Connect Exchange APIs
+            Exchange Connections
           </DialogTitle>
           <DialogDescription className="text-gray-400">
-            Connect your exchange accounts to automatically import transactions
+            Connect exchanges via API or view synced transactions
           </DialogDescription>
         </DialogHeader>
 
@@ -155,8 +209,12 @@ export const ExchangeConnectionModal = ({ isOpen, onClose }) => {
           </Alert>
         )}
 
-        <Tabs defaultValue="connect" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-slate-700">
+        <Tabs defaultValue="transactions" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 bg-slate-700">
+            <TabsTrigger value="transactions" className="data-[state=active]:bg-purple-600">
+              <List className="w-4 h-4 mr-2" />
+              Transactions ({transactions.length})
+            </TabsTrigger>
             <TabsTrigger value="connect" className="data-[state=active]:bg-purple-600">
               Connect New
             </TabsTrigger>
@@ -165,6 +223,90 @@ export const ExchangeConnectionModal = ({ isOpen, onClose }) => {
             </TabsTrigger>
           </TabsList>
 
+          {/* Transactions Tab */}
+          <TabsContent value="transactions" className="space-y-4 mt-4">
+            {loadingTransactions ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-purple-400" />
+              </div>
+            ) : transactions.length === 0 ? (
+              <div className="text-center py-8 text-gray-400">
+                <List className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p>No transactions yet</p>
+                <p className="text-sm">Connect an exchange and sync, or import a CSV</p>
+              </div>
+            ) : (
+              <>
+                {/* Summary */}
+                {txSummary && (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+                    <div className="bg-slate-700 rounded-lg p-3 text-center">
+                      <p className="text-2xl font-bold text-white">{txSummary.total_transactions}</p>
+                      <p className="text-xs text-gray-400">Total</p>
+                    </div>
+                    <div className="bg-slate-700 rounded-lg p-3 text-center">
+                      <p className="text-2xl font-bold text-green-400">{txSummary.by_type?.buy || 0}</p>
+                      <p className="text-xs text-gray-400">Buys</p>
+                    </div>
+                    <div className="bg-slate-700 rounded-lg p-3 text-center">
+                      <p className="text-2xl font-bold text-red-400">{txSummary.by_type?.sell || 0}</p>
+                      <p className="text-xs text-gray-400">Sells</p>
+                    </div>
+                    <div className="bg-slate-700 rounded-lg p-3 text-center">
+                      <p className="text-2xl font-bold text-purple-400">{Object.keys(txSummary.by_asset || {}).length}</p>
+                      <p className="text-xs text-gray-400">Assets</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Transactions List */}
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {transactions.map((tx, idx) => (
+                    <div 
+                      key={tx.tx_id || idx}
+                      className="bg-slate-700 rounded-lg p-3 flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-3">
+                        {getTxTypeIcon(tx.tx_type)}
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <Badge className={`${getTxTypeBadge(tx.tx_type)} text-xs`}>
+                              {tx.tx_type?.toUpperCase()}
+                            </Badge>
+                            <span className="text-white font-medium">
+                              {tx.amount?.toFixed(6)} {tx.asset}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-400">
+                            {formatDate(tx.timestamp)} • {tx.exchange}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        {tx.total_usd && (
+                          <p className="text-white font-medium">${tx.total_usd.toFixed(2)}</p>
+                        )}
+                        {tx.price_usd && (
+                          <p className="text-xs text-gray-400">@ ${tx.price_usd.toFixed(2)}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <Button 
+                  variant="outline" 
+                  onClick={fetchTransactions}
+                  className="w-full border-slate-600 text-gray-300"
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Refresh Transactions
+                </Button>
+              </>
+            )}
+          </TabsContent>
+
+          {/* Connect Tab */}
           <TabsContent value="connect" className="space-y-4 mt-4">
             {/* Exchange Selection */}
             <div>
@@ -277,6 +419,7 @@ export const ExchangeConnectionModal = ({ isOpen, onClose }) => {
             </Button>
           </TabsContent>
 
+          {/* Manage Tab */}
           <TabsContent value="manage" className="space-y-4 mt-4">
             {loadingConnections ? (
               <div className="flex items-center justify-center py-8">
