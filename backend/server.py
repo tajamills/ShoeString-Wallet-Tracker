@@ -3,6 +3,7 @@ Crypto Bag Tracker API Server
 Refactored to use modular route files for better maintainability.
 """
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request
+from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -521,6 +522,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount static files for downloads
+static_dir = ROOT_DIR / "static" / "downloads"
+if static_dir.exists():
+    app.mount("/downloads", StaticFiles(directory=str(static_dir)), name="downloads")
 
 
 @app.on_event("shutdown")

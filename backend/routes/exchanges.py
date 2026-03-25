@@ -124,6 +124,128 @@ async def import_exchange_csv(
         raise HTTPException(status_code=500, detail=f"Failed to import CSV: {str(e)}")
 
 
+@router.post("/convert-to-cointracker")
+async def convert_ledger_to_cointracker(
+    file: UploadFile = File(...),
+    user: dict = Depends(get_current_user)
+):
+    """Convert Ledger Live CSV export to CoinTracker format
+    
+    CoinTracker format columns:
+    Date, Received Quantity, Received Currency, Sent Quantity, Sent Currency, Fee Amount, Fee Currency, Tag
+    """
+    try:
+        if not file.filename.endswith('.csv'):
+            raise HTTPException(status_code=400, detail="Please upload a CSV file")
+        
+        content = await file.read()
+        try:
+            content_str = content.decode('utf-8')
+        except UnicodeDecodeError:
+            content_str = content.decode('latin-1')
+        
+        # Parse the Ledger CSV
+        detected_exchange, transactions = csv_parser_service.parse_csv(content_str)
+        
+        if not transactions:
+            raise HTTPException(status_code=400, detail="No valid transactions found in the CSV")
+        
+        # Convert to CoinTracker format
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # Write header
+        writer.writerow([
+            "Date", "Received Quantity", "Received Currency", 
+            "Sent Quantity", "Sent Currency", 
+            "Fee Amount", "Fee Currency", "Tag"
+        ])
+        
+        for tx in transactions:
+            # Format date as MM/DD/YYYY HH:MM:SS (CoinTracker preferred format)
+            date_str = tx.timestamp.strftime("%m/%d/%Y %H:%M:%S") if tx.timestamp else ""
+            
+            # Determine received vs sent based on transaction type
+            received_qty = ""
+            received_currency = ""
+            sent_qty = ""
+            sent_currency = ""
+            fee_amount = ""
+            fee_currency = ""
+            tag = ""
+            
+            tx_type_lower = tx.tx_type.lower()
+            
+            if tx_type_lower in ["buy", "receive", "deposit", "in"]:
+                # Receiving crypto
+                received_qty = f"{tx.amount:.8f}".rstrip('0').rstrip('.')
+                received_currency = tx.asset
+                # If we have USD value, it was sent (fiat -> crypto)
+                if tx.total_usd and tx.total_usd > 0:
+                    sent_qty = f"{tx.total_usd:.2f}"
+                    sent_currency = "USD"
+                tag = "buy" if tx_type_lower == "buy" else "transfer"
+                
+            elif tx_type_lower in ["sell", "send", "withdrawal", "out"]:
+                # Sending crypto
+                sent_qty = f"{tx.amount:.8f}".rstrip('0').rstrip('.')
+                sent_currency = tx.asset
+                # If we have USD value, it was received (crypto -> fiat) - but only for sells
+                if tx.total_usd and tx.total_usd > 0 and tx_type_lower == "sell":
+                    received_qty = f"{tx.total_usd:.2f}"
+                    received_currency = "USD"
+                tag = "sell" if tx_type_lower == "sell" else "transfer"
+                
+            elif tx_type_lower == "trade":
+                # Crypto to crypto trade - need both sides
+                sent_qty = f"{tx.amount:.8f}".rstrip('0').rstrip('.')
+                sent_currency = tx.asset
+                tag = "trade"
+            
+            # Add fees if present
+            if tx.fee and tx.fee > 0:
+                fee_amount = f"{tx.fee:.8f}".rstrip('0').rstrip('.')
+                fee_currency = tx.fee_asset or tx.asset
+            
+            # Write the row
+            writer.writerow([
+                date_str,
+                received_qty,
+                received_currency,
+                sent_qty,
+                sent_currency,
+                fee_amount,
+                fee_currency,
+                tag
+            ])
+        
+        # Get the CSV content
+        csv_content = output.getvalue()
+        output.close()
+        
+        # Generate filename
+        original_name = file.filename.replace('.csv', '')
+        filename = f"{original_name}_cointracker_format.csv"
+        
+        logger.info(f"Converted {len(transactions)} transactions to CoinTracker format for user {user['id']}")
+        
+        return Response(
+            content=csv_content,
+            media_type="text/csv",
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"'
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error converting CSV: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to convert CSV: {str(e)}")
+
+
 @router.get("/transactions")
 async def get_exchange_transactions(
     exchange: Optional[str] = None,
