@@ -403,21 +403,20 @@ class UnifiedTaxService:
                     # Income events - these DO create new cost basis (FMV at receipt)
                     asset_groups[asset]['buys'].append(tx)
                 elif tx_type in ['receive', 'received', 'deposit']:
-                    # Transfers IN - only add if marked as transfer with original cost basis
-                    # or if it's from a wallet source (on-chain data)
-                    is_transfer = tx.get('is_transfer', False)
-                    has_cost_basis = tx.get('price_usd') and tx.get('price_usd') > 0
+                    # Transfers IN - these are typically transfers between your own wallets
+                    # They should NOT add new cost basis (that would double-count)
+                    # The original buy cost basis flows through from FIFO
                     is_wallet_source = source.startswith('wallet')
                     
-                    if is_transfer or is_wallet_source:
-                        # Transfer with preserved cost basis or on-chain receive
+                    if is_wallet_source:
+                        # On-chain wallet receives - these are real acquisitions
                         asset_groups[asset]['buys'].append(tx)
-                    elif has_cost_basis:
-                        # Has actual cost basis - treat as acquisition
+                    elif tx.get('is_new_acquisition', False):
+                        # Explicitly marked as new acquisition
                         asset_groups[asset]['buys'].append(tx)
                     else:
-                        # No cost basis - likely a transfer, skip
-                        logger.debug(f"Skipping receive/deposit without cost basis: {tx.get('amount', 0)} {asset}")
+                        # Default: skip exchange receives - they're likely transfers
+                        logger.debug(f"Skipping receive/deposit (likely transfer): {tx.get('amount', 0)} {asset}")
                 elif tx_type in ['sell']:
                     # Sales are taxable dispositions
                     asset_groups[asset]['sells'].append(tx)

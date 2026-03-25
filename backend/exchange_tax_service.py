@@ -99,17 +99,17 @@ class ExchangeTaxService:
                 # Income events - these DO create new cost basis (FMV at receipt)
                 assets[asset]['buys'].append(tx)
             elif tx_type in ['receive', 'deposit']:
-                # Transfers IN - only add if marked as actual purchase with cost basis
-                # Otherwise, these are just wallet transfers and shouldn't create new cost basis
-                if tx.get('is_transfer', False):
-                    # This is a transfer - preserve original cost basis
-                    assets[asset]['buys'].append(tx)
-                elif tx.get('price_usd') and tx.get('price_usd') > 0 and tx.get('total_usd') and tx.get('total_usd') > 0:
-                    # Has cost basis info - treat as acquisition
+                # Transfers IN - these are typically transfers between your own wallets
+                # They should NOT add new cost basis (that would double-count)
+                # The original buy cost basis should flow through from FIFO
+                # Only add if explicitly marked as a new acquisition (not a transfer)
+                if tx.get('is_new_acquisition', False):
+                    # Explicitly marked as new acquisition (not transfer)
                     assets[asset]['buys'].append(tx)
                 else:
-                    # No cost basis - this is likely a transfer, skip adding to cost basis
-                    logger.debug(f"Skipping receive/deposit without cost basis: {tx['amount']} {asset}")
+                    # Default: skip receives - they're likely transfers
+                    # Cost basis comes from the original buy on source exchange
+                    logger.debug(f"Skipping receive/deposit (likely transfer): {tx['amount']} {asset}")
             elif tx_type in ['sell']:
                 # Sales are taxable events
                 assets[asset]['sells'].append(tx)
@@ -170,23 +170,29 @@ class ExchangeTaxService:
         cost_basis_override = tx.get('cost_basis_override')
         is_transfer = tx.get('is_transfer', False)
         
-        timestamp_str = tx.get('timestamp', '')
+        timestamp_val = tx.get('timestamp', '')
         try:
-            if isinstance(timestamp_str, str):
-                dt = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+            if isinstance(timestamp_val, datetime):
+                dt = timestamp_val
+            elif isinstance(timestamp_val, str) and timestamp_val:
+                dt = datetime.fromisoformat(timestamp_val.replace('Z', '+00:00'))
             else:
                 dt = datetime.now(timezone.utc)
         except:
             dt = datetime.now(timezone.utc)
         
+        # Ensure timezone awareness
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        
         # Use acquisition date override if available (for transfers)
         acquisition_date = dt
         if acquisition_date_override:
             try:
-                if isinstance(acquisition_date_override, str):
-                    acquisition_date = datetime.fromisoformat(acquisition_date_override.replace('Z', '+00:00'))
-                else:
+                if isinstance(acquisition_date_override, datetime):
                     acquisition_date = acquisition_date_override
+                elif isinstance(acquisition_date_override, str):
+                    acquisition_date = datetime.fromisoformat(acquisition_date_override.replace('Z', '+00:00'))
             except:
                 pass
         
