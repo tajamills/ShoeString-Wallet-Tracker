@@ -133,10 +133,28 @@ export const WalletInputCard = ({
                 className="bg-slate-700 border-slate-600 text-white placeholder:text-gray-500"
                 disabled={loading}
               />
-              {selectedChain === 'bitcoin' && user?.subscription_tier === 'pro' && (
+              {selectedChain === 'bitcoin' && (
                 <p className="text-xs text-gray-400 mt-1">
-                  Pro tip: Enter your Ledger xPub to analyze your entire wallet
+                  {user?.subscription_tier === 'pro' 
+                    ? "Pro tip: Use your xPub/yPub/zPub for full wallet history"
+                    : "Tip: Single addresses may miss transactions. Upgrade for xPub support."}
                 </p>
+              )}
+              {selectedChain === 'bitcoin' && (
+                <details className="mt-2">
+                  <summary className="text-xs text-purple-400 cursor-pointer hover:text-purple-300">
+                    How to find your Bitcoin xPub
+                  </summary>
+                  <div className="text-xs text-gray-400 mt-2 p-2 bg-slate-900/50 rounded">
+                    <p className="font-medium text-gray-300 mb-1">Ledger Live:</p>
+                    <p>Account → Edit → Advanced → Extended public key</p>
+                    <p className="font-medium text-gray-300 mt-2 mb-1">Trezor Suite:</p>
+                    <p>Account → Details → Show public key</p>
+                    <p className="text-gray-500 mt-2 italic">
+                      xPub allows tracking all addresses in your wallet without exposing private keys.
+                    </p>
+                  </div>
+                </details>
               )}
             </div>
             <Button

@@ -164,128 +164,71 @@ export const MultiChainResultsCard = ({ multiChainResults }) => {
   );
 };
 
-// Transactions Table
+// Transactions Table (clean, collapsible)
 export const TransactionsTable = ({ transactions, chain, selectedChain, onExport, isPremium }) => {
+  const [isExpanded, setIsExpanded] = React.useState(false);
+  const maxPreviewRows = 5;
+  
   if (!transactions || transactions.length === 0) return null;
 
   const currentChain = chain || selectedChain;
   const symbol = getChainSymbol(currentChain);
-
-  const getExplorerUrl = (hash) => {
-    const explorers = {
-      ethereum: `https://etherscan.io/tx/${hash}`,
-      bitcoin: `https://blockchain.info/tx/${hash}`,
-      polygon: `https://polygonscan.com/tx/${hash}`,
-      arbitrum: `https://arbiscan.io/tx/${hash}`,
-      bsc: `https://bscscan.com/tx/${hash}`,
-      solana: `https://solscan.io/tx/${hash}`
-    };
-    return explorers[currentChain] || '#';
-  };
+  const displayTransactions = isExpanded ? transactions : transactions.slice(0, maxPreviewRows);
+  const hasMore = transactions.length > maxPreviewRows;
 
   return (
     <Card className="bg-slate-800/50 border-slate-700" data-testid="transactions-table">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-white">Recent Transactions</CardTitle>
+            <CardTitle className="text-white text-lg">Recent Transactions</CardTitle>
             <CardDescription className="text-gray-400">
-              Showing up to 20 most recent transactions
+              {transactions.length} transaction{transactions.length !== 1 ? 's' : ''}
             </CardDescription>
           </div>
           {isPremium && onExport && (
             <Button
               onClick={onExport}
               variant="outline"
+              size="sm"
               className="border-slate-600 text-gray-300"
             >
               <Download className="w-4 h-4 mr-2" />
-              Export CSV
+              Export
             </Button>
           )}
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-700">
-                <th className="text-left py-3 px-4 text-gray-400 font-medium">Type</th>
-                <th className="text-left py-3 px-4 text-gray-400 font-medium">Hash</th>
-                <th className="text-left py-3 px-4 text-gray-400 font-medium">Asset</th>
-                <th className="text-right py-3 px-4 text-gray-400 font-medium">Amount</th>
-                <th className="text-right py-3 px-4 text-gray-400 font-medium">USD Value</th>
-                <th className="text-right py-3 px-4 text-gray-400 font-medium">Running Balance</th>
-                <th className="text-left py-3 px-4 text-gray-400 font-medium">Address/Label</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transactions.map((tx, idx) => (
-                <tr key={idx} className="border-b border-slate-700/50 hover:bg-slate-700/30">
-                  <td className="py-3 px-4">
-                    <Badge
-                      variant="outline"
-                      className={tx.type === 'sent' ? 'text-red-300 border-red-700' : 'text-green-300 border-green-700'}
-                    >
-                      {tx.type === 'sent' ? 'Sent' : 'Received'}
-                    </Badge>
-                  </td>
-                  <td className="py-3 px-4">
-                    {tx.hash ? (
-                      <a
-                        href={getExplorerUrl(tx.hash)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-purple-400 hover:text-purple-300 font-mono text-sm"
-                      >
-                        {formatAddress(tx.hash)}
-                      </a>
-                    ) : (
-                      <span className="text-gray-500 text-sm">N/A</span>
-                    )}
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className="text-white font-medium">{tx.asset}</span>
-                  </td>
-                  <td className="py-3 px-4 text-right">
-                    <span className="text-white font-mono">{formatNumber(tx.value)}</span>
-                  </td>
-                  <td className="py-3 px-4 text-right">
-                    {tx.value_usd !== undefined ? (
-                      <span className="text-gray-300 font-semibold">{formatUSD(tx.value_usd)}</span>
-                    ) : (
-                      <span className="text-gray-500 text-sm">-</span>
-                    )}
-                  </td>
-                  <td className="py-3 px-4 text-right">
-                    {tx.running_balance !== undefined ? (
-                      <span className="text-blue-300 font-semibold font-mono">{formatNumber(tx.running_balance)}</span>
-                    ) : (
-                      <span className="text-gray-500 text-sm">-</span>
-                    )}
-                  </td>
-                  <td className="py-3 px-4">
-                    <div className="flex flex-col">
-                      {tx.type === 'sent' && tx.to_label && (
-                        <Badge variant="outline" className="text-blue-300 border-blue-700 mb-1 w-fit">
-                          {tx.to_label}
-                        </Badge>
-                      )}
-                      {tx.type === 'received' && tx.from_label && (
-                        <Badge variant="outline" className="text-blue-300 border-blue-700 mb-1 w-fit">
-                          {tx.from_label}
-                        </Badge>
-                      )}
-                      <span className="text-gray-400 font-mono text-sm">
-                        {tx.type === 'sent' ? formatAddress(tx.to) : formatAddress(tx.from)}
-                      </span>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <CardContent className="pt-0">
+        <div className="space-y-2">
+          {displayTransactions.map((tx, idx) => (
+            <div key={idx} className="flex items-center justify-between py-2 border-b border-slate-700/50 last:border-0">
+              <div className="flex items-center gap-3">
+                <Badge
+                  variant="outline"
+                  className={tx.type === 'sent' ? 'text-red-300 border-red-700' : 'text-green-300 border-green-700'}
+                >
+                  {tx.type === 'sent' ? 'Out' : 'In'}
+                </Badge>
+                <span className="text-white text-sm">{tx.asset || symbol}</span>
+              </div>
+              <div className="text-right">
+                <span className="text-white font-mono text-sm">{formatNumber(tx.value)}</span>
+                {tx.value_usd && (
+                  <span className="text-gray-400 text-xs ml-2">{formatUSD(tx.value_usd)}</span>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
+        {hasMore && (
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="w-full mt-3 py-2 text-sm text-purple-400 hover:text-purple-300"
+          >
+            {isExpanded ? 'Show less' : `View all ${transactions.length} transactions`}
+          </button>
+        )}
       </CardContent>
     </Card>
   );
