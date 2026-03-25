@@ -22,6 +22,7 @@ class ExchangeFormat(str, Enum):
     GEMINI = "gemini"
     CRYPTO_COM = "crypto_com"
     KUCOIN = "kucoin"
+    LEDGER = "ledger"
     UNKNOWN = "unknown"
 
 
@@ -72,6 +73,11 @@ EXCHANGE_SIGNATURES = {
     ExchangeFormat.KUCOIN: {
         "required": ["tradeCreatedAt", "symbol", "side", "price", "size"],
         "optional": ["fee", "feeCurrency"]
+    },
+    ExchangeFormat.LEDGER: {
+        # Ledger Live wallet export format
+        "required": ["Operation Date", "Currency Ticker", "Operation Type", "Operation Amount"],
+        "optional": ["Operation Fees", "Operation Hash", "Account Name", "Countervalue at Operation Date"]
     }
 }
 
@@ -266,6 +272,7 @@ class CSVParserService:
             ExchangeFormat.GEMINI: self._parse_gemini,
             ExchangeFormat.CRYPTO_COM: self._parse_crypto_com,
             ExchangeFormat.KUCOIN: self._parse_kucoin,
+            ExchangeFormat.LEDGER: self._parse_ledger,
         }
         
         parser = parser_map.get(exchange)
@@ -1138,6 +1145,85 @@ class CSVParserService:
         
         return transactions
     
+    def _parse_ledger(self, rows: List[Dict], headers: List[str], format_variant: str = "primary") -> List[ExchangeTransaction]:
+        """Parse Ledger Live wallet export CSV format
+        
+        Ledger CSV columns:
+        - Operation Date: ISO timestamp (e.g., 2026-03-06T15:11:46.000Z)
+        - Status: Confirmed/Pending
+        - Currency Ticker: Asset symbol (BTC, ETH, etc.)
+        - Operation Type: IN (receive), OUT (send)
+        - Operation Amount: Amount transferred
+        - Operation Fees: Transaction fees
+        - Operation Hash: Transaction hash
+        - Account Name: Ledger account name
+        - Account xpub: Extended public key (for reference)
+        - Countervalue Ticker: Fiat currency (usually USD)
+        - Countervalue at Operation Date: USD value at time of transaction
+        - Countervalue at CSV Export: Current USD value
+        """
+        transactions = []
+        
+        for i, row in enumerate(rows):
+            try:
+                # Get basic fields
+                timestamp_str = row.get("Operation Date", "")
+                status = row.get("Status", "")
+                asset = row.get("Currency Ticker", "")
+                op_type = row.get("Operation Type", "").upper()
+                amount = self._parse_float(row.get("Operation Amount", "0"))
+                fee = self._parse_float(row.get("Operation Fees", "0"))
+                tx_hash = row.get("Operation Hash", "")
+                account_name = row.get("Account Name", "Ledger")
+                
+                # Get USD value at operation date for cost basis
+                usd_value = self._parse_float(row.get("Countervalue at Operation Date", "0"))
+                
+                # Skip pending transactions or invalid rows
+                if status != "Confirmed" or not asset or amount == 0:
+                    continue
+                
+                # Parse timestamp
+                timestamp = self._parse_timestamp(timestamp_str)
+                
+                # Determine transaction type
+                # IN = received crypto (buy/receive)
+                # OUT = sent crypto (sell/send)
+                if op_type == "IN":
+                    tx_type = "buy"  # Treat as acquisition (could be purchase, transfer in, etc.)
+                elif op_type == "OUT":
+                    tx_type = "send"  # Treat as transfer/send, NOT as sell (preserves cost basis)
+                else:
+                    tx_type = op_type.lower()
+                
+                # Calculate price per unit if we have USD value
+                price_usd = usd_value / abs(amount) if amount != 0 and usd_value > 0 else None
+                
+                transactions.append(ExchangeTransaction(
+                    exchange="ledger",
+                    tx_id=tx_hash or f"ledger_{i}_{timestamp.timestamp() if timestamp else i}",
+                    tx_type=tx_type,
+                    asset=asset,
+                    amount=abs(amount),
+                    price_usd=price_usd,
+                    total_usd=usd_value if usd_value > 0 else None,
+                    fee=abs(fee),
+                    fee_asset=asset,  # Fees are typically in the same asset
+                    timestamp=timestamp or datetime.now(timezone.utc),
+                    raw_data={
+                        **row,
+                        "account_name": account_name,
+                        "ledger_export": True
+                    }
+                ))
+                
+            except Exception as e:
+                logger.warning(f"Error parsing Ledger row {i}: {e}")
+                continue
+        
+        logger.info(f"Parsed {len(transactions)} Ledger transactions")
+        return transactions
+    
     def _parse_float(self, value: str) -> float:
         """Safely parse float from string"""
         if not value:
@@ -1233,6 +1319,13 @@ class CSVParserService:
                 "instructions": "Go to KuCoin → Orders → Trade History → Export",
                 "accepted_columns": ["tradeCreatedAt, symbol, side, price, size, fee"],
                 "notes": None
+            },
+            {
+                "id": "ledger",
+                "name": "Ledger Live",
+                "instructions": "Go to Ledger Live → Portfolio → Export operations (gear icon) → Export to CSV",
+                "accepted_columns": ["Operation Date, Currency Ticker, Operation Type, Operation Amount, Countervalue at Operation Date"],
+                "notes": "Export your complete wallet history from Ledger Live. IN operations are treated as acquisitions, OUT operations are treated as transfers (not sales)."
             }
         ]
 

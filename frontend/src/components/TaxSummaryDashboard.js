@@ -59,11 +59,31 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal }) => {
       const realizedGains = data?.tax_data?.realized_gains || [];
       realizedGains.forEach(gain => {
         // Try to find the exchange from the gain data
-        let exchange = (gain.exchange || gain.source || 'unknown').toLowerCase();
+        // Priority: gain.exchange > gain.sell_source > gain.buy_source > gain.source > raw_data.exchange
+        let exchange = 'unknown';
         
-        // If no exchange, try to match by looking at raw_data
-        if (exchange === 'unknown' && gain.raw_data) {
-          exchange = (gain.raw_data.exchange || 'unknown').toLowerCase();
+        if (gain.exchange && gain.exchange !== 'wallet' && gain.exchange !== 'unknown') {
+          exchange = gain.exchange.toLowerCase();
+        } else if (gain.sell_source) {
+          // sell_source is in format "exchange:coinbase" or "wallet"
+          exchange = gain.sell_source.replace('exchange:', '').toLowerCase();
+        } else if (gain.buy_source) {
+          exchange = gain.buy_source.replace('exchange:', '').toLowerCase();
+        } else if (gain.source) {
+          exchange = gain.source.replace('exchange:', '').toLowerCase();
+        }
+        
+        // Fallback: try raw_data
+        if (exchange === 'unknown' && gain.raw_data?.exchange) {
+          exchange = gain.raw_data.exchange.toLowerCase();
+        }
+        
+        // Check sell_exchange and buy_exchange fields (also set by FIFO)
+        if (exchange === 'unknown' && gain.sell_exchange) {
+          exchange = gain.sell_exchange.toLowerCase();
+        }
+        if (exchange === 'unknown' && gain.buy_exchange) {
+          exchange = gain.buy_exchange.toLowerCase();
         }
         
         if (!byExchange[exchange]) {
