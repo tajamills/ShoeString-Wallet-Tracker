@@ -172,6 +172,8 @@ async def convert_ledger_to_cointracker(
             sent_currency = ""
             fee_amount = ""
             fee_currency = ""
+            # CoinTracker: Leave Tag EMPTY for trades/transfers - they auto-categorize
+            # Only use tags for special cases: staking, stake, unstake, airdrop, gift, etc.
             tag = ""
             
             tx_type_lower = tx.tx_type.lower()
@@ -184,7 +186,7 @@ async def convert_ledger_to_cointracker(
                 if tx.total_usd and tx.total_usd > 0:
                     sent_qty = f"{tx.total_usd:.2f}"
                     sent_currency = "USD"
-                tag = "buy" if tx_type_lower == "buy" else "transfer"
+                # Leave tag empty - CoinTracker auto-detects as Trade or Receive
                 
             elif tx_type_lower in ["sell", "send", "withdrawal", "out"]:
                 # Sending crypto
@@ -194,13 +196,13 @@ async def convert_ledger_to_cointracker(
                 if tx.total_usd and tx.total_usd > 0 and tx_type_lower == "sell":
                     received_qty = f"{tx.total_usd:.2f}"
                     received_currency = "USD"
-                tag = "sell" if tx_type_lower == "sell" else "transfer"
+                # Leave tag empty - CoinTracker auto-detects as Trade or Send
                 
             elif tx_type_lower == "trade":
                 # Crypto to crypto trade - need both sides
                 sent_qty = f"{tx.amount:.8f}".rstrip('0').rstrip('.')
                 sent_currency = tx.asset
-                tag = "trade"
+                # Leave tag empty - CoinTracker auto-detects as Trade
             
             # Add fees if present
             if tx.fee and tx.fee > 0:
