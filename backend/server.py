@@ -94,13 +94,13 @@ async def download_converted_csv():
 
 @api_router.get("/prices/current")
 async def get_current_prices():
-    """Get current prices for common cryptocurrencies"""
+    """Get current prices for cryptocurrencies - CoinGecko with Binance fallback"""
     import aiohttp
     
+    prices = {}
+    
+    # Try CoinGecko first
     try:
-        prices = {}
-        
-        # Try CoinGecko first - expanded list
         async with aiohttp.ClientSession() as session:
             ids = 'bitcoin,ethereum,ripple,solana,tether,usd-coin,binancecoin,stellar,matic-network,algorand,dogecoin,polkadot,cardano,avalanche-2,chainlink,litecoin,bitcoin-cash,zcash,quant-network,canton,turbo'
             url = f'https://api.coingecko.com/api/v3/simple/price?ids={ids}&vs_currencies=usd'
@@ -109,7 +109,6 @@ async def get_current_prices():
                 if resp.status == 200:
                     data = await resp.json()
                     
-                    # Map CoinGecko IDs to symbols
                     id_to_symbol = {
                         'bitcoin': 'BTC', 'ethereum': 'ETH', 'ripple': 'XRP',
                         'solana': 'SOL', 'tether': 'USDT', 'usd-coin': 'USDC',
@@ -123,27 +122,64 @@ async def get_current_prices():
                     for cg_id, symbol in id_to_symbol.items():
                         if cg_id in data and 'usd' in data[cg_id]:
                             prices[symbol] = data[cg_id]['usd']
-        
-        # Set stablecoins to 1.0
-        prices['USDT'] = 1.0
-        prices['USDC'] = 1.0
-        prices['DAI'] = 1.0
-        prices['BUSD'] = 1.0
-        
-        return {"prices": prices, "timestamp": datetime.now(timezone.utc).isoformat()}
-        
+                    
+                    logger.info(f"CoinGecko: fetched {len(prices)} prices")
     except Exception as e:
-        logger.error(f"Error fetching prices: {e}")
-        # Return fallback prices
-        return {
-            "prices": {
-                "BTC": 70000, "ETH": 2000, "XRP": 0.50, "SOL": 150,
-                "USDT": 1.0, "USDC": 1.0, "BNB": 300, "XLM": 0.10,
-                "MATIC": 0.50, "ALGO": 0.15, "DOGE": 0.08
-            },
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "fallback": True
+        logger.warning(f"CoinGecko failed: {e}")
+    
+    # Fallback to Binance for missing prices or if CoinGecko failed
+    try:
+        async with aiohttp.ClientSession() as session:
+            # Binance uses USDT pairs
+            binance_symbols = [
+                'BTCUSDT', 'ETHUSDT', 'XRPUSDT', 'SOLUSDT', 'BNBUSDT',
+                'XLMUSDT', 'MATICUSDT', 'ALGOUSDT', 'DOGEUSDT', 'DOTUSDT',
+                'ADAUSDT', 'AVAXUSDT', 'LINKUSDT', 'LTCUSDT', 'BCHUSDT',
+                'ZECUSDT', 'QNTUSDT'
+            ]
+            
+            for symbol in binance_symbols:
+                base = symbol.replace('USDT', '')
+                
+                # Skip if we already have this price from CoinGecko
+                if base in prices:
+                    continue
+                
+                url = f'https://api.binance.com/api/v3/ticker/price?symbol={symbol}'
+                try:
+                    async with session.get(url, timeout=5) as resp:
+                        if resp.status == 200:
+                            data = await resp.json()
+                            if 'price' in data:
+                                prices[base] = float(data['price'])
+                                logger.info(f"Binance fallback: {base} = ${prices[base]}")
+                except:
+                    continue
+    except Exception as e:
+        logger.warning(f"Binance fallback failed: {e}")
+    
+    # Set stablecoins to 1.0
+    prices['USDT'] = 1.0
+    prices['USDC'] = 1.0
+    prices['DAI'] = 1.0
+    prices['BUSD'] = 1.0
+    
+    # If we still have no prices, use hardcoded fallback
+    if len(prices) < 5:
+        logger.warning("Using hardcoded fallback prices")
+        fallback = {
+            "BTC": 70000, "ETH": 2000, "XRP": 0.50, "SOL": 150,
+            "BNB": 300, "XLM": 0.10, "MATIC": 0.50, "ALGO": 0.15, "DOGE": 0.08
         }
+        for symbol, price in fallback.items():
+            if symbol not in prices:
+                prices[symbol] = price
+    
+    return {
+        "prices": prices, 
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "sources": ["coingecko", "binance"]
+    }
 
 
 @api_router.get("/portfolio/by-exchange")
@@ -197,8 +233,10 @@ async def get_portfolio_by_exchange(
             elif tx_type in ['sell', 'send', 'withdrawal']:
                 holdings[exchange][asset] -= amount
         
-        # Fetch current prices
+        # Fetch current prices - CoinGecko first, Binance fallback
         prices = {}
+        
+        # Try CoinGecko
         try:
             async with aiohttp.ClientSession() as session:
                 ids = 'bitcoin,ethereum,ripple,solana,tether,usd-coin,binancecoin,stellar,matic-network,algorand,dogecoin,polkadot,cardano,avalanche-2,chainlink,litecoin,bitcoin-cash,zcash,quant-network'
@@ -219,8 +257,34 @@ async def get_portfolio_by_exchange(
                         for cg_id, symbol in id_to_symbol.items():
                             if cg_id in data and 'usd' in data[cg_id]:
                                 prices[symbol] = data[cg_id]['usd']
-        except:
-            pass
+        except Exception as e:
+            logger.warning(f"CoinGecko failed in portfolio: {e}")
+        
+        # Binance fallback for missing prices
+        try:
+            async with aiohttp.ClientSession() as session:
+                binance_pairs = [
+                    ('BTCUSDT', 'BTC'), ('ETHUSDT', 'ETH'), ('XRPUSDT', 'XRP'),
+                    ('SOLUSDT', 'SOL'), ('BNBUSDT', 'BNB'), ('XLMUSDT', 'XLM'),
+                    ('MATICUSDT', 'MATIC'), ('ALGOUSDT', 'ALGO'), ('DOGEUSDT', 'DOGE'),
+                    ('DOTUSDT', 'DOT'), ('ADAUSDT', 'ADA'), ('AVAXUSDT', 'AVAX'),
+                    ('LINKUSDT', 'LINK'), ('LTCUSDT', 'LTC')
+                ]
+                
+                for pair, symbol in binance_pairs:
+                    if symbol in prices:
+                        continue
+                    try:
+                        url = f'https://api.binance.com/api/v3/ticker/price?symbol={pair}'
+                        async with session.get(url, timeout=5) as resp:
+                            if resp.status == 200:
+                                data = await resp.json()
+                                if 'price' in data:
+                                    prices[symbol] = float(data['price'])
+                    except:
+                        continue
+        except Exception as e:
+            logger.warning(f"Binance fallback failed in portfolio: {e}")
         
         # Stablecoins
         prices['USDT'] = 1.0
