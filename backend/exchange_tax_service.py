@@ -84,20 +84,38 @@ class ExchangeTaxService:
                 assets[asset] = {'buys': [], 'sells': []}
             
             tx_type = tx['tx_type'].lower()
-            # CRITICAL: Only actual sales should trigger realized gains
-            # Buys, deposits, rewards = acquisition (add to cost basis)
-            # Sells, trades = disposal (triggers capital gains)
-            # Sends, withdrawals = transfers (NOT taxable - moves between wallets)
-            if tx_type in ['buy', 'receive', 'deposit', 'reward', 'staking', 'airdrop']:
+            
+            # CRITICAL: Proper categorization for cost basis
+            # - Actual BUYS: buy, trade (crypto bought with fiat/crypto)
+            # - Income: reward, staking, airdrop, mining (new cost basis = fair market value)
+            # - Transfers IN: receive, deposit (should NOT add new cost basis)
+            # - Transfers OUT: send, withdrawal (NOT taxable)
+            # - Disposals: sell, trade (triggers capital gains)
+            
+            if tx_type in ['buy', 'trade']:
+                # Actual purchases - add to cost basis
                 assets[asset]['buys'].append(tx)
-            elif tx_type in ['sell', 'trade']:
-                # Only actual sales and trades are taxable events
+            elif tx_type in ['reward', 'staking', 'airdrop', 'mining', 'interest', 'income']:
+                # Income events - these DO create new cost basis (FMV at receipt)
+                assets[asset]['buys'].append(tx)
+            elif tx_type in ['receive', 'deposit']:
+                # Transfers IN - only add if marked as actual purchase with cost basis
+                # Otherwise, these are just wallet transfers and shouldn't create new cost basis
+                if tx.get('is_transfer', False):
+                    # This is a transfer - preserve original cost basis
+                    assets[asset]['buys'].append(tx)
+                elif tx.get('price_usd') and tx.get('price_usd') > 0 and tx.get('total_usd') and tx.get('total_usd') > 0:
+                    # Has cost basis info - treat as acquisition
+                    assets[asset]['buys'].append(tx)
+                else:
+                    # No cost basis - this is likely a transfer, skip adding to cost basis
+                    logger.debug(f"Skipping receive/deposit without cost basis: {tx['amount']} {asset}")
+            elif tx_type in ['sell']:
+                # Sales are taxable events
                 assets[asset]['sells'].append(tx)
-            # 'send' and 'withdrawal' are transfers - NOT taxable dispositions
-            # They should not create realized gains
             elif tx_type in ['send', 'withdrawal']:
-                # Log for debugging but don't treat as sale
-                logger.debug(f"Skipping transfer (not taxable): {tx_type} {tx['amount']} {asset}")
+                # Transfers OUT - NOT taxable dispositions
+                logger.debug(f"Skipping transfer out (not taxable): {tx_type} {tx['amount']} {asset}")
         
         # Calculate gains for each asset
         all_realized = []

@@ -387,16 +387,42 @@ class UnifiedTaxService:
                     asset_groups[asset] = {'buys': [], 'sells': []}
                 
                 tx_type = tx['tx_type'].lower()
-                # CRITICAL: Only actual sales trigger realized gains
-                # Sends and withdrawals are transfers - NOT taxable events
-                if tx_type in ['buy', 'receive', 'received', 'deposit', 'reward', 'staking', 'airdrop']:
+                source = tx.get('source', '')
+                
+                # CRITICAL: Proper categorization for cost basis
+                # - Actual BUYS: buy, trade (crypto bought with fiat/crypto)
+                # - Income: reward, staking, airdrop, mining (new cost basis = FMV)
+                # - Transfers IN: receive, deposit (should NOT add new cost basis)
+                # - Transfers OUT: send, withdrawal (NOT taxable)
+                # - Disposals: sell, trade (triggers capital gains)
+                
+                if tx_type in ['buy', 'trade']:
+                    # Actual purchases - add to cost basis
                     asset_groups[asset]['buys'].append(tx)
-                elif tx_type in ['sell', 'trade']:
-                    # Only actual sales and trades are taxable dispositions
+                elif tx_type in ['reward', 'staking', 'airdrop', 'mining', 'interest', 'income']:
+                    # Income events - these DO create new cost basis (FMV at receipt)
+                    asset_groups[asset]['buys'].append(tx)
+                elif tx_type in ['receive', 'received', 'deposit']:
+                    # Transfers IN - only add if marked as transfer with original cost basis
+                    # or if it's from a wallet source (on-chain data)
+                    is_transfer = tx.get('is_transfer', False)
+                    has_cost_basis = tx.get('price_usd') and tx.get('price_usd') > 0
+                    is_wallet_source = source.startswith('wallet')
+                    
+                    if is_transfer or is_wallet_source:
+                        # Transfer with preserved cost basis or on-chain receive
+                        asset_groups[asset]['buys'].append(tx)
+                    elif has_cost_basis:
+                        # Has actual cost basis - treat as acquisition
+                        asset_groups[asset]['buys'].append(tx)
+                    else:
+                        # No cost basis - likely a transfer, skip
+                        logger.debug(f"Skipping receive/deposit without cost basis: {tx.get('amount', 0)} {asset}")
+                elif tx_type in ['sell']:
+                    # Sales are taxable dispositions
                     asset_groups[asset]['sells'].append(tx)
-                # 'send', 'sent', 'withdrawal' are transfers - NOT taxable
-                # They should NOT create realized gains
                 elif tx_type in ['send', 'sent', 'withdrawal']:
+                    # Transfers OUT - NOT taxable
                     logger.debug(f"Transfer ignored for tax calc: {tx_type} {tx.get('amount', 0)} {asset}")
             
             # Run FIFO PER ASSET and aggregate results
