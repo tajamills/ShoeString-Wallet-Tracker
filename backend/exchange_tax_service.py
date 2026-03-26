@@ -91,10 +91,12 @@ class ExchangeTaxService:
         
         # Separate by asset for per-asset calculations
         assets = {}
+        income_events = []  # Track income separately (staking, rewards, etc.)
+        
         for tx in normalized:
             asset = tx['asset']
             if asset not in assets:
-                assets[asset] = {'buys': [], 'sells': []}
+                assets[asset] = {'buys': [], 'sells': [], 'income': []}
             
             tx_type = tx['tx_type'].lower()
             
@@ -110,8 +112,11 @@ class ExchangeTaxService:
                 assets[asset]['buys'].append(tx)
             elif tx_type in ['reward', 'staking', 'airdrop', 'mining', 'interest', 'income']:
                 # Income events - these DO create new cost basis (FMV at receipt)
+                # AND they count as taxable income in the year received
                 assets[asset]['buys'].append(tx)
-            elif tx_type in ['receive', 'deposit']:
+                assets[asset]['income'].append(tx)  # Track for income reporting
+                income_events.append(tx)
+            elif tx_type in ['receive', 'deposit', 'transfer']:
                 # Transfers IN - these are typically transfers between your own wallets
                 # They should NOT add new cost basis (that would double-count)
                 # The original buy cost basis should flow through from FIFO
@@ -149,6 +154,12 @@ class ExchangeTaxService:
         short_term = sum(g['gain_loss'] for g in all_realized if g['holding_period'] == 'short-term')
         long_term = sum(g['gain_loss'] for g in all_realized if g['holding_period'] == 'long-term')
         
+        # Calculate income summary (staking, rewards, airdrops, etc.)
+        income_summary = self._calculate_income_summary(income_events, tax_year)
+        
+        # Calculate cost basis breakdown (purchases vs income)
+        cost_basis_breakdown = self._calculate_cost_basis_breakdown(assets)
+        
         # Get unique exchanges
         exchanges = list(set(tx.get('exchange', 'unknown') for tx in transactions))
         
@@ -163,6 +174,8 @@ class ExchangeTaxService:
             'unrealized': unrealized,
             'remaining_lots': all_remaining,
             'asset_summary': asset_summary,
+            'income': income_summary,  # NEW: Income tracking (staking, rewards, etc.)
+            'cost_basis_breakdown': cost_basis_breakdown,  # NEW: Breakdown of cost basis sources
             'summary': {
                 'total_realized_gain': total_realized,
                 'short_term_gains': short_term,
@@ -171,7 +184,10 @@ class ExchangeTaxService:
                 'total_cost_basis': unrealized.get('total_cost_basis', 0),
                 'total_current_value': unrealized.get('total_current_value', 0),
                 'dispositions_count': len(all_realized),
-                'open_positions': len(all_remaining)
+                'open_positions': len(all_remaining),
+                'total_income': income_summary.get('total_income', 0),  # NEW
+                'cost_from_purchases': cost_basis_breakdown.get('purchases', 0),  # NEW
+                'cost_from_income': cost_basis_breakdown.get('income', 0)  # NEW
             },
             'tax_year': tax_year,
             'as_of_date': as_of_date or 'current',
@@ -495,6 +511,18 @@ class ExchangeTaxService:
             },
             'remaining_lots': [],
             'asset_summary': [],
+            'income': {
+                'total_income': 0,
+                'by_type': {},
+                'by_asset': {},
+                'events': []
+            },
+            'cost_basis_breakdown': {
+                'purchases': 0,
+                'income': 0,
+                'total': 0,
+                'by_asset': {}
+            },
             'summary': {
                 'total_realized_gain': 0,
                 'short_term_gains': 0,
@@ -503,7 +531,10 @@ class ExchangeTaxService:
                 'total_cost_basis': 0,
                 'total_current_value': 0,
                 'dispositions_count': 0,
-                'open_positions': 0
+                'open_positions': 0,
+                'total_income': 0,
+                'cost_from_purchases': 0,
+                'cost_from_income': 0
             },
             'tax_year': None
         }
@@ -543,6 +574,131 @@ class ExchangeTaxService:
             })
         
         return lines
+    
+    def _calculate_income_summary(self, income_events: List[Dict], tax_year: Optional[int] = None) -> Dict:
+        """
+        Calculate income summary from staking rewards, airdrops, etc.
+        
+        Per IRS Revenue Ruling 2023-14:
+        - Staking rewards are taxable as ordinary income when received
+        - Fair Market Value at receipt determines the income amount
+        - This becomes the cost basis for future capital gains calculation
+        
+        Args:
+            income_events: List of income transactions (staking, rewards, etc.)
+            tax_year: Optional filter for specific tax year
+        
+        Returns:
+            Income summary with breakdown by type and asset
+        """
+        if not income_events:
+            return {
+                'total_income': 0,
+                'by_type': {},
+                'by_asset': {},
+                'events': []
+            }
+        
+        by_type = {}  # {staking: $X, reward: $Y, ...}
+        by_asset = {}  # {ETH: $X, SOL: $Y, ...}
+        filtered_events = []
+        
+        for event in income_events:
+            # Filter by tax year if specified
+            if tax_year:
+                event_year = event.get('timestamp', datetime.now(timezone.utc))
+                if isinstance(event_year, datetime):
+                    if event_year.year != tax_year:
+                        continue
+            
+            # Calculate FMV at receipt (this is the taxable income)
+            fmv = event.get('total_usd') or (event.get('amount', 0) * (event.get('price_usd') or 0))
+            if not fmv or fmv <= 0:
+                continue
+            
+            tx_type = event.get('tx_type', 'income').lower()
+            asset = event.get('asset', 'UNKNOWN')
+            
+            # Aggregate by type
+            if tx_type not in by_type:
+                by_type[tx_type] = 0
+            by_type[tx_type] += fmv
+            
+            # Aggregate by asset
+            if asset not in by_asset:
+                by_asset[asset] = {'total_income': 0, 'count': 0}
+            by_asset[asset]['total_income'] += fmv
+            by_asset[asset]['count'] += 1
+            
+            # Track individual events (limited for performance)
+            if len(filtered_events) < 1000:
+                filtered_events.append({
+                    'asset': asset,
+                    'type': tx_type,
+                    'amount': event.get('amount', 0),
+                    'fmv': fmv,
+                    'price_usd': event.get('price_usd'),
+                    'date': event.get('timestamp').isoformat() if isinstance(event.get('timestamp'), datetime) else str(event.get('timestamp')),
+                    'exchange': event.get('exchange', 'Unknown')
+                })
+        
+        total_income = sum(by_type.values())
+        
+        return {
+            'total_income': total_income,
+            'by_type': by_type,  # e.g., {'staking': 150.25, 'reward': 50.00}
+            'by_asset': by_asset,  # e.g., {'ETH': {'total_income': 100, 'count': 50}}
+            'events': filtered_events,
+            'tax_year': tax_year,
+            'note': 'Income is taxable as ordinary income at FMV when received (IRS Rev. Rul. 2023-14)'
+        }
+    
+    def _calculate_cost_basis_breakdown(self, assets: Dict) -> Dict:
+        """
+        Calculate cost basis breakdown by source (purchases vs income).
+        
+        This helps distinguish:
+        - Cost from actual purchases (money you spent)
+        - Cost from income (FMV of staking rewards, etc.)
+        
+        Args:
+            assets: Dict of assets with their buy/sell/income transactions
+        
+        Returns:
+            Cost basis breakdown
+        """
+        purchases_cost = 0
+        income_cost = 0
+        by_asset = {}
+        
+        for asset, data in assets.items():
+            asset_purchase_cost = 0
+            asset_income_cost = 0
+            
+            for tx in data.get('buys', []):
+                tx_type = tx.get('tx_type', '').lower()
+                cost = tx.get('total_usd') or (tx.get('amount', 0) * (tx.get('price_usd') or 0))
+                
+                if tx_type in ['buy', 'trade']:
+                    asset_purchase_cost += cost
+                    purchases_cost += cost
+                elif tx_type in ['reward', 'staking', 'airdrop', 'mining', 'interest', 'income']:
+                    asset_income_cost += cost
+                    income_cost += cost
+            
+            if asset_purchase_cost > 0 or asset_income_cost > 0:
+                by_asset[asset] = {
+                    'from_purchases': asset_purchase_cost,
+                    'from_income': asset_income_cost,
+                    'total': asset_purchase_cost + asset_income_cost
+                }
+        
+        return {
+            'purchases': purchases_cost,
+            'income': income_cost,
+            'total': purchases_cost + income_cost,
+            'by_asset': by_asset
+        }
 
 
 # Singleton

@@ -304,9 +304,35 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal: onAddData }) => {
             <span className="text-2xl font-semibold text-gray-900">
               {formatCurrency(cryptoIncome)}
             </span>
+            <p className="text-xs text-gray-400 mt-1">Staking rewards, airdrops</p>
           </CardContent>
         </Card>
       </div>
+
+      {/* Cost Basis Breakdown - NEW */}
+      {taxData?.tax_data?.cost_basis_breakdown && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card className="bg-white border-gray-200 shadow-sm">
+            <CardContent className="p-6">
+              <p className="text-sm text-gray-500 mb-2">Cost Basis from Purchases</p>
+              <span className="text-xl font-semibold text-gray-900">
+                {formatCurrency(taxData.tax_data.cost_basis_breakdown.purchases || 0)}
+              </span>
+              <p className="text-xs text-gray-400 mt-1">Actual USD spent on buys</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white border-gray-200 shadow-sm">
+            <CardContent className="p-6">
+              <p className="text-sm text-gray-500 mb-2">Cost Basis from Income</p>
+              <span className="text-xl font-semibold text-gray-900">
+                {formatCurrency(taxData.tax_data.cost_basis_breakdown.income || 0)}
+              </span>
+              <p className="text-xs text-gray-400 mt-1">FMV of rewards when received</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Account Breakdown Table */}
       <Card className="bg-white border-gray-200 shadow-sm">
