@@ -541,10 +541,34 @@ REACT_APP_BACKEND_URL=https://...
 - Form 8949 export requires realized gains (sell transactions)
 - Historical prices for past transactions use current prices as fallback
 
+### Phase 21: Chain of Custody & Wallet Linkage Verification (Completed - Mar 26, 2026)
+- [x] **3-Layer Linkage Architecture** verified working:
+  - Layer 1: Canonical Ledger (immutable transaction data)
+  - Layer 2: Linkage Engine (`linkage_engine_service.py`) - identity/ownership matching
+  - Layer 3: Chain of Custody UI (user-facing custody trails)
+- [x] **Review Queue System** fully functional:
+  - Detects cross-exchange transfers
+  - Shows pending chain breaks for user decision
+  - Supports "Mine" (creates linkage), "External" (creates tax event), "Skip" (ignore)
+- [x] **Form 8949 CSV Export** verified:
+  - IRS-compliant format with proper columns
+  - Uses FIFO cost basis from original acquisition date
+  - Tax events generated from "External" resolutions
+- [x] **API Endpoints Tested**:
+  - GET `/api/custody/review-queue` - 328 pending items
+  - POST `/api/custody/resolve-review` - Mine/External decisions work
+  - GET `/api/custody/linkages` - 37 active linkages
+  - GET `/api/custody/clusters` - Wallet grouping
+  - GET `/api/custody/tax-events` - Tax event retrieval
+  - GET `/api/custody/export-form-8949` - CSV download
+  - GET `/api/custody/export-review-queue` - CSV export for offline review
+- [x] **Bug Fix**: Error handling in resolve-review now returns proper 400 status for invalid decisions
+
 ## Backlog
 - [ ] Coinbase API key connection debugging (needs user verification)
 - [ ] DeFi Position Tracking
 - [ ] NFT Portfolio Tracking
+- [ ] 7-Tier Subscription Pricing (User requested to pause for math focus)
 
 ### Completed Refactoring (Mar 19, 2026)
 - [x] **Server.py Refactoring** - Split 4,375-line server.py into 10 modular route files:
