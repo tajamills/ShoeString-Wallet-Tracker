@@ -3,14 +3,16 @@
  * Traces the origin of cryptocurrency by following the transaction graph backwards.
  * Helps establish accurate cost basis by finding exchanges, DEXs, and dormant wallet origins.
  * 
- * THREE OPTIONS:
+ * FEATURES:
  * 1. Connect Coinbase API Key - Enter YOUR OWN Coinbase API credentials
  * 2. Manual Entry - Enter wallet addresses one by one
- * 3. Connect Coinbase OAuth (optional) - If app OAuth is configured
+ * 3. Wallet Linkage - Link wallets you own to maintain cost basis continuity
+ * 4. Chain Break Detection - Review and resolve unlinked transfers
+ * 5. Tax Event Generation - Form 8949 export for external transfers
  * 
  * Unlimited tier only - designed to be easily separable for government/enterprise licensing.
  */
-// Chain of Custody Modal v2.2 - User API Keys - Last updated: Mar 11, 2026
+// Chain of Custody Modal v3.0 - Wallet Linkage System - Last updated: Dec 2025
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -44,6 +46,7 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import { CustodyFlowGraph } from './CustodyFlowGraph';
+import { WalletLinkageManager } from './WalletLinkageManager';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -132,6 +135,7 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
   const [viewMode, setViewMode] = useState('graph');
+  const [showLinkageManager, setShowLinkageManager] = useState(false);
 
   const supportedChains = [
     { id: 'ethereum', name: 'Ethereum', icon: '⟠' },
@@ -537,6 +541,30 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
           </DialogDescription>
         </DialogHeader>
 
+        {/* Mode Toggle - Analyze vs Linkage Manager */}
+        <div className="flex justify-center gap-2 border-b border-slate-700 pb-3 mb-2">
+          <Button
+            variant={!showLinkageManager ? "default" : "outline"}
+            onClick={() => setShowLinkageManager(false)}
+            className={`text-xs sm:text-sm ${!showLinkageManager ? 'bg-blue-600' : 'border-slate-600'}`}
+          >
+            <Search className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+            Trace Origins
+          </Button>
+          <Button
+            variant={showLinkageManager ? "default" : "outline"}
+            onClick={() => setShowLinkageManager(true)}
+            className={`text-xs sm:text-sm ${showLinkageManager ? 'bg-purple-600' : 'border-slate-600'}`}
+          >
+            <Link2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+            Wallet Linkage
+          </Button>
+        </div>
+
+        {/* Wallet Linkage Manager */}
+        {showLinkageManager ? (
+          <WalletLinkageManager getAuthHeader={getAuthHeader} onUpdate={() => {}} />
+        ) : (
         <div className="space-y-6 mt-4">
           {/* Method Selection - Show only when no results */}
           {!result && inputMethod === 'select' && (
@@ -1459,6 +1487,7 @@ bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
             </>
           )}
         </div>
+        )}
       </DialogContent>
     </Dialog>
   );
