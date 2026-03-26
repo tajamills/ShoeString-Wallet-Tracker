@@ -699,11 +699,17 @@ class LinkageEngineService:
     
     async def get_pending_reviews(self, user_id: str) -> List[Dict]:
         """Get all pending review items for a user"""
-        reviews = await db.review_queue.find({
+        # Use fresh connection to avoid stale data issues
+        from motor.motor_asyncio import AsyncIOMotorClient
+        client = AsyncIOMotorClient(MONGO_URL)
+        fresh_db = client[DB_NAME]
+        
+        reviews = await fresh_db.review_queue.find({
             "user_id": user_id,
             "review_status": ReviewStatus.PENDING.value
         }, {"_id": 0}).sort("created_at", -1).to_list(1000)
         
+        client.close()
         return reviews
     
     # ========================================

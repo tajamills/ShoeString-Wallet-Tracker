@@ -390,7 +390,12 @@ async def get_review_queue(
 ):
     """Get pending chain break reviews for the user"""
     try:
-        reviews = await linkage_engine.get_pending_reviews(user["id"])
+        user_id = user["id"]
+        logger.info(f"Fetching reviews for user_id: {user_id}")
+        
+        reviews = await linkage_engine.get_pending_reviews(user_id)
+        
+        logger.info(f"Found {len(reviews)} reviews for user {user_id}")
         
         return {
             "reviews": reviews,
