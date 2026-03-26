@@ -438,33 +438,7 @@ async def delete_saved_wallet(
         raise HTTPException(status_code=500, detail="Failed to delete wallet")
 
 
-@router.post("/wallets/add")
-async def add_wallet_with_sync(
-    user: dict = Depends(get_current_user)
-):
-    """
-    Add a wallet and sync its transactions.
-    
-    This is the primary data input method (CoinTracker-style).
-    - Syncs on-chain transactions from the wallet
-    - Stores transactions in the exchange_transactions collection for unified tax calculation
-    - Supports "as of date" for tax year calculations
-    """
-    from fastapi import Request
-    from pydantic import BaseModel
-    from typing import Optional
-    
-    class AddWalletRequest(BaseModel):
-        address: str
-        chain: str = "ethereum"
-        as_of_date: Optional[str] = None  # YYYY-MM-DD format
-        sync_transactions: bool = True
-    
-    # This endpoint needs the request body, let's handle it differently
-    pass
-
-
-# Using a separate function to handle the request properly
+# Pydantic model for wallet add request
 from pydantic import BaseModel
 from typing import Optional
 
