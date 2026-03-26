@@ -432,9 +432,8 @@ function App() {
                     )}
                     {user.subscription_tier !== 'free' && (
                       <Button 
-                        variant="outline" 
                         onClick={() => setShowAddDataModal(true)}
-                        className="border-purple-600 text-purple-300 hover:bg-purple-900/30 h-8 text-xs md:text-sm"
+                        className="bg-purple-600 hover:bg-purple-700 text-white h-8 text-xs md:text-sm font-medium"
                         data-testid="add-data-button"
                       >
                         <Plus className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
@@ -443,9 +442,8 @@ function App() {
                     )}
                     {user.subscription_tier !== 'free' && (
                       <Button 
-                        variant="outline" 
                         onClick={() => setShowCustodyModal(true)}
-                        className="border-green-600 text-green-300 hover:bg-green-900/30 h-8 text-xs md:text-sm"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 text-xs md:text-sm font-medium"
                         data-testid="custody-button"
                       >
                         <Link2 className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
@@ -453,9 +451,8 @@ function App() {
                       </Button>
                     )}
                     <Button 
-                      variant="outline" 
                       onClick={() => setShowSupportModal(true)}
-                      className="border-cyan-600 text-cyan-300 hover:bg-cyan-900/30 h-8 text-xs md:text-sm"
+                      className="bg-cyan-600 hover:bg-cyan-700 text-white h-8 text-xs md:text-sm font-medium"
                       data-testid="support-button"
                     >
                       <HelpCircle className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
@@ -488,8 +485,7 @@ function App() {
           <div className="max-w-3xl mx-auto mb-4">
             <Button
               onClick={() => setShowSavedWallets(!showSavedWallets)}
-              variant="outline"
-              className="border-slate-600 text-gray-300"
+              className="bg-slate-700 hover:bg-slate-600 text-white border border-slate-500"
             >
               <Wallet className="w-4 h-4 mr-2" />
               {showSavedWallets ? 'Hide' : 'Show'} Saved Wallets
