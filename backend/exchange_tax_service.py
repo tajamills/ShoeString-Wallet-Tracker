@@ -33,7 +33,8 @@ class ExchangeTaxService:
         self,
         transactions: List[Dict],
         asset_filter: Optional[str] = None,
-        tax_year: Optional[int] = None
+        tax_year: Optional[int] = None,
+        as_of_date: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Calculate tax data from exchange transactions only.
@@ -42,12 +43,18 @@ class ExchangeTaxService:
             transactions: List of exchange transactions from DB
             asset_filter: Optional filter for specific asset
             tax_year: Optional filter for specific tax year
+            as_of_date: Optional date string (YYYY-MM-DD) for unrealized gains valuation.
+                        If tax_year is provided and as_of_date is not, defaults to Dec 31 of tax_year.
         
         Returns:
             Complete tax data with cost basis, gains, etc.
         """
         if not transactions:
             return self._empty_result()
+        
+        # If tax_year provided but no as_of_date, default to end of tax year
+        if tax_year and not as_of_date:
+            as_of_date = f"{tax_year}-12-31"
         
         # Normalize and filter transactions
         normalized = []
@@ -134,8 +141,8 @@ class ExchangeTaxService:
             all_realized.extend(realized)
             all_remaining.extend(remaining)
         
-        # Calculate unrealized gains with current prices
-        unrealized = self._calculate_unrealized_gains(all_remaining)
+        # Calculate unrealized gains using as_of_date for proper tax year valuation
+        unrealized = self._calculate_unrealized_gains(all_remaining, as_of_date)
         
         # Calculate summary
         total_realized = sum(g['gain_loss'] for g in all_realized)
@@ -166,7 +173,9 @@ class ExchangeTaxService:
                 'dispositions_count': len(all_realized),
                 'open_positions': len(all_remaining)
             },
-            'tax_year': tax_year
+            'tax_year': tax_year,
+            'as_of_date': as_of_date or 'current',
+            'valuation_note': f"Holdings valued as of {as_of_date or 'current market price'}"
         }
     
     def _normalize_transaction(self, tx: Dict) -> Dict:
@@ -360,33 +369,52 @@ class ExchangeTaxService:
             for lot in buy_queue if lot['remaining'] > 0
         ]
     
-    def _calculate_unrealized_gains(self, remaining_lots: List[Dict]) -> Dict:
-        """Calculate unrealized gains with current prices"""
+    def _calculate_unrealized_gains(self, remaining_lots: List[Dict], as_of_date: Optional[str] = None) -> Dict:
+        """
+        Calculate unrealized gains with prices.
+        
+        Args:
+            remaining_lots: List of lots still held
+            as_of_date: Optional date string (YYYY-MM-DD) for historical valuation.
+                        If None, uses current prices.
+                        For tax year calculations, use "2024-12-31" etc.
+        """
         lots_with_gains = []
         total_cost = 0
         total_value = 0
         
-        # Get current prices for each asset
+        # Get prices (current or historical) for each asset
         price_cache = {}
+        valuation_date = as_of_date or "current"
         
         for lot in remaining_lots:
             asset = lot['asset']
             
-            # Get current price (with caching)
+            # Get price (with caching)
             if asset not in price_cache:
                 try:
-                    price_cache[asset] = price_service.get_current_price(asset) or 0
+                    if as_of_date:
+                        # Convert YYYY-MM-DD to DD-MM-YYYY for price service
+                        parts = as_of_date.split('-')
+                        if len(parts) == 3:
+                            date_str = f"{parts[2]}-{parts[1]}-{parts[0]}"
+                            price_cache[asset] = price_service.get_historical_price(asset, date_str) or 0
+                        else:
+                            price_cache[asset] = price_service.get_current_price(asset) or 0
+                    else:
+                        price_cache[asset] = price_service.get_current_price(asset) or 0
                 except:
                     price_cache[asset] = 0
             
-            current_price = price_cache[asset]
+            valuation_price = price_cache[asset]
             cost = lot['cost_basis']
-            value = lot['amount'] * current_price
+            value = lot['amount'] * valuation_price
             gain = value - cost
             
             lots_with_gains.append({
                 **lot,
-                'current_price': current_price,
+                'current_price': valuation_price,
+                'valuation_date': valuation_date,
                 'current_value': value,
                 'unrealized_gain': gain,
                 'gain_percentage': (gain / cost * 100) if cost > 0 else 0
@@ -397,6 +425,7 @@ class ExchangeTaxService:
         
         return {
             'lots': lots_with_gains,
+            'valuation_date': valuation_date,
             'total_cost_basis': total_cost,
             'total_current_value': total_value,
             'total_gain': total_value - total_cost,

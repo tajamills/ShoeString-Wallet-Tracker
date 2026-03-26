@@ -18,7 +18,7 @@ const getAvailableYears = () => {
   return years;
 };
 
-export const TaxSummaryDashboard = ({ onOpenExchangeModal }) => {
+export const TaxSummaryDashboard = ({ onOpenExchangeModal: onAddData }) => {
   const { getAuthHeader, user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [taxData, setTaxData] = useState(null);
@@ -56,12 +56,16 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal }) => {
         return txDate >= yearStart && txDate <= yearEnd;
       });
 
-      // Fetch tax data with year filter
+      // Use end of tax year for unrealized gains valuation
+      const asOfDate = `${selectedYear}-12-31`;
+
+      // Fetch tax data with year filter and as_of_date for proper valuation
       const taxResponse = await axios.post(
         `${API}/tax/unified`,
         { 
           data_source: 'exchange_only',
-          tax_year: selectedYear
+          tax_year: selectedYear,
+          as_of_date: asOfDate  // Value holdings at end of tax year
         },
         { headers: getAuthHeader() }
       );
@@ -322,10 +326,10 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal }) => {
                   <td colSpan={4} className="py-8 text-center text-gray-500">
                     No accounts connected yet.{' '}
                     <button 
-                      onClick={onOpenExchangeModal}
+                      onClick={onAddData}
                       className="text-purple-600 hover:underline"
                     >
-                      Connect an exchange
+                      Add your data
                     </button>
                   </td>
                 </tr>

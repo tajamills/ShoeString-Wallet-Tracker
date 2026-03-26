@@ -217,11 +217,13 @@ class UnifiedTaxRequest(BaseModel):
     data_source: str = "combined"
     asset_filter: Optional[str] = None
     tax_year: Optional[int] = None
+    as_of_date: Optional[str] = None  # YYYY-MM-DD format for historical valuation
 
 
 class ExchangeTaxRequest(BaseModel):
     asset_filter: Optional[str] = None
     tax_year: Optional[int] = None
+    as_of_date: Optional[str] = None  # YYYY-MM-DD format for historical valuation
 
 
 # Chain Request Models

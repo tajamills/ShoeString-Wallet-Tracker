@@ -436,3 +436,186 @@ async def delete_saved_wallet(
     except Exception as e:
         logger.error(f"Error deleting wallet: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to delete wallet")
+
+
+@router.post("/wallets/add")
+async def add_wallet_with_sync(
+    user: dict = Depends(get_current_user)
+):
+    """
+    Add a wallet and sync its transactions.
+    
+    This is the primary data input method (CoinTracker-style).
+    - Syncs on-chain transactions from the wallet
+    - Stores transactions in the exchange_transactions collection for unified tax calculation
+    - Supports "as of date" for tax year calculations
+    """
+    from fastapi import Request
+    from pydantic import BaseModel
+    from typing import Optional
+    
+    class AddWalletRequest(BaseModel):
+        address: str
+        chain: str = "ethereum"
+        as_of_date: Optional[str] = None  # YYYY-MM-DD format
+        sync_transactions: bool = True
+    
+    # This endpoint needs the request body, let's handle it differently
+    pass
+
+
+# Using a separate function to handle the request properly
+from pydantic import BaseModel
+from typing import Optional
+
+class AddWalletRequest(BaseModel):
+    address: str
+    chain: str = "ethereum"
+    as_of_date: Optional[str] = None
+    sync_transactions: bool = True
+
+
+@router.post("/wallets/add")
+async def add_wallet(
+    request: AddWalletRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Add a wallet and sync its on-chain transactions.
+    
+    Primary data input method:
+    - Fetches transactions from blockchain APIs
+    - Stores in exchange_transactions for unified tax calculation
+    - Supports "as of date" for proper tax year valuation
+    """
+    try:
+        user_tier = user.get('subscription_tier', 'free')
+        if user_tier == 'free':
+            raise HTTPException(
+                status_code=403,
+                detail="Adding wallets requires a paid subscription. Upgrade to sync your wallets."
+            )
+        
+        address = request.address.strip()
+        chain = request.chain.lower()
+        
+        # Validate address format
+        if chain in ['ethereum', 'polygon', 'arbitrum', 'bsc']:
+            if not address.startswith('0x') or len(address) != 42:
+                raise HTTPException(status_code=400, detail=f"Invalid {chain} address format")
+        elif chain == 'bitcoin':
+            if len(address) < 26:
+                raise HTTPException(status_code=400, detail="Invalid Bitcoin address format")
+        elif chain == 'solana':
+            if len(address) < 32 or len(address) > 44:
+                raise HTTPException(status_code=400, detail="Invalid Solana address format")
+        
+        transactions_found = 0
+        
+        if request.sync_transactions:
+            # Analyze the wallet to get transactions
+            try:
+                analysis_data = multi_chain_service.analyze_wallet(
+                    address,
+                    chain=chain,
+                    user_tier=user_tier
+                )
+                
+                all_transactions = analysis_data.get('recentTransactions', [])
+                
+                # Convert wallet transactions to exchange_transactions format
+                # This allows unified tax calculation across wallets and exchanges
+                for tx in all_transactions:
+                    # Determine transaction type
+                    tx_type = tx.get('type', 'unknown')
+                    if tx_type == 'received':
+                        tx_type = 'receive'
+                    elif tx_type == 'sent':
+                        tx_type = 'send'
+                    
+                    # Get the asset symbol from the chain
+                    chain_symbols = {
+                        'ethereum': 'ETH', 'bitcoin': 'BTC', 'solana': 'SOL',
+                        'polygon': 'MATIC', 'arbitrum': 'ETH', 'bsc': 'BNB'
+                    }
+                    asset = tx.get('asset') or chain_symbols.get(chain, chain.upper())
+                    
+                    # Get timestamp
+                    timestamp = tx.get('timestamp') or tx.get('blockTime')
+                    if isinstance(timestamp, (int, float)):
+                        from datetime import datetime
+                        timestamp = datetime.fromtimestamp(timestamp, tz=timezone.utc)
+                    elif isinstance(timestamp, str):
+                        try:
+                            timestamp = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                        except:
+                            timestamp = datetime.now(timezone.utc)
+                    else:
+                        timestamp = datetime.now(timezone.utc)
+                    
+                    # Create transaction document
+                    tx_doc = {
+                        "user_id": user["id"],
+                        "tx_id": tx.get('hash') or f"wallet_{chain}_{address[:8]}_{transactions_found}",
+                        "exchange": f"wallet_{chain}",  # Mark as wallet source
+                        "tx_type": tx_type,
+                        "asset": asset,
+                        "amount": abs(float(tx.get('value', 0))),
+                        "price_usd": tx.get('value_usd', 0) / abs(float(tx.get('value', 1))) if tx.get('value') and tx.get('value_usd') else None,
+                        "total_usd": tx.get('value_usd'),
+                        "fee": float(tx.get('gasFee', 0) or tx.get('fee', 0)),
+                        "fee_asset": chain_symbols.get(chain, chain.upper()),
+                        "timestamp": timestamp,
+                        "source": "wallet_sync",
+                        "wallet_address": address,
+                        "chain": chain,
+                        "as_of_date": request.as_of_date
+                    }
+                    
+                    # Upsert to avoid duplicates
+                    await db.exchange_transactions.update_one(
+                        {
+                            "user_id": user["id"],
+                            "tx_id": tx_doc["tx_id"]
+                        },
+                        {"$set": tx_doc},
+                        upsert=True
+                    )
+                    transactions_found += 1
+                
+                logger.info(f"Synced {transactions_found} transactions for wallet {address[:8]}... on {chain}")
+                
+            except Exception as e:
+                logger.error(f"Error syncing wallet transactions: {e}")
+                # Continue even if sync fails - we'll save the wallet reference
+        
+        # Save wallet reference
+        wallet_doc = {
+            "user_id": user["id"],
+            "address": address.lower(),
+            "chain": chain,
+            "as_of_date": request.as_of_date,
+            "last_synced": datetime.now(timezone.utc),
+            "transactions_synced": transactions_found
+        }
+        
+        await db.user_wallets.update_one(
+            {"user_id": user["id"], "address": address.lower(), "chain": chain},
+            {"$set": wallet_doc},
+            upsert=True
+        )
+        
+        return {
+            "success": True,
+            "message": f"Wallet added successfully",
+            "address": address,
+            "chain": chain,
+            "transactions_found": transactions_found,
+            "as_of_date": request.as_of_date
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error adding wallet: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to add wallet: {str(e)}")

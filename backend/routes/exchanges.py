@@ -515,7 +515,16 @@ async def calculate_exchange_tax(
     request: ExchangeTaxRequest = ExchangeTaxRequest(),
     user: dict = Depends(get_current_user)
 ):
-    """Calculate tax data from imported exchange CSVs only"""
+    """
+    Calculate tax data from imported exchange CSVs only.
+    
+    Parameters:
+        - asset_filter: Filter by specific asset (e.g., 'BTC')
+        - tax_year: Filter by tax year (e.g., 2024)
+        - as_of_date: Valuation date for unrealized gains (YYYY-MM-DD format)
+                      If not provided and tax_year is set, defaults to Dec 31 of tax_year.
+                      Use this for accurate end-of-year tax reporting.
+    """
     try:
         user_tier = user.get('subscription_tier', 'free')
         if user_tier == 'free':
@@ -539,12 +548,15 @@ async def calculate_exchange_tax(
         tax_data = exchange_tax_service.calculate_from_transactions(
             transactions=transactions,
             asset_filter=request.asset_filter,
-            tax_year=request.tax_year
+            tax_year=request.tax_year,
+            as_of_date=request.as_of_date
         )
         
         return {
             "message": "Tax calculation complete",
             "has_data": True,
+            "as_of_date": tax_data.get('as_of_date', 'current'),
+            "valuation_note": tax_data.get('valuation_note', ''),
             "tax_data": tax_data
         }
         
