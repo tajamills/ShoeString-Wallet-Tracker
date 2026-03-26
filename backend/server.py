@@ -212,11 +212,17 @@ async def get_portfolio_by_exchange(
         # Calculate net holdings per exchange per asset
         holdings = {}  # {exchange: {asset: amount}}
         
+        # Debug logging
+        tx_type_counts = {}
+        
         for tx in transactions:
             exchange = (tx.get('exchange') or 'unknown').lower()
             asset = (tx.get('asset') or '').upper()
             amount = float(tx.get('amount') or 0)
             tx_type = (tx.get('tx_type') or '').lower()
+            
+            # Count tx_types for debugging
+            tx_type_counts[tx_type] = tx_type_counts.get(tx_type, 0) + 1
             
             if not asset:
                 continue
@@ -227,11 +233,18 @@ async def get_portfolio_by_exchange(
                 holdings[exchange][asset] = 0
             
             # IN transactions add to holdings
-            if tx_type in ['buy', 'receive', 'deposit', 'reward', 'staking', 'airdrop', 'interest']:
+            # Include all possible "add" types
+            if tx_type in ['buy', 'receive', 'received', 'deposit', 'reward', 'staking', 'airdrop', 'interest', 'in', 'transfer_in']:
                 holdings[exchange][asset] += amount
             # OUT transactions subtract from holdings
-            elif tx_type in ['sell', 'send', 'withdrawal']:
+            # Include all possible "subtract" types
+            elif tx_type in ['sell', 'send', 'sent', 'withdrawal', 'withdraw', 'out', 'transfer_out']:
                 holdings[exchange][asset] -= amount
+            # If tx_type doesn't match, log it
+            else:
+                logger.debug(f"Unknown tx_type '{tx_type}' for {amount} {asset} on {exchange}")
+        
+        logger.info(f"Portfolio tx_type counts: {tx_type_counts}")
         
         # Fetch current prices - CoinGecko first, Binance fallback
         prices = {}

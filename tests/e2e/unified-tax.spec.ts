@@ -5,7 +5,7 @@ import { test, expect, Page } from '@playwright/test';
  * Tests the UnifiedTaxDashboard component that combines on-chain wallet + exchange CSV data
  */
 
-const BASE_URL = process.env.REACT_APP_BACKEND_URL || 'https://wallet-gains-calc.preview.emergentagent.com';
+const BASE_URL = process.env.REACT_APP_BACKEND_URL || 'https://portfolio-gains-calc.preview.emergentagent.com';
 const PREMIUM_EMAIL = 'taxtest@test.com';
 const PREMIUM_PASSWORD = 'TestPass123!';
 // Use a less active address for faster analysis

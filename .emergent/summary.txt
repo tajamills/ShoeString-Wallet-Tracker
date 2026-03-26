@@ -1,170 +1,126 @@
 <analysis>**original_problem_statement:**
-The user wants to finalize the MVP for a Crypto Bag Tracker, a web application for analyzing cryptocurrency wallet transactions and generating tax reports. The primary goals have expanded to include robust, accurate analysis for multiple blockchains and automated tax calculations directly from on-chain data.
+The user is building a Crypto Bag Tracker web application for analyzing cryptocurrency wallet transactions and generating tax reports. The primary goal is to accurately auto-detect chains, calculate cost basis, holding periods, and realized/unrealized gains directly from on-chain and exchange CSV data. Recently, the user requested a complete overhaul of the subscription pricing to a new 7-tier model (ranging from 9/yr to ,499/yr) and reported an issue where Portfolio Values were inverted for legacy data on their production app.
 
-PRODUCT REQUIREMENTS (Consolidated from handoff and this session):
-- **Core Functionality**:
-    - User signup/login.
-    - Input a wallet address and have the chain type be auto-detected.
-    - View a detailed chain of custody analysis that automatically calculates cost basis, holding periods, and realized/unrealized gains directly from on-chain transactions.
-    - Download an accurate Form 8949 CSV tax report.
-- **Supported Chains**: Ethereum, BSC, Polygon, Solana, Bitcoin, Algorand, XRP, and Stellar (XLM).
-- **Data Accuracy**: Calculations must be correct. The system must handle various token types and not produce wildly inaccurate results (e.g., billions in gains).
-- **Exchange Integration**: Connect to exchanges like Coinbase via API key to fetch transaction data.
-- **Performance**: The application must be able to handle large wallets with thousands of transactions without timing out.
+**User's preferred language**: English (INSTRUCT next agent to respond in English only)
 
-**User's preferred language**: English
-
-**what currently exists?**
-A full-stack React/FastAPI/MongoDB application. The agent has successfully implemented three critical fixes/features in this session:
-1.  **Fixed the Billion-Dollar Bug**: The agent identified the true root cause was a logical flaw in the FIFO calculation where transactions from different assets were being mixed (e.g., matching BTC buys with ALGO sells). The logic in  was rewritten to group transactions by asset before processing, which has resolved the issue.
-2.  **Handled Exchange Deposit Addresses**: Fixed a bug where user-provided exchange deposit addresses showed a /bin/bash balance. The system now detects this pattern (receive & immediate sweep) and displays a clear warning on the frontend, guiding the user to connect via API or import a CSV for accurate data.
-3.  **Large Wallet Performance Optimization**: Implemented major performance enhancements to handle wallets with 10,000+ transactions. This involved switching to bulk API calls for historical prices, implementing pagination for EVM chain analysis, and optimizing the API response to avoid sending huge datasets to the frontend. Analysis time for large wallets has been reduced from timing out to under one minute.
-4.  **Coinbase API Sync**: Implemented the previously missing functionality to sync transactions directly from Coinbase via API, adding the necessary backend endpoint and frontend buttons.
+**what currently exists?** 
+A full-stack React/FastAPI/MongoDB app featuring CSV parsing (Coinbase, Kraken, Ledger), a CoinTracker-inspired Tax Summary Dashboard with Tax Year filtering,  to intelligently link cross-exchange transfers and prevent cost-basis inflation, and multi-source portfolio pricing (CoinGecko + Binance fallback).
 
 **Last working item**:
-- Last item agent was working: The agent completed the Large Wallet Performance Optimization task requested by the user. The final steps involved debugging and fixing minor errors that arose from the extensive refactoring, such as  errors and incorrect method calls ( vs ). After the fixes, the agent successfully tested a large wallet with 12,000 transactions, which completed analysis in under a minute. A final run of the testing agent confirmed that all optimizations and previous features were working correctly.
-- Status: USER VERIFICATION PENDING
-- Agent Testing Done: Y
-- Which testing method agent to use? NA
-- User Testing Done: N
+    - **Last item agent was working**: The agent had just formulated a plan to tackle the user's request for the 7 new subscription pricing tiers (Base, Base+, Prime, Prime+, Ultra, Ultra+, Full Service) and checking the status of the Portfolio Value inversion fix. The agent fired an  tool call to get user approval on the plan and the session ended while waiting for the user's response.
+    - **Status**: BLOCKED (Waiting on human response)
+    - **Agent Testing Done**: N
+    - **Which testing method agent to use?**: both (frontend testing agent for UI, backend testing agent/curl for Stripe/limits logic)
+    - **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
-- Issue 1: Coinbase API transaction syncing needs user verification. (Priority: P0)
+  - Issue 1: Implement New Subscription Pricing Tiers (Priority: P0)
+     - **Attempted fixes**: None. The agent just asked the user for confirmation to start.
+     - **Next debug checklist**: 
+       1. Wait for/read the user's response to the  prompt.
+       2. Update  (or equivalent) to display the 7 new tiers.
+       3. Update  to handle the new Stripe Price IDs and enforce transaction limits.
+       4. Ensure transaction limits (100, 250, 1000, 2500, 10k, 50k, unlimited) are enforced in the backend analysis logic ( or tax services).
+     - **Why fix this issue and what will be achieved with the fix?**: Fulfills the user's explicit request to drastically change their monetization strategy to stop being too cheap.
+     - **Status**: NOT STARTED
+     - **Is recurring issue?** N
+     - **Should Test frontend/backend/both after fix?**: both
+     - **Blocked on other issue**: Pending user confirmation via chat.
 
-  Issues Detail:
-  - Issue 1: **Coinbase API transaction syncing needs user verification.**
-     - Attempted fixes: The agent built the end-to-end functionality for syncing Coinbase transactions. This included:
-        - A new backend endpoint: .
-        - A new service function in  to fetch transactions.
-        - UI buttons in the  and as part of the new exchange deposit address warning in .
-     - Next debug checklist:
-        1. Wait for user feedback on whether the Coinbase API connection and transaction sync now work as expected with their own production API keys.
-        2. If the user reports issues, ask for the output of the  endpoint to diagnose the problem remotely.
-     - Why fix this issue and what will be achieved with the fix?: This is a core feature for users who want to analyze their exchange holdings without manual CSV imports.
-     - Status: USER VERIFICATION PENDING
-     - Is recurring issue? Y
-     - Should Test frontend/backend/both after fix?: backend
-     - Blocked on other issue: None. Blocked on user feedback.
+  - Issue 2: Portfolio Value is Inverted/Wrong for Legacy Data (Priority: P1)
+     - **Attempted fixes**: A previous agent updated  to treat old Ledger buys as receives.
+     - **Next debug checklist**: 
+       1. Ask the user if the portfolio values look correct on production after the last deployment. 
+       2. If not, investigate  in  to ensure  and  math properly handles transfers across exchanges without inflating balances.
+     - **Why fix this issue and what will be achieved with the fix?**: Accurate portfolio valuation is critical for user trust and matching CoinTracker's UI.
+     - **Status**: USER VERIFICATION PENDING
+     - **Is recurring issue?** Y (Math logic requires constant refinement based on edge cases).
+     - **Should Test frontend/backend/both after fix?**: backend
+     - **Blocked on other issue**: None
 
 **In progress Task List**:
-None.
+None actively being coded.
 
 **Upcoming and Future Tasks**
-- **Upcoming Tasks**:
-    - **Refactor  and  (P1)**: These files have become very large and complex. Refactoring them into smaller, more manageable modules would improve maintainability.
-- **Future Tasks**:
-    - Dogecoin analyzer improvements.
-    - DeFi Position Tracking.
-    - NFT Portfolio Tracking.
+  Upcoming Tasks:
+  - Enforce Tier Transaction Limits (P1): Backend must enforce analysis limits (e.g., up to 100 transactions for Base) based on the user's Stripe subscription.
+  - Refactor  (P2): Modularize this large file.
+  
+  Future Tasks:
+  - Dogecoin analyzer improvements.
+  - DeFi Position Tracking.
+  - NFT Portfolio Tracking.
 
 **Completed work in this session**
-- **Critical FIFO Bug Fix (RESOLVED)**:
-    - Rewrote FIFO logic in  and  to be per-asset, fixing the billion-dollar bug.
-    - Fixed  to show correct asset names in Form 8949 exports.
-- **Exchange Deposit Address Detection (DONE)**:
-    - Added a heuristic-based detection method in .
-    - Added a corresponding warning and action buttons to the frontend in .
-- **Coinbase API Sync Functionality (DONE)**:
-    - Created  endpoint in .
-    - Implemented  in .
-    - Added Sync buttons to  and the warning in .
-- **Large Wallet Performance Optimization (DONE)**:
-    - Implemented bulk historical price fetching in  to drastically reduce API calls.
-    - Rewrote EVM analysis in  to use pagination (), handling up to 12,000 transactions.
-    - Optimized API response in  to send a limited  list (100) to the frontend while using all transactions for backend calculations.
-    - Increased transaction fetch limits for Solana, Bitcoin, Stellar, and XRP.
-- **PRD Update**: Updated  to reflect the completion of the bug fixes and performance optimization.
+- No coding completed in this short session. The agent analyzed the previous fork summary and issued an  to propose an action plan.
 
 **Earlier issues found/mentioned but not fixed**
-None.
+- The previous agent relied heavily on  Python scripts for complex mathematical unit testing rather than utilizing the . 
 
 **Known issue recurrence from previous fork**
-- Issue recurrence in previous fork: The user was repeatedly seeing multi-billion dollar gains. This was previously believed to be a data corruption issue.
-- Recurrence count: High
-- Status: RESOLVED
-- Note: The agent in this session correctly identified the root cause as a logical bug in the FIFO calculation (mixing assets), not data corruption. The logic has been completely fixed and verified.
+  - Issue recurrence in previous fork: Double-counting cost basis / Math logic errors.
+  - Recurrence count: 3
+  - Status: RESOLVED (but fragile). 
+  *Note*: The system easily double-counts cost basis when users transfer assets between wallets.  was introduced to fix this. Be extremely careful when touching tax logic.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **Per-Asset FIFO Calculation**: The core concept to fix the main bug. It involves grouping all transactions by their asset symbol before applying the FIFO algorithm to ensure buys and sells of the same asset are matched correctly.
-- **Exchange Deposit Address Heuristics**: A pattern-matching approach to identify transient wallets. It checks for a combination of near-zero balance, total-in being almost equal to total-out, and transactions showing a rapid sweep pattern (receive followed quickly by a send of a similar amount).
-- **Performance Optimization via Batching & Pagination**:
-    - **Bulk API Calls**: Using API endpoints that return large sets of data in a single request (e.g., CryptoCompare's ) instead of making hundreds of individual requests in a loop.
-    - **Pagination**: Handling large datasets from RPC endpoints (like Alchemy) by fetching them in sequential pages until all data is retrieved.
-- **API Response Throttling**: A strategy to keep the frontend responsive when dealing with large backend datasets. The API computes on the full dataset (e.g., 12,000 transactions) but only returns a small, manageable subset (e.g., 100) for UI display, along with a total count.
+- Tax Math / FIFO: Cost basis must flow from the *original* purchase.
+- Multi-Source Pricing: Backend fetches prices from CoinGecko, falling back to Binance API.
+- Production vs Preview Testing: The Emergent preview environment database is empty. The user is actively testing against their live production database.
 
 **key DB schema**
-- No changes made to the database schema.
+  - : {id, user_id, exchange, tx_type, amount, asset, timestamp, price_usd, total_usd}
+  - : {subscription_tier, transaction_limit, etc.}
 
 **changes in tech stack**
-- No changes to the core tech stack.
+  - None in this session.
 
-**All files of reference**
-- : Contains the corrected per-asset FIFO logic, the primary fix for the billion-dollar bug.
-- : Contains the large wallet performance optimizations for EVM chains and the logic for detecting exchange deposit addresses.
-- : Updated to use the new bulk price fetching service for better performance.
-- : Contains the new API endpoint for Coinbase sync and the updated response model for the wallet analysis endpoint.
-- : Contains the new frontend alert for the exchange deposit warning.
-- : Contains the new Sync Transactions button for Coinbase.
+**All files of reference** 
+-  (Needs updating for tiers)
+-  (Needs updating for tiers)
+-  (Core logic to avoid breaking)
+-  (Contains async )
 
-**Areas that need refactoring**:
--  and  are both very large and handle a wide range of functionalities. They are prime candidates for being broken down into smaller, more focused modules to improve code clarity and maintainability. This was noted as a future task.
+**Areas that need refactoring**: 
+ is too large.  still contains heavy portfolio calculation logic that should be moved to a dedicated service file.
 
 **key api endpoints**
-- : **New** endpoint to trigger a sync of transactions from a connected Coinbase account.
-- : **Modified** response model. Now includes an optional  object and returns a truncated  list alongside a  for large wallets.
+- : Fetches real-time portfolio value using CoinGecko/Binance.
+- : Will need updates for the new 7-tier Stripe integration.
 
 **Critical Info for New Agent**
-- **The Billion-Dollar Bug is definitively fixed.** The root cause was a logical error (cross-asset matching in FIFO), not data corruption. Do not waste time investigating data; the core calculation logic is now sound.
-- **Large wallet performance is now handled.** The system can process wallets with over 10,000 transactions in under a minute by using pagination and bulk API calls.
-- **The user is very direct.** They want broken things fixed and have explicitly stated they do not want enhancement ideas or suggestions unless it's to fix something. Stick to the requested tasks.
-- **The next likely user feedback will be about the Coinbase API sync.** While the feature is fully built and tested with mock data, it has not been verified by the user with their own production credentials. Be prepared to debug this flow if the user reports issues.
+- **Pending Human Response:** This session ended exactly after calling . Your very first step is to read the user's incoming message responding to the proposed plan, and begin executing the 7-tier subscription pricing implementation.
+- **Empty Database Context:** Do not be confused when your API curl commands return  or . The preview database has no exchange transactions. The user is testing against their production app. 
+- **Math Sensitivity:** Do not alter  or  unless explicitly necessary, as they were carefully tuned to prevent double-counting transfers.
 
 **documents and test reports created in this job**
-- 
-- 
-- 
-- 
+None.
 
-**Last 10 User Messages and any pending HUMAN messages**
-1.  **User **: Rejects the idea of adding charts, removes it from the backlog, and requests the agent to immediately start on large wallet performance optimization.
-2.  **User **: Agent finishes the previous task with a summary.
-3.  **User **: User is frustrated, reiterates the request to fix what is broken and not suggest enhancements.
-4.  **User **: Agent finishes, again suggesting an enhancement, which prompts the user's frustration in .
-5.  **User **: System reminder about a persistent bug.
-6.  **User **: User points out that showing a /bin/bash balance for a Coinbase deposit address is a bad user experience and needs to be fixed.
-7.  **User **: Agent asks if the user might be using a different wallet address.
-8.  **User **: System reminder about verifying fixes.
-9.  **User **: User reports that their Solana wallet with 21 SOL is showing /bin/bash gains, stating the calculations are way off and terrible.
-10. **User **: Agent finishes the FIFO bug fix with a summary and an enhancement suggestion.
+**Last 10 User Messages and any pending HUMAN messages** 
+1. **[PENDING HUMAN MESSAGE]**: The user will be responding to the  tool call presented by the previous agent regarding the pricing tiers implementation.
+2. **User**: Provided a list of 7 new pricing tiers with transaction limits ranging from 9 to ,499/yr, stating I am being to cheap on this. *(Task to be executed next)*
 
 **Project Health Check:**
-- **Broken**: The application was broken due to critical calculation and usability bugs.
-- **Mocked**: None.
-- **Current Status**: **Stable**. The most severe user-reported issues (incorrect calculations and misleading zero balances) have been fixed and tested. The core functionality is now reliable.
+- Broken: None currently, but UI/Stripe integration for pricing tiers is outdated based on the newest request.
+- Mocked: None.
 
-**3rd Party Integrations**
-- **Stripe**: Payments.
-- **CryptoCompare**: Primary source for historical and bulk price data.
-- **Binance.US**: Primary source for current price data.
-- **CoinGecko**: Fallback for price data.
-- **Resend**: Transactional emails.
-- **Sentry**: Error monitoring.
-- **Alchemy**: RPC provider for EVM chains and Solana.
-- **Ripple (XRPL) & Stellar (Horizon)**: APIs for XRP and XLM analysis.
+**3rd Party Integrations** 
+- Stripe (Payments) — requires User API Key. *Must be updated for new tiers.*
+- CoinGecko / Binance API — Crypto pricing.
+- Alchemy / Etherscan — Crypto chain data.
 
 **Testing status**
-- Testing agent used after significant changes: YES (Used for FIFO fix, deposit address warning fix, and performance optimization).
-- Troubleshoot agent used after agent stuck in loop: NO
-- Test files created: None. Agent used  scripts, , and the  for validation.
-- Known regressions: None identified. The final test runs confirmed existing functionality still works.
+  - Testing agent used after significant changes: NO
+  - Troubleshoot agent used after agent stuck in loop: NO
+  - Test files created: None
+  - Known regressions: None currently active.
 
 **Credentials to test flow:**
 - User: 
 - Password: 
-(This user is on the  tier).
 
 **What agent forgot to execute**
-- The user explicitly instructed the agent in message  not to add charts to the backlog. However, the agent's final summary in message  still included Portfolio History Charts as a future task. The next agent must ensure this is removed from the plan and the .</analysis>
+- The agent was interrupted by the fork right after calling . It has not forgotten anything but is blocked waiting for the user response to begin the pricing tier implementation.</analysis>

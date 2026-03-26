@@ -109,7 +109,7 @@ ALCHEMY_API_KEY="U2_F7nkCGFY73wbiIFpum"
 
 **Frontend (.env)**
 ```
-REACT_APP_BACKEND_URL=https://wallet-gains-calc.preview.emergentagent.com
+REACT_APP_BACKEND_URL=https://portfolio-gains-calc.preview.emergentagent.com
 ```
 
 ## How It Works

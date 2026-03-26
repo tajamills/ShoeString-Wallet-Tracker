@@ -16,7 +16,7 @@ import os
 import time
 import io
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://wallet-gains-calc.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://portfolio-gains-calc.preview.emergentagent.com').rstrip('/')
 
 # Test wallets
 SOLANA_SMALL_WALLET = "7UcUr26v8a7ttMTud3NeARj8nFqDa2upsGyAKHLcWhEr"
