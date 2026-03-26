@@ -331,19 +331,43 @@ class CSVParserService:
                 for row_key in row.keys():
                     if row_key.lower() == k.lower():
                         return row[row_key]
+                    # Also check if key is contained in row_key (for partial matches)
+                    if k.lower() in row_key.lower():
+                        return row[row_key]
             return ""
         
         timestamp_str = get_val(["Timestamp", "timestamp"])
         tx_type = get_val(["Transaction Type", "transaction type"]).lower()
         asset = get_val(["Asset", "asset"])
         amount = self._parse_float(get_val(["Quantity Transacted", "quantity transacted"]))
-        spot_price = self._parse_float(get_val(["Spot Price at Transaction", "spot price at transaction", "Spot Price Currency", "USD Spot Price at Transaction"]))
-        subtotal = self._parse_float(get_val(["USD Subtotal", "Subtotal", "subtotal"]))
-        fees = self._parse_float(get_val(["Fees and/or Spread", "Fees", "fees"]))
+        
+        # Handle multiple price column names
+        spot_price_raw = get_val([
+            "Price at Transaction",  # New format
+            "Spot Price at Transaction", 
+            "spot price at transaction", 
+            "Spot Price Currency", 
+            "USD Spot Price at Transaction"
+        ])
+        # Clean price string (remove $ and commas)
+        spot_price = self._parse_float(str(spot_price_raw).replace('$', '').replace(',', '')) if spot_price_raw else None
+        
+        # Handle multiple subtotal/total column names
+        subtotal_raw = get_val([
+            "Total (inclusive of fees and/or spread)",  # New format
+            "Total (inclusive of fees)",
+            "Subtotal",
+            "USD Subtotal", 
+            "subtotal"
+        ])
+        subtotal = self._parse_float(str(subtotal_raw).replace('$', '').replace(',', '')) if subtotal_raw else None
+        
+        fees_raw = get_val(["Fees and/or Spread", "Fees", "fees"])
+        fees = self._parse_float(str(fees_raw).replace('$', '').replace(',', '')) if fees_raw else 0
         
         timestamp = self._parse_timestamp(timestamp_str)
         
-        # Map transaction types
+        # Map transaction types - expanded list
         type_map = {
             "buy": "buy",
             "sell": "sell",
@@ -351,20 +375,29 @@ class CSVParserService:
             "receive": "receive",
             "convert": "trade",
             "rewards income": "reward",
+            "reward income": "reward",  # Added
             "coinbase earn": "reward",
             "staking income": "staking",
             "learning reward": "reward",
             "advanced trade buy": "buy",
             "advanced trade sell": "sell",
+            "retail staking transfer": "transfer",  # Internal staking transfer
+            "retail unstaking transfer": "transfer",  # Internal unstaking transfer
+            "incentives rewards payout": "reward",
+            "withdrawal": "send",  # USD withdrawal
         }
         std_type = type_map.get(tx_type, tx_type)
+        
+        # Skip USD withdrawals (not crypto transactions)
+        if asset == "USD" and tx_type in ["withdrawal", "send"]:
+            return None
         
         if not asset or amount == 0:
             return None
         
         return ExchangeTransaction(
             exchange="coinbase",
-            tx_id=f"cb_{idx}_{timestamp.timestamp() if timestamp else idx}",
+            tx_id=get_val(["ID", "id"]) or f"cb_{idx}_{timestamp.timestamp() if timestamp else idx}",
             tx_type=std_type,
             asset=asset,
             amount=abs(amount),
