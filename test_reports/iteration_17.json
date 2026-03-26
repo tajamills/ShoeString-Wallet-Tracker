@@ -24,7 +24,7 @@
       "description": "Missing endpoints in routes/tax.py: /api/tax/export-summary, /api/tax/save-categories, /api/tax/export-schedule-d. These endpoints existed in the original server.py but were not included in the refactored routes/tax.py module.",
       "endpoint_or_component": "/app/backend/routes/tax.py",
       "surfaces": ["backend"],
-      "reproduction": "curl -X POST https://portfolio-gains-calc.preview.emergentagent.com/api/tax/export-summary -H 'Authorization: Bearer <token>' returns 404",
+      "reproduction": "curl -X POST https://crypto-tax-tracker-1.preview.emergentagent.com/api/tax/export-summary -H 'Authorization: Bearer <token>' returns 404",
       "affected_test": "test_tax_features.py::TestTaxSummaryExport - returns 404 instead of 200/403"
     },
     {
@@ -34,7 +34,7 @@
       "description": "Incorrect function call in export-form-8949 endpoint. generate_form_8949_csv() is called with only realized_gains argument, but it requires symbol, address, and filter_type arguments. Original code: tax_report_service.generate_form_8949_csv(realized_gains=..., symbol=..., address=..., filter_type=...). Current broken code: tax_report_service.generate_form_8949_csv(realized_gains)",
       "endpoint_or_component": "/app/backend/routes/tax.py line 100",
       "surfaces": ["backend"],
-      "reproduction": "curl -X POST https://portfolio-gains-calc.preview.emergentagent.com/api/tax/export-form-8949 -H 'Authorization: Bearer <token>' -d '{...}' returns 500 with 'missing 2 required positional arguments: symbol and address'",
+      "reproduction": "curl -X POST https://crypto-tax-tracker-1.preview.emergentagent.com/api/tax/export-form-8949 -H 'Authorization: Bearer <token>' -d '{...}' returns 500 with 'missing 2 required positional arguments: symbol and address'",
       "affected_test": "Documented in test_refactored_routes.py::TestTaxRoutes::test_export_form_8949_bug_documented"
     },
     {
