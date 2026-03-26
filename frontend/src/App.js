@@ -23,7 +23,6 @@ import { TransactionCategorizer } from '@/components/TransactionCategorizer';
 import { ScheduleDExport, BatchCategorizationModal } from '@/components/TaxEnhancements';
 import { TermsModal } from '@/components/TermsModal';
 import { AffiliateModal } from '@/components/AffiliateModal';
-import { ExchangeModal } from '@/components/ExchangeModal';
 import { ChainOfCustodyModal } from '@/components/ChainOfCustodyModal';
 import { SupportModal } from '@/components/SupportModal';
 import { ExchangeConnectionModal } from '@/components/ExchangeConnectionModal';
@@ -113,7 +112,6 @@ function App() {
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showAffiliateModal, setShowAffiliateModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [showExchangeModal, setShowExchangeModal] = useState(false);
   const [showCustodyModal, setShowCustodyModal] = useState(false);
   const [showSupportModal, setShowSupportModal] = useState(false);
   const [startDate, setStartDate] = useState('');
@@ -814,12 +812,12 @@ function App() {
                   <div className="flex gap-3 flex-wrap">
                     <Button
                       size="sm"
-                      onClick={() => setShowExchangeModal(true)}
+                      onClick={() => setShowAddDataModal(true)}
                       className="bg-amber-700 hover:bg-amber-600 text-white"
                       data-testid="import-csv-from-warning"
                     >
                       <Link2 className="w-4 h-4 mr-1" />
-                      Import Exchange CSV
+                      Add Data
                     </Button>
                     <Button
                       size="sm"
@@ -1316,11 +1314,6 @@ function App() {
         <AffiliateModal
           isOpen={showAffiliateModal}
           onClose={() => setShowAffiliateModal(false)}
-          getAuthHeader={getAuthHeader}
-        />
-        <ExchangeModal
-          isOpen={showExchangeModal}
-          onClose={() => setShowExchangeModal(false)}
           getAuthHeader={getAuthHeader}
         />
         <ExchangeConnectionModal
