@@ -207,63 +207,64 @@ export const AddDataModal = ({ isOpen, onClose, onDataAdded }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl bg-slate-800 border-slate-700 max-h-[90vh] overflow-y-auto" data-testid="add-data-modal">
-        <DialogHeader>
-          <DialogTitle className="text-white text-xl flex items-center gap-2">
-            <Plus className="w-5 h-5 text-purple-400" />
+      <DialogContent className="w-[95vw] max-w-2xl bg-slate-800 border-slate-700 max-h-[85vh] overflow-y-auto mx-auto" data-testid="add-data-modal">
+        <DialogHeader className="pb-2">
+          <DialogTitle className="text-white text-lg sm:text-xl flex items-center gap-2">
+            <Plus className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
             Add Your Crypto Data
           </DialogTitle>
-          <DialogDescription className="text-gray-400">
+          <DialogDescription className="text-gray-400 text-sm">
             Import transactions from wallets or exchanges
           </DialogDescription>
         </DialogHeader>
 
         {/* Data Summary Bar */}
         {dataSummary && dataSummary.total_transactions > 0 && (
-          <div className="bg-slate-700/50 rounded-lg p-3 flex items-center justify-between">
-            <div className="flex items-center gap-4">
+          <div className="bg-slate-700/50 rounded-lg p-2 sm:p-3 flex items-center justify-between">
+            <div className="flex items-center gap-2 sm:gap-4">
               <div className="text-center">
-                <p className="text-lg font-bold text-white">{dataSummary.total_transactions}</p>
-                <p className="text-xs text-gray-400">Transactions</p>
+                <p className="text-base sm:text-lg font-bold text-white">{dataSummary.total_transactions}</p>
+                <p className="text-[10px] sm:text-xs text-gray-400">Transactions</p>
               </div>
               <div className="text-center">
-                <p className="text-lg font-bold text-purple-400">{Object.keys(dataSummary.by_asset || {}).length}</p>
-                <p className="text-xs text-gray-400">Assets</p>
+                <p className="text-base sm:text-lg font-bold text-purple-400">{Object.keys(dataSummary.by_asset || {}).length}</p>
+                <p className="text-[10px] sm:text-xs text-gray-400">Assets</p>
               </div>
               <div className="text-center">
-                <p className="text-lg font-bold text-blue-400">{Object.keys(dataSummary.by_exchange || {}).length}</p>
-                <p className="text-xs text-gray-400">Sources</p>
+                <p className="text-base sm:text-lg font-bold text-blue-400">{Object.keys(dataSummary.by_exchange || {}).length}</p>
+                <p className="text-[10px] sm:text-xs text-gray-400">Sources</p>
               </div>
             </div>
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={fetchDataSummary}
-              className="text-gray-400 hover:text-white"
+              className="text-gray-400 hover:text-white p-1 sm:p-2"
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4" />
             </Button>
           </div>
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-slate-700">
-            <TabsTrigger value="wallet" className="data-[state=active]:bg-purple-600">
-              <Wallet className="w-4 h-4 mr-2" />
-              Wallet Address
+          <TabsList className="grid w-full grid-cols-2 bg-slate-700 h-auto">
+            <TabsTrigger value="wallet" className="data-[state=active]:bg-purple-600 text-xs sm:text-sm py-2">
+              <Wallet className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <span className="hidden xs:inline">Wallet</span>
+              <span className="xs:hidden">Wallet</span>
             </TabsTrigger>
-            <TabsTrigger value="csv" className="data-[state=active]:bg-purple-600">
-              <Upload className="w-4 h-4 mr-2" />
-              Import CSV
+            <TabsTrigger value="csv" className="data-[state=active]:bg-purple-600 text-xs sm:text-sm py-2">
+              <Upload className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <span>CSV</span>
             </TabsTrigger>
           </TabsList>
 
           {/* Wallet Address Tab */}
-          <TabsContent value="wallet" className="space-y-4 mt-4">
-            <div className="space-y-4">
+          <TabsContent value="wallet" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
+            <div className="space-y-3 sm:space-y-4">
               {/* Address Input */}
               <div>
-                <label className="text-sm text-gray-300 mb-2 block">
+                <label className="text-xs sm:text-sm text-gray-300 mb-1 sm:mb-2 block">
                   Wallet Address or xPub
                 </label>
                 <div className="relative">
@@ -271,47 +272,47 @@ export const AddDataModal = ({ isOpen, onClose, onDataAdded }) => {
                     value={walletAddress}
                     onChange={handleAddressChange}
                     placeholder="0x... or bc1... or xpub..."
-                    className="bg-slate-700 border-slate-600 text-white pr-24"
+                    className="bg-slate-700 border-slate-600 text-white text-sm pr-20 sm:pr-24"
                     data-testid="wallet-address-input"
                   />
                   {detectedChain && (
-                    <Badge className="absolute right-2 top-1/2 -translate-y-1/2 bg-green-600">
+                    <Badge className="absolute right-2 top-1/2 -translate-y-1/2 bg-green-600 text-[10px] sm:text-xs px-1 sm:px-2">
                       {SUPPORTED_CHAINS.find(c => c.id === detectedChain)?.icon} {detectedChain}
                     </Badge>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  Auto-detects: Ethereum, Bitcoin (including xPub), Solana, Polygon
+                <p className="text-[10px] sm:text-xs text-gray-500 mt-1">
+                  Auto-detects: ETH, BTC, SOL, Polygon
                 </p>
               </div>
               
               {/* As Of Date */}
               <div>
-                <label className="text-sm text-gray-300 mb-2 flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
+                <label className="text-xs sm:text-sm text-gray-300 mb-1 sm:mb-2 flex items-center gap-1 sm:gap-2">
+                  <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
                   Value As Of Date
                 </label>
                 <Input
                   type="date"
                   value={asOfDate}
                   onChange={(e) => setAsOfDate(e.target.value)}
-                  className="bg-slate-700 border-slate-600 text-white"
+                  className="bg-slate-700 border-slate-600 text-white text-sm"
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-[10px] sm:text-xs text-gray-500 mt-1">
                   For tax year calculations. Holdings are valued at this date.
                 </p>
               </div>
 
               {/* Info Box */}
-              <div className="bg-blue-900/20 border border-blue-700/50 rounded-lg p-3">
+              <div className="bg-blue-900/20 border border-blue-700/50 rounded-lg p-2 sm:p-3">
                 <div className="flex gap-2">
-                  <Info className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
-                  <div className="text-sm text-blue-300">
+                  <Info className="w-3 h-3 sm:w-4 sm:h-4 text-blue-400 flex-shrink-0 mt-0.5" />
+                  <div className="text-xs sm:text-sm text-blue-300">
                     <p className="font-medium mb-1">How "As Of Date" works:</p>
-                    <ul className="text-xs text-blue-300/80 space-y-1">
-                      <li>• Sold/transferred assets → valued at transaction date</li>
-                      <li>• Holdings still held → valued at your selected date</li>
-                      <li>• Use 12/31/YYYY for end-of-year tax reporting</li>
+                    <ul className="text-[10px] sm:text-xs text-blue-300/80 space-y-0.5 sm:space-y-1">
+                      <li>• Sold/transferred → valued at tx date</li>
+                      <li>• Holdings held → valued at selected date</li>
+                      <li>• Use 12/31 for tax year reporting</li>
                     </ul>
                   </div>
                 </div>
@@ -320,17 +321,17 @@ export const AddDataModal = ({ isOpen, onClose, onDataAdded }) => {
               <Button
                 onClick={handleAddWallet}
                 disabled={loading || !walletAddress.trim()}
-                className="w-full bg-purple-600 hover:bg-purple-700"
+                className="w-full bg-purple-600 hover:bg-purple-700 text-sm sm:text-base"
                 data-testid="add-wallet-button"
               >
                 {loading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Syncing Wallet...
+                    <Loader2 className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
+                    Syncing...
                   </>
                 ) : (
                   <>
-                    <Plus className="mr-2 h-4 w-4" />
+                    <Plus className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                     Add Wallet
                   </>
                 )}
@@ -339,10 +340,10 @@ export const AddDataModal = ({ isOpen, onClose, onDataAdded }) => {
           </TabsContent>
 
           {/* CSV Import Tab */}
-          <TabsContent value="csv" className="space-y-4 mt-4">
+          <TabsContent value="csv" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
             {/* Upload Area */}
             <Card className="bg-slate-900/50 border-slate-700 border-dashed border-2">
-              <CardContent className="pt-6">
+              <CardContent className="pt-4 sm:pt-6 pb-4">
                 <div className="text-center">
                   <input
                     type="file"
@@ -355,23 +356,23 @@ export const AddDataModal = ({ isOpen, onClose, onDataAdded }) => {
                   <Button
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploading}
-                    className="bg-purple-600 hover:bg-purple-700 px-8 py-6 text-lg"
+                    className="bg-purple-600 hover:bg-purple-700 px-4 sm:px-8 py-4 sm:py-6 text-sm sm:text-lg"
                     data-testid="upload-csv-button"
                   >
                     {uploading ? (
                       <>
-                        <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                        <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin mr-1 sm:mr-2" />
                         Importing...
                       </>
                     ) : (
                       <>
-                        <Upload className="w-5 h-5 mr-2" />
-                        Upload CSV File
+                        <Upload className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
+                        Upload CSV
                       </>
                     )}
                   </Button>
-                  <p className="text-gray-400 text-sm mt-3">
-                    We auto-detect Coinbase, Kraken, Binance, Gemini, Ledger, and more
+                  <p className="text-gray-400 text-xs sm:text-sm mt-2 sm:mt-3">
+                    Auto-detects Coinbase, Kraken, Binance, etc.
                   </p>
                 </div>
               </CardContent>
@@ -379,31 +380,30 @@ export const AddDataModal = ({ isOpen, onClose, onDataAdded }) => {
 
             {/* Supported Exchanges */}
             <div>
-              <p className="text-sm text-gray-400 mb-3">Supported formats:</p>
-              <div className="grid grid-cols-3 gap-2">
+              <p className="text-xs sm:text-sm text-gray-400 mb-2 sm:mb-3">Supported formats:</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 sm:gap-2">
                 {SUPPORTED_EXCHANGES.map(exchange => (
                   <div
                     key={exchange.id}
-                    className="bg-slate-700/50 rounded-lg p-2 flex items-center gap-2"
+                    className="bg-slate-700/50 rounded-lg p-1.5 sm:p-2 flex items-center gap-1.5 sm:gap-2"
                   >
                     <div 
-                      className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                      className="w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-white text-[10px] sm:text-xs font-bold flex-shrink-0"
                       style={{ backgroundColor: exchange.color }}
                     >
                       {exchange.name[0]}
                     </div>
-                    <span className="text-sm text-gray-300">{exchange.name}</span>
+                    <span className="text-xs sm:text-sm text-gray-300 truncate">{exchange.name}</span>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Ledger Note */}
-            <Alert className="bg-orange-900/20 border-orange-700/50">
-              <FileText className="w-4 h-4 text-orange-400" />
-              <AlertDescription className="text-orange-300 text-sm">
-                <strong>Ledger Live users:</strong> Export your transaction history from 
-                Ledger Live → Portfolio → Export operations (CSV). We'll import it automatically.
+            <Alert className="bg-orange-900/20 border-orange-700/50 py-2">
+              <FileText className="w-3 h-3 sm:w-4 sm:h-4 text-orange-400" />
+              <AlertDescription className="text-orange-300 text-[10px] sm:text-sm">
+                <strong>Ledger:</strong> Export from Portfolio → Export operations
               </AlertDescription>
             </Alert>
           </TabsContent>
@@ -411,23 +411,23 @@ export const AddDataModal = ({ isOpen, onClose, onDataAdded }) => {
 
         {/* Messages */}
         {error && (
-          <Alert className="bg-red-900/20 border-red-700 text-red-300">
-            <AlertCircle className="w-4 h-4" />
-            <AlertDescription>{error}</AlertDescription>
+          <Alert className="bg-red-900/20 border-red-700 text-red-300 py-2">
+            <AlertCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+            <AlertDescription className="text-xs sm:text-sm">{error}</AlertDescription>
           </Alert>
         )}
         
         {success && (
-          <Alert className="bg-green-900/20 border-green-700 text-green-300">
-            <CheckCircle className="w-4 h-4" />
-            <AlertDescription>{success}</AlertDescription>
+          <Alert className="bg-green-900/20 border-green-700 text-green-300 py-2">
+            <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+            <AlertDescription className="text-xs sm:text-sm">{success}</AlertDescription>
           </Alert>
         )}
 
         {/* Quick Links */}
-        <div className="border-t border-slate-700 pt-4 mt-2">
-          <p className="text-xs text-gray-500 text-center">
-            All data is processed securely. We never store API keys or private keys.
+        <div className="border-t border-slate-700 pt-2 sm:pt-4 mt-1 sm:mt-2">
+          <p className="text-[10px] sm:text-xs text-gray-500 text-center">
+            All data processed securely. No API keys stored.
           </p>
         </div>
       </DialogContent>
