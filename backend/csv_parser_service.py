@@ -43,6 +43,8 @@ EXCHANGE_SIGNATURES = {
             ["Date", "Transaction Type", "Asset", "Quantity"],
             # Format 5: Comprehensive format with both Acquired and Disposed columns (RAW TX export)
             ["Transaction ID", "Transaction Type", "Date & time", "Asset Acquired", "Asset Disposed"],
+            # Format 6: CoinTracker/Generic Universal Format
+            ["Date", "Received Quantity", "Received Currency", "Sent Quantity", "Sent Currency"],
         ]
     },
     ExchangeFormat.BINANCE: {
@@ -291,10 +293,16 @@ class CSVParserService:
         headers_set = set(h.lower() for h in headers)
         is_comprehensive = "asset disposed" in ' '.join(headers_set) or any("asset disposed" in h.lower() for h in headers)
         
+        # Check if this is CoinTracker/Universal format (Received Quantity, Sent Quantity)
+        is_universal = any("received quantity" in h.lower() for h in headers) and any("sent quantity" in h.lower() for h in headers)
+        
         for i, row in enumerate(rows):
             try:
+                # Format 6: CoinTracker/Universal format
+                if is_universal:
+                    tx = self._parse_coinbase_universal(row, i)
                 # Format 5: Comprehensive RAW TX format (has both acquired and disposed in same row)
-                if is_comprehensive or any(k for k in row.keys() if "asset disposed" in k.lower()):
+                elif is_comprehensive or any(k for k in row.keys() if "asset disposed" in k.lower()):
                     tx = self._parse_coinbase_comprehensive(row, i)
                 # Format 1: Classic Coinbase (Timestamp, Transaction Type, Asset, Quantity Transacted)
                 elif "Timestamp" in row or "timestamp" in [k.lower() for k in row.keys()]:
@@ -691,6 +699,128 @@ class CSVParserService:
             total_usd=abs(total_usd) if total_usd else None,
             fee=0,  # Fees are included in cost basis
             fee_asset="USD",
+            timestamp=timestamp or datetime.now(timezone.utc),
+            raw_data=row
+        )
+    
+    def _parse_coinbase_universal(self, row: Dict, idx: int) -> Optional[ExchangeTransaction]:
+        """
+        Parse CoinTracker/Universal CSV format.
+        
+        Headers: Date, Received Quantity, Received Currency, Sent Quantity, Sent Currency, 
+                 Fee Amount, Fee Currency, Tag, ...
+        
+        This format shows received and sent in the same row:
+        - If only Received: it's a buy/receive/reward
+        - If only Sent: it's a sell/send
+        - If both: it's a trade/swap
+        """
+        def get_val(keys):
+            for k in keys:
+                if k in row:
+                    return row[k]
+                for row_key in row.keys():
+                    if k.lower() == row_key.lower():
+                        return row[row_key]
+            return ""
+        
+        # Parse timestamp
+        date_str = get_val(["Date", "date", "Timestamp"])
+        timestamp = self._parse_timestamp(date_str)
+        
+        # Parse received side
+        received_qty = self._parse_float(get_val(["Received Quantity", "received quantity"]))
+        received_currency = get_val(["Received Currency", "received currency"]).strip().upper()
+        
+        # Parse sent side
+        sent_qty = self._parse_float(get_val(["Sent Quantity", "sent quantity"]))
+        sent_currency = get_val(["Sent Currency", "sent currency"]).strip().upper()
+        
+        # Parse fees
+        fee_amount = self._parse_float(get_val(["Fee Amount", "fee amount", "Fee"]))
+        fee_currency = get_val(["Fee Currency", "fee currency"]).strip().upper() or "USD"
+        
+        # Parse tag (transaction type hint)
+        tag = get_val(["Tag", "tag", "Type"]).lower()
+        
+        # Skip empty rows or rows with only USD movements
+        stablecoins = {"USD", "USDC", "USDT", "BUSD", "DAI", "GUSD"}
+        
+        has_received = received_qty > 0 and received_currency and received_currency not in stablecoins
+        has_sent = sent_qty > 0 and sent_currency and sent_currency not in stablecoins
+        
+        # Skip if no crypto movement
+        if not has_received and not has_sent:
+            # Check if it's a stablecoin buy (USD sent, USDC received, etc.)
+            if received_currency in stablecoins and sent_currency == "USD":
+                return None  # Skip stablecoin purchases
+            if sent_currency in stablecoins and received_currency == "USD":
+                return None  # Skip stablecoin sales
+            return None
+        
+        # Determine transaction type and primary asset
+        if has_received and not has_sent:
+            # Pure receive: could be buy, reward, staking, etc.
+            asset = received_currency
+            amount = received_qty
+            
+            # Check if USD was sent (it's a buy)
+            usd_sent = self._parse_float(get_val(["Sent Quantity"])) if get_val(["Sent Currency"]).upper() in stablecoins else 0
+            
+            if "reward" in tag or "staking" in tag or "income" in tag:
+                tx_type = "reward"
+                total_usd = None  # Income - needs FMV lookup
+            elif "airdrop" in tag:
+                tx_type = "airdrop"
+                total_usd = None
+            elif usd_sent > 0:
+                tx_type = "buy"
+                total_usd = usd_sent
+            else:
+                tx_type = "receive"
+                total_usd = None
+                
+        elif has_sent and not has_received:
+            # Pure send: could be sell, send, withdrawal
+            asset = sent_currency
+            amount = sent_qty
+            
+            # Check if USD was received (it's a sell)
+            usd_received = self._parse_float(get_val(["Received Quantity"])) if get_val(["Received Currency"]).upper() in stablecoins else 0
+            
+            if usd_received > 0:
+                tx_type = "sell"
+                total_usd = usd_received
+            else:
+                tx_type = "send"
+                total_usd = None
+                
+        else:
+            # Both received and sent - it's a trade/swap
+            # Primary focus on what was received (the "buy" side of the trade)
+            asset = received_currency
+            amount = received_qty
+            tx_type = "trade"
+            
+            # If sent currency is a stablecoin, use that as the USD value
+            if sent_currency in stablecoins:
+                total_usd = sent_qty
+            else:
+                total_usd = None
+        
+        if not asset or amount == 0:
+            return None
+        
+        return ExchangeTransaction(
+            exchange="coinbase",  # Using coinbase as generic source
+            tx_id=f"univ_{idx}_{timestamp.timestamp() if timestamp else idx}",
+            tx_type=tx_type,
+            asset=asset,
+            amount=abs(amount),
+            price_usd=total_usd / amount if total_usd and amount else None,
+            total_usd=total_usd,
+            fee=abs(fee_amount) if fee_currency in stablecoins else 0,
+            fee_asset=fee_currency,
             timestamp=timestamp or datetime.now(timezone.utc),
             raw_data=row
         )
