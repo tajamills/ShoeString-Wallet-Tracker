@@ -566,7 +566,9 @@ REACT_APP_BACKEND_URL=https://...
 
 ## Backlog
 - [ ] DeFi/NFT Position Tracking
-- [ ] Refactor monolithic files (`ChainOfCustodyModal.js`, `App.js`, `custody.py` - now 1778 lines)
+- [ ] Refactor monolithic files (`ChainOfCustodyModal.js`, `App.js`)
+- [ ] Import missing USDC/XLM acquisitions to resolve remaining 3 critical orphan disposal issues (P1)
+- [ ] Frontend UI for Regression Fixture Management (P2)
 
 ## Completed
 
@@ -889,3 +891,65 @@ REACT_APP_BACKEND_URL=https://...
 - [x] Total route code: 3,734 lines across 10 modules (better maintainability)
 - [x] All API endpoints verified working after refactoring
 - [x] Backwards compatibility maintained via alias routes
+
+### Phase 24: Unknown Transaction Reduction System (Completed - Mar 27, 2026)
+- [x] **UnknownTransactionClassifier** (`unknown_transaction_classifier.py`) - ~1000 lines
+  - Auto-classifies high-confidence unknown transactions using pattern detection
+  - Reduces manual review work by identifying internal vs external transfers
+  
+- [x] **Pattern Detection Engine**:
+  - Groups transactions by destination wallet (detects repeated sends to same address)
+  - Groups transactions by source wallet (detects repeated receives from same address)
+  - Groups transactions by asset (learns from historical user decisions)
+  - Confidence scoring based on pattern strength and known wallet matches
+  
+- [x] **Auto-Suggestion Engine**:
+  - Confidence levels: `auto_apply` (>0.95), `suggest` (0.70-0.95), `unresolved` (<0.70)
+  - Classification types: internal_transfer, external_transfer, swap, bridge, deposit, withdrawal, buy, sell, reward, staking
+  - Matches against known exchange/DEX/bridge keywords
+  - Learns from user's own wallet linkages
+  
+- [x] **Bulk Classification**:
+  - Classify all transactions matching a pattern in one operation
+  - Classify all transactions to same destination wallet
+  - Batch processing with rollback support
+  
+- [x] **Auto-Apply Threshold**:
+  - Transactions with >95% confidence can be auto-classified
+  - Dry-run mode to preview before applying
+  - Batch ID tracking for reversal
+  
+- [x] **Feedback Loop**:
+  - User accept/reject decisions recorded in `classification_feedback` collection
+  - Historical decisions improve future suggestion accuracy
+  - Per-pattern and per-destination learning
+  
+- [x] **Metrics Dashboard**:
+  - Current unknown transaction count
+  - Auto-classification rate
+  - Suggestion accuracy rate
+  - Daily classification stats
+  
+- [x] **API Endpoints** (`routes/classification_routes.py`):
+  - GET `/api/custody/classify/analyze` - Analyze unknowns, detect patterns, generate suggestions
+  - POST `/api/custody/classify/auto-apply` - Auto-classify >95% confidence (dry_run support)
+  - GET `/api/custody/classify/metrics` - Classification performance over time
+  - GET `/api/custody/classify/patterns` - Get detected patterns for bulk actions
+  - POST `/api/custody/classify/by-pattern` - Bulk classify by pattern ID
+  - POST `/api/custody/classify/by-destination` - Bulk classify by destination wallet
+  - POST `/api/custody/classify/decide` - Accept/reject suggestion (feedback loop)
+  - GET `/api/custody/classify/batches` - List classification batches for rollback
+  - POST `/api/custody/classify/rollback/{batch_id}` - Reverse a classification batch
+  - GET `/api/custody/classify/suggestions/{tx_id}` - Get suggestion for specific transaction
+  
+- [x] **Frontend UI** (`components/UnknownTransactionClassifier.js`):
+  - Stats overview: unknown count, auto-classifiable, suggested, unresolved
+  - Progress bar showing classification coverage
+  - One-click auto-classify all high-confidence transactions
+  - Tab navigation: Suggestions, Patterns, Metrics, Batches
+  - Confidence filter dropdown
+  - Pattern expansion with bulk classify button
+  - Rollback functionality for batches
+  - Integrated into TaxSummaryDashboard via ValidationStatusPanel
+  
+- [x] **Test Suite**: 32 tests passing (iteration 27)
