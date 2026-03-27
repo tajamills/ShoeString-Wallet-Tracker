@@ -953,3 +953,51 @@ REACT_APP_BACKEND_URL=https://...
   - Integrated into TaxSummaryDashboard via ValidationStatusPanel
   
 - [x] **Test Suite**: 32 tests passing (iteration 27)
+
+### Phase 25: Classification Effectiveness Metrics (Completed - Mar 27, 2026)
+- [x] **ClassificationEffectivenessService** (`classification_effectiveness_service.py`) - ~600 lines
+  - Measures whether classifier improves tax readiness without bad classifications
+  - Tracks before/after account state snapshots
+  
+- [x] **Account-Level Metrics Tracked**:
+  - unknown_count_before / unknown_count_after
+  - auto_classified_count
+  - user_confirmed_count / user_rejected_count
+  - rollback_count
+  - validation_status_before / validation_status_after
+  - can_export_before / can_export_after
+  - export_readiness_improved flag
+  
+- [x] **Precision Metrics by Confidence Bucket**:
+  - High (>0.95): Auto-apply threshold
+  - Medium-High (0.85-0.95): Strong suggestion
+  - Medium (0.70-0.85): Moderate confidence
+  - Low (<0.70): Unresolved
+  
+- [x] **Metrics by Classification Type**:
+  - internal_transfer, external_transfer, swap, bridge
+  - deposit, withdrawal, buy, sell, reward, staking
+  - Tracks total, auto_classified, confirmed, rejected, precision per type
+  
+- [x] **API Endpoints**:
+  - GET `/api/custody/classify/effectiveness` - Full effectiveness summary
+  - GET `/api/custody/classify/effectiveness/confidence-buckets` - Precision by confidence
+  - GET `/api/custody/classify/effectiveness/classification-types` - Metrics by type
+  - POST `/api/custody/classify/effectiveness/snapshot` - Capture before/after snapshots
+  - GET `/api/custody/classify/effectiveness/admin/summary` - Aggregated all-accounts view
+  
+- [x] **Frontend UI** (`ValidationStatusPanel.js` enhanced):
+  - Effectiveness summary panel (expandable)
+  - Stats: Unknowns Reduced, Auto-Classified, User Confirmed, Precision %
+  - Export Readiness Improvement indicator
+  - Precision breakdown by confidence bucket
+  - Classification type distribution
+  - Rollback warning display
+  
+- [x] **Integration with Classifier**:
+  - Auto-records effectiveness events on classification
+  - Records user feedback (accept/reject) for precision tracking
+  - Records rollback events
+  
+- [x] **Test Suite**: 24 new tests + 32 regression = 56 tests passing (iteration 28)
+
