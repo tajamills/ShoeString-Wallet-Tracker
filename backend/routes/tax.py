@@ -522,11 +522,16 @@ async def get_unified_assets_summary(user: dict = Depends(get_current_user)):
             asset['exchanges'] = list(asset['exchanges'])
             asset['net_position'] = asset['total_bought'] - asset['total_sold']
         
-        return {
+        # P1: Add validation status to response
+        from persistent_tax_validation import add_validation_status_to_response
+        response = {
             "assets": list(assets.values()),
             "total_assets": len(assets),
             "total_exchange_txs": len(exchange_txs)
         }
+        response = await add_validation_status_to_response(db, user["id"], response)
+        
+        return response
         
     except HTTPException:
         raise

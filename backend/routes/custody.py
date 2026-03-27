@@ -420,6 +420,8 @@ async def resolve_review(
     - decision: "yes" = it's my wallet (creates linkage, no tax event)
     - decision: "no" = external transfer (creates tax event)
     - decision: "ignore" = skip for now
+    
+    P1: Auto-triggers recompute when linkage changes
     """
     try:
         if request.decision not in ["yes", "no", "ignore"]:
@@ -434,6 +436,19 @@ async def resolve_review(
             decision=request.decision,
             override_reason=request.override_reason
         )
+        
+        # P1: Auto-trigger recompute when linkage changes
+        if request.decision in ["yes", "no"]:
+            try:
+                from persistent_tax_validation import hook_linkage_change
+                recompute_result = await hook_linkage_change(
+                    db, user["id"], f"review_resolved_{request.decision}"
+                )
+                result["recompute_triggered"] = True
+                result["recompute_result"] = recompute_result
+            except Exception as e:
+                logger.warning(f"Failed to trigger recompute: {e}")
+                result["recompute_triggered"] = False
         
         # Clean up _id fields
         for key in ["review", "tax_event", "linkage_edge"]:
@@ -563,6 +578,7 @@ async def get_tax_events(
 async def export_form_8949(
     tax_year: int,
     validate: bool = True,
+    force: bool = False,
     user: dict = Depends(get_current_user)
 ):
     """
@@ -571,6 +587,7 @@ async def export_form_8949(
     Args:
         tax_year: Tax year to export
         validate: If True, run validation before export (default True)
+        force: If True, skip validation and export anyway (use with caution)
     
     Returns:
         CSV file or validation errors if validation fails
@@ -578,6 +595,28 @@ async def export_form_8949(
     try:
         import csv
         from tax_validation_service import tax_validation_service, TxClassification
+        from beta_validation_harness import create_validation_harness
+        
+        # P0 ENFORCEMENT: Run full account validation before export
+        if validate and not force:
+            harness = create_validation_harness(db)
+            report = await harness.validate_account(user["id"], tax_year)
+            
+            if not report.can_export:
+                # BLOCK EXPORT - return detailed error
+                return {
+                    "error": "Export blocked - validation failed",
+                    "can_export": False,
+                    "validation_status": report.validation_status,
+                    "blocked_reason": report.export_blocked_reason,
+                    "critical_issues": report.critical_issues,
+                    "high_issues": report.high_issues,
+                    "unresolved_review_items": report.review_queue_count,
+                    "invariants_failed": report.invariants_failed,
+                    "message": "Resolve the following issues before exporting Form 8949",
+                    "issues": [i.to_dict() for i in report.issues if i.severity.value in ["critical", "high"]],
+                    "failed_invariants": [c.to_dict() for c in report.invariant_checks if not c.passed]
+                }
         
         events = await db.tax_events.find({
             "user_id": user["id"],
@@ -604,7 +643,7 @@ async def export_form_8949(
             }
             form_8949_records.append(record)
         
-        # Run validation if enabled
+        # Run record-level validation if enabled
         if validate and form_8949_records:
             can_export, validation_result = tax_validation_service.validate_form_8949_export(form_8949_records)
             
@@ -1155,3 +1194,340 @@ async def pre_export_check(
     except Exception as e:
         logger.error(f"Error in pre-export check: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Pre-export check failed: {str(e)}")
+
+
+
+# ========================================
+# P0: ORPHAN DISPOSAL ANALYSIS & FIXES
+# ========================================
+
+from orphan_disposal_fixer import OrphanDisposalAnalyzer, ReviewQueueAnalyzer, run_p0_analysis
+
+
+@router.get("/analysis/orphan-disposals")
+async def analyze_orphan_disposals(
+    user: dict = Depends(get_current_user)
+):
+    """
+    Analyze all assets for orphan disposal issues.
+    
+    Returns:
+        Detailed analysis with root causes and recommended fixes
+    """
+    try:
+        analyzer = OrphanDisposalAnalyzer(db)
+        results = await analyzer.analyze_orphan_disposals(user["id"])
+        
+        return {
+            "success": True,
+            "analysis": results
+        }
+        
+    except Exception as e:
+        logger.error(f"Error analyzing orphan disposals: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+
+
+@router.get("/analysis/review-queue-breakdown")
+async def analyze_review_queue(
+    user: dict = Depends(get_current_user)
+):
+    """
+    Categorize review queue items by cause and frequency.
+    
+    Returns:
+        Breakdown by category, asset, and status with recommendations
+    """
+    try:
+        analyzer = ReviewQueueAnalyzer(db)
+        results = await analyzer.categorize_review_queue(user["id"])
+        
+        return {
+            "success": True,
+            "analysis": results
+        }
+        
+    except Exception as e:
+        logger.error(f"Error analyzing review queue: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+
+
+@router.get("/analysis/full-p0-report")
+async def get_full_p0_report(
+    user: dict = Depends(get_current_user)
+):
+    """
+    Run complete P0 analysis: orphan disposals + review queue categorization.
+    
+    Returns:
+        Combined analysis with all issues and recommendations
+    """
+    try:
+        results = await run_p0_analysis(db, user["id"])
+        
+        # Save report to file
+        import json
+        report_path = f"/app/test_reports/p0_analysis_{user['id']}.json"
+        with open(report_path, "w") as f:
+            json.dump(results, f, indent=2, default=str)
+        
+        return {
+            "success": True,
+            "report": results,
+            "report_file": report_path
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in P0 analysis: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"P0 analysis failed: {str(e)}")
+
+
+@router.post("/fix/create-implicit-acquisitions")
+async def create_implicit_acquisitions(
+    dry_run: bool = True,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Create implicit USDC acquisition records from crypto sell proceeds.
+    
+    This fixes the USDC orphan disposal issue where sells of other crypto
+    generate USD/USDC proceeds that weren't being tracked as acquisitions.
+    
+    Args:
+        dry_run: If True, show what would be created without actually creating
+    
+    Returns:
+        List of acquisitions to create (or created if dry_run=False)
+    """
+    try:
+        analyzer = OrphanDisposalAnalyzer(db)
+        results = await analyzer.create_implicit_acquisitions(user["id"], dry_run=dry_run)
+        
+        return {
+            "success": True,
+            "dry_run": dry_run,
+            "acquisitions_count": len(results["acquisitions_to_create"]),
+            "total_value": results["total_value"],
+            "acquisitions": results["acquisitions_to_create"][:20],  # First 20
+            "message": f"{'Would create' if dry_run else 'Created'} {len(results['acquisitions_to_create'])} USDC acquisition records totaling ${results['total_value']:,.2f}"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error creating implicit acquisitions: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed: {str(e)}")
+
+
+
+# ========================================
+# P1: PERSISTENT TAX VALIDATION
+# ========================================
+
+from persistent_tax_validation import (
+    PersistentTaxValidationService,
+    hook_linkage_change,
+    hook_classification_change,
+    add_validation_status_to_response
+)
+
+
+class CreateLotRequest(BaseModel):
+    """Request to create a tax lot"""
+    tx_id: str
+    asset: str
+    acquisition_date: str
+    quantity: float
+    cost_basis_per_unit: float
+    source: str
+    classification: str = "acquisition"
+    price_source: str = "original"
+
+
+class DisposeRequest(BaseModel):
+    """Request to dispose from lots"""
+    tx_id: str
+    asset: str
+    disposal_date: str
+    quantity: float
+    proceeds: float
+
+
+@router.post("/tax-lots/create")
+async def create_tax_lot(
+    request: CreateLotRequest,
+    user: dict = Depends(get_current_user)
+):
+    """Create a new tax lot (persisted to MongoDB)"""
+    try:
+        service = PersistentTaxValidationService(db)
+        
+        lot = await service.create_lot(
+            user_id=user["id"],
+            tx_id=request.tx_id,
+            asset=request.asset,
+            acquisition_date=datetime.fromisoformat(request.acquisition_date),
+            quantity=request.quantity,
+            cost_basis_per_unit=request.cost_basis_per_unit,
+            source=request.source,
+            classification=request.classification,
+            price_source=request.price_source
+        )
+        
+        return {"success": True, "lot": lot}
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error creating lot: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to create lot: {str(e)}")
+
+
+@router.get("/tax-lots")
+async def get_tax_lots(
+    asset: Optional[str] = None,
+    user: dict = Depends(get_current_user)
+):
+    """Get all tax lots for the user"""
+    try:
+        service = PersistentTaxValidationService(db)
+        lots = await service.get_lots(user["id"], asset)
+        
+        return {
+            "success": True,
+            "lots": lots,
+            "count": len(lots)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting lots: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get lots: {str(e)}")
+
+
+@router.post("/tax-lots/dispose")
+async def dispose_from_tax_lots(
+    request: DisposeRequest,
+    user: dict = Depends(get_current_user)
+):
+    """Dispose from tax lots using FIFO (persisted to MongoDB)"""
+    try:
+        service = PersistentTaxValidationService(db)
+        
+        disposal = await service.dispose_from_lots(
+            user_id=user["id"],
+            tx_id=request.tx_id,
+            asset=request.asset,
+            disposal_date=datetime.fromisoformat(request.disposal_date),
+            quantity=request.quantity,
+            proceeds=request.proceeds
+        )
+        
+        return {"success": True, "disposal": disposal}
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error disposing: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to dispose: {str(e)}")
+
+
+@router.get("/tax-lots/disposals")
+async def get_disposals(
+    tax_year: Optional[int] = None,
+    user: dict = Depends(get_current_user)
+):
+    """Get all disposals for the user"""
+    try:
+        service = PersistentTaxValidationService(db)
+        disposals = await service.get_disposals(user["id"], tax_year)
+        
+        total_gain_loss = sum(d["gain_loss"] for d in disposals)
+        
+        return {
+            "success": True,
+            "disposals": disposals,
+            "count": len(disposals),
+            "total_gain_loss": total_gain_loss
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting disposals: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get disposals: {str(e)}")
+
+
+@router.get("/tax-lots/balances")
+async def get_asset_balances(
+    user: dict = Depends(get_current_user)
+):
+    """Get current balances and cost basis for all assets"""
+    try:
+        service = PersistentTaxValidationService(db)
+        balances = await service.get_all_balances(user["id"])
+        
+        return {
+            "success": True,
+            "balances": balances,
+            "asset_count": len(balances)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting balances: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get balances: {str(e)}")
+
+
+@router.post("/tax-lots/recompute")
+async def trigger_recompute(
+    reason: str = "manual",
+    user: dict = Depends(get_current_user)
+):
+    """Trigger full recomputation of tax data"""
+    try:
+        service = PersistentTaxValidationService(db)
+        result = await service.trigger_full_recompute(user["id"], reason)
+        
+        return {
+            "success": True,
+            "result": result
+        }
+        
+    except Exception as e:
+        logger.error(f"Error triggering recompute: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to trigger recompute: {str(e)}")
+
+
+@router.get("/tax-lots/audit-trail")
+async def get_lot_audit_trail(
+    limit: int = 100,
+    user: dict = Depends(get_current_user)
+):
+    """Get audit trail for tax lot operations"""
+    try:
+        service = PersistentTaxValidationService(db)
+        entries = await service.get_audit_trail(user["id"], limit)
+        
+        return {
+            "success": True,
+            "audit_trail": entries,
+            "count": len(entries)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting audit trail: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get audit trail: {str(e)}")
+
+
+@router.get("/validation-status")
+async def get_user_validation_status(
+    user: dict = Depends(get_current_user)
+):
+    """Get validation status for the current user"""
+    try:
+        service = PersistentTaxValidationService(db)
+        status = await service.get_validation_status(user["id"])
+        
+        return {
+            "success": True,
+            "validation_status": status
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting validation status: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get validation status: {str(e)}")
