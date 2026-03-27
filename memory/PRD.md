@@ -565,26 +565,8 @@ REACT_APP_BACKEND_URL=https://...
 - [x] **Bug Fix**: Error handling in resolve-review now returns proper 400 status for invalid decisions
 
 ## Backlog
-
-## Actions
-
-**P1.5 - Proceeds Acquisition Constraints**
-- [ ] Rename "implicit acquisitions" to "proceeds acquisitions"
-- [ ] Require linked source disposal (must reference the sell tx that generated proceeds)
-- [ ] Require exact amount match (proceeds amount = acquisition amount)
-- [ ] Require timestamp (must match source disposal timestamp)
-- [ ] Require price source (e.g., "proceeds_from_BTC_sell")
-- [ ] Require audit trail entry linking disposal → proceeds acquisition
-
-**P2 - Medium Priority**
-- [ ] Frontend validation status UI in Tax Dashboard
-- [ ] Bulk resolution for `unknown_wallet` review items
-- [ ] Wallet-link suggestion engine for repeated unknown destinations
-- [ ] Review queue grouping by source wallet / destination / pattern
-
-## Backlog
 - [ ] DeFi/NFT Position Tracking
-- [ ] Refactor monolithic files (`ChainOfCustodyModal.js`, `App.js`)
+- [ ] Refactor monolithic files (`ChainOfCustodyModal.js`, `App.js`, `custody.py` - now 1778 lines)
 
 ## Completed
 
@@ -598,6 +580,37 @@ REACT_APP_BACKEND_URL=https://...
 - [x] Integrate validation into CSV import flow (auto-classify on import)
 - [x] Hook validation into existing tax services
 - [x] Auto-trigger recompute on linkage/classification changes
+- [x] Add validation status to API responses
+
+**P1.5 - Proceeds Acquisition Constraints** ✅ (Completed - Mar 27, 2026)
+- [x] Renamed "implicit acquisitions" to "proceeds acquisitions"
+- [x] Require linked source disposal (must reference the sell tx that generated proceeds)
+- [x] Require exact amount match (proceeds amount = acquisition amount)
+- [x] Require timestamp (must match source disposal timestamp)
+- [x] Require price source (e.g., "proceeds_from_BTC_sell")
+- [x] Require audit trail entry linking disposal → proceeds acquisition
+- [x] Added POST `/api/custody/fix/create-proceeds-acquisitions` endpoint with dry_run support
+- [x] Legacy endpoint alias `/api/custody/fix/create-implicit-acquisitions` for backwards compatibility
+
+**P2 - Review Queue Enhancements** ✅ (Completed - Mar 27, 2026)
+- [x] **Frontend Validation Status UI** (`ValidationStatusPanel.js`)
+  - Displays overall validation status (valid/invalid/needs_review)
+  - Shows blocking issues count, unresolved reviews count, can_export flag
+  - Expandable details with severity-coded issues and recommendations
+  - Quick action buttons: "Review Queue" and "Chain of Custody"
+  - Integrated into TaxSummaryDashboard.js
+- [x] **Bulk Resolution Service** (`review_queue_enhancements.py`)
+  - POST `/api/custody/review-queue/bulk-resolve` - Resolve multiple items at once
+  - POST `/api/custody/review-queue/bulk-resolve-category/{category}` - Resolve by category
+  - Supports decisions: "mine" (creates linkage) or "external" (creates tax event)
+- [x] **Wallet Link Suggestion Engine**
+  - GET `/api/custody/review-queue/suggestions` - Analyzes patterns
+  - Suggests frequent destinations as potential user wallets
+  - Detects round-trip patterns and exchange patterns
+  - Confidence scoring: high, medium, low
+- [x] **Review Queue Grouping Service**
+  - GET `/api/custody/review-queue/grouped` - Groups by destination/source/asset/amount
+  - Provides actionable groups with bulk action recommendations
 - [x] Add validation status to API responses
 
 ### Phase 23: Beta Account Validation Harness (Completed - Mar 27, 2026)
