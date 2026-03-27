@@ -570,6 +570,67 @@ REACT_APP_BACKEND_URL=https://...
 - [ ] NFT Portfolio Tracking
 - [ ] 7-Tier Subscription Pricing (User requested to pause for math focus)
 
+### Phase 22: Tax Validation and Invariant Enforcement Layer (Completed - Mar 27, 2026)
+- [x] **New Tax Validation Service** (`tax_validation_service.py`) - 940 lines
+  - Comprehensive validation layer ensuring all generated tax records are accurate, internally consistent, and auditable
+  - Prevents silent errors by enforcing strict validation rules before any tax output is finalized
+
+- [x] **Transaction Classification System**:
+  - Formal enum: `acquisition`, `disposal`, `internal_transfer`, `income`, `unknown`
+  - Auto-classification based on transaction type and chain status
+  - Confidence scoring (0.0-1.0) for each classification
+  - Unknown/low-confidence transactions routed to review queue
+  - `validate_classification()` enriches transactions with classification metadata
+
+- [x] **Cost Basis Engine with Strict Lot Tracking**:
+  - FIFO lot tracking with: acquisition date, quantity, remaining quantity, cost basis per unit
+  - `create_lot()` - Creates tax lots with validation (no negative cost basis, positive quantity required)
+  - `dispose_from_lots()` - FIFO matching with lot tracking and double-spend prevention
+  - Constraint enforcement: cost basis >= 0, disposed qty <= acquired qty
+
+- [x] **Invariant Checks (Mandatory Before Export)**:
+  - **Balance Reconciliation**: `starting_balance + acquisitions - disposals = ending_balance`
+  - **Cost Basis Conservation**: Internal transfers cannot change total cost basis
+  - **No Double Spend**: Each unit of asset can only be disposed once (unit ID tracking)
+  - **No Orphan Disposals**: Every disposal must have acquisition source, cost basis, timestamp, price
+  - `run_all_invariant_checks()` runs comprehensive validation suite
+
+- [x] **Form 8949 Pre-Export Validation**:
+  - `validate_form_8949_record()` - Validates individual records (required fields, no negatives, gain/loss calc)
+  - `validate_form_8949_export()` - Full export validation with totals reconciliation
+  - Export blocked if validation fails with detailed error messages
+  - Updated `/api/custody/export-form-8949` with `validate=true` parameter (default)
+
+- [x] **Recompute Logic**:
+  - `trigger_full_recompute()` - Clears all computed state on data changes
+  - Triggered by: wallet linkage changes, classification changes, transaction data changes
+  - No partial updates allowed - ensures consistency
+
+- [x] **Full Audit Trail**:
+  - Every lot creation, disposal, and validation logged with timestamp
+  - `get_audit_trail()` retrieves chronological action history
+  - Supports explainability and reproducibility requirements
+
+- [x] **New API Endpoints**:
+  - POST `/api/custody/validate/transactions` - Classify and validate transaction batch
+  - POST `/api/custody/validate/invariants` - Run all invariant checks
+  - GET `/api/custody/validate/account-status` - Check if account can export taxes
+  - POST `/api/custody/validate/recompute` - Trigger full tax recalculation
+  - GET `/api/custody/validate/lot-status/{asset}` - View lot status for asset
+  - GET `/api/custody/validate/audit-trail` - Retrieve audit trail entries
+
+- [x] **Comprehensive Test Suite** (`/app/backend/tests/test_tax_validation.py`) - 37 tests:
+  - TestTransactionClassification (8 tests): buy, sell, staking, airdrop, linked/external sends
+  - TestCostBasisEngine (9 tests): lot creation, FIFO order, partial disposal, multi-wallet, constraints
+  - TestInvariantChecks (5 tests): balance reconciliation, double spend, orphan disposal
+  - TestForm8949Validation (5 tests): valid records, missing fields, negative values, calculation mismatch
+  - TestBridgeTransactions (2 tests): internal transfer, external transfer
+  - TestIncomeHandling (2 tests): staking cost basis, selling rewards
+  - TestFeeDeductions (1 test): fee inclusion in cost basis
+  - TestRecomputeLogic (1 test): state clearing
+  - TestAuditTrail (2 tests): creation and disposal logging
+  - TestUnresolvedChainBreaks (1 test): defaults to unknown/needs review
+
 ### Completed Refactoring (Mar 19, 2026)
 - [x] **Server.py Refactoring** - Split 4,375-line server.py into 10 modular route files:
   - `routes/auth.py` (263 lines) - Authentication, login, register, password reset

@@ -284,7 +284,7 @@ async def link_wallet(
         
         return {
             "success": True,
-            "message": f"Wallets linked successfully",
+            "message": "Wallets linked successfully",
             "edge": edge
         }
         
@@ -560,13 +560,22 @@ async def get_tax_events(
 @router.get("/export-form-8949")
 async def export_form_8949(
     tax_year: int,
+    validate: bool = True,
     user: dict = Depends(get_current_user)
 ):
     """
     Export tax events in Form 8949 compatible CSV format.
+    
+    Args:
+        tax_year: Tax year to export
+        validate: If True, run validation before export (default True)
+    
+    Returns:
+        CSV file or validation errors if validation fails
     """
     try:
         import csv
+        from tax_validation_service import tax_validation_service, TxClassification
         
         events = await db.tax_events.find({
             "user_id": user["id"],
@@ -576,6 +585,36 @@ async def export_form_8949(
                 "$lte": f"{tax_year}-12-31"
             }
         }, {"_id": 0}).sort("date_disposed", 1).to_list(10000)
+        
+        # Build Form 8949 records for validation
+        form_8949_records = []
+        for event in events:
+            form_data = event.get("form_8949_data", {})
+            record = {
+                "description": form_data.get("description", f"{event.get('quantity', 0)} {event.get('asset', '')}"),
+                "date_acquired": form_data.get("date_acquired", event.get("date_acquired", "")),
+                "date_sold": form_data.get("date_sold", event.get("date_disposed", "")),
+                "proceeds": form_data.get("proceeds", event.get("proceeds", 0)),
+                "cost_basis": form_data.get("cost_basis", event.get("cost_basis", 0)),
+                "adjustment_code": form_data.get("adjustment_code", ""),
+                "adjustment_amount": form_data.get("adjustment_amount", 0),
+                "gain_or_loss": form_data.get("gain_or_loss", event.get("gain_loss", 0))
+            }
+            form_8949_records.append(record)
+        
+        # Run validation if enabled
+        if validate and form_8949_records:
+            can_export, validation_result = tax_validation_service.validate_form_8949_export(form_8949_records)
+            
+            if not can_export:
+                # Return validation errors instead of CSV
+                return {
+                    "error": "Form 8949 validation failed",
+                    "can_export": False,
+                    "validation_result": validation_result.to_dict(),
+                    "message": "Fix the following issues before exporting",
+                    "issues": [v.to_dict() for v in validation_result.violations]
+                }
         
         # Create CSV
         output = io.StringIO()
@@ -593,22 +632,23 @@ async def export_form_8949(
             "Gain or (Loss)"
         ])
         
-        for event in events:
-            form_data = event.get("form_8949_data", {})
+        for record in form_8949_records:
             writer.writerow([
-                form_data.get("description", f"{event.get('quantity', 0)} {event.get('asset', '')}"),
-                form_data.get("date_acquired", event.get("date_acquired", "")),
-                form_data.get("date_sold", event.get("date_disposed", "")),
-                f"${form_data.get('proceeds', event.get('proceeds', 0)):.2f}",
-                f"${form_data.get('cost_basis', event.get('cost_basis', 0)):.2f}",
-                form_data.get("adjustment_code", ""),
-                f"${form_data.get('adjustment_amount', 0):.2f}" if form_data.get('adjustment_amount') else "",
-                f"${form_data.get('gain_or_loss', event.get('gain_loss', 0)):.2f}"
+                record["description"],
+                record["date_acquired"],
+                record["date_sold"],
+                f"${record['proceeds']:.2f}",
+                f"${record['cost_basis']:.2f}",
+                record["adjustment_code"],
+                f"${record['adjustment_amount']:.2f}" if record['adjustment_amount'] else "",
+                f"${record['gain_or_loss']:.2f}"
             ])
         
         output.seek(0)
         
         filename = f"form_8949_{tax_year}_{datetime.now().strftime('%Y%m%d')}.csv"
+        
+        logger.info(f"Exported Form 8949 for {tax_year}: {len(form_8949_records)} records, validated={validate}")
         
         return StreamingResponse(
             io.BytesIO(output.getvalue().encode()),
@@ -693,3 +733,212 @@ async def export_review_queue_csv(
         logger.error(f"Error exporting review queue: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to export review queue: {str(e)}")
 
+
+
+# ========================================
+# TAX VALIDATION ENDPOINTS
+# ========================================
+
+from tax_validation_service import (
+    tax_validation_service, 
+    TxClassification, 
+    ValidationStatus,
+    InvariantType
+)
+
+
+class ValidateTransactionsRequest(BaseModel):
+    """Request to validate a batch of transactions"""
+    transactions: List[Dict[str, Any]]
+    check_balances: bool = False
+    balances: Optional[Dict[str, Dict[str, float]]] = None
+
+
+class RunInvariantsRequest(BaseModel):
+    """Request to run invariant checks"""
+    balances: Optional[Dict[str, Dict[str, float]]] = None
+
+
+@router.post("/validate/transactions")
+async def validate_transactions(
+    request: ValidateTransactionsRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Validate and classify a batch of transactions.
+    
+    Returns:
+        - Classified transactions
+        - Any that need review
+        - Validation warnings
+    """
+    try:
+        validated = []
+        needs_review = []
+        
+        for tx in request.transactions:
+            tx_validated = tax_validation_service.validate_classification(tx)
+            validated.append(tx_validated)
+            
+            if tx_validated.get("needs_review"):
+                needs_review.append(tx_validated)
+        
+        return {
+            "success": True,
+            "total_transactions": len(validated),
+            "validated_transactions": validated,
+            "needs_review_count": len(needs_review),
+            "needs_review": needs_review
+        }
+        
+    except Exception as e:
+        logger.error(f"Error validating transactions: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to validate transactions: {str(e)}")
+
+
+@router.post("/validate/invariants")
+async def run_invariant_checks(
+    request: RunInvariantsRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Run all invariant checks on the user's tax data.
+    
+    Checks:
+    - Balance reconciliation
+    - Cost basis conservation
+    - No double spend
+    - No orphan disposals
+    
+    Returns:
+        Validation result with any violations
+    """
+    try:
+        result = tax_validation_service.run_all_invariant_checks(
+            balances=request.balances
+        )
+        
+        return {
+            "success": result.is_valid,
+            "status": result.status.value,
+            "can_export_taxes": result.is_valid,
+            "violations_count": len(result.violations),
+            "violations": [v.to_dict() for v in result.violations],
+            "warnings": result.warnings,
+            "audit_entries": len(result.audit_trail)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error running invariant checks: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to run invariant checks: {str(e)}")
+
+
+@router.get("/validate/account-status")
+async def get_account_tax_status(
+    user: dict = Depends(get_current_user)
+):
+    """
+    Get the current tax validation status for the account.
+    
+    Returns:
+        - Whether account is in valid tax state
+        - Any active violations
+        - Recent audit trail
+    """
+    try:
+        is_valid = tax_validation_service.is_account_tax_state_valid()
+        violations = tax_validation_service.violations
+        audit_trail = tax_validation_service.get_audit_trail(limit=50)
+        
+        return {
+            "account_tax_state_valid": is_valid,
+            "can_export_form_8949": is_valid,
+            "active_violations": len(violations),
+            "violations": [v.to_dict() for v in violations],
+            "recent_audit_entries": audit_trail
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting account tax status: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get account tax status: {str(e)}")
+
+
+@router.post("/validate/recompute")
+async def trigger_tax_recompute(
+    reason: str = "user_requested",
+    user: dict = Depends(get_current_user)
+):
+    """
+    Trigger full recomputation of tax data.
+    
+    Use when:
+    - Wallet linkage changes
+    - Transaction classification changes
+    - Data corrections made
+    
+    No partial updates - full recalculation.
+    """
+    try:
+        result = tax_validation_service.trigger_full_recompute(reason)
+        
+        return {
+            "success": True,
+            "message": "Tax data recomputation triggered",
+            "result": result
+        }
+        
+    except Exception as e:
+        logger.error(f"Error triggering recompute: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to trigger recompute: {str(e)}")
+
+
+@router.get("/validate/lot-status/{asset}")
+async def get_lot_status(
+    asset: str,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Get current lot status for a specific asset.
+    
+    Shows:
+    - All lots with remaining quantities
+    - Total cost basis
+    - Disposed vs remaining
+    """
+    try:
+        lot_status = tax_validation_service.get_lot_status(asset)
+        
+        return {
+            "success": True,
+            "asset": asset,
+            "lot_status": lot_status
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting lot status: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get lot status: {str(e)}")
+
+
+@router.get("/validate/audit-trail")
+async def get_audit_trail(
+    limit: int = 100,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Get recent audit trail entries.
+    
+    Returns chronological list of tax calculation actions
+    for auditability and debugging.
+    """
+    try:
+        audit_trail = tax_validation_service.get_audit_trail(limit=limit)
+        
+        return {
+            "success": True,
+            "entries_count": len(audit_trail),
+            "audit_trail": audit_trail
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting audit trail: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get audit trail: {str(e)}")
