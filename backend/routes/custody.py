@@ -14,6 +14,7 @@ from .models import CustodyAnalysisRequest
 from custody_service import custody_service, KNOWN_EXCHANGE_ADDRESSES, KNOWN_DEX_ADDRESSES
 from custody_report_generator import custody_report_generator
 from constrained_proceeds_service import ConstrainedProceedsService
+from price_backfill_service import PriceBackfillService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/custody", tags=["Chain of Custody"])
@@ -1925,5 +1926,168 @@ async def list_rollback_batches(
         
     except Exception as e:
         logger.error(f"Error listing rollback batches: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to list batches: {str(e)}")
+
+
+# ============================================================
+# PRICE BACKFILL PIPELINE ENDPOINTS
+# ============================================================
+
+class PriceBackfillRequest(BaseModel):
+    """Request model for price backfill"""
+    tx_ids: Optional[List[str]] = None  # Specific tx_ids to backfill (None = all)
+    dry_run: bool = True  # Preview mode by default
+    allow_approximate: bool = True  # Include approximate matches
+
+
+class BackfillRollbackRequest(BaseModel):
+    """Request model for backfill rollback"""
+    batch_id: str
+
+
+@router.get("/price-backfill/preview")
+async def preview_price_backfill(
+    user: dict = Depends(get_current_user)
+):
+    """
+    Preview price backfill for disposals missing USD valuation.
+    
+    Returns a dry-run report showing:
+    - Total disposals missing price
+    - Successfully backfillable (exact + approximate matches)
+    - Still missing (no price data available)
+    - Breakdown by valuation status, price source, and asset
+    
+    Valuation statuses:
+    - exact: Price from exact transaction date
+    - approximate: Price from nearest available date within 24h window
+    - stablecoin: Fixed 1:1 USD peg
+    - unavailable: No price data found
+    """
+    try:
+        service = PriceBackfillService(db)
+        summary = await service.preview_backfill(user["id"])
+        
+        return {
+            "success": True,
+            "summary": {
+                "total_missing": summary.total_missing,
+                "successfully_backfillable": summary.successfully_backfilled,
+                "still_missing": summary.still_missing,
+                "exact_matches": summary.exact_matches,
+                "approximate_matches": summary.approximate_matches
+            },
+            "by_status": summary.by_status,
+            "by_source": summary.by_source,
+            "by_asset": summary.by_asset,
+            "results": [r.to_dict() for r in summary.results[:100]]  # Limit to first 100
+        }
+        
+    except Exception as e:
+        logger.error(f"Error previewing price backfill: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to preview: {str(e)}")
+
+
+@router.post("/price-backfill/apply")
+async def apply_price_backfill(
+    request: PriceBackfillRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Apply price backfill to disposals missing USD valuation.
+    
+    For each disposal:
+    1. Fetches historical USD price at or nearest to transaction timestamp
+    2. Stores: asset, timestamp_used, price_source, confidence
+    3. Marks valuation as: exact, approximate, or unavailable
+    4. Creates audit trail entry
+    
+    Only exact or policy-allowed approximate valuations enable downstream
+    proceeds-acquisition creation.
+    
+    Args:
+        tx_ids: Specific disposal tx_ids to backfill (None = all eligible)
+        dry_run: If True (default), preview only without applying
+        allow_approximate: If True, apply approximate matches too
+    
+    Returns:
+        Applied records and backfill_batch_id for rollback capability
+    """
+    try:
+        service = PriceBackfillService(db)
+        results = await service.apply_backfill(
+            user_id=user["id"],
+            tx_ids=request.tx_ids,
+            dry_run=request.dry_run,
+            allow_approximate=request.allow_approximate
+        )
+        
+        return {
+            "success": True,
+            "dry_run": results["dry_run"],
+            "total_processed": results["total_processed"],
+            "backfillable_count": results["backfillable_count"],
+            "applied_count": results["applied_count"],
+            "still_missing": results["still_missing"],
+            "backfill_batch_id": results.get("backfill_batch_id"),
+            "applied_records": results.get("applied_records", [])[:50],  # Limit response size
+            "preview": results.get("preview", [])[:50]
+        }
+        
+    except Exception as e:
+        logger.error(f"Error applying price backfill: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to apply: {str(e)}")
+
+
+@router.post("/price-backfill/rollback")
+async def rollback_price_backfill(
+    request: BackfillRollbackRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Rollback a batch of price backfills.
+    
+    Removes price data that was backfilled in the specified batch,
+    reverting transactions to their original state (no price data).
+    """
+    try:
+        service = PriceBackfillService(db)
+        results = await service.rollback_backfill(
+            user_id=user["id"],
+            batch_id=request.batch_id
+        )
+        
+        if not results["success"]:
+            raise HTTPException(status_code=404, detail=results["message"])
+        
+        return results
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error rolling back price backfill: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to rollback: {str(e)}")
+
+
+@router.get("/price-backfill/batches")
+async def list_backfill_batches(
+    user: dict = Depends(get_current_user)
+):
+    """
+    List all price backfill batches for the user.
+    
+    Returns batches that can be rolled back with their record counts and values.
+    """
+    try:
+        service = PriceBackfillService(db)
+        batches = await service.list_backfill_batches(user["id"])
+        
+        return {
+            "success": True,
+            "batches": batches
+        }
+        
+    except Exception as e:
+        logger.error(f"Error listing backfill batches: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to list batches: {str(e)}")
 

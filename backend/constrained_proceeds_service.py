@@ -41,6 +41,7 @@ class SkipReason(Enum):
     ZERO_PROCEEDS = "zero_proceeds"
     NEGATIVE_PROCEEDS = "negative_proceeds"
     EXCHANGE_INTERNAL = "exchange_internal"
+    VALUATION_NOT_ELIGIBLE = "valuation_not_eligible"  # Backfilled price not eligible
 
 
 @dataclass
@@ -219,6 +220,40 @@ class ConstrainedProceedsService:
                 summary.non_fixable_by_reason[reason.value] = \
                     summary.non_fixable_by_reason.get(reason.value, 0) + 1
                 continue
+            
+            # 4.5 Skip if valuation is not eligible for proceeds acquisition
+            # (backfilled price with low confidence or approximate when not allowed)
+            backfill_info = disposal.get("price_backfill", {})
+            if backfill_info:
+                valuation_status = backfill_info.get("valuation_status", "")
+                confidence = backfill_info.get("confidence", 0)
+                
+                # Require exact, stablecoin, or high-confidence approximate
+                if valuation_status == "unavailable":
+                    summary.skipped.append(SkippedDisposal(
+                        tx_id=tx_id,
+                        asset=asset,
+                        quantity=quantity,
+                        skip_reason=SkipReason.VALUATION_NOT_ELIGIBLE,
+                        details="Backfilled valuation status is unavailable"
+                    ))
+                    summary.non_fixable_count += 1
+                    summary.non_fixable_by_reason[SkipReason.VALUATION_NOT_ELIGIBLE.value] = \
+                        summary.non_fixable_by_reason.get(SkipReason.VALUATION_NOT_ELIGIBLE.value, 0) + 1
+                    continue
+                
+                if valuation_status == "approximate" and confidence < 0.7:
+                    summary.skipped.append(SkippedDisposal(
+                        tx_id=tx_id,
+                        asset=asset,
+                        quantity=quantity,
+                        skip_reason=SkipReason.VALUATION_NOT_ELIGIBLE,
+                        details=f"Backfilled valuation confidence too low ({confidence:.2f})"
+                    ))
+                    summary.non_fixable_count += 1
+                    summary.non_fixable_by_reason[SkipReason.VALUATION_NOT_ELIGIBLE.value] = \
+                        summary.non_fixable_by_reason.get(SkipReason.VALUATION_NOT_ELIGIBLE.value, 0) + 1
+                    continue
             
             # 5. Skip if missing timestamp
             if not timestamp:
