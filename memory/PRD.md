@@ -703,6 +703,53 @@ REACT_APP_BACKEND_URL=https://...
   - Total value: $72,799.38
   - Final delta: orphan_disposals 1→0, validation_status needs_review→valid, can_export false→true
 
+**P1.8 - Post-Validation Hardening** ✅ (Completed - Mar 27, 2026)
+
+- [x] **1. Regression Fixture System** (`regression_fixture_service.py`)
+  - Snapshots validated accounts: raw transactions, transfers, linkages, tax lots, disposals, validation state, Form 8949 dataset
+  - Stores fixture with version tag (e.g., "golden_account_v1")
+  - Automated regression test: re-runs pipeline and compares disposal_count, total_proceeds, total_cost_basis, total_gain_loss, validation_status, can_export
+  - Fails test if any mismatch occurs
+  - Endpoints: POST `/regression/create-fixture`, POST `/regression/run-test/{id}`, GET `/regression/fixtures`
+
+- [x] **2. Pre-Export Summary Metadata** (`export_safety_guard.py`)
+  - Extended tax API responses with summary block:
+    - validation_status (valid/invalid/needs_review)
+    - can_export (true/false)
+    - proceeds_derived_count
+    - unresolved_review_count
+    - blocking_issues_count
+    - last_recompute_timestamp
+  - Always returned before export via GET `/beta/pre-export-check`
+
+- [x] **3. Modular Refactor of custody.py** (~2300 lines → 5 modules)
+  - `custody_core_routes.py`: Chain of custody, linkages, Form 8949, tax lots
+  - `review_queue_routes.py`: Review queue operations
+  - `validation_routes.py`: Validation, invariants, regression fixtures
+  - `proceeds_routes.py`: Constrained proceeds, staged application
+  - `price_backfill_routes.py`: Price backfill operations
+  - No change to logic, all tests pass, routing paths unchanged
+
+- [x] **4. Recompute Integrity Enforcement** (`recompute_service.py`)
+  - Triggers full recompute on: linkage changes, classification changes, proceeds application, price backfill
+  - No partial updates allowed - rebuilds tax lots, disposals, validation state
+  - Stores recompute timestamp via `mark_pending_recompute()`
+  - Endpoint: POST `/validate/recompute`
+
+- [x] **5. Export Safety Guard** (`export_safety_guard.py`)
+  - Before Form 8949 generation:
+    - Re-runs validation
+    - Confirms validation_status == "valid" and can_export == true
+  - If not: blocks export, returns structured error with blocking issues
+  - Force bypass available via `?force=true` parameter
+
+- [x] **6. Audit Trail Completeness**
+  - All derived records include:
+    - source_tx_id(s), derivation_type, timestamp, price_source, batch_id, reversible flag
+  - Endpoint: GET `/validate/audit-trail`
+
+**Testing:** 100% pass rate (29 API tests)
+
 **P2 - Review Queue Enhancements** ✅ (Completed - Mar 27, 2026)
 - [x] **Frontend Validation Status UI** (`ValidationStatusPanel.js`)
   - Displays overall validation status (valid/invalid/needs_review)
