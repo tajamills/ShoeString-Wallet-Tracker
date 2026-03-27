@@ -566,17 +566,21 @@ REACT_APP_BACKEND_URL=https://...
 
 ## Backlog
 
-### Backend Integration - Tax Validation Layer (P1)
-- [ ] **Persist validation state to MongoDB** - Lots, disposals, and audit trail currently in-memory; need `tax_lots`, `tax_disposals`, `tax_audit_trail` collections
-- [ ] **Integrate with CSV import flow** - Auto-classify transactions when user imports exchange CSVs
-- [ ] **Hook into existing tax services** - `exchange_tax_service.py` and `unified_tax_service.py` should call validation layer
-- [ ] **Auto-trigger recompute on linkage changes** - When review queue item resolved (Mine/External), automatically recalculate affected tax data
-- [ ] **Add validation status to tax API responses** - `/api/tax/*` endpoints should include `validation_status` and `can_export` flags
+### Next Action Items
+- [ ] **P0**: User to test validation endpoints on Preview
+- [ ] **P1**: Integrate validation into CSV import flow (auto-classify on import)
+- [ ] **P1**: Persist validation state to MongoDB (`tax_lots`, `tax_disposals`, `tax_audit_trail` collections)
+- [ ] **P1**: Hook into existing tax services (`exchange_tax_service.py`, `unified_tax_service.py`)
+- [ ] **P1**: Auto-trigger recompute on linkage changes (review queue resolution)
+- [ ] **P1**: Add validation status to tax API responses (`validation_status`, `can_export` flags)
+- [ ] **P2**: Add frontend UI for validation status in Tax Dashboard
 
-### Other Backlog Items
-- [ ] Coinbase API key connection debugging (needs user verification)
-- [ ] DeFi Position Tracking
+### Future/Backlog
+- [ ] Bulk Resolution feature for Review Queue ("Resolve All as External" / "Resolve All as Mine")
+- [ ] DeFi Position Tracking (liquidity pools, staking positions)
 - [ ] NFT Portfolio Tracking
+- [ ] Refactor monolithic files (`ChainOfCustodyModal.js`, `App.js`)
+- [ ] Coinbase API key connection debugging (needs user verification)
 
 ### Phase 22: Tax Validation and Invariant Enforcement Layer (Completed - Mar 27, 2026)
 - [x] **New Tax Validation Service** (`tax_validation_service.py`) - 940 lines
