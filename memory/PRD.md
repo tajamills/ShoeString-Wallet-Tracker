@@ -567,19 +567,26 @@ REACT_APP_BACKEND_URL=https://...
 ## Backlog
 
 ### Next Action Items
-- [ ] **P1**: Persist validation state to MongoDB (`tax_lots`, `tax_disposals`, `tax_audit_trail` collections)
-- [ ] **P1**: Integrate validation into CSV import flow (auto-classify on import)
-- [ ] **P1**: Hook into existing tax services (`exchange_tax_service.py`, `unified_tax_service.py`)
-- [ ] **P1**: Auto-trigger recompute on linkage changes (review queue resolution)
-- [ ] **P1**: Add validation status to tax API responses (`validation_status`, `can_export` flags)
-- [ ] **P2**: Add frontend UI for validation status in Tax Dashboard
-- [ ] **P2**: Bulk Resolution feature for Review Queue ("Resolve All as External" / "Resolve All as Mine")
+
+**P0 - Critical (Blocking Export)**
+- [ ] Root-cause and fix orphan disposals for XLM and USDC
+- [ ] Categorize unresolved review queue items by cause and frequency
+- [ ] Confirm `can_export: false` is enforced everywhere export can happen
+
+**P1 - High Priority**
+- [ ] Persist validation state to MongoDB (`tax_lots`, `tax_disposals`, `tax_audit_trail`)
+- [ ] Integrate validation into CSV import flow (auto-classify on import)
+- [ ] Hook validation into existing tax services (`exchange_tax_service.py`, `unified_tax_service.py`)
+- [ ] Auto-trigger recompute on linkage/classification changes
+- [ ] Add validation status to API responses
+
+**P2 - Medium Priority**
+- [ ] Frontend UI for validation status in Tax Dashboard
+- [ ] Bulk Resolution feature for Review Queue ("Resolve All as External" / "Resolve All as Mine")
 
 ### Future/Backlog
-- [ ] DeFi Position Tracking (liquidity pools, staking positions)
-- [ ] NFT Portfolio Tracking
+- [ ] DeFi/NFT Position Tracking
 - [ ] Refactor monolithic files (`ChainOfCustodyModal.js`, `App.js`)
-- [ ] Coinbase API key connection debugging (needs user verification)
 
 ### Phase 23: Beta Account Validation Harness (Completed - Mar 27, 2026)
 - [x] **Beta Validation Harness** (`beta_validation_harness.py`) - ~1000 lines
