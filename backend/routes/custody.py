@@ -13,6 +13,7 @@ from .dependencies import db, get_current_user, require_unlimited_tier
 from .models import CustodyAnalysisRequest
 from custody_service import custody_service, KNOWN_EXCHANGE_ADDRESSES, KNOWN_DEX_ADDRESSES
 from custody_report_generator import custody_report_generator
+from constrained_proceeds_service import ConstrainedProceedsService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/custody", tags=["Chain of Custody"])
@@ -1773,3 +1774,156 @@ async def apply_wallet_suggestion(
     except Exception as e:
         logger.error(f"Error applying suggestion: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to apply suggestion: {str(e)}")
+
+
+# ============================================================
+# CONSTRAINED PROCEEDS ACQUISITION REMEDIATION ENDPOINTS
+# ============================================================
+
+class ProceedsRemediationRequest(BaseModel):
+    """Request model for proceeds acquisition remediation"""
+    candidate_tx_ids: Optional[List[str]] = None  # Specific tx_ids to fix (None = all)
+    dry_run: bool = True  # Preview mode by default
+
+
+class RollbackRequest(BaseModel):
+    """Request model for rollback"""
+    batch_id: str
+
+
+@router.get("/proceeds/preview")
+async def preview_proceeds_candidates(
+    user: dict = Depends(get_current_user)
+):
+    """
+    Preview all candidate proceeds acquisitions before applying.
+    
+    Shows:
+    - Fixable disposals with proposed proceeds acquisitions
+    - Non-fixable disposals with reasons they were skipped
+    - Summary counts and total value
+    
+    This is a read-only operation that does not create any records.
+    """
+    try:
+        service = ConstrainedProceedsService(db)
+        summary = await service.preview_candidates(user["id"])
+        
+        return {
+            "success": True,
+            "preview": summary.to_dict(),
+            "summary": {
+                "fixable_count": summary.fixable_count,
+                "fixable_total_value": round(summary.fixable_total_value, 2),
+                "non_fixable_count": summary.non_fixable_count,
+                "non_fixable_reasons": summary.non_fixable_by_reason
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Error previewing proceeds candidates: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to preview: {str(e)}")
+
+
+@router.post("/proceeds/apply")
+async def apply_proceeds_acquisitions(
+    request: ProceedsRemediationRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Apply constrained proceeds acquisition fixes.
+    
+    Requirements:
+    - Only creates proceeds acquisition when linked to known source disposal
+    - Requires: source_disposal_tx_id, proceeds_asset, exact_amount, timestamp, price_source
+    - Tags all records as `derived_proceeds_acquisition`
+    - All records are reversible via rollback
+    
+    Exclusions:
+    - Unresolved wallet ownership (pending review queue)
+    - Missing acquisition history
+    - Inferred internal transfers
+    - Bridge/DEX ambiguity without explicit proceeds leg
+    
+    Args:
+        candidate_tx_ids: Specific disposal tx_ids to fix (None = all eligible)
+        dry_run: If True (default), preview only without creating records
+    
+    Returns:
+        Created records and rollback_batch_id for reversibility
+    """
+    try:
+        service = ConstrainedProceedsService(db)
+        results = await service.apply_fixes(
+            user_id=user["id"],
+            candidate_tx_ids=request.candidate_tx_ids,
+            dry_run=request.dry_run
+        )
+        
+        return {
+            "success": True,
+            "dry_run": results["dry_run"],
+            "created_count": results["created_count"],
+            "total_value": round(results["total_value"], 2),
+            "rollback_batch_id": results.get("rollback_batch_id"),
+            "created_records": results.get("created_records", []),
+            "preview": results.get("preview", [])
+        }
+        
+    except Exception as e:
+        logger.error(f"Error applying proceeds acquisitions: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to apply: {str(e)}")
+
+
+@router.post("/proceeds/rollback")
+async def rollback_proceeds_batch(
+    request: RollbackRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Rollback a batch of created proceeds acquisitions.
+    
+    Use the rollback_batch_id returned from /proceeds/apply to undo the changes.
+    This removes all derived proceeds acquisition records from that batch.
+    """
+    try:
+        service = ConstrainedProceedsService(db)
+        results = await service.rollback_batch(
+            user_id=user["id"],
+            batch_id=request.batch_id
+        )
+        
+        if not results["success"]:
+            raise HTTPException(status_code=404, detail=results["message"])
+        
+        return results
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error rolling back proceeds batch: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to rollback: {str(e)}")
+
+
+@router.get("/proceeds/rollback-batches")
+async def list_rollback_batches(
+    user: dict = Depends(get_current_user)
+):
+    """
+    List all rollback batches for the user.
+    
+    Returns batches that can be rolled back with their record counts and values.
+    """
+    try:
+        service = ConstrainedProceedsService(db)
+        batches = await service.list_rollback_batches(user["id"])
+        
+        return {
+            "success": True,
+            "batches": batches
+        }
+        
+    except Exception as e:
+        logger.error(f"Error listing rollback batches: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to list batches: {str(e)}")
+
