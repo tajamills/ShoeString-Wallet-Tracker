@@ -155,6 +155,11 @@ class UnknownTransactionClassifier:
                 "success": True,
                 "unknown_count": 0,
                 "patterns": [],
+                "by_confidence": {
+                    "auto_apply": [],
+                    "suggest": [],
+                    "unresolved": []
+                },
                 "suggestions": [],
                 "metrics": ClassificationMetrics().to_dict()
             }
@@ -227,7 +232,7 @@ class UnknownTransactionClassifier:
         """
         # Get analysis
         analysis = await self.analyze_unknown_transactions(user_id)
-        auto_apply = analysis["by_confidence"]["auto_apply"]
+        auto_apply = analysis.get("by_confidence", {}).get("auto_apply", [])
         
         if not auto_apply:
             return {
@@ -604,9 +609,9 @@ class UnknownTransactionClassifier:
         ).to_list(10000)
         
         for tx in txs:
-            for field in ["source_wallet", "wallet_address", "from_address", "to_address"]:
-                if tx.get(field):
-                    wallets.add(str(tx[field]).lower())
+            for field_name in ["source_wallet", "wallet_address", "from_address", "to_address"]:
+                if tx.get(field_name):
+                    wallets.add(str(tx[field_name]).lower())
         
         return wallets
     
