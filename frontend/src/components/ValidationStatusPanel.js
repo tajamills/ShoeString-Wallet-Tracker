@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle, CheckCircle, XCircle, RefreshCw, FileText, ChevronDown, ChevronUp, Target } from 'lucide-react';
+import { AlertTriangle, CheckCircle, XCircle, RefreshCw, FileText, ChevronDown, ChevronUp, Target, TrendingUp, TrendingDown, BarChart2 } from 'lucide-react';
 
 /**
  * ValidationStatusPanel - P2 Frontend UI for Tax Validation Status
@@ -8,6 +8,7 @@ import { AlertTriangle, CheckCircle, XCircle, RefreshCw, FileText, ChevronDown, 
  * - Overall validation status (valid/invalid/needs_review)
  * - Can export indicator
  * - Issue breakdown by severity
+ * - Classification effectiveness metrics
  * - Quick actions for common fixes
  */
 const ValidationStatusPanel = ({ apiUrl, authHeader, onRefresh, onOpenClassifier }) => {
@@ -17,6 +18,8 @@ const ValidationStatusPanel = ({ apiUrl, authHeader, onRefresh, onOpenClassifier
   const [expanded, setExpanded] = useState(false);
   const [preExportCheck, setPreExportCheck] = useState(null);
   const [unknownCount, setUnknownCount] = useState(0);
+  const [effectiveness, setEffectiveness] = useState(null);
+  const [showEffectiveness, setShowEffectiveness] = useState(false);
 
   const fetchStatus = async () => {
     setLoading(true);
@@ -53,6 +56,19 @@ const ValidationStatusPanel = ({ apiUrl, authHeader, onRefresh, onOpenClassifier
         }
       } catch (classifyErr) {
         console.log('Could not fetch classification metrics:', classifyErr);
+      }
+      
+      // Fetch effectiveness metrics
+      try {
+        const effectivenessRes = await fetch(`${apiUrl}/api/custody/classify/effectiveness?days=30`, {
+          headers: authHeader
+        });
+        if (effectivenessRes.ok) {
+          const effectivenessData = await effectivenessRes.json();
+          setEffectiveness(effectivenessData.effectiveness);
+        }
+      } catch (effectivenessErr) {
+        console.log('Could not fetch effectiveness metrics:', effectivenessErr);
       }
       
     } catch (err) {
@@ -234,6 +250,118 @@ const ValidationStatusPanel = ({ apiUrl, authHeader, onRefresh, onOpenClassifier
                 <FileText className="w-4 h-4 text-blue-400" />
                 <span className="text-blue-300 text-sm">{preExportCheck.recommendation}</span>
               </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Classification Effectiveness Metrics */}
+      {effectiveness && (effectiveness.auto_classified_count > 0 || effectiveness.user_confirmed_count > 0) && (
+        <div className="mt-4">
+          <button
+            onClick={() => setShowEffectiveness(!showEffectiveness)}
+            className="flex items-center gap-2 text-sm text-gray-400 hover:text-gray-200 transition-colors"
+            data-testid="toggle-effectiveness-btn"
+          >
+            <BarChart2 className="w-4 h-4" />
+            <span>Classification Effectiveness</span>
+            {showEffectiveness ? (
+              <ChevronUp className="w-4 h-4" />
+            ) : (
+              <ChevronDown className="w-4 h-4" />
+            )}
+          </button>
+          
+          {showEffectiveness && (
+            <div className="mt-3 space-y-3" data-testid="effectiveness-panel">
+              {/* Summary Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <div className="bg-gray-900/50 rounded-lg p-2 text-center">
+                  <div className="text-lg font-bold text-green-400">
+                    {effectiveness.unknown_reduction}
+                  </div>
+                  <div className="text-xs text-gray-400">Unknowns Reduced</div>
+                </div>
+                <div className="bg-gray-900/50 rounded-lg p-2 text-center">
+                  <div className="text-lg font-bold text-blue-400">
+                    {effectiveness.auto_classified_count}
+                  </div>
+                  <div className="text-xs text-gray-400">Auto-Classified</div>
+                </div>
+                <div className="bg-gray-900/50 rounded-lg p-2 text-center">
+                  <div className="text-lg font-bold text-purple-400">
+                    {effectiveness.user_confirmed_count}
+                  </div>
+                  <div className="text-xs text-gray-400">User Confirmed</div>
+                </div>
+                <div className="bg-gray-900/50 rounded-lg p-2 text-center">
+                  <div className={`text-lg font-bold ${effectiveness.overall_precision >= 0.9 ? 'text-green-400' : effectiveness.overall_precision >= 0.7 ? 'text-yellow-400' : 'text-red-400'}`}>
+                    {Math.round(effectiveness.overall_precision * 100)}%
+                  </div>
+                  <div className="text-xs text-gray-400">Precision</div>
+                </div>
+              </div>
+              
+              {/* Export Readiness Improvement */}
+              {effectiveness.export_readiness_improved && (
+                <div className="bg-green-900/20 border border-green-700 rounded-lg p-2 text-center">
+                  <div className="flex items-center justify-center gap-2 text-green-400">
+                    <TrendingUp className="w-4 h-4" />
+                    <span className="text-sm font-medium">Export Readiness Improved!</span>
+                  </div>
+                  <div className="text-xs text-gray-400 mt-1">
+                    {effectiveness.validation_status_before} → {effectiveness.validation_status_after}
+                  </div>
+                </div>
+              )}
+              
+              {/* Confidence Bucket Breakdown */}
+              {effectiveness.confidence_buckets && effectiveness.confidence_buckets.length > 0 && (
+                <div>
+                  <h5 className="text-xs font-medium text-gray-400 mb-2">Precision by Confidence</h5>
+                  <div className="space-y-1">
+                    {effectiveness.confidence_buckets
+                      .filter(b => b.total_classified > 0)
+                      .map((bucket, idx) => (
+                        <div key={idx} className="flex items-center justify-between text-xs">
+                          <span className="text-gray-400 capitalize">{bucket.bucket_name.replace('_', ' ')}</span>
+                          <span className="text-gray-300">
+                            {bucket.user_confirmed}/{bucket.user_confirmed + bucket.user_rejected} 
+                            <span className={`ml-2 ${bucket.precision >= 0.9 ? 'text-green-400' : bucket.precision >= 0.7 ? 'text-yellow-400' : 'text-red-400'}`}>
+                              ({Math.round(bucket.precision * 100)}%)
+                            </span>
+                          </span>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Classification Type Breakdown */}
+              {effectiveness.classification_types && effectiveness.classification_types.length > 0 && (
+                <div>
+                  <h5 className="text-xs font-medium text-gray-400 mb-2">By Classification Type</h5>
+                  <div className="grid grid-cols-2 gap-1">
+                    {effectiveness.classification_types
+                      .filter(t => t.total_classified > 0)
+                      .slice(0, 6)
+                      .map((type, idx) => (
+                        <div key={idx} className="flex items-center justify-between text-xs bg-gray-900/30 rounded px-2 py-1">
+                          <span className="text-gray-400 capitalize">{type.classification_type.replace('_', ' ')}</span>
+                          <span className="text-gray-300">{type.total_classified}</span>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Rollback Warning */}
+              {effectiveness.rollback_count > 0 && (
+                <div className="flex items-center gap-2 text-xs text-yellow-400">
+                  <AlertTriangle className="w-3 h-3" />
+                  <span>{effectiveness.rollback_count} classification(s) rolled back</span>
+                </div>
+              )}
             </div>
           )}
         </div>

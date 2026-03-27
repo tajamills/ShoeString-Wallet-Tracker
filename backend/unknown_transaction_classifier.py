@@ -565,6 +565,14 @@ class UnknownTransactionClassifier:
             {"$set": {"rolled_back": True, "rolled_back_at": datetime.now(timezone.utc).isoformat()}}
         )
         
+        # Record rollback for effectiveness tracking
+        try:
+            from classification_effectiveness_service import ClassificationEffectivenessService
+            effectiveness = ClassificationEffectivenessService(self.db)
+            await effectiveness.record_rollback(user_id=user_id, batch_id=batch_id)
+        except Exception as e:
+            logger.warning(f"Could not record rollback: {e}")
+        
         return {
             "success": True,
             "batch_id": batch_id,
@@ -936,6 +944,21 @@ class UnknownTransactionClassifier:
             "timestamp": datetime.now(timezone.utc).isoformat()
         })
         
+        # Record effectiveness event
+        try:
+            from classification_effectiveness_service import ClassificationEffectivenessService
+            effectiveness = ClassificationEffectivenessService(self.db)
+            await effectiveness.record_classification_event(
+                user_id=user_id,
+                tx_id=tx_id,
+                classification_type=new_type,
+                confidence=confidence,
+                auto_applied=auto_applied,
+                batch_id=batch_id
+            )
+        except Exception as e:
+            logger.warning(f"Could not record effectiveness event: {e}")
+        
         return {
             "success": True,
             "tx_id": tx_id,
@@ -987,6 +1010,18 @@ class UnknownTransactionClassifier:
             "source_address": (tx.get("source_address") or tx.get("from_address")) if tx else None,
             "timestamp": datetime.now(timezone.utc).isoformat()
         })
+        
+        # Record effectiveness feedback
+        try:
+            from classification_effectiveness_service import ClassificationEffectivenessService
+            effectiveness = ClassificationEffectivenessService(self.db)
+            await effectiveness.record_user_feedback(
+                user_id=user_id,
+                tx_id=tx_id,
+                accepted=accepted
+            )
+        except Exception as e:
+            logger.warning(f"Could not record effectiveness feedback: {e}")
     
     async def _get_feedback_stats(self, user_id: str) -> Dict[str, Any]:
         """Get feedback statistics"""

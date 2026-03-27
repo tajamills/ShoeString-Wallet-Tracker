@@ -49,6 +49,11 @@ def get_classifier():
     return UnknownTransactionClassifier(db)
 
 
+def get_effectiveness_service():
+    from classification_effectiveness_service import ClassificationEffectivenessService
+    return ClassificationEffectivenessService(db)
+
+
 @router.get("/classify/analyze")
 async def analyze_unknown_transactions(
     user: dict = Depends(get_current_user),
@@ -410,3 +415,165 @@ async def get_suggestion_for_transaction(
     except Exception as e:
         logger.error(f"Error getting suggestion: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to get suggestion: {str(e)}")
+
+
+# === EFFECTIVENESS METRICS ENDPOINTS ===
+
+@router.get("/classify/effectiveness")
+async def get_classification_effectiveness(
+    user: dict = Depends(get_current_user),
+    days: int = 30
+):
+    """
+    Get comprehensive effectiveness summary for the classification system.
+    
+    Measures whether the classifier materially improves tax readiness
+    without introducing bad classifications.
+    
+    Returns:
+    - Before/after metrics (unknown counts, validation status, export readiness)
+    - Precision metrics by confidence bucket (>0.95, 0.85-0.95, 0.70-0.85)
+    - Metrics by classification type (internal_transfer, external_transfer, etc.)
+    - Overall precision rate
+    """
+    try:
+        service = get_effectiveness_service()
+        summary = await service.get_effectiveness_summary(
+            user_id=user["id"],
+            days=days
+        )
+        
+        return {
+            "success": True,
+            "effectiveness": summary.to_dict()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting effectiveness: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get effectiveness: {str(e)}")
+
+
+@router.get("/classify/effectiveness/confidence-buckets")
+async def get_precision_by_confidence(
+    user: dict = Depends(get_current_user),
+    days: int = 30
+):
+    """
+    Get precision metrics broken down by confidence bucket.
+    
+    Buckets:
+    - high: >0.95
+    - medium_high: 0.85-0.95
+    - medium: 0.70-0.85
+    - low: <0.70
+    """
+    try:
+        service = get_effectiveness_service()
+        buckets = await service.get_precision_by_confidence_bucket(
+            user_id=user["id"],
+            days=days
+        )
+        
+        return {
+            "success": True,
+            "confidence_buckets": buckets
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting confidence metrics: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get metrics: {str(e)}")
+
+
+@router.get("/classify/effectiveness/classification-types")
+async def get_precision_by_type(
+    user: dict = Depends(get_current_user),
+    days: int = 30
+):
+    """
+    Get precision metrics broken down by classification type.
+    
+    Types tracked:
+    - internal_transfer
+    - external_transfer
+    - swap
+    - bridge
+    - deposit
+    - withdrawal
+    - buy
+    - sell
+    - reward
+    - staking
+    """
+    try:
+        service = get_effectiveness_service()
+        types = await service.get_precision_by_classification_type(
+            user_id=user["id"],
+            days=days
+        )
+        
+        return {
+            "success": True,
+            "classification_types": types
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting type metrics: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get metrics: {str(e)}")
+
+
+@router.post("/classify/effectiveness/snapshot")
+async def capture_effectiveness_snapshot(
+    user: dict = Depends(get_current_user),
+    snapshot_type: str = "before"
+):
+    """
+    Capture a snapshot of current account state for before/after comparison.
+    
+    Call with snapshot_type='before' before classification, 
+    and snapshot_type='after' after classification to track improvement.
+    """
+    try:
+        if snapshot_type not in ["before", "after"]:
+            raise HTTPException(status_code=400, detail="snapshot_type must be 'before' or 'after'")
+        
+        service = get_effectiveness_service()
+        snapshot = await service.capture_snapshot(
+            user_id=user["id"],
+            snapshot_type=snapshot_type
+        )
+        
+        return {
+            "success": True,
+            "snapshot": snapshot.to_dict()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error capturing snapshot: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to capture snapshot: {str(e)}")
+
+
+@router.get("/classify/effectiveness/admin/summary")
+async def get_all_accounts_effectiveness(
+    user: dict = Depends(get_current_user),
+    days: int = 30
+):
+    """
+    Get aggregated effectiveness summary across all accounts.
+    
+    Admin endpoint for system-wide metrics.
+    """
+    try:
+        service = get_effectiveness_service()
+        summary = await service.get_all_accounts_summary(days=days)
+        
+        return {
+            "success": True,
+            "summary": summary
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting admin summary: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get summary: {str(e)}")
+
