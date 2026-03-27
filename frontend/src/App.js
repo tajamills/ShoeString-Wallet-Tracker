@@ -1337,6 +1337,16 @@ function App() {
           isLoggedIn={!!user}
         />
       </div>
+      
+      {/* Footer */}
+      <footer className="w-full py-4 mt-8 border-t border-gray-800 bg-gray-900/50">
+        <div className="container mx-auto px-4 text-center">
+          <p className="text-gray-500 text-sm">
+            © {new Date().getFullYear()} Crypto Bag Tracker. Made by{' '}
+            <span className="text-gray-400 font-medium">Acoretek Services LLC</span>
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }
