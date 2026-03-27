@@ -15,6 +15,7 @@ from custody_service import custody_service, KNOWN_EXCHANGE_ADDRESSES, KNOWN_DEX
 from custody_report_generator import custody_report_generator
 from constrained_proceeds_service import ConstrainedProceedsService
 from price_backfill_service import PriceBackfillService
+from staged_proceeds_service import StagedProceedsService, StagedApplicationFilters, ValuationFilter
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/custody", tags=["Chain of Custody"])
@@ -2090,4 +2091,263 @@ async def list_backfill_batches(
     except Exception as e:
         logger.error(f"Error listing backfill batches: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to list batches: {str(e)}")
+
+
+# ============================================================
+# STAGED PROCEEDS APPLICATION ENDPOINTS
+# ============================================================
+
+class StagedApplyRequest(BaseModel):
+    """Request model for staged proceeds application"""
+    assets: Optional[List[str]] = None
+    date_from: Optional[str] = None  # YYYY-MM-DD
+    date_to: Optional[str] = None    # YYYY-MM-DD
+    valuation_filter: str = "exact_only"  # exact_only, stablecoin_only, high_confidence, all_eligible
+    min_confidence: float = 0.7
+    max_time_delta_hours: Optional[float] = None
+    exclude_wide_window: bool = True
+    dry_run: bool = True
+    force_override: bool = False  # Override safety blocks
+
+
+@router.get("/proceeds/staged/stages")
+async def get_application_stages(
+    user: dict = Depends(get_current_user)
+):
+    """
+    Get recommended application stages for proceeds acquisitions.
+    
+    Returns a plan for staged application with:
+    - Stage 1: Exact + Stablecoin valuations (low risk, recommended first)
+    - Stage 2: High-confidence approximate (medium risk)
+    - Stage 3: Low-confidence approximate (high risk, requires manual review)
+    """
+    try:
+        service = StagedProceedsService(db)
+        stages = await service.get_application_stages(user["id"])
+        
+        return {
+            "success": True,
+            "stages": stages
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting application stages: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get stages: {str(e)}")
+
+
+@router.get("/proceeds/staged/preview")
+async def preview_staged_application(
+    user: dict = Depends(get_current_user),
+    assets: Optional[str] = None,  # Comma-separated list
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    valuation_filter: str = "exact_only",
+    min_confidence: float = 0.7
+):
+    """
+    Preview staged proceeds application with filters.
+    
+    Groups candidates by valuation quality:
+    - exact: Price from exact transaction date
+    - stablecoin: Fixed 1:1 USD peg
+    - high_confidence_approximate: Approximate with confidence >= 0.8
+    - low_confidence_approximate: Approximate with lower confidence
+    
+    Args:
+        assets: Comma-separated list of assets to filter (e.g., "BTC,ETH")
+        date_from: Start date (YYYY-MM-DD)
+        date_to: End date (YYYY-MM-DD)
+        valuation_filter: exact_only, stablecoin_only, high_confidence, all_eligible
+        min_confidence: Minimum confidence threshold (0.0-1.0)
+    """
+    try:
+        # Parse assets
+        asset_list = [a.strip().upper() for a in assets.split(",")] if assets else None
+        
+        # Parse valuation filter
+        try:
+            val_filter = ValuationFilter(valuation_filter)
+        except ValueError:
+            val_filter = ValuationFilter.EXACT_ONLY
+        
+        filters = StagedApplicationFilters(
+            assets=asset_list,
+            date_from=date_from,
+            date_to=date_to,
+            valuation_filter=val_filter,
+            min_confidence=min_confidence
+        )
+        
+        service = StagedProceedsService(db)
+        preview = await service.preview_staged(user["id"], filters)
+        
+        return {
+            "success": True,
+            "preview": preview
+        }
+        
+    except Exception as e:
+        logger.error(f"Error previewing staged application: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to preview: {str(e)}")
+
+
+@router.post("/proceeds/staged/apply")
+async def apply_staged_proceeds(
+    request: StagedApplyRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Apply proceeds acquisitions with staged controls.
+    
+    Safety Features:
+    - Exact-valuation candidates recommended first
+    - Low-confidence approximates blocked unless force_override=True
+    - Wide-window approximates (>12h) blocked by default
+    - Automatic validation after each batch
+    - Returns delta metrics showing impact
+    
+    Args:
+        assets: Filter by specific assets
+        date_from/date_to: Filter by date range
+        valuation_filter: exact_only, stablecoin_only, high_confidence, all_eligible
+        min_confidence: Minimum confidence threshold
+        max_time_delta_hours: Maximum time delta for approximate matches
+        exclude_wide_window: Block wide-window (>12h) approximates
+        dry_run: If True, preview only
+        force_override: Override safety blocks (use with caution)
+    
+    Returns:
+        StagedApplicationResult with validation delta showing:
+        - orphan_disposals before/after
+        - validation_status before/after
+        - can_export before/after
+        - new warnings/errors introduced
+    """
+    try:
+        # Parse valuation filter
+        try:
+            val_filter = ValuationFilter(request.valuation_filter)
+        except ValueError:
+            val_filter = ValuationFilter.EXACT_ONLY
+        
+        filters = StagedApplicationFilters(
+            assets=request.assets,
+            date_from=request.date_from,
+            date_to=request.date_to,
+            valuation_filter=val_filter,
+            min_confidence=request.min_confidence,
+            max_time_delta_hours=request.max_time_delta_hours,
+            exclude_wide_window=request.exclude_wide_window
+        )
+        
+        service = StagedProceedsService(db)
+        result = await service.apply_staged(
+            user_id=user["id"],
+            filters=filters,
+            dry_run=request.dry_run,
+            force_override=request.force_override
+        )
+        
+        return {
+            "success": True,
+            "result": result.to_dict()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error applying staged proceeds: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to apply: {str(e)}")
+
+
+@router.post("/proceeds/staged/apply-exact")
+async def apply_exact_only(
+    user: dict = Depends(get_current_user),
+    assets: Optional[str] = None,
+    dry_run: bool = True
+):
+    """
+    Convenience endpoint: Apply only exact-valuation candidates.
+    
+    This is the safest application mode with highest confidence.
+    Recommended as first stage of application.
+    """
+    try:
+        asset_list = [a.strip().upper() for a in assets.split(",")] if assets else None
+        
+        service = StagedProceedsService(db)
+        result = await service.apply_exact_only(
+            user_id=user["id"],
+            assets=asset_list,
+            dry_run=dry_run
+        )
+        
+        return {
+            "success": True,
+            "result": result.to_dict()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error applying exact-only proceeds: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to apply: {str(e)}")
+
+
+@router.post("/proceeds/staged/apply-stablecoins")
+async def apply_stablecoins_only(
+    user: dict = Depends(get_current_user),
+    dry_run: bool = True
+):
+    """
+    Convenience endpoint: Apply only stablecoin candidates.
+    
+    Stablecoins have 1:1 USD peg with confidence 1.0.
+    """
+    try:
+        service = StagedProceedsService(db)
+        result = await service.apply_stablecoins_only(
+            user_id=user["id"],
+            dry_run=dry_run
+        )
+        
+        return {
+            "success": True,
+            "result": result.to_dict()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error applying stablecoin proceeds: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to apply: {str(e)}")
+
+
+@router.post("/proceeds/staged/apply-high-confidence")
+async def apply_high_confidence(
+    user: dict = Depends(get_current_user),
+    assets: Optional[str] = None,
+    dry_run: bool = True
+):
+    """
+    Convenience endpoint: Apply exact + high-confidence approximate.
+    
+    Includes:
+    - Exact valuations
+    - Stablecoin valuations
+    - Approximate valuations with confidence >= 0.8
+    """
+    try:
+        asset_list = [a.strip().upper() for a in assets.split(",")] if assets else None
+        
+        service = StagedProceedsService(db)
+        result = await service.apply_high_confidence(
+            user_id=user["id"],
+            assets=asset_list,
+            dry_run=dry_run
+        )
+        
+        return {
+            "success": True,
+            "result": result.to_dict()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error applying high-confidence proceeds: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to apply: {str(e)}")
 

@@ -1,0 +1,97 @@
+{
+  "summary": "Staged Proceeds Application feature fully tested. All 28 API tests pass. The service correctly implements staged application controls with filtering by asset, date range, valuation status, and confidence threshold. Validation delta metrics work correctly showing orphan_disposals, validation_status, and can_export before/after. Rollback functionality verified - successfully rolled back and re-applied a batch of 15 records.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_staged_proceeds_api.py",
+    "/app/test_reports/pytest/staged_proceeds_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_staged_proceeds_api.py"
+  ],
+  "success_rate": {
+    "backend": "100% (28/28 tests passed)"
+  },
+  "test_credentials": {
+    "email": "mobiletest@test.com",
+    "password": "test123456"
+  },
+  "seed_data_creation": "None - used existing test user data with previously applied staged batches",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Staged Proceeds Application feature fully implemented and tested. All 121 candidates have been applied in staged batches. Current rollback batches: afda56e3 (15 records, $21,123.23), 9b4bd296 (86 records, $33,197.44), 74eda72d (20 records, $18,478.71). Validation shows can_export=true, validation_status=valid, orphan_disposals=0.",
+  "features_verified": {
+    "api_endpoints": {
+      "GET /api/custody/proceeds/staged/stages": "PASS - Returns recommended application stages with total_candidates, stages array, blocked_by_safety",
+      "GET /api/custody/proceeds/staged/preview": "PASS - Preview with filtering by asset, date range, valuation status, confidence threshold",
+      "POST /api/custody/proceeds/staged/apply": "PASS - Apply with filters, returns validation delta showing orphan_disposals, validation_status, can_export before/after",
+      "POST /api/custody/proceeds/staged/apply-exact": "PASS - Convenience endpoint for exact-only (min_confidence=0.9)",
+      "POST /api/custody/proceeds/staged/apply-stablecoins": "PASS - Convenience endpoint for stablecoins-only (min_confidence=1.0)",
+      "POST /api/custody/proceeds/staged/apply-high-confidence": "PASS - Convenience endpoint for high-confidence (min_confidence=0.8)",
+      "GET /api/custody/proceeds/rollback-batches": "PASS - Lists all rollback batches with batch_id, record_count, total_value, created_at, assets",
+      "POST /api/custody/proceeds/rollback": "PASS - Rollback a batch by batch_id, returns deleted_count and deleted_tx_ids"
+    },
+    "filtering_verified": {
+      "asset_filter": "PASS - Filter by specific assets (e.g., BTC, ETH)",
+      "date_range_filter": "PASS - Filter by date_from and date_to (YYYY-MM-DD)",
+      "valuation_filter": "PASS - exact_only, stablecoin_only, high_confidence, all_eligible",
+      "confidence_threshold": "PASS - min_confidence parameter (0.0-1.0)"
+    },
+    "validation_delta_verified": {
+      "orphan_disposals": "PASS - Shows before, after, delta counts",
+      "validation_status": "PASS - Shows before and after status (valid, needs_review, etc.)",
+      "can_export": "PASS - Shows before and after boolean",
+      "blocking_issues": "PASS - Shows before, after, delta counts",
+      "new_warnings": "PASS - Lists new warnings introduced",
+      "new_errors": "PASS - Lists new errors introduced",
+      "resolved_issues": "PASS - Lists issues resolved by the application"
+    },
+    "safety_blocks_verified": {
+      "low_confidence_blocked": "PASS - Low-confidence approximates blocked without force_override",
+      "wide_window_blocked": "PASS - Wide-window approximates (>12h) blocked by default with exclude_wide_window=true"
+    },
+    "rollback_verified": {
+      "batch_listing": "PASS - Lists all batches with metadata",
+      "batch_rollback": "PASS - Successfully rolled back batch 33b95565 (15 records)",
+      "re_application": "PASS - Successfully re-applied 15 records with new batch_id afda56e3",
+      "invalid_batch_404": "PASS - Returns 404 for invalid batch_id"
+    }
+  },
+  "test_data_summary": {
+    "current_rollback_batches": [
+      {
+        "batch_id": "afda56e3-09b2-4d51-b28d-51a026574a2a",
+        "record_count": 15,
+        "total_value": 21123.23,
+        "assets": ["USDC"],
+        "note": "Re-applied after rollback test"
+      },
+      {
+        "batch_id": "9b4bd296-183c-4e3a-a87a-1b03dcf3e3b5",
+        "record_count": 86,
+        "total_value": 33197.44,
+        "assets": ["USDC"]
+      },
+      {
+        "batch_id": "74eda72d-a9de-4b5e-9582-56786e80ebe6",
+        "record_count": 20,
+        "total_value": 18478.71,
+        "assets": ["USDC"]
+      }
+    ],
+    "total_applied_records": 121,
+    "total_value_applied": 72799.38,
+    "remaining_candidates": 0,
+    "validation_status": "valid",
+    "can_export": true
+  }
+}
