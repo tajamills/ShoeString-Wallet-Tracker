@@ -628,6 +628,43 @@ REACT_APP_BACKEND_URL=https://...
   - Ensures NEVER creates inventory without linked disposal
   - Verifies audit trail and source_disposal linkage
 
+**P1.6 - Price Backfill Pipeline** ✅ (Completed - Mar 27, 2026)
+- [x] **PriceBackfillService** (`price_backfill_service.py`) - Historical price fetching
+  - Fetches USD price at/nearest to transaction timestamp
+  - Uses CryptoCompare (primary) and CoinGecko (fallback) APIs
+  - Stablecoins (USDC, USDT, etc.) auto-valued at $1
+  
+- [x] **Valuation Status Tracking**:
+  - `exact`: Price from exact transaction date (high confidence 0.95)
+  - `approximate`: Price from nearest available date within 24h window
+  - `stablecoin`: Fixed 1:1 USD peg (confidence 1.0)
+  - `unavailable`: No price data found
+  
+- [x] **Stored Metadata per Transaction**:
+  - `price_backfill.valuation_status`: exact/approximate/stablecoin/unavailable
+  - `price_backfill.price_source`: cryptocompare/coingecko/stablecoin_peg
+  - `price_backfill.timestamp_used`: Actual timestamp used for price lookup
+  - `price_backfill.time_delta_hours`: Difference between tx time and price time
+  - `price_backfill.confidence`: 0.0-1.0 confidence score
+  - `price_backfill.backfill_batch_id`: For rollback capability
+  
+- [x] **Eligibility Gate for Proceeds Acquisition**:
+  - Only `exact` and `stablecoin` valuations enable proceeds acquisition
+  - `approximate` requires confidence >= 0.7
+  - `unavailable` blocks proceeds acquisition
+  - Constrained proceeds service updated to check `valuation_not_eligible`
+  
+- [x] **API Endpoints**:
+  - GET `/api/custody/price-backfill/preview` - Dry-run showing total/backfillable/missing
+  - POST `/api/custody/price-backfill/apply` - Apply backfill with audit trail
+  - POST `/api/custody/price-backfill/rollback` - Reverse a batch
+  - GET `/api/custody/price-backfill/batches` - List all batches
+  
+- [x] **Test Suite** (`test_price_backfill.py`) - 14 tests
+  - Validates all valuation statuses
+  - Verifies eligibility checks for proceeds acquisition
+  - Confirms audit trail creation and rollback capability
+
 **P2 - Review Queue Enhancements** ✅ (Completed - Mar 27, 2026)
 - [x] **Frontend Validation Status UI** (`ValidationStatusPanel.js`)
   - Displays overall validation status (valid/invalid/needs_review)
