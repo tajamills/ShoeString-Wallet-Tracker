@@ -565,10 +565,18 @@ REACT_APP_BACKEND_URL=https://...
 - [x] **Bug Fix**: Error handling in resolve-review now returns proper 400 status for invalid decisions
 
 ## Backlog
+
+### Backend Integration - Tax Validation Layer (P1)
+- [ ] **Persist validation state to MongoDB** - Lots, disposals, and audit trail currently in-memory; need `tax_lots`, `tax_disposals`, `tax_audit_trail` collections
+- [ ] **Integrate with CSV import flow** - Auto-classify transactions when user imports exchange CSVs
+- [ ] **Hook into existing tax services** - `exchange_tax_service.py` and `unified_tax_service.py` should call validation layer
+- [ ] **Auto-trigger recompute on linkage changes** - When review queue item resolved (Mine/External), automatically recalculate affected tax data
+- [ ] **Add validation status to tax API responses** - `/api/tax/*` endpoints should include `validation_status` and `can_export` flags
+
+### Other Backlog Items
 - [ ] Coinbase API key connection debugging (needs user verification)
 - [ ] DeFi Position Tracking
 - [ ] NFT Portfolio Tracking
-- [ ] 7-Tier Subscription Pricing (User requested to pause for math focus)
 
 ### Phase 22: Tax Validation and Invariant Enforcement Layer (Completed - Mar 27, 2026)
 - [x] **New Tax Validation Service** (`tax_validation_service.py`) - 940 lines
