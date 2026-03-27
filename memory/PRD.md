@@ -592,6 +592,42 @@ REACT_APP_BACKEND_URL=https://...
 - [x] Added POST `/api/custody/fix/create-proceeds-acquisitions` endpoint with dry_run support
 - [x] Legacy endpoint alias `/api/custody/fix/create-implicit-acquisitions` for backwards compatibility
 
+**P1.5.1 - Constrained Proceeds Acquisition Remediation** ✅ (Completed - Mar 27, 2026)
+- [x] **ConstrainedProceedsService** (`constrained_proceeds_service.py`) - Strict validation flow
+  - Only creates proceeds acquisition when linked to known source disposal
+  - Required fields: source_disposal_tx_id, proceeds_asset, exact_amount, timestamp, price_source
+  - Tags all records as `derived_proceeds_acquisition`
+  - All records are reversible via rollback_batch_id
+  
+- [x] **Exclusion Rules** - Never creates inventory without proper justification:
+  - Unresolved wallet ownership (pending review queue)
+  - Missing acquisition history for asset
+  - Inferred internal transfers (chain_status=linked)
+  - Bridge ambiguity without explicit proceeds leg
+  - DEX ambiguity without explicit proceeds leg
+  - Missing proceeds value or timestamp
+  - Stablecoin source (USDC sells don't generate USDC proceeds)
+  - Already has existing proceeds record
+  
+- [x] **Preview Mode** - Show candidates before applying:
+  - GET `/api/custody/proceeds/preview` - Lists all fixable/non-fixable disposals
+  - Shows reason, source disposal, derived asset, amount, timestamp for each candidate
+  
+- [x] **Dry-Run Summary**:
+  - Count of fixable orphan disposals
+  - Count of non-fixable orphan disposals by reason
+  - Detailed breakdown of why each case was skipped
+  
+- [x] **Reversibility**:
+  - POST `/api/custody/proceeds/apply` - Creates records with rollback_batch_id
+  - POST `/api/custody/proceeds/rollback` - Reverses a batch of created records
+  - GET `/api/custody/proceeds/rollback-batches` - Lists all reversible batches
+  
+- [x] **Test Suite** (`test_constrained_proceeds.py`) - 16 tests
+  - Validates all exclusion cases
+  - Ensures NEVER creates inventory without linked disposal
+  - Verifies audit trail and source_disposal linkage
+
 **P2 - Review Queue Enhancements** ✅ (Completed - Mar 27, 2026)
 - [x] **Frontend Validation Status UI** (`ValidationStatusPanel.js`)
   - Displays overall validation status (valid/invalid/needs_review)
