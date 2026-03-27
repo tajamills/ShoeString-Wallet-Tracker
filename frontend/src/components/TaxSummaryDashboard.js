@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, CheckCircle, RefreshCw, Download, Lock, Calendar } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import axios from 'axios';
+import ValidationStatusPanel from './ValidationStatusPanel';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -236,6 +237,13 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal: onAddData }) => {
 
   return (
     <div className="space-y-6">
+      {/* Tax Validation Status Panel */}
+      <ValidationStatusPanel 
+        apiUrl={BACKEND_URL}
+        authHeader={getAuthHeader()}
+        onRefresh={fetchTaxSummary}
+      />
+
       {/* Header with Year Selector */}
       <div className="flex items-center justify-between">
         <div>

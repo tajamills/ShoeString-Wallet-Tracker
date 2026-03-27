@@ -230,8 +230,6 @@ async def export_custody_pdf_from_result(
 # ========================================
 
 from linkage_engine_service import linkage_engine, LinkType, ChainStatus, ReviewStatus, ConfidenceLevel
-from pydantic import BaseModel
-from typing import Optional, List
 
 
 class LinkWalletRequest(BaseModel):
@@ -1130,7 +1128,7 @@ async def get_beta_validation_report(
         if not os.path.exists(report_path):
             raise HTTPException(
                 status_code=404, 
-                detail=f"Report not found. Run /api/custody/beta/validate first."
+                detail="Report not found. Run /api/custody/beta/validate first."
             )
         
         with open(report_path, "r") as f:
