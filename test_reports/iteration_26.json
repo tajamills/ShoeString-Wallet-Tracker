@@ -1,0 +1,99 @@
+{
+  "summary": "Post-validation hardening features fully tested. All 29 API tests pass. The new features include: 1) Regression fixture system for creating and testing snapshots of validated accounts, 2) Pre-export summary metadata with validation_status, can_export, blocking_issues_count, 3) Export safety guard that blocks export when validation fails (USDC/XLM orphan disposals detected), 4) Recompute integrity enforcement, 5) Audit trail completeness, 6) All modular routes (review_queue_routes, validation_routes, proceeds_routes, price_backfill_routes, custody_core_routes) working correctly.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_post_validation_hardening.py",
+    "/app/test_reports/pytest/post_validation_hardening_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Export safety guard correctly blocks export due to USDC/XLM orphan disposals - this is expected behavior",
+    "Regression fixture system creates snapshots with version tags and compares disposal_count, proceeds, cost_basis, gain_loss, validation_status, can_export",
+    "All 5 modular route files are properly integrated and working"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_post_validation_hardening.py"
+  ],
+  "success_rate": {
+    "backend": "100% (29/29 tests passed)"
+  },
+  "test_credentials": {
+    "email": "mobiletest@test.com",
+    "password": "test123456"
+  },
+  "seed_data_creation": "Created new regression fixture during testing with version_tag test_fixture_YYYYMMDD_HHMMSS",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Post-validation hardening features fully implemented and tested. Known fixture ID: d878078e-1101-4f32-bbbf-cff04f2b1a28 (golden_account_v1). Export is currently blocked due to USDC/XLM orphan disposals (3 critical issues). All modular routes are working correctly.",
+  "features_verified": {
+    "regression_fixture_system": {
+      "POST /api/custody/regression/create-fixture": "PASS - Creates snapshot with version_tag, disposal_count, total_proceeds, total_cost_basis, total_gain_loss, validation_status, can_export",
+      "POST /api/custody/regression/run-test/{fixture_id}": "PASS - Runs regression test comparing all metrics, returns passed/failed with mismatches",
+      "GET /api/custody/regression/fixtures": "PASS - Lists all fixtures with metadata"
+    },
+    "pre_export_summary": {
+      "GET /api/custody/beta/pre-export-check": "PASS - Returns validation_status, can_export, blocking_issues_count, unresolved_review_count, export_blocked_reason",
+      "GET /api/custody/validation-status": "PASS - Lightweight validation status check"
+    },
+    "export_safety_guard": {
+      "GET /api/custody/export-form-8949": "PASS - Blocks export when validation fails (can_export=false), returns detailed blocking issues",
+      "GET /api/custody/export-form-8949?force=true": "PASS - Bypasses validation and exports CSV"
+    },
+    "recompute_integrity": {
+      "POST /api/custody/validate/recompute": "PASS - Triggers full recompute, returns recompute_triggered, reason, cleared_lots, cleared_disposals"
+    },
+    "audit_trail": {
+      "GET /api/custody/validate/audit-trail": "PASS - Returns audit entries with action, timestamp, details",
+      "GET /api/custody/validate/audit-trail?action=full_recompute": "PASS - Filtered audit trail"
+    },
+    "modular_routes": {
+      "review_queue_routes": {
+        "GET /api/custody/review-queue": "PASS",
+        "GET /api/custody/review-queue/grouped": "PASS"
+      },
+      "validation_routes": {
+        "GET /api/custody/validate/account-status": "PASS",
+        "POST /api/custody/beta/validate": "PASS",
+        "POST /api/custody/validate/invariants": "PASS",
+        "GET /api/custody/validate/lot-status/{asset}": "PASS"
+      },
+      "proceeds_routes": {
+        "GET /api/custody/proceeds/preview": "PASS",
+        "GET /api/custody/proceeds/staged/stages": "PASS",
+        "GET /api/custody/proceeds/rollback-batches": "PASS"
+      },
+      "price_backfill_routes": {
+        "GET /api/custody/price-backfill/preview": "PASS",
+        "GET /api/custody/price-backfill/batches": "PASS"
+      },
+      "custody_core_routes": {
+        "GET /api/custody/linkages": "PASS",
+        "GET /api/custody/clusters": "PASS",
+        "GET /api/custody/tax-lots": "PASS",
+        "GET /api/custody/tax-lots/balances": "PASS",
+        "GET /api/custody/tax-events": "PASS",
+        "GET /api/custody/known-addresses": "PASS"
+      }
+    }
+  },
+  "validation_state": {
+    "validation_status": "invalid",
+    "can_export": false,
+    "blocking_issues": [
+      "USDC orphan disposal - disposed more than acquired",
+      "XLM orphan disposal - disposed more than acquired",
+      "USDC negative balance detected"
+    ],
+    "critical_issues_count": 3,
+    "high_issues_count": 43,
+    "unresolved_review_count": 0
+  }
+}

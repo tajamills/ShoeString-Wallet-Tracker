@@ -376,6 +376,13 @@ from routes.exchanges import router as exchanges_router
 from routes.custody import router as custody_router
 from routes.support import router as support_router
 
+# Import new modular custody routes
+from routes.custody_core_routes import router as custody_core_router
+from routes.review_queue_routes import router as review_queue_router
+from routes.validation_routes import router as validation_router
+from routes.proceeds_routes import router as proceeds_router
+from routes.price_backfill_routes import router as price_backfill_router
+
 # Include all route modules
 api_router.include_router(auth_router)
 api_router.include_router(payments_router)
@@ -383,8 +390,15 @@ api_router.include_router(wallets_router)
 api_router.include_router(tax_router)
 api_router.include_router(affiliates_router)
 api_router.include_router(exchanges_router)
-api_router.include_router(custody_router)
+api_router.include_router(custody_router)  # Legacy routes for backwards compatibility
 api_router.include_router(support_router)
+
+# Include new modular custody routes (these will be preferred for new code)
+api_router.include_router(custody_core_router)
+api_router.include_router(review_queue_router)
+api_router.include_router(validation_router)
+api_router.include_router(proceeds_router)
+api_router.include_router(price_backfill_router)
 
 # Alias routes for backwards compatibility
 @api_router.post("/webhook")
