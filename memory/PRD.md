@@ -566,19 +566,7 @@ REACT_APP_BACKEND_URL=https://...
 
 ## Backlog
 
-### Next Action Items
-
-**P0 - Critical (Blocking Export)** ✅ COMPLETE
-- [x] Root-cause and fix orphan disposals for XLM and USDC
-- [x] Categorize unresolved review queue items by cause and frequency
-- [x] Confirm `can_export: false` is enforced everywhere export can happen
-
-**P1 - High Priority** ✅ COMPLETE
-- [x] Persist validation state to MongoDB (`tax_lots`, `tax_disposals`, `tax_audit_trail`)
-- [x] Integrate validation into CSV import flow (auto-classify on import)
-- [x] Hook validation into existing tax services
-- [x] Auto-trigger recompute on linkage/classification changes
-- [x] Add validation status to API responses
+## Actions
 
 **P1.5 - Proceeds Acquisition Constraints**
 - [ ] Rename "implicit acquisitions" to "proceeds acquisitions"
@@ -594,9 +582,23 @@ REACT_APP_BACKEND_URL=https://...
 - [ ] Wallet-link suggestion engine for repeated unknown destinations
 - [ ] Review queue grouping by source wallet / destination / pattern
 
-### Future/Backlog
+## Backlog
 - [ ] DeFi/NFT Position Tracking
 - [ ] Refactor monolithic files (`ChainOfCustodyModal.js`, `App.js`)
+
+## Completed
+
+**P0 - Critical (Blocking Export)** ✅
+- [x] Root-cause and fix orphan disposals for XLM and USDC
+- [x] Categorize unresolved review queue items by cause and frequency
+- [x] Confirm `can_export: false` is enforced everywhere export can happen
+
+**P1 - High Priority** ✅
+- [x] Persist validation state to MongoDB (`tax_lots`, `tax_disposals`, `tax_audit_trail`)
+- [x] Integrate validation into CSV import flow (auto-classify on import)
+- [x] Hook validation into existing tax services
+- [x] Auto-trigger recompute on linkage/classification changes
+- [x] Add validation status to API responses
 
 ### Phase 23: Beta Account Validation Harness (Completed - Mar 27, 2026)
 - [x] **Beta Validation Harness** (`beta_validation_harness.py`) - ~1000 lines
