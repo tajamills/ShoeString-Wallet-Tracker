@@ -1282,39 +1282,58 @@ async def get_full_p0_report(
         raise HTTPException(status_code=500, detail=f"P0 analysis failed: {str(e)}")
 
 
-@router.post("/fix/create-implicit-acquisitions")
-async def create_implicit_acquisitions(
+@router.post("/fix/create-proceeds-acquisitions")
+async def create_proceeds_acquisitions(
     dry_run: bool = True,
     user: dict = Depends(get_current_user)
 ):
     """
-    Create implicit USDC acquisition records from crypto sell proceeds.
+    Create proceeds acquisition records from crypto sell proceeds.
     
-    This fixes the USDC orphan disposal issue where sells of other crypto
-    generate USD/USDC proceeds that weren't being tracked as acquisitions.
+    P1.5 Constraints enforced:
+    - Linked source disposal (references the sell tx that generated proceeds)
+    - Exact amount match (proceeds amount = acquisition amount)
+    - Timestamp match (same as source disposal)
+    - Price source tracking (e.g., "proceeds_from_BTC_sell")
+    - Audit trail entry linking disposal → proceeds acquisition
     
     Args:
         dry_run: If True, show what would be created without actually creating
     
     Returns:
-        List of acquisitions to create (or created if dry_run=False)
+        List of proceeds acquisitions to create (or created if dry_run=False)
     """
     try:
         analyzer = OrphanDisposalAnalyzer(db)
-        results = await analyzer.create_implicit_acquisitions(user["id"], dry_run=dry_run)
+        results = await analyzer.create_proceeds_acquisitions(user["id"], dry_run=dry_run)
         
         return {
             "success": True,
             "dry_run": dry_run,
-            "acquisitions_count": len(results["acquisitions_to_create"]),
+            "proceeds_acquisitions_count": len(results["proceeds_acquisitions"]),
             "total_value": results["total_value"],
-            "acquisitions": results["acquisitions_to_create"][:20],  # First 20
-            "message": f"{'Would create' if dry_run else 'Created'} {len(results['acquisitions_to_create'])} USDC acquisition records totaling ${results['total_value']:,.2f}"
+            "validation_errors": results["validation_errors"],
+            "audit_entries_count": len(results["audit_entries"]),
+            "proceeds_acquisitions": results["proceeds_acquisitions"][:20],  # First 20
+            "message": f"{'Would create' if dry_run else 'Created'} {len(results['proceeds_acquisitions'])} proceeds acquisitions totaling ${results['total_value']:,.2f}"
         }
         
     except Exception as e:
-        logger.error(f"Error creating implicit acquisitions: {str(e)}")
+        logger.error(f"Error creating proceeds acquisitions: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed: {str(e)}")
+
+
+# Legacy endpoint alias for backwards compatibility
+@router.post("/fix/create-implicit-acquisitions")
+async def create_implicit_acquisitions_legacy(
+    dry_run: bool = True,
+    user: dict = Depends(get_current_user)
+):
+    """
+    DEPRECATED: Use /fix/create-proceeds-acquisitions instead.
+    This endpoint is kept for backwards compatibility.
+    """
+    return await create_proceeds_acquisitions(dry_run, user)
 
 
 
@@ -1531,3 +1550,228 @@ async def get_user_validation_status(
     except Exception as e:
         logger.error(f"Error getting validation status: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to get validation status: {str(e)}")
+
+
+
+# ========================================
+# P2: REVIEW QUEUE ENHANCEMENTS
+# ========================================
+
+from review_queue_enhancements import (
+    WalletLinkSuggestionEngine,
+    BulkResolutionService,
+    ReviewQueueGroupingService
+)
+
+
+class BulkResolveRequest(BaseModel):
+    """Request for bulk resolution"""
+    review_ids: Optional[List[str]] = None
+    category: Optional[str] = None
+    destination_wallet: Optional[str] = None
+    decision: str = "mine"  # "mine" or "external"
+    reason: str = "bulk_resolution"
+
+
+@router.get("/review-queue/suggestions")
+async def get_wallet_link_suggestions(
+    user: dict = Depends(get_current_user)
+):
+    """
+    Get wallet link suggestions based on review queue patterns.
+    
+    Analyzes repeated destinations, transaction patterns, and known
+    wallet signatures to suggest which wallets belong to the user.
+    
+    Returns suggestions grouped by confidence level.
+    """
+    try:
+        engine = WalletLinkSuggestionEngine(db)
+        suggestions = await engine.generate_suggestions(user["id"])
+        
+        return {
+            "success": True,
+            "suggestions": suggestions
+        }
+        
+    except Exception as e:
+        logger.error(f"Error generating suggestions: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate suggestions: {str(e)}")
+
+
+@router.post("/review-queue/bulk-resolve")
+async def bulk_resolve_reviews(
+    request: BulkResolveRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Bulk resolve multiple review items at once.
+    
+    Can resolve by:
+    - Specific review IDs
+    - Category (unknown_wallet, bridge_transfer, dust_amount)
+    - Destination wallet address
+    
+    Decision:
+    - "mine": Creates linkage edge (internal transfer, no tax event)
+    - "external": Creates tax event (disposal)
+    """
+    try:
+        service = BulkResolutionService(db)
+        
+        results = await service.bulk_resolve(
+            user_id=user["id"],
+            review_ids=request.review_ids,
+            category=request.category,
+            destination_wallet=request.destination_wallet,
+            decision=request.decision,
+            reason=request.reason
+        )
+        
+        # Trigger recompute if any items were resolved
+        if results["resolved_count"] > 0:
+            try:
+                from persistent_tax_validation import hook_linkage_change
+                await hook_linkage_change(db, user["id"], "bulk_resolution")
+            except Exception as e:
+                logger.warning(f"Failed to trigger recompute: {e}")
+        
+        return {
+            "success": True,
+            "results": results
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in bulk resolution: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Bulk resolution failed: {str(e)}")
+
+
+@router.post("/review-queue/bulk-resolve-category/{category}")
+async def bulk_resolve_by_category(
+    category: str,
+    decision: str = "mine",
+    limit: int = 100,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Resolve all review items of a specific category.
+    
+    Categories:
+    - unknown_wallet: Unknown wallet interactions
+    - bridge_transfer: Bridge/cross-chain transfers
+    - dust_amount: Very small amounts (<$1)
+    - dex_swap: DEX swap transactions
+    - exchange_withdrawal: Exchange withdrawals
+    
+    Args:
+        category: Category to resolve
+        decision: "mine" or "external"
+        limit: Maximum items to resolve (default 100)
+    """
+    try:
+        service = BulkResolutionService(db)
+        
+        results = await service.bulk_resolve_by_category(
+            user_id=user["id"],
+            category=category,
+            decision=decision,
+            limit=limit
+        )
+        
+        # Trigger recompute
+        if results.get("resolved_count", 0) > 0:
+            try:
+                from persistent_tax_validation import hook_linkage_change
+                await hook_linkage_change(db, user["id"], f"bulk_category_{category}")
+            except Exception:
+                pass
+        
+        return {
+            "success": True,
+            "results": results
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in category resolution: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Category resolution failed: {str(e)}")
+
+
+@router.get("/review-queue/grouped")
+async def get_grouped_review_queue(
+    user: dict = Depends(get_current_user)
+):
+    """
+    Get review queue items grouped by source, destination, asset, and amount range.
+    
+    Returns actionable groups with recommendations for bulk processing.
+    """
+    try:
+        service = ReviewQueueGroupingService(db)
+        grouped = await service.group_review_queue(user["id"])
+        
+        return {
+            "success": True,
+            "grouped": grouped
+        }
+        
+    except Exception as e:
+        logger.error(f"Error grouping review queue: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to group review queue: {str(e)}")
+
+
+@router.post("/review-queue/apply-suggestion/{suggestion_id}")
+async def apply_wallet_suggestion(
+    suggestion_id: str,
+    decision: str = "mine",
+    user: dict = Depends(get_current_user)
+):
+    """
+    Apply a wallet link suggestion to resolve related review items.
+    
+    This takes a suggestion from /review-queue/suggestions and applies
+    the recommended action to all affected review items.
+    """
+    try:
+        # First get the suggestion to find affected review IDs
+        engine = WalletLinkSuggestionEngine(db)
+        all_suggestions = await engine.generate_suggestions(user["id"])
+        
+        # Find the specific suggestion
+        target_suggestion = None
+        for s in all_suggestions.get("suggestions", []):
+            if s.get("suggestion_id") == suggestion_id:
+                target_suggestion = s
+                break
+        
+        if not target_suggestion:
+            raise HTTPException(status_code=404, detail="Suggestion not found")
+        
+        # Get affected review IDs
+        affected_ids = target_suggestion.get("affected_review_ids", [])
+        
+        if not affected_ids:
+            return {
+                "success": False,
+                "message": "No review items affected by this suggestion"
+            }
+        
+        # Apply bulk resolution
+        service = BulkResolutionService(db)
+        results = await service.bulk_resolve(
+            user_id=user["id"],
+            review_ids=affected_ids,
+            decision=decision,
+            reason=f"suggestion_{suggestion_id}"
+        )
+        
+        return {
+            "success": True,
+            "suggestion_applied": target_suggestion,
+            "results": results
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error applying suggestion: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to apply suggestion: {str(e)}")

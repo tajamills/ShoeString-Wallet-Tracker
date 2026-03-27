@@ -180,16 +180,38 @@ class OrphanDisposalAnalyzer:
     
     async def create_implicit_acquisitions(self, user_id: str, dry_run: bool = True) -> Dict[str, Any]:
         """
-        Create implicit acquisition records for stablecoins.
+        DEPRECATED: Use create_proceeds_acquisitions instead.
+        """
+        return await self.create_proceeds_acquisitions(user_id, dry_run)
+    
+    async def create_proceeds_acquisitions(self, user_id: str, dry_run: bool = True) -> Dict[str, Any]:
+        """
+        Create proceeds acquisition records from crypto sell proceeds.
         
-        When crypto is sold, the proceeds (in USDC/USD) should create an acquisition record.
-        This fixes the USDC orphan issue.
+        When crypto is sold, the proceeds (in USDC/USD) create an acquisition record.
+        This fixes the USDC orphan issue where sells generate proceeds not tracked.
+        
+        P1.5 Constraints:
+        - Requires linked source disposal (references the sell tx)
+        - Exact amount match (proceeds = acquisition amount)
+        - Timestamp match (same as source disposal)
+        - Price source tracking (e.g., "proceeds_from_BTC_sell")
+        - Audit trail entry linking disposal → proceeds acquisition
+        
+        Args:
+            user_id: User ID to process
+            dry_run: If True, show what would be created without creating
+        
+        Returns:
+            List of proceeds acquisitions to create (or created if dry_run=False)
         """
         results = {
             "user_id": user_id,
             "dry_run": dry_run,
-            "acquisitions_to_create": [],
-            "total_value": 0
+            "proceeds_acquisitions": [],
+            "total_value": 0,
+            "audit_entries": [],
+            "validation_errors": []
         }
         
         # Find all sells of non-stablecoin assets that have USD value
@@ -201,32 +223,93 @@ class OrphanDisposalAnalyzer:
         
         for sell in sells:
             total_usd = sell.get("total_usd")
-            if total_usd and float(total_usd) > 0:
-                # This sell generated USD proceeds - create USDC acquisition
-                acquisition = {
-                    "user_id": user_id,
-                    "tx_id": f"implicit_usdc_{sell.get('tx_id', 'unknown')}",
-                    "exchange": sell.get("exchange", "unknown"),
-                    "tx_type": "implicit_acquisition",
-                    "asset": "USDC",
-                    "quantity": float(total_usd),
-                    "amount": float(total_usd),
-                    "price_usd": 1.0,
-                    "total_usd": float(total_usd),
-                    "timestamp": sell.get("timestamp"),
-                    "chain_status": "linked",
-                    "source_tx_id": sell.get("tx_id"),
-                    "source_asset": sell.get("asset"),
-                    "notes": f"Implicit USDC acquisition from selling {sell.get('asset')}"
-                }
+            sell_tx_id = sell.get("tx_id", "unknown")
+            sell_asset = sell.get("asset", "UNKNOWN")
+            sell_timestamp = sell.get("timestamp")
+            
+            # P1.5: Validate required fields
+            if not total_usd or float(total_usd) <= 0:
+                results["validation_errors"].append({
+                    "tx_id": sell_tx_id,
+                    "error": "missing_proceeds_value",
+                    "message": f"Sell {sell_tx_id} has no USD value"
+                })
+                continue
+            
+            if not sell_timestamp:
+                results["validation_errors"].append({
+                    "tx_id": sell_tx_id,
+                    "error": "missing_timestamp",
+                    "message": f"Sell {sell_tx_id} has no timestamp"
+                })
+                continue
+            
+            proceeds_amount = float(total_usd)
+            
+            # P1.5: Create proceeds acquisition with all required fields
+            acquisition = {
+                "user_id": user_id,
+                "tx_id": f"proceeds_{sell_tx_id}",
+                "exchange": sell.get("exchange", "unknown"),
+                "tx_type": "proceeds_acquisition",  # P1.5: Renamed from implicit_acquisition
+                "asset": "USDC",
+                "quantity": proceeds_amount,  # P1.5: Exact amount match
+                "amount": proceeds_amount,
+                "price_usd": 1.0,
+                "total_usd": proceeds_amount,
+                "timestamp": sell_timestamp,  # P1.5: Timestamp match
+                "chain_status": "linked",
                 
-                results["acquisitions_to_create"].append(acquisition)
-                results["total_value"] += float(total_usd)
+                # P1.5: Source disposal linkage
+                "source_disposal": {
+                    "tx_id": sell_tx_id,
+                    "asset": sell_asset,
+                    "amount": float(sell.get("quantity", 0) or sell.get("amount", 0) or 0),
+                    "proceeds": proceeds_amount
+                },
+                
+                # P1.5: Price source tracking
+                "price_source": f"proceeds_from_{sell_asset}_sell",
+                
+                # P1.5: Audit linkage
+                "audit_ref": {
+                    "created_by": "proceeds_acquisition_engine",
+                    "source_tx_id": sell_tx_id,
+                    "linkage_type": "disposal_to_proceeds",
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                },
+                
+                "notes": f"Proceeds acquisition: {proceeds_amount:.2f} USDC from selling {sell.get('quantity', 0)} {sell_asset}"
+            }
+            
+            results["proceeds_acquisitions"].append(acquisition)
+            results["total_value"] += proceeds_amount
+            
+            # P1.5: Create audit trail entry
+            audit_entry = {
+                "action": "create_proceeds_acquisition",
+                "user_id": user_id,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "details": {
+                    "proceeds_tx_id": acquisition["tx_id"],
+                    "source_disposal_tx_id": sell_tx_id,
+                    "source_asset": sell_asset,
+                    "proceeds_amount": proceeds_amount,
+                    "linkage_verified": True
+                }
+            }
+            results["audit_entries"].append(audit_entry)
         
-        if not dry_run and results["acquisitions_to_create"]:
+        if not dry_run and results["proceeds_acquisitions"]:
             # Actually create the records
-            await self.db.exchange_transactions.insert_many(results["acquisitions_to_create"])
-            results["created"] = len(results["acquisitions_to_create"])
+            await self.db.exchange_transactions.insert_many(results["proceeds_acquisitions"])
+            
+            # Insert audit entries
+            if results["audit_entries"]:
+                await self.db.tax_audit_trail.insert_many(results["audit_entries"])
+            
+            results["created"] = len(results["proceeds_acquisitions"])
+            results["audit_entries_created"] = len(results["audit_entries"])
         
         return results
 
