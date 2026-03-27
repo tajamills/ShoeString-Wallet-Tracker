@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle, CheckCircle, XCircle, RefreshCw, FileText, ChevronDown, ChevronUp } from 'lucide-react';
+import { AlertTriangle, CheckCircle, XCircle, RefreshCw, FileText, ChevronDown, ChevronUp, Target } from 'lucide-react';
 
 /**
  * ValidationStatusPanel - P2 Frontend UI for Tax Validation Status
@@ -10,12 +10,13 @@ import { AlertTriangle, CheckCircle, XCircle, RefreshCw, FileText, ChevronDown, 
  * - Issue breakdown by severity
  * - Quick actions for common fixes
  */
-const ValidationStatusPanel = ({ apiUrl, authHeader, onRefresh }) => {
+const ValidationStatusPanel = ({ apiUrl, authHeader, onRefresh, onOpenClassifier }) => {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [expanded, setExpanded] = useState(false);
   const [preExportCheck, setPreExportCheck] = useState(null);
+  const [unknownCount, setUnknownCount] = useState(0);
 
   const fetchStatus = async () => {
     setLoading(true);
@@ -39,6 +40,19 @@ const ValidationStatusPanel = ({ apiUrl, authHeader, onRefresh }) => {
       if (preExportRes.ok) {
         const preExportData = await preExportRes.json();
         setPreExportCheck(preExportData);
+      }
+      
+      // Fetch unknown transaction count for classification
+      try {
+        const classifyRes = await fetch(`${apiUrl}/api/custody/classify/metrics?days=30`, {
+          headers: authHeader
+        });
+        if (classifyRes.ok) {
+          const classifyData = await classifyRes.json();
+          setUnknownCount(classifyData.metrics?.current_unknown || 0);
+        }
+      } catch (classifyErr) {
+        console.log('Could not fetch classification metrics:', classifyErr);
       }
       
     } catch (err) {
@@ -226,24 +240,49 @@ const ValidationStatusPanel = ({ apiUrl, authHeader, onRefresh }) => {
       )}
 
       {/* Quick Actions */}
-      {!canExport && (
-        <div className="mt-4 flex gap-2">
-          <a
-            href="#review-queue"
-            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm py-2 px-4 rounded-lg text-center transition-colors"
-            data-testid="review-queue-link"
-          >
-            Review Queue
-          </a>
-          <a
-            href="#chain-of-custody"
-            className="flex-1 bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded-lg text-center transition-colors"
-            data-testid="chain-custody-link"
-          >
-            Chain of Custody
-          </a>
-        </div>
-      )}
+      <div className="mt-4 space-y-2">
+        {/* Unknown Transaction Classifier - Show if there are unknowns */}
+        {unknownCount > 0 && (
+          <div className="bg-purple-900/20 border border-purple-700 rounded-lg p-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Target className="w-4 h-4 text-purple-400" />
+                <span className="text-purple-300 text-sm">
+                  {unknownCount} unknown transactions need classification
+                </span>
+              </div>
+              {onOpenClassifier && (
+                <button
+                  onClick={onOpenClassifier}
+                  className="bg-purple-600 hover:bg-purple-700 text-white text-sm py-1 px-3 rounded transition-colors"
+                  data-testid="open-classifier-btn"
+                >
+                  Classify
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+        
+        {!canExport && (
+          <div className="flex gap-2">
+            <a
+              href="#review-queue"
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm py-2 px-4 rounded-lg text-center transition-colors"
+              data-testid="review-queue-link"
+            >
+              Review Queue
+            </a>
+            <a
+              href="#chain-of-custody"
+              className="flex-1 bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded-lg text-center transition-colors"
+              data-testid="chain-custody-link"
+            >
+              Chain of Custody
+            </a>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

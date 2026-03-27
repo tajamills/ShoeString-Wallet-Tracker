@@ -1,120 +1,145 @@
 <analysis>**original_problem_statement**: 
-The user is building a Crypto Bag Tracker web application for analyzing cryptocurrency wallet transactions and generating tax reports. Core focus is on highly accurate tax math, isolating cost basis vs income, and a 3-layer Chain-of-Custody / Wallet Linkage system to detect inter-wallet transfers, detect chain breaks, prompt users via a review queue, and generate an accurate IRS Form 8949 CSV export.
+The user is building a Crypto Bag Tracker web application for analyzing cryptocurrency wallet transactions and generating tax reports. Core focus is on highly accurate tax math, isolating cost basis vs income, and a 3-layer Chain-of-Custody / Wallet Linkage system to detect inter-wallet transfers. 
+PRODUCT REQUIREMENTS: 
+- Implement a 3-layer Chain-of-Custody system with a review queue.
+- Enforce strict tax invariants (Balance Reconciliation, Cost Basis Conservation, No Double Spend, No Orphan Disposals).
+- Implement Constrained Proceeds Acquisition Remediation (no blanket fixes, reversible).
+- Implement Price Backfill Pipeline for disposals missing USD valuation.
+- Implement Staged Proceeds Application Controls (filter by exact valuation, confidence, etc.).
+- Implement Post-Validation Hardening (Regression fixtures, modular API routes, recompute integrity).
+- Implement Unknown Transaction Reduction System (Pattern detection, auto-classification, bulk resolution).
 
 **User's preferred language**: English (INSTRUCT next agent to respond in English only)
 
 **what currently exists?** 
-A React/FastAPI/MongoDB app featuring a unified Add Data modal, advanced CSV parsing, improved tax math logic, and a newly built 3-layer Chain-of-Custody linkage engine. It includes a frontend Review Queue for users to resolve unmatched transfers (Mine vs External) and a backend pipeline to export Form 8949 tax events.
+A robust React/FastAPI/MongoDB app featuring a 3-layer linkage system, tax validation UI (), constrained proceeds acquisitions, a price backfill pipeline, staged application controls, and post-validation hardening. The monolithic  backend file was recently refactored into modular route files (, , etc.). The agent previously created empty stub files for the Unknown Transaction Reduction System ( and ).
 
 **Last working item**:
-    - **Last item agent was working**: Verifying the IRS Form 8949 CSV Export Pipeline and Review Queue UI, running the testing agent to ensure 100% flow correctness, and fixing a minor 500 server error on invalid review resolutions.
-    - **Status**: NONE (Agent successfully finished the task and proposed a Bulk Resolution enhancement. Waiting for the user's next request).
-    - **Agent Testing Done**: Y
-    - **Which testing method agent to use?**: NA (Testing was completed using  and backend bash tests).
+    - **Last item agent was working**: Proposing a plan to the user via  to implement the Unknown Transaction Reduction System and waiting for their response. The session ended while waiting.
+    - **Status**: USER VERIFICATION PENDING
+    - **Agent Testing Done**: N
+    - **Which testing method agent to use?**: both (Backend testing via  for the classification logic, plus screenshots/frontend testing for the new bulk classification UI)
     - **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
-  - Issue 1: Implement New Subscription Pricing Tiers (Priority: P2 - DEFERRED)
-     - **Attempted fixes**: None. Task was previously brought up, but the user explicitly requested to pause this (Naw, I just need you focus on your math).
-     - **Next debug checklist**: Verify with user if they want to resume the 7-tier Stripe integration or work on other features (like the suggested bulk resolution).
-     - **Why fix this issue and what will be achieved with the fix?**: User wants to enforce transaction limits based on new Stripe tiers to stop being too cheap.
-     - **Status**: BLOCKED (Paused by user)
+  - Issue 1: Complete and Integrate Unknown Transaction Reduction System (Priority: P0)
+     - **Attempted fixes**: Created empty/stub files  and .
+     - **Next debug checklist**: 
+       1. Implement the 6 required features in the classifier (Pattern Detection, Auto-Suggestion Engine, Bulk Classification, Auto-Apply Threshold >0.95, Feedback Loop, Metrics).
+       2. Register  in .
+       3. Build the frontend UI for bulk classification and metric tracking.
+     - **Why fix this issue and what will be achieved with the fix?**: User explicitly requested this to minimize manual review by auto-classifying high-confidence unknown transactions.
+     - **Status**: IN PROGRESS
      - **Is recurring issue?** N
      - **Should Test frontend/backend/both after fix?**: both
-     - **Blocked on other issue**: User priorities currently focused on Tax Math/Linkage.
-
-  - Issue 2: User testing on Production instead of Preview (Priority: P1)
-     - **Attempted fixes**: NA.
-     - **Next debug checklist**: Explicitly remind the user that code changes and test data currently exist only on the Preview URL. If they report /bin/bash.00 or missing features, remind them the code isn't deployed to their live production environment yet.
-     - **Why fix this issue and what will be achieved with the fix?**: Prevents circular debugging loops where the user reports an issue that is already fixed in the preview environment.
-     - **Status**: NOT STARTED
-     - **Is recurring issue?** Y
-     - **Should Test frontend/backend/both after fix?**: NA
      - **Blocked on other issue**: None
 
+  - Issue 2: Resolve remaining Critical Orphan Disposals (Priority: P1)
+     - **Attempted fixes**: None yet.
+     - **Next debug checklist**: Import missing USDC/XLM acquisition transactions as noted in the previous PRD updates to clear the remaining 3 critical blocking issues.
+     - **Why fix this issue and what will be achieved with the fix?**: Required to achieve 100% valid Form 8949 export state for the test account.
+     - **Status**: NOT STARTED
+     - **Is recurring issue?** N
+     - **Should Test frontend/backend/both after fix?**: backend
+     - **Blocked on other issue**: Complete Issue 1 first.
+
 **In progress Task List**:
-None actively being coded. The agent successfully verified the linkage engine, the review queue, and the Form 8949 export.
+  - Task 1: Unknown Transaction Reduction System
+     - **Where to resume**: Review user response to the  tool (if provided in the next prompt), then proceed to implement logic in  and . Wire it up to  and build the frontend UI.
+     - **What will be achieved with this?**: Auto-classify internal/external transfers based on patterns, saving users massive amounts of manual review time.
+     - **Status**: IN PROGRESS
+     - **Should Test frontend/backend/both after fix?**: both
+     - **Blocked on something**: Awaiting user approval/response from previous  call.
 
 **Upcoming and Future Tasks**
   Upcoming Tasks:
-  - (P0) Bulk Resolution Feature: Implement Resolve All as External or Resolve All as Mine for the Review Queue (Suggested by agent in the previous finish tool; await user confirmation).
-  - (P1) Enforce Tier Transaction Limits: Backend must enforce analysis limits based on the user's Stripe subscription (Once pricing tiers resume).
-  - (P2) Refactor  and : Files are monolithic (1,500+ lines) and need componentization.
+  - (P0) Finish Unknown Transaction Reduction System (Backend logic + Frontend UI).
+  - (P1) Import missing USDC/XLM acquisitions to resolve remaining critical orphan disposal issues.
+  - (P2) Frontend UI for Regression Fixture Management.
   
   Future Tasks:
-  - Dogecoin analyzer improvements.
-  - DeFi Position Tracking.
-  - NFT Portfolio Tracking.
+  - (P2) DeFi Position Tracking (Track liquidity pools, staking positions).
+  - (P2) NFT Portfolio Tracking (Track NFT holdings and valuations).
 
 **Completed work in this session**
-- Verified IRS Form 8949 CSV Export functionality via testing agent and terminal. (DONE)
-- Verified Chain of Custody Review Queue UI and API (Tested resolving as Mine and External, correctly generating linkages and tax events). (DONE)
-- Fixed 500 HTTP error on  to correctly return 400 for invalid decisions in . (DONE)
-- Updated PRD.md with verification results. (DONE)
+- No code was written in this specific brief session (the agent sent an  tool call and the session concluded). 
+- Recently completed in previous session:
+  - Integrated  into  (DONE)
+  - Constrained Proceeds Acquisition Remediation Flow (DONE)
+  - Price Backfill Pipeline for missing USD valuations (DONE)
+  - Staged Proceeds Application Controls (DONE)
+  - Post-Validation Hardening (Regression Fixtures, Export Guards) (DONE)
+  - Modular Refactor of  into specialized route files (DONE)
 
 **Earlier issues found/mentioned but not fixed**
-- None found in this session besides the user testing on Production vs Preview mentioned above.
+   - Issue 1: User testing on Production instead of Preview
+     - **Debug checklist**: Remind the user to test on the preview URL if they report missing data or /bin/bash balances.
+     - **Why to solve this issue and what will be achieved with this?**: Prevents circular debugging loops of missing features.
+     - **Should Test frontend/backend/both after fix**: NA
+     - **Is recurring issue?** Y
 
 **Known issue recurrence from previous fork**
-  - Issue recurrence in previous fork: Double-counting cost basis / Math logic errors / Phantom transfers.
-  - Recurrence count: 4
-  - Status: RESOLVED (The new linkage engine specifically solves this, but tax logic is highly fragile. Be extremely careful editing ).
+  - Issue recurrence in previous fork: Querying the wrong database (used  instead of  variable).
+  - Recurrence count: 1
+  - Status: RESOLVED (Agent must strictly adhere to  as specified in ).
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- 3-Layer Linkage Architecture: Layer 1 (Canonical Ledger/Immutable), Layer 2 (Linkage Engine/Identity), Layer 3 (Chain of Custody UI).
-- Tax Math Isolation: Buys = Cost Basis. Receives/Staking = Crypto Income. Sells/External Transfers = Capital Gains (Disposal).
-- Exception Handling: FastAPI HTTPExceptions must be correctly caught or raised to avoid wrapping 400s inside generic 500s.
+- **Tax Invariants:** Balance Reconciliation, Cost Basis Conservation, No Double Spend, No Orphan Disposals.
+- **Proceeds Acquisitions:** Linking crypto sells (e.g., BTC to USDC) to fix orphan disposals.
+- **Modular Routes:**  was heavily refactored into smaller files. Do not look for endpoints in  anymore.
+- **Recompute Integrity:** Any linkage or classification change triggers a full recompute of tax lots and validation state.
 
 **key DB schema**
+  - , , 
+  - : {fixture_id, version_tag, content_hash, ...}
   - : {id, user_id, asset, type, total_usd, chain_status}
   - : {tx_id, user_id, source_wallet, destination_wallet, review_status}
-  - : {from_address, to_address, confidence}
 
 **changes in tech stack**
-  - None.
+  - Major backend refactoring:  was broken down into modular routes in the previous session.
 
 **All files of reference** 
--  (Fixed HTTPException handling for invalid review resolutions)
+-  (Need to implement logic)
+-  (Need to implement endpoints)
+-  (Need to import classification routes here)
+-  (Core routing reference)
 - 
--  
--  (Updated with test verification details)
 
 **Areas that need refactoring**: 
- and  are monolithic and need to be broken down.  contains many bespoke parsers that could be abstracted. 
+ and  remain monolithic on the frontend and should eventually be broken down into smaller components.
 
 **key api endpoints**
-- : Fetches pending chain breaks.
-- : Submits user decision (yes, no, ignore) for a transfer.
-- : Generates Form 8949 CSV.
+- : Fetches post-validation hardening state.
+- : Gets proceeds grouped by risk/confidence stages.
+- : Safety guard before Form 8949 generation.
 
 **Critical Info for New Agent** 
-- **Wait for User Response:** The agent successfully finished verification and suggested a Bulk Resolution enhancement. Wait to see if the user approves this enhancement, wants to resume the Stripe pricing tiers, or has a completely new request.
-- **Environment Context:** Remind the user they are testing on the Preview environment. DB contains test data for user .
-- **API Response:** The  endpoint uses decisions yes (Mine) and no (External). yes creates a linkage edge, no generates a taxable Form 8949 event.
+- **Immediate Task:** The previous session ended immediately after asking the user a question. You MUST check the user's response to your plan, and then proceed to implement the 6 requirements for the Unknown Transaction Reduction System inside , build the endpoints in , integrate them into , and create the corresponding frontend UI.
+- **Backend Refactor:** The massive  file was deleted and split into modular files. Be aware of this architectural shift.
+- **DB NAME:** Always use  as specified in , not .
 
 **documents and test reports created in this job**
--  (Passed 14/14 tests)
+-  (Tests passed in previous session)
 - 
 
 **Last 10 User Messages and any pending HUMAN messages** 
-1. **User**: thats all, lets do it (Approved the verification plan)
-2. **User**: lets fork
+1. **User**: [Tool result: Question has been sent to the user. Waiting for response] - *PENDING USER RESPONSE*
+2. **User**: Provided problem statement and current state context (Unknown Transaction Reduction System. Goal: Minimize manual review by auto-classifying high-confidence unknown transactions...)
 
 **Project Health Check:**
-- Broken: None.
+- Broken:  is disconnected from  (because the files are empty stubs).
 - Mocked: None.
 
 **3rd Party Integrations** 
-- Stripe (Payments) — requires User API Key (Currently paused).
 - CoinGecko / Binance API — Crypto pricing.
 
 **Testing status**
-  - Testing agent used after significant changes: YES ( used)
+  - Testing agent used after significant changes: YES (Testing agent was passing 29/29 tests at iteration 26 prior to this brief session).
   - Troubleshoot agent used after agent stuck in loop: NO
-  - Test files created: 
+  - Test files created: None this session.
   - Known regressions: None.
 
 **Credentials to test flow:**
@@ -122,4 +147,4 @@ None actively being coded. The agent successfully verified the linkage engine, t
 - Password: 
 
 **What agent forgot to execute**
-- Nothing. The agent successfully verified all requested features from the massive prompt in the previous session and ran full testing.</analysis>
+- The agent did not forget anything; the session naturally ended while waiting for the human to respond to the  tool call regarding the implementation plan for the Unknown Transaction Reduction System. Read the human's new response and resume.</analysis>

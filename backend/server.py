@@ -382,6 +382,7 @@ from routes.review_queue_routes import router as review_queue_router
 from routes.validation_routes import router as validation_router
 from routes.proceeds_routes import router as proceeds_router
 from routes.price_backfill_routes import router as price_backfill_router
+from routes.classification_routes import router as classification_router
 
 # Include all route modules
 api_router.include_router(auth_router)
@@ -399,6 +400,7 @@ api_router.include_router(review_queue_router)
 api_router.include_router(validation_router)
 api_router.include_router(proceeds_router)
 api_router.include_router(price_backfill_router)
+api_router.include_router(classification_router)
 
 # Alias routes for backwards compatibility
 @api_router.post("/webhook")

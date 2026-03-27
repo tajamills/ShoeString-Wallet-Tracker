@@ -18,7 +18,7 @@ sys.path.insert(0, '/app/backend')
 
 from csv_parser_service import CSVParserService, ExchangeFormat
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://crypto-tax-tracker-1.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://proceeds-validator.preview.emergentagent.com').rstrip('/')
 
 
 class TestCsvParserCoinbaseFormatDetection:

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, CheckCircle, RefreshCw, Download, Lock, Calendar } from 'lucide-react';
+import { Loader2, CheckCircle, RefreshCw, Download, Lock, Calendar, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import axios from 'axios';
 import ValidationStatusPanel from './ValidationStatusPanel';
+import UnknownTransactionClassifier from './UnknownTransactionClassifier';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -27,6 +28,7 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal: onAddData }) => {
   const [exchangeSummary, setExchangeSummary] = useState([]);
   const [portfolioByExchange, setPortfolioByExchange] = useState({});
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [showClassifier, setShowClassifier] = useState(false);
   const availableYears = getAvailableYears();
 
   useEffect(() => {
@@ -237,11 +239,40 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal: onAddData }) => {
 
   return (
     <div className="space-y-6">
+      {/* Unknown Transaction Classifier Modal */}
+      {showClassifier && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" data-testid="classifier-modal">
+          <div className="bg-gray-900 rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-gray-700">
+              <h2 className="text-lg font-semibold text-white">Unknown Transaction Classifier</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowClassifier(false)}
+                className="text-gray-400 hover:text-white"
+                data-testid="close-classifier-btn"
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              <UnknownTransactionClassifier 
+                onClassificationComplete={(count) => {
+                  console.log(`Classified ${count} transactions`);
+                  fetchTaxSummary();
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Tax Validation Status Panel */}
       <ValidationStatusPanel 
         apiUrl={BACKEND_URL}
         authHeader={getAuthHeader()}
         onRefresh={fetchTaxSummary}
+        onOpenClassifier={() => setShowClassifier(true)}
       />
 
       {/* Header with Year Selector */}
