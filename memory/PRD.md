@@ -665,6 +665,44 @@ REACT_APP_BACKEND_URL=https://...
   - Verifies eligibility checks for proceeds acquisition
   - Confirms audit trail creation and rollback capability
 
+**P1.7 - Staged Proceeds Application Controls** ✅ (Completed - Mar 27, 2026)
+- [x] **StagedProceedsService** (`staged_proceeds_service.py`) - Controlled application flow
+  - Apply exact-valuation candidates first (recommended Stage 1)
+  - Automatic validation after each batch with delta metrics
+  - Full rollback capability by batch_id
+  
+- [x] **Filtering Support**:
+  - Filter by asset(s) (e.g., "BTC,ETH")
+  - Filter by date range (date_from, date_to in YYYY-MM-DD)
+  - Filter by valuation status (exact_only, stablecoin_only, high_confidence, all_eligible)
+  - Filter by confidence threshold (min_confidence 0.0-1.0)
+  - Filter by max time delta (max_time_delta_hours)
+  
+- [x] **Validation Delta Metrics**:
+  - `orphan_disposals` before/after/delta
+  - `validation_status` before/after
+  - `can_export` before/after
+  - `blocking_issues` before/after/delta
+  - `new_warnings`, `new_errors`, `resolved_issues`
+  
+- [x] **Safety Blocks**:
+  - Low-confidence approximates (<0.7) blocked by default
+  - Wide-window approximates (>12h time delta) blocked by default
+  - Requires `force_override=True` to bypass safety blocks
+  
+- [x] **API Endpoints**:
+  - GET `/api/custody/proceeds/staged/stages` - Recommended application stages
+  - GET `/api/custody/proceeds/staged/preview` - Preview with filters
+  - POST `/api/custody/proceeds/staged/apply` - Apply with filters and delta
+  - POST `/api/custody/proceeds/staged/apply-exact` - Convenience: exact only
+  - POST `/api/custody/proceeds/staged/apply-stablecoins` - Convenience: stablecoins only
+  - POST `/api/custody/proceeds/staged/apply-high-confidence` - Convenience: high confidence
+  
+- [x] **Test Results**:
+  - Applied 121 candidates in 3 staged batches (BTC: 15, ETH: 20, remaining: 86)
+  - Total value: $72,799.38
+  - Final delta: orphan_disposals 1→0, validation_status needs_review→valid, can_export false→true
+
 **P2 - Review Queue Enhancements** ✅ (Completed - Mar 27, 2026)
 - [x] **Frontend Validation Status UI** (`ValidationStatusPanel.js`)
   - Displays overall validation status (valid/invalid/needs_review)
