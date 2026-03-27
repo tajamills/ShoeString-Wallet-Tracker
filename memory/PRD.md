@@ -567,16 +567,15 @@ REACT_APP_BACKEND_URL=https://...
 ## Backlog
 
 ### Next Action Items
-- [ ] **P0**: User to test validation endpoints on Preview
-- [ ] **P1**: Integrate validation into CSV import flow (auto-classify on import)
 - [ ] **P1**: Persist validation state to MongoDB (`tax_lots`, `tax_disposals`, `tax_audit_trail` collections)
+- [ ] **P1**: Integrate validation into CSV import flow (auto-classify on import)
 - [ ] **P1**: Hook into existing tax services (`exchange_tax_service.py`, `unified_tax_service.py`)
 - [ ] **P1**: Auto-trigger recompute on linkage changes (review queue resolution)
 - [ ] **P1**: Add validation status to tax API responses (`validation_status`, `can_export` flags)
 - [ ] **P2**: Add frontend UI for validation status in Tax Dashboard
+- [ ] **P2**: Bulk Resolution feature for Review Queue ("Resolve All as External" / "Resolve All as Mine")
 
 ### Future/Backlog
-- [ ] Bulk Resolution feature for Review Queue ("Resolve All as External" / "Resolve All as Mine")
 - [ ] DeFi Position Tracking (liquidity pools, staking positions)
 - [ ] NFT Portfolio Tracking
 - [ ] Refactor monolithic files (`ChainOfCustodyModal.js`, `App.js`)
