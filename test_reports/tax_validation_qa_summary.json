@@ -1,0 +1,404 @@
+{
+  "summary": {
+    "total_tests": 20,
+    "passed": 20,
+    "failed": 0,
+    "pass_rate": "100.0%",
+    "failed_tests": []
+  },
+  "results": [
+    {
+      "test_name": "simple_buy_sell",
+      "classification_result": {
+        "buy": "acquisition",
+        "sell": "disposal"
+      },
+      "lot_impact": {
+        "lots_created": 1,
+        "lots_consumed": 1,
+        "remaining": 0
+      },
+      "tax_impact": {
+        "proceeds": 50000.0,
+        "cost_basis": 40000.0,
+        "gain_loss": 10000.0
+      },
+      "validation_status": "valid",
+      "api_flags": {
+        "can_export": true,
+        "validation_passed": true
+      },
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "test_name": "buy_internal_transfer_sell",
+      "classification_result": {
+        "buy": "acquisition",
+        "transfer": "internal_transfer",
+        "sell": "disposal"
+      },
+      "lot_impact": {
+        "lots_created": 1,
+        "lots_consumed": 1,
+        "cost_basis_preserved": true
+      },
+      "tax_impact": {
+        "proceeds": 35000.0,
+        "cost_basis": 20000.0,
+        "gain_loss": 15000.0
+      },
+      "validation_status": "valid",
+      "api_flags": {
+        "can_export": true
+      },
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "test_name": "bridge_transfer_correctly_linked",
+      "classification_result": {
+        "bridge": "internal_transfer"
+      },
+      "lot_impact": {
+        "total_quantity": 5.0,
+        "cost_basis_preserved": true
+      },
+      "tax_impact": {
+        "taxable_event": false,
+        "gain_loss": 0
+      },
+      "validation_status": "valid",
+      "api_flags": {
+        "can_export": true
+      },
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "test_name": "bridge_transfer_unresolved",
+      "classification_result": {
+        "classification": "unknown"
+      },
+      "lot_impact": {
+        "needs_review": true
+      },
+      "tax_impact": {
+        "excluded_from_export": true
+      },
+      "validation_status": "needs_review",
+      "api_flags": {
+        "can_export": false,
+        "needs_user_action": true
+      },
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "test_name": "partial_lot_disposal",
+      "classification_result": {
+        "disposal": "partial"
+      },
+      "lot_impact": {
+        "original_quantity": 2.0,
+        "disposed": 0.5,
+        "remaining": 1.5
+      },
+      "tax_impact": {
+        "proceeds": 25000.0,
+        "cost_basis": 20000.0,
+        "gain_loss": 5000.0
+      },
+      "validation_status": "valid",
+      "api_flags": {
+        "can_export": true
+      },
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "test_name": "multiple_lots_fifo",
+      "classification_result": {
+        "method": "FIFO"
+      },
+      "lot_impact": {
+        "lots_matched": 2,
+        "lot_1_consumed": 1.0,
+        "lot_2_partial": 0.5
+      },
+      "tax_impact": {
+        "proceeds": 75000.0,
+        "cost_basis": 47500.0,
+        "gain_loss": 27500.0
+      },
+      "validation_status": "valid",
+      "api_flags": {
+        "can_export": true
+      },
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "test_name": "fee_deducted_same_asset",
+      "classification_result": {
+        "fee_handling": "included_in_cost_basis"
+      },
+      "lot_impact": {
+        "cost_basis_with_fee": 40100.0
+      },
+      "tax_impact": {
+        "proceeds": 50000.0,
+        "cost_basis": 40100.0,
+        "gain_loss": 9900.0
+      },
+      "validation_status": "valid",
+      "api_flags": {
+        "can_export": true
+      },
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "test_name": "csv_import_auto_classification",
+      "classification_result": {
+        "buy": "acquisition",
+        "sell": "disposal",
+        "staking": "income",
+        "receive": "internal_transfer"
+      },
+      "lot_impact": {
+        "transactions_classified": 4
+      },
+      "tax_impact": {
+        "auto_classified": true
+      },
+      "validation_status": "valid",
+      "api_flags": {
+        "can_export": true
+      },
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "test_name": "linkage_correction_triggers_recompute",
+      "classification_result": {
+        "trigger": "linkage_correction"
+      },
+      "lot_impact": {
+        "cleared_lots": 1,
+        "cleared_disposals": 0
+      },
+      "tax_impact": {
+        "recomputed": true
+      },
+      "validation_status": "valid",
+      "api_flags": {
+        "recompute_triggered": true
+      },
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "test_name": "repeated_export_consistency",
+      "classification_result": {
+        "deterministic": true
+      },
+      "lot_impact": {
+        "exports_compared": 2
+      },
+      "tax_impact": {
+        "consistent": true
+      },
+      "validation_status": "valid",
+      "api_flags": {
+        "can_export": true,
+        "deterministic": true
+      },
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "test_name": "failure_internal_transfer_as_sale",
+      "classification_result": {
+        "error": "internal_transfer_treated_as_disposal"
+      },
+      "lot_impact": {
+        "incorrectly_disposed": 10.0
+      },
+      "tax_impact": {
+        "false_gain": 10000.0
+      },
+      "validation_status": "invalid",
+      "api_flags": {
+        "can_export": false
+      },
+      "passed": true,
+      "failure_reason": "Balance reconciliation should fail"
+    },
+    {
+      "test_name": "failure_external_transfer_as_internal",
+      "classification_result": {
+        "error": "external_treated_as_internal"
+      },
+      "lot_impact": {
+        "phantom_balance": 1.0
+      },
+      "tax_impact": {
+        "missed_disposal": true
+      },
+      "validation_status": "invalid",
+      "api_flags": {
+        "can_export": false
+      },
+      "passed": true,
+      "failure_reason": "Balance should be 0 but lots show 1.0"
+    },
+    {
+      "test_name": "failure_duplicate_disposal_after_recompute",
+      "classification_result": {
+        "error": "duplicate_disposal_blocked"
+      },
+      "lot_impact": {
+        "double_spend_prevented": true
+      },
+      "tax_impact": {
+        "duplicate_blocked": true
+      },
+      "validation_status": "blocked",
+      "api_flags": {
+        "can_export": false
+      },
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "test_name": "failure_cost_basis_changed_internal_transfer",
+      "classification_result": {
+        "error": "cost_basis_changed"
+      },
+      "lot_impact": {
+        "source": 40000.0,
+        "destination": 45000.0
+      },
+      "tax_impact": {
+        "incorrect_basis": true
+      },
+      "validation_status": "invalid",
+      "api_flags": {
+        "can_export": false
+      },
+      "passed": true,
+      "failure_reason": "Cost basis conservation violated"
+    },
+    {
+      "test_name": "failure_orphan_disposal_no_acquisition",
+      "classification_result": {
+        "error": "no_acquisition_lot"
+      },
+      "lot_impact": {
+        "orphan_blocked": true
+      },
+      "tax_impact": {
+        "orphan_disposal_prevented": true
+      },
+      "validation_status": "blocked",
+      "api_flags": {
+        "can_export": false
+      },
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "test_name": "failure_wrong_lot_quantity_partial_sale",
+      "classification_result": {
+        "verification": "lot_quantity_tracking"
+      },
+      "lot_impact": {
+        "remaining": 7.0,
+        "expected": 7.0
+      },
+      "tax_impact": {
+        "cost_basis": 6000.0
+      },
+      "validation_status": "valid",
+      "api_flags": {
+        "can_export": true
+      },
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "test_name": "failure_fee_slippage_false_chain_break",
+      "classification_result": {
+        "send": "internal_transfer",
+        "receive": "internal_transfer"
+      },
+      "lot_impact": {
+        "slippage_handled": true
+      },
+      "tax_impact": {
+        "false_break_prevented": true
+      },
+      "validation_status": "valid",
+      "api_flags": {
+        "can_export": true
+      },
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "test_name": "failure_unknown_classification_leaking",
+      "classification_result": {
+        "classification": "unknown"
+      },
+      "lot_impact": {
+        "needs_review": true
+      },
+      "tax_impact": {
+        "excluded_from_export": true
+      },
+      "validation_status": "needs_review",
+      "api_flags": {
+        "can_export": false
+      },
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "test_name": "failure_linkage_update_no_recompute",
+      "classification_result": {
+        "trigger": "linkage_update"
+      },
+      "lot_impact": {
+        "state_cleared": true
+      },
+      "tax_impact": {
+        "recomputed": true
+      },
+      "validation_status": "valid",
+      "api_flags": {
+        "recompute_triggered": true
+      },
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "test_name": "failure_can_export_true_when_invalid",
+      "classification_result": {
+        "validation_status": "invalid"
+      },
+      "lot_impact": {
+        "violations": 1
+      },
+      "tax_impact": {
+        "export_blocked": true
+      },
+      "validation_status": "invalid",
+      "api_flags": {
+        "can_export": false
+      },
+      "passed": true,
+      "failure_reason": null
+    }
+  ]
+}

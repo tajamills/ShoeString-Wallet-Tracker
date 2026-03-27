@@ -630,17 +630,15 @@ REACT_APP_BACKEND_URL=https://...
   - GET `/api/custody/validate/lot-status/{asset}` - View lot status for asset
   - GET `/api/custody/validate/audit-trail` - Retrieve audit trail entries
 
-- [x] **Comprehensive Test Suite** (`/app/backend/tests/test_tax_validation.py`) - 37 tests:
-  - TestTransactionClassification (8 tests): buy, sell, staking, airdrop, linked/external sends
-  - TestCostBasisEngine (9 tests): lot creation, FIFO order, partial disposal, multi-wallet, constraints
-  - TestInvariantChecks (5 tests): balance reconciliation, double spend, orphan disposal
-  - TestForm8949Validation (5 tests): valid records, missing fields, negative values, calculation mismatch
-  - TestBridgeTransactions (2 tests): internal transfer, external transfer
-  - TestIncomeHandling (2 tests): staking cost basis, selling rewards
-  - TestFeeDeductions (1 test): fee inclusion in cost basis
-  - TestRecomputeLogic (1 test): state clearing
-  - TestAuditTrail (2 tests): creation and disposal logging
-  - TestUnresolvedChainBreaks (1 test): defaults to unknown/needs review
+- [x] **Comprehensive Test Suite** - 65 total tests (all passing):
+  - **Basic Tests** (`test_tax_validation.py`) - 37 tests
+  - **Advanced Test Suite** (`test_tax_validation_comprehensive.py`) - 28 tests:
+    - 10 Core Passing Scenarios (buy/sell, internal transfer, bridge, FIFO, partial disposal, fees, CSV import, recompute, export consistency)
+    - 10 Failure Scenario Tests (internal as sale, external as internal, duplicate disposal, cost basis change, orphan disposal, wrong quantity, slippage, unknown leaking, no recompute, invalid export)
+    - 5 Invariant Checks (balance reconciliation, cost basis conservation, no double disposal, no orphan, deterministic export)
+    - 2 Validation Enforcement Tests (invalid blocks, warning allows)
+    - 1 QA Summary Generator
+  - **QA Summary Output**: `/app/test_reports/tax_validation_qa_summary.json`
 
 ### Completed Refactoring (Mar 19, 2026)
 - [x] **Server.py Refactoring** - Split 4,375-line server.py into 10 modular route files:
