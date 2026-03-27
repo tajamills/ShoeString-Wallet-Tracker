@@ -1,10 +1,12 @@
 """Custody routes - Chain of Custody analysis and PDF reports"""
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
+from pydantic import BaseModel
 import uuid
 import io
+import os
 import logging
 
 from .dependencies import db, get_current_user, require_unlimited_tier
@@ -942,3 +944,214 @@ async def get_audit_trail(
     except Exception as e:
         logger.error(f"Error getting audit trail: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to get audit trail: {str(e)}")
+
+
+
+# ========================================
+# BETA VALIDATION HARNESS ENDPOINTS
+# ========================================
+
+from beta_validation_harness import BetaValidationHarness, create_validation_harness, SeverityLevel
+
+
+class BetaValidateRequest(BaseModel):
+    """Request to validate a beta account"""
+    user_id: Optional[str] = None  # If None, uses current user
+    tax_year: int = 2024
+    include_all_transactions: bool = True
+
+
+class BatchValidateRequest(BaseModel):
+    """Request to validate multiple accounts"""
+    user_ids: List[str]
+    tax_year: int = 2024
+
+
+@router.post("/beta/validate")
+async def beta_validate_account(
+    request: BetaValidateRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Run full validation on an account for beta testing.
+    
+    Generates a comprehensive report including:
+    - Transaction classification summary
+    - Unresolved review items
+    - Lot reconciliation summary
+    - Disposal summary
+    - Validation status and can_export flag
+    - All invariant check results
+    - Highlighted issues (orphan disposals, balance mismatches, etc.)
+    """
+    try:
+        # Use current user if not specified
+        target_user_id = request.user_id or user["id"]
+        
+        # Create harness with db
+        harness = create_validation_harness(db)
+        
+        # Run validation
+        report = await harness.validate_account(
+            user_id=target_user_id,
+            tax_year=request.tax_year,
+            include_all_transactions=request.include_all_transactions
+        )
+        
+        # Export to file for manual review
+        report_path = f"/app/test_reports/beta_validation_{target_user_id}_{request.tax_year}"
+        harness.export_report(report, report_path, format="both")
+        
+        return {
+            "success": True,
+            "report": report.to_dict(),
+            "human_readable": report.to_human_readable(),
+            "report_files": {
+                "json": f"{report_path}.json",
+                "text": f"{report_path}.txt"
+            }
+        }
+        
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error in beta validation: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Beta validation failed: {str(e)}")
+
+
+@router.post("/beta/validate-batch")
+async def beta_validate_batch(
+    request: BatchValidateRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Run validation on multiple accounts for beta testing.
+    
+    Returns individual reports plus a batch summary.
+    """
+    try:
+        harness = create_validation_harness(db)
+        
+        # Run validation on all accounts
+        reports = await harness.validate_multiple_accounts(
+            user_ids=request.user_ids,
+            tax_year=request.tax_year
+        )
+        
+        # Generate batch summary
+        batch_summary = harness.generate_batch_summary(reports)
+        
+        # Export individual reports
+        for user_id, report in reports.items():
+            report_path = f"/app/test_reports/beta_validation_{user_id}_{request.tax_year}"
+            harness.export_report(report, report_path, format="both")
+        
+        # Export batch summary
+        batch_summary_path = f"/app/test_reports/beta_batch_summary_{request.tax_year}.json"
+        with open(batch_summary_path, "w") as f:
+            import json
+            json.dump(batch_summary, f, indent=2)
+        
+        return {
+            "success": True,
+            "batch_summary": batch_summary,
+            "individual_reports": {
+                user_id: report.to_dict() 
+                for user_id, report in reports.items()
+            },
+            "batch_summary_file": batch_summary_path
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in batch validation: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Batch validation failed: {str(e)}")
+
+
+@router.get("/beta/validation-report/{user_id}")
+async def get_beta_validation_report(
+    user_id: str,
+    tax_year: int = 2024,
+    format: str = "json",
+    user: dict = Depends(get_current_user)
+):
+    """
+    Get a previously generated validation report.
+    
+    Args:
+        user_id: The user ID to get report for
+        tax_year: Tax year of the report
+        format: "json" or "text"
+    """
+    try:
+        if format == "json":
+            report_path = f"/app/test_reports/beta_validation_{user_id}_{tax_year}.json"
+        else:
+            report_path = f"/app/test_reports/beta_validation_{user_id}_{tax_year}.txt"
+        
+        if not os.path.exists(report_path):
+            raise HTTPException(
+                status_code=404, 
+                detail=f"Report not found. Run /api/custody/beta/validate first."
+            )
+        
+        with open(report_path, "r") as f:
+            content = f.read()
+        
+        if format == "json":
+            import json
+            return json.loads(content)
+        else:
+            return {"report_text": content}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting validation report: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get report: {str(e)}")
+
+
+@router.get("/beta/pre-export-check")
+async def pre_export_check(
+    tax_year: int = 2024,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Quick pre-export check before Form 8949 generation.
+    
+    Returns a summary of blocking issues without full report generation.
+    """
+    try:
+        harness = create_validation_harness(db)
+        report = await harness.validate_account(
+            user_id=user["id"],
+            tax_year=tax_year
+        )
+        
+        # Extract key blocking issues
+        blocking_issues = [
+            i.to_dict() for i in report.issues 
+            if i.severity in [SeverityLevel.CRITICAL, SeverityLevel.HIGH]
+        ]
+        
+        failed_invariants = [
+            c.to_dict() for c in report.invariant_checks 
+            if not c.passed
+        ]
+        
+        return {
+            "can_export": report.can_export,
+            "validation_status": report.validation_status,
+            "export_blocked_reason": report.export_blocked_reason,
+            "blocking_issues_count": len(blocking_issues),
+            "blocking_issues": blocking_issues,
+            "failed_invariants": failed_invariants,
+            "unresolved_review_count": report.review_queue_count,
+            "recommendation": (
+                "Ready for Form 8949 export" if report.can_export 
+                else "Resolve blocking issues before export"
+            )
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in pre-export check: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Pre-export check failed: {str(e)}")

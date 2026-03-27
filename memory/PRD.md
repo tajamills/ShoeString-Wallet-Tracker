@@ -581,6 +581,49 @@ REACT_APP_BACKEND_URL=https://...
 - [ ] Refactor monolithic files (`ChainOfCustodyModal.js`, `App.js`)
 - [ ] Coinbase API key connection debugging (needs user verification)
 
+### Phase 23: Beta Account Validation Harness (Completed - Mar 27, 2026)
+- [x] **Beta Validation Harness** (`beta_validation_harness.py`) - ~1000 lines
+  - Runs selected beta user accounts through full tax pipeline
+  - Generates human-reviewable validation reports before Form 8949 export
+
+- [x] **Report Components**:
+  - `ClassificationSummary`: Transaction classification breakdown by type and asset
+  - `LotReconciliationSummary`: Lot tracking with FIFO, cost basis by asset
+  - `DisposalSummary`: Total proceeds, cost basis, gain/loss (short/long-term)
+  - `InvariantCheckResult`: Pass/fail for each invariant with affected assets
+  - `ValidationIssue`: Highlighted problems with severity levels
+
+- [x] **Invariant Checks**:
+  - Balance Reconciliation (starting + acquisitions - disposals = ending)
+  - No Orphan Disposals (disposed qty <= acquired qty per asset)
+  - Cost Basis Validity (no negative cost basis)
+  - No Double Disposal (no duplicate sell tx_ids)
+  - Classification Completeness (no unknown classifications)
+  - Review Queue Resolved (no pending review items)
+
+- [x] **Issue Detection & Highlighting**:
+  - CRITICAL: Orphan disposals, balance mismatches
+  - HIGH: Unresolved chain breaks, unknown classifications
+  - MEDIUM: Missing price data (zero cost basis acquisitions)
+  - LOW: Minor data quality issues
+
+- [x] **Validation Status Logic**:
+  - `invalid` + blocked: Critical issues or failed invariants
+  - `needs_review` + blocked: Unresolved review queue items
+  - `needs_review` + exportable: High issues (warning only)
+  - `valid` + exportable: All checks passed
+
+- [x] **New API Endpoints**:
+  - POST `/api/custody/beta/validate` - Full account validation with report generation
+  - POST `/api/custody/beta/validate-batch` - Validate multiple accounts
+  - GET `/api/custody/beta/validation-report/{user_id}` - Retrieve saved report
+  - GET `/api/custody/beta/pre-export-check` - Quick blocking issues check
+
+- [x] **Report Output**:
+  - JSON format: Full structured data for programmatic use
+  - Human-readable text: Formatted report for manual QA review
+  - Files saved to `/app/test_reports/beta_validation_{user_id}_{tax_year}.{json,txt}`
+
 ### Phase 22: Tax Validation and Invariant Enforcement Layer (Completed - Mar 27, 2026)
 - [x] **New Tax Validation Service** (`tax_validation_service.py`) - 940 lines
   - Comprehensive validation layer ensuring all generated tax records are accurate, internally consistent, and auditable

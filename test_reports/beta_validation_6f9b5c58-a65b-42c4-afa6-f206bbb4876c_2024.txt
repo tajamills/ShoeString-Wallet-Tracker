@@ -1,0 +1,1235 @@
+================================================================================
+BETA ACCOUNT VALIDATION REPORT
+================================================================================
+
+User ID: 6f9b5c58-a65b-42c4-afa6-f206bbb4876c
+Email: mobiletest@test.com
+Tax Year: 2024
+Generated: 2026-03-27T00:57:05.233761+00:00
+
+----------------------------------------
+STATUS: INVALID ❌
+CAN EXPORT FORM 8949: NO
+BLOCKED REASON: 3 critical issues found
+----------------------------------------
+
+TRANSACTION CLASSIFICATION SUMMARY
+----------------------------------------
+  Total Transactions: 1954
+  Acquisitions:       159
+  Disposals:          145
+  Internal Transfers: 3
+  Income:             197
+  Unknown:            1450 ⚠️
+  Needs Review:       1387 ⚠️
+
+⚠️ UNRESOLVED REVIEW ITEMS
+----------------------------------------
+  - TX: 693218ac45c7d64d0b60...
+    Asset: BTC, Amount: N/A
+    Status: pending
+  - TX: 6932162356c5fa668f66...
+    Asset: BTC, Amount: N/A
+    Status: pending
+  - TX: 692e566382157a38943e...
+    Asset: USDC, Amount: N/A
+    Status: pending
+  - TX: 692e54a8d1e16eeaaa32...
+    Asset: USDC, Amount: N/A
+    Status: pending
+  - TX: 692cb01ea5d856f0c6fb...
+    Asset: TAO, Amount: N/A
+    Status: pending
+  - TX: 692caf7c7461c3b5b31b...
+    Asset: TAO, Amount: N/A
+    Status: pending
+  - TX: 69149824ff63f39cc725...
+    Asset: SOL, Amount: N/A
+    Status: pending
+  - TX: 691298da364838c8314e...
+    Asset: POL, Amount: N/A
+    Status: pending
+  - TX: 69122abfdffaa73f8d18...
+    Asset: ATOM, Amount: N/A
+    Status: pending
+  - TX: 691227cf95c7c352baae...
+    Asset: ATOM, Amount: N/A
+    Status: pending
+  ... and 313 more
+
+LOT RECONCILIATION SUMMARY
+----------------------------------------
+  Total Lots:         356
+  Fully Disposed:     204
+  Partial:            4
+  Open (Available):   148
+  Total Cost Basis:   $32,906.37
+
+  By Asset:
+    ETH2: 4.914460999999999e-06 units, $0.02 basis
+    USDC: 0.0 units, $0.00 basis
+    ETH: 1.0069411337669996 units, $4,126.38 basis
+    BTC: 0.11739990000000004 units, $12,615.17 basis
+    XRP: 1139.716173 units, $2,570.22 basis
+    TURBO: 492424.45579513995 units, $1,535.00 basis
+    TAO: 2.2401 units, $725.84 basis
+    SOL: 0.22998445971385006 units, $49.25 basis
+    PAXG: 0.15681999999999793 units, $668.06 basis
+    FLR: 5685.03452749 units, $111.81 basis
+    ADA: 312.8412616 units, $192.60 basis
+    WLFI: 1021.5372815999999 units, $174.99 basis
+    VET: 8104.955537899999 units, $200.00 basis
+    LINK: 4.19722714 units, $100.00 basis
+    HBAR: 1000.0 units, $185.89 basis
+    XLM: 0.0 units, $0.00 basis
+    ZEC: 14.040326129999999 units, $9,013.82 basis
+    MINA: 5.133333333 units, $1.00 basis
+    ATOM: 31.882677 units, $100.00 basis
+    POL: 10.66739967 units, $2.00 basis
+    QNT: 5.0120000000000005 units, $534.33 basis
+
+DISPOSAL SUMMARY
+----------------------------------------
+  Total Disposals:    0
+  Total Proceeds:     $0.00
+  Total Cost Basis:   $0.00
+  Net Gain/Loss:      $0.00 📈
+
+  Short-Term (0):   $0.00
+  Long-Term (0):    $0.00
+
+INVARIANT CHECKS
+----------------------------------------
+  Passed: 2/6
+  ❌ Balance Reconciliation
+      Affected: USDC
+  ❌ No Orphan Disposals
+      Affected: XLM, USDC
+  ✅ Cost Basis Validity
+  ✅ No Double Disposal
+  ❌ Classification Completeness
+      Affected: ETH, BTC, BNB, XLM, BCH, DOT, SOL, MANA, ENJ, XRP, SNX, ADA, AVAX, DEBT, WEB4, $TRUTH, GPT, DRIP, DOGE, LINK, LEMX, MATIC, MQT, ALGO, ETH2, HBAR, USDC, XPR, TURBO, TAO, AXL, PEPE, SHIB, PAXG, FLR, VET, BUNL, WBNB, ZEC, MINA, ATOM, POL, USDT
+  ❌ Review Queue Resolved
+      Affected: GPT, HBAR, ATOM, DEBT, USDC, LEMX, BCH, XRP, BTC, ETH, FLR, POL, SOL, BNB, TAO, ADA, AXL, DOT, USDT, XLM, ALGO
+
+⚠️ HIGHLIGHTED ISSUES
+----------------------------------------
+  Critical: 3
+  High:     366
+  Medium:   0
+  Low:      0
+
+  [CRITICAL]
+    • orphan_disposal: Disposed more XLM than acquired
+      Asset: XLM
+      Recommendation: Review acquisitions or check for missing buy transactions
+    • orphan_disposal: Disposed more USDC than acquired
+      Asset: USDC
+      Recommendation: Review acquisitions or check for missing buy transactions
+    • balance_mismatch: Negative balance detected for USDC
+      Asset: USDC
+      Recommendation: Check for missing deposits or incorrect disposal amounts
+
+  [HIGH]
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: USDC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: USDC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: TAO
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: TAO
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: SOL
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: POL
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ATOM
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ATOM
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: HBAR
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: HBAR
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: FLR
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: FLR
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XLM
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ETH
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XLM
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XLM
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ADA
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XRP
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XRP
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: SOL
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: AXL
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BCH
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XRP
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: USDC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: SOL
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: SOL
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XRP
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XRP
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XLM
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XLM
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: LEMX
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: LEMX
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: LEMX
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: LEMX
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: LEMX
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XRP
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XRP
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XRP
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XRP
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XRP
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XRP
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XRP
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ALGO
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ALGO
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ALGO
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ETH
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ETH
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ETH
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ETH
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ETH
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ETH
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ETH
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ETH
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ETH
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ALGO
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ALGO
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ALGO
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ALGO
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ALGO
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ALGO
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ALGO
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ALGO
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ALGO
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XLM
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XLM
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XLM
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XLM
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XLM
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XLM
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XLM
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XLM
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XLM
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XLM
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XLM
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XLM
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: SOL
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: SOL
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: SOL
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DOT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BCH
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BCH
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: GPT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ADA
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XRP
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XRP
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XLM
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XLM
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: USDT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: USDT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: USDT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: USDT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: USDT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: USDT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: USDT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: USDT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: USDT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: USDT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: USDT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: USDT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: USDT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: USDT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: LEMX
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: LEMX
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: LEMX
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: LEMX
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: LEMX
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XRP
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XRP
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XRP
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XRP
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XRP
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ALGO
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ALGO
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ETH
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ETH
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ETH
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ETH
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ETH
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ETH
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ETH
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ETH
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ETH
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ALGO
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ALGO
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ALGO
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ALGO
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ALGO
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ALGO
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ALGO
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ALGO
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ALGO
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XLM
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XLM
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XLM
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XLM
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XLM
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XLM
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XLM
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XLM
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XLM
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XLM
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XLM
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XLM
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XLM
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: XLM
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: SOL
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: SOL
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: SOL
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DOT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BCH
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BCH
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BNB
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: GPT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: DEBT
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: BTC
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unresolved_chain_break: Unresolved transfer requires user decision
+      Asset: ADA
+      Recommendation: User must resolve as 'Mine' or 'External'
+    • unknown_classification: 72 transactions with unknown classification
+      Asset: ETH
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 153 transactions with unknown classification
+      Asset: BTC
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 164 transactions with unknown classification
+      Asset: BNB
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 505 transactions with unknown classification
+      Asset: XLM
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 13 transactions with unknown classification
+      Asset: BCH
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 10 transactions with unknown classification
+      Asset: DOT
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 28 transactions with unknown classification
+      Asset: SOL
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 2 transactions with unknown classification
+      Asset: MANA
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 2 transactions with unknown classification
+      Asset: ENJ
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 121 transactions with unknown classification
+      Asset: XRP
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 2 transactions with unknown classification
+      Asset: SNX
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 10 transactions with unknown classification
+      Asset: ADA
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 2 transactions with unknown classification
+      Asset: AVAX
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 68 transactions with unknown classification
+      Asset: DEBT
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 6 transactions with unknown classification
+      Asset: WEB4
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 6 transactions with unknown classification
+      Asset: $TRUTH
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 4 transactions with unknown classification
+      Asset: GPT
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 2 transactions with unknown classification
+      Asset: DRIP
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 2 transactions with unknown classification
+      Asset: DOGE
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 7 transactions with unknown classification
+      Asset: LINK
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 20 transactions with unknown classification
+      Asset: LEMX
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 2 transactions with unknown classification
+      Asset: MATIC
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 4 transactions with unknown classification
+      Asset: MQT
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 156 transactions with unknown classification
+      Asset: ALGO
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 1 transactions with unknown classification
+      Asset: ETH2
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 3 transactions with unknown classification
+      Asset: HBAR
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 19 transactions with unknown classification
+      Asset: USDC
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 4 transactions with unknown classification
+      Asset: XPR
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 1 transactions with unknown classification
+      Asset: TURBO
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 3 transactions with unknown classification
+      Asset: TAO
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 1 transactions with unknown classification
+      Asset: AXL
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 1 transactions with unknown classification
+      Asset: PEPE
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 1 transactions with unknown classification
+      Asset: SHIB
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 1 transactions with unknown classification
+      Asset: PAXG
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 3 transactions with unknown classification
+      Asset: FLR
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 10 transactions with unknown classification
+      Asset: VET
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 2 transactions with unknown classification
+      Asset: BUNL
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 2 transactions with unknown classification
+      Asset: WBNB
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 2 transactions with unknown classification
+      Asset: ZEC
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 1 transactions with unknown classification
+      Asset: MINA
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 2 transactions with unknown classification
+      Asset: ATOM
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 1 transactions with unknown classification
+      Asset: POL
+      Recommendation: Review and classify these transactions
+    • unknown_classification: 31 transactions with unknown classification
+      Asset: USDT
+      Recommendation: Review and classify these transactions
+
+================================================================================
+END OF REPORT
+================================================================================
