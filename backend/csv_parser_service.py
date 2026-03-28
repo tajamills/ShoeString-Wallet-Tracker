@@ -65,8 +65,12 @@ EXCHANGE_SIGNATURES = {
         ]
     },
     ExchangeFormat.GEMINI: {
-        "required": ["Date", "Time (UTC)", "Type", "Symbol", "Amount"],
-        "optional": ["Fee", "USD Amount"]
+        "required": ["Date", "Time (UTC)", "Type", "Symbol"],
+        "optional": ["Fee", "USD Amount", "Amount"],
+        "alt_signatures": [
+            # Format with currency-specific amount columns (BTC Amount, ETH Amount, etc.)
+            ["Date", "Time (UTC)", "Type", "Symbol", "Notional Amount (USD)"],
+        ]
     },
     ExchangeFormat.CRYPTO_COM: {
         "required": ["Timestamp (UTC)", "Transaction Description", "Currency", "Amount"],
@@ -1168,15 +1172,41 @@ class CSVParserService:
         """Parse Gemini CSV format"""
         transactions = []
         
+        # Find the amount column dynamically (Gemini uses "BTC Amount", "ETH Amount", etc.)
+        amount_col = None
+        fee_col = None
+        for h in headers:
+            if " Amount" in h and "Notional" not in h and "Fee" not in h:
+                amount_col = h
+            if "Fee (" in h and "USD" not in h:
+                fee_col = h
+        
         for i, row in enumerate(rows):
             try:
                 date_str = row.get("Date", "")
                 time_str = row.get("Time (UTC)", "")
                 tx_type = row.get("Type", "").lower()
                 symbol = row.get("Symbol", "")
-                amount = self._parse_float(row.get("Amount", "0"))
-                fee = self._parse_float(row.get("Fee", "") or row.get("Fee (USD)", "0"))
-                usd_amount = self._parse_float(row.get("USD Amount", "") or row.get("USD", "0"))
+                
+                # Try different amount column names
+                amount = self._parse_float(
+                    row.get("Amount", "") or 
+                    row.get(amount_col, "") if amount_col else "" or
+                    "0"
+                )
+                
+                fee = self._parse_float(
+                    row.get("Fee", "") or 
+                    row.get("Fee (USD)", "") or 
+                    row.get(fee_col, "") if fee_col else "" or
+                    "0"
+                )
+                
+                usd_amount = self._parse_float(
+                    row.get("USD Amount", "") or 
+                    row.get("Notional Amount (USD)", "") or 
+                    "0"
+                )
                 
                 timestamp_str = f"{date_str} {time_str}".strip()
                 timestamp = self._parse_timestamp(timestamp_str)
@@ -1197,7 +1227,7 @@ class CSVParserService:
                 
                 transactions.append(ExchangeTransaction(
                     exchange="gemini",
-                    tx_id=f"gm_{i}_{timestamp.timestamp() if timestamp else i}",
+                    tx_id=row.get("Trade ID", "") or f"gm_{i}_{timestamp.timestamp() if timestamp else i}",
                     tx_type=std_type,
                     asset=asset,
                     amount=abs(amount),
@@ -1343,7 +1373,8 @@ class CSVParserService:
                 usd_value = self._parse_float(row.get("Countervalue at Operation Date", "0"))
                 
                 # Skip pending transactions or invalid rows
-                if status != "Confirmed" or not asset or amount == 0:
+                # If no Status column, assume confirmed
+                if status and status != "Confirmed" or not asset or amount == 0:
                     continue
                 
                 # Parse timestamp
