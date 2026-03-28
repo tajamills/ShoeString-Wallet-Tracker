@@ -420,10 +420,16 @@ async def get_potential_transfers(
                     for receive in receives_by_asset[asset]:
                         receive_time = receive.get("timestamp")
                         if receive_time and sell_time:
+                            # Ensure both datetimes are timezone-aware
                             if isinstance(receive_time, str):
                                 receive_time = datetime.fromisoformat(receive_time.replace("Z", "+00:00"))
+                            elif receive_time.tzinfo is None:
+                                receive_time = receive_time.replace(tzinfo=timezone.utc)
+                                
                             if isinstance(sell_time, str):
                                 sell_time = datetime.fromisoformat(sell_time.replace("Z", "+00:00"))
+                            elif sell_time.tzinfo is None:
+                                sell_time = sell_time.replace(tzinfo=timezone.utc)
                             
                             days_diff = (sell_time - receive_time).days
                             if 0 <= days_diff <= 30:
