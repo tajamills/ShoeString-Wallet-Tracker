@@ -11,7 +11,7 @@ import { AlertTriangle, CheckCircle, XCircle, RefreshCw, FileText, ChevronDown, 
  * - Classification effectiveness metrics
  * - Quick actions for common fixes
  */
-const ValidationStatusPanel = ({ apiUrl, authHeader, onRefresh, onOpenClassifier }) => {
+const ValidationStatusPanel = ({ apiUrl, authHeader, onRefresh, onOpenClassifier, onOpenChainOfCustody, onOpenReviewQueue }) => {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -151,16 +151,16 @@ const ValidationStatusPanel = ({ apiUrl, authHeader, onRefresh, onOpenClassifier
         <div className="flex items-center gap-2">
           <button
             onClick={handleRefresh}
-            className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+            className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
             title="Refresh status"
             data-testid="validation-refresh-btn"
           >
-            <RefreshCw className="w-4 h-4 text-gray-400" />
+            <RefreshCw className="w-4 h-4 text-gray-300" />
           </button>
           
           <button
             onClick={() => setExpanded(!expanded)}
-            className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+            className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
             data-testid="validation-expand-btn"
           >
             {expanded ? (
@@ -394,20 +394,20 @@ const ValidationStatusPanel = ({ apiUrl, authHeader, onRefresh, onOpenClassifier
         
         {!canExport && (
           <div className="flex gap-2">
-            <a
-              href="#review-queue"
+            <button
+              onClick={onOpenReviewQueue}
               className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm py-2 px-4 rounded-lg text-center transition-colors"
               data-testid="review-queue-link"
             >
               Review Queue
-            </a>
-            <a
-              href="#chain-of-custody"
+            </button>
+            <button
+              onClick={onOpenChainOfCustody}
               className="flex-1 bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded-lg text-center transition-colors"
               data-testid="chain-custody-link"
             >
               Chain of Custody
-            </a>
+            </button>
           </div>
         )}
       </div>

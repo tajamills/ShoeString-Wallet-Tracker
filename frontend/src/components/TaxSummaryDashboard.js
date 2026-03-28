@@ -20,7 +20,7 @@ const getAvailableYears = () => {
   return years;
 };
 
-export const TaxSummaryDashboard = ({ onOpenExchangeModal: onAddData }) => {
+export const TaxSummaryDashboard = ({ onOpenExchangeModal: onAddData, onOpenChainOfCustody, onOpenReviewQueue }) => {
   const { getAuthHeader, user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [taxData, setTaxData] = useState(null);
@@ -273,6 +273,8 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal: onAddData }) => {
         authHeader={getAuthHeader()}
         onRefresh={fetchTaxSummary}
         onOpenClassifier={() => setShowClassifier(true)}
+        onOpenChainOfCustody={onOpenChainOfCustody}
+        onOpenReviewQueue={onOpenReviewQueue}
       />
 
       {/* Header with Year Selector */}

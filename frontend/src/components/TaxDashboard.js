@@ -411,8 +411,8 @@ export const TaxDashboard = ({
                           {formatGainLoss(lot.unrealized_gain)}
                         </td>
                         <td className="py-2 px-3 text-right">
-                          <span className={lot.gain_percentage >= 0 ? 'text-green-400' : 'text-red-400'}>
-                            {lot.gain_percentage >= 0 ? '+' : ''}{lot.gain_percentage.toFixed(2)}%
+                          <span className={(lot.gain_percentage || 0) >= 0 ? 'text-green-400' : 'text-red-400'}>
+                            {(lot.gain_percentage || 0) >= 0 ? '+' : ''}{(lot.gain_percentage || 0).toFixed(2)}%
                           </span>
                         </td>
                       </tr>

@@ -696,6 +696,8 @@ function App() {
           <div className="max-w-4xl mx-auto mb-8">
             <TaxSummaryDashboard 
               onOpenExchangeModal={() => setShowAddDataModal(true)}
+              onOpenChainOfCustody={() => setShowCustodyModal(true)}
+              onOpenReviewQueue={() => setShowCustodyModal(true)}
             />
           </div>
         )}
