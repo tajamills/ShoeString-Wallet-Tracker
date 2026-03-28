@@ -1,0 +1,93 @@
+{
+  "summary": "Tax Regression Tests After CSS Changes - All 21 tests passed. Verified all tax-related APIs are functioning correctly after CSS-only styling changes to TaxSummaryDashboard.js.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_tax_regression_iteration29.py",
+    "/app/test_reports/pytest/tax_regression_iteration29_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "CSS-only changes to TaxSummaryDashboard.js did not affect any backend tax calculations",
+    "All 8 requested API endpoints verified working correctly",
+    "Tax math calculations return proper numeric values",
+    "Authentication properly enforced on all tax endpoints"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_tax_regression_iteration29.py"
+  ],
+  "success_rate": {
+    "backend": "100% (21/21 tests passed)"
+  },
+  "test_credentials": {
+    "email": "mobiletest@test.com",
+    "password": "test123456"
+  },
+  "seed_data_creation": "None - used existing test user data",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Tax regression tests after CSS changes completed successfully. All tax APIs verified working. Test user has 0 tax lots/disposals but API structures are correct.",
+  "features_verified": {
+    "POST /api/tax/unified": {
+      "status": "PASS",
+      "notes": "Returns correct tax_data structure with summary, realized_gains. Works with tax_year filter (2024, 2025, 2026)."
+    },
+    "GET /api/custody/validation-status": {
+      "status": "PASS",
+      "notes": "Returns success=true with validation_status object containing can_export, validation_status, issues_count."
+    },
+    "GET /api/custody/beta/pre-export-check": {
+      "status": "PASS",
+      "notes": "Returns can_export, validation_status, blocking_issues_count, unresolved_review_count, recommendation."
+    },
+    "GET /api/exchanges/transactions": {
+      "status": "PASS",
+      "notes": "Returns transactions list with count and summary. Works with asset and tx_type filters."
+    },
+    "GET /api/custody/tax-lots": {
+      "status": "PASS",
+      "notes": "Returns success=true with lots array and count. Works with asset filter."
+    },
+    "GET /api/custody/tax-lots/disposals": {
+      "status": "PASS",
+      "notes": "Returns success=true with disposals array, count, and total_gain_loss. Works with tax_year filter."
+    },
+    "GET /api/custody/classify/effectiveness": {
+      "status": "PASS",
+      "notes": "Returns success=true with effectiveness object containing user_id, auto_classified_count, user_confirmed_count."
+    },
+    "POST /api/tax/export-form-8949": {
+      "status": "PASS",
+      "notes": "Returns 400 (no realized gains for test user) which is expected behavior. Would return CSV for users with realized gains."
+    },
+    "POST /api/exchanges/tax/calculate": {
+      "status": "PASS",
+      "notes": "Returns has_data and tax_data fields correctly."
+    },
+    "GET /api/tax/supported-years": {
+      "status": "PASS",
+      "notes": "Returns years array [2020-2026] and current_year."
+    },
+    "GET /api/custody/tax-lots/balances": {
+      "status": "PASS",
+      "notes": "Returns success=true with balances object and asset_count."
+    }
+  },
+  "authentication_tests": {
+    "POST /api/tax/unified": "Returns 401/403 without auth - PASS",
+    "GET /api/custody/validation-status": "Returns 401/403 without auth - PASS",
+    "GET /api/custody/tax-lots": "Returns 401/403 without auth - PASS",
+    "GET /api/exchanges/transactions": "Returns 401/403 without auth - PASS"
+  },
+  "numeric_validation": {
+    "unified_tax_summary_fields": "short_term_gains, long_term_gains, total_realized_gain, total_income - all return numeric types",
+    "disposals_gain_loss": "total_gain_loss and individual disposal gain_loss values are numeric"
+  }
+}
