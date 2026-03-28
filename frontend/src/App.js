@@ -1325,6 +1325,7 @@ function App() {
             // Refresh tax summary when data is added
             window.location.reload();
           }}
+          onOpenExchangeApi={() => setShowExchangeConnectionModal(true)}
         />
         <ChainOfCustodyModal
           isOpen={showCustodyModal}

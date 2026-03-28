@@ -67,7 +67,7 @@ const detectChainFromAddress = (address) => {
   return null;
 };
 
-export const AddDataModal = ({ isOpen, onClose, onDataAdded }) => {
+export const AddDataModal = ({ isOpen, onClose, onDataAdded, onOpenExchangeApi }) => {
   const { getAuthHeader, user } = useAuth();
   const [activeTab, setActiveTab] = useState('wallet');
   const [loading, setLoading] = useState(false);
@@ -247,15 +247,18 @@ export const AddDataModal = ({ isOpen, onClose, onDataAdded }) => {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-slate-700 h-auto">
+          <TabsList className="grid w-full grid-cols-3 bg-slate-700 h-auto">
             <TabsTrigger value="wallet" className="data-[state=active]:bg-purple-600 text-xs sm:text-sm py-2">
               <Wallet className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              <span className="hidden xs:inline">Wallet</span>
-              <span className="xs:hidden">Wallet</span>
+              <span>Wallet</span>
             </TabsTrigger>
             <TabsTrigger value="csv" className="data-[state=active]:bg-purple-600 text-xs sm:text-sm py-2">
               <Upload className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               <span>CSV</span>
+            </TabsTrigger>
+            <TabsTrigger value="api" className="data-[state=active]:bg-purple-600 text-xs sm:text-sm py-2">
+              <Key className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <span>API</span>
             </TabsTrigger>
           </TabsList>
 
@@ -406,6 +409,37 @@ export const AddDataModal = ({ isOpen, onClose, onDataAdded }) => {
                 <strong>Ledger:</strong> Export from Portfolio → Export operations
               </AlertDescription>
             </Alert>
+          </TabsContent>
+
+          {/* API Connection Tab */}
+          <TabsContent value="api" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
+            <div className="space-y-4">
+              <div className="text-center py-4">
+                <Key className="w-12 h-12 text-purple-400 mx-auto mb-3" />
+                <h3 className="text-lg font-semibold text-white mb-2">Connect Exchange API</h3>
+                <p className="text-sm text-gray-400 mb-4">
+                  Auto-sync your transactions directly from exchanges like Coinbase, Binance, and more.
+                </p>
+                <Button 
+                  onClick={() => {
+                    onClose();
+                    if (onOpenExchangeApi) onOpenExchangeApi();
+                  }}
+                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                  data-testid="open-api-connection-btn"
+                >
+                  <Key className="w-4 h-4 mr-2" />
+                  Connect Exchange API
+                </Button>
+              </div>
+              
+              <Alert className="bg-blue-900/20 border-blue-700/50 py-2">
+                <Info className="w-3 h-3 sm:w-4 sm:h-4 text-blue-400" />
+                <AlertDescription className="text-blue-300 text-[10px] sm:text-sm">
+                  <strong>Read-only access:</strong> We only request permission to read your transaction history. Your funds are always safe.
+                </AlertDescription>
+              </Alert>
+            </div>
           </TabsContent>
         </Tabs>
 
