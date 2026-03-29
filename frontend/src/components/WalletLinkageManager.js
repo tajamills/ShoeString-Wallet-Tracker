@@ -69,7 +69,18 @@ export const WalletLinkageManager = ({ getAuthHeader, onUpdate }) => {
       const response = await axios.get(`${API}/custody/review-queue`, {
         headers: getAuthHeader()
       });
-      setReviews(response.data.reviews || []);
+      const reviews = response.data.reviews || [];
+      
+      // Deduplicate by tx_id
+      const seen = new Set();
+      const uniqueReviews = reviews.filter(review => {
+        const id = review.tx_id || review.id || review.review_id;
+        if (seen.has(id)) return false;
+        seen.add(id);
+        return true;
+      });
+      
+      setReviews(uniqueReviews);
     } catch (err) {
       console.error('Error fetching review queue:', err);
     }
@@ -238,10 +249,14 @@ export const WalletLinkageManager = ({ getAuthHeader, onUpdate }) => {
     }
   };
 
-  const truncateAddress = (addr) => {
+  const truncateAddress = (addr, full = false) => {
     if (!addr) return '';
+    if (full || addr.length <= 20) return addr;
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
+  
+  // State for showing full addresses
+  const [showFullAddresses, setShowFullAddresses] = useState(true);
 
   return (
     <div className="space-y-4">
@@ -338,30 +353,38 @@ export const WalletLinkageManager = ({ getAuthHeader, onUpdate }) => {
               {reviews.map((review) => (
                 <Card key={review.tx_id || review.id || review.review_id} className="bg-slate-800/50 border-slate-700">
                   <CardContent className="p-3">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 text-sm">
-                          <span className="text-gray-400">{review.amount?.toFixed(6)}</span>
-                          <Badge className="bg-blue-600">{review.asset}</Badge>
-                          {review.exchange && (
-                            <Badge variant="outline" className="text-xs border-purple-600 text-purple-400">
-                              {review.exchange}
-                            </Badge>
-                          )}
-                          <ArrowRight className="w-3 h-3 text-gray-500" />
-                          <span className="text-gray-300 font-mono text-xs">
-                            {truncateAddress(review.destination_address)}
-                          </span>
-                        </div>
-                        <p className="text-xs text-amber-400 mt-1">
-                          {review.question || review.prompt_text || "Is this another wallet you own?"}
-                        </p>
-                        {review.help_text && (
-                          <p className="text-xs text-gray-500 mt-1">{review.help_text}</p>
+                    <div className="flex flex-col gap-2">
+                      {/* Transaction info row */}
+                      <div className="flex items-center gap-2 text-sm flex-wrap">
+                        <span className="text-gray-400 font-medium">{review.amount?.toFixed(6)}</span>
+                        <Badge className="bg-blue-600">{review.asset}</Badge>
+                        {review.exchange && (
+                          <Badge variant="outline" className="text-xs border-purple-600 text-purple-400">
+                            {review.exchange}
+                          </Badge>
                         )}
                       </div>
                       
-                      <div className="flex gap-1">
+                      {/* Destination address - full display */}
+                      <div className="flex items-center gap-2">
+                        <ArrowRight className="w-3 h-3 text-gray-500 flex-shrink-0" />
+                        <span className="text-gray-300 font-mono text-xs break-all">
+                          {showFullAddresses ? review.destination_address : truncateAddress(review.destination_address)}
+                        </span>
+                      </div>
+                      
+                      {/* Question */}
+                      <p className="text-xs text-amber-400">
+                        {review.question || review.prompt_text || "Is this another wallet you own?"}
+                      </p>
+                      
+                      {/* Help text */}
+                      {review.help_text && (
+                        <p className="text-xs text-gray-500">{review.help_text}</p>
+                      )}
+                      
+                      {/* Action buttons */}
+                      <div className="flex gap-1 mt-1">
                         <Button
                           size="sm"
                           onClick={() => resolveReview(review.tx_id || review.id || review.review_id, 'yes')}

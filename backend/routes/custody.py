@@ -423,6 +423,12 @@ async def get_review_queue(
                 if existing:
                     continue
                 
+                # Determine destination - try notes, then tx_hash, then tx_id
+                destination = tx.get("notes") or tx.get("to_address") or tx.get("destination")
+                if not destination or destination.strip() == "":
+                    # Use tx_id as identifier if no destination
+                    destination = f"TX: {tx.get('tx_id', 'unknown')}"
+                
                 items.append({
                     "tx_id": tx.get("tx_id"),
                     "review_id": tx.get("tx_id"),  # For compatibility
@@ -430,11 +436,12 @@ async def get_review_queue(
                     "review_status": "pending",
                     "source_type": "exchange_transaction",
                     "source_address": f"{tx.get('exchange', 'exchange')}_wallet",
-                    "destination_address": tx.get("notes", "unknown_destination")[:50] if tx.get("notes") else "unknown",
+                    "destination_address": destination,
                     "asset": tx.get("asset"),
                     "amount": tx.get("amount"),
                     "timestamp": tx.get("timestamp").isoformat() if hasattr(tx.get("timestamp"), 'isoformat') else str(tx.get("timestamp", "")),
                     "exchange": tx.get("exchange"),
+                    "source_file": tx.get("source_file"),
                     "detected_reason": "outgoing_transfer_needs_verification",
                     "question": f"Did you send {tx.get('amount', 0):.4f} {tx.get('asset', 'CRYPTO')} to your own wallet?",
                     "options": [
@@ -448,11 +455,21 @@ async def get_review_queue(
         # Sort by timestamp (newest first)
         items.sort(key=lambda x: str(x.get("timestamp", "")), reverse=True)
         
+        # Deduplicate by tx_id
+        seen_tx_ids = set()
+        unique_items = []
+        for item in items:
+            tx_id = item.get("tx_id") or item.get("review_id")
+            if tx_id and tx_id not in seen_tx_ids:
+                seen_tx_ids.add(tx_id)
+                unique_items.append(item)
+        items = unique_items
+        
         # Count stats
         pending_count = len([i for i in items if i.get("review_status") == "pending"])
         exchange_sends = len([i for i in items if i.get("source_type") == "exchange_transaction"])
         
-        logger.info(f"Found {len(items)} total reviews for user {user_id} ({exchange_sends} exchange sends)")
+        logger.info(f"Found {len(items)} unique reviews for user {user_id} ({exchange_sends} exchange sends)")
         
         return {
             "reviews": items,
