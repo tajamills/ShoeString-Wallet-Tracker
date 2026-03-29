@@ -67,6 +67,228 @@ const detectChainFromAddress = (address) => {
   return null;
 };
 
+// Manual Acquisition Form Component
+const ManualAcquisitionForm = ({ getAuthHeader, onSuccess, onError }) => {
+  const [loading, setLoading] = useState(false);
+  const [orphanSummary, setOrphanSummary] = useState(null);
+  const [formData, setFormData] = useState({
+    asset: '',
+    amount: '',
+    price_usd: '',
+    timestamp: '',
+    source: 'OTC/Manual',
+    notes: ''
+  });
+
+  // Fetch orphan disposal summary on mount
+  useEffect(() => {
+    fetchOrphanSummary();
+  }, []);
+
+  const fetchOrphanSummary = async () => {
+    try {
+      const response = await axios.get(`${API}/exchanges/orphan-disposal-summary`, {
+        headers: getAuthHeader()
+      });
+      setOrphanSummary(response.data);
+    } catch (err) {
+      console.error('Error fetching orphan summary:', err);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    onError('');
+    
+    if (!formData.asset || !formData.amount || !formData.price_usd || !formData.timestamp) {
+      onError('Please fill in all required fields');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await axios.post(
+        `${API}/exchanges/manual-acquisition`,
+        {
+          asset: formData.asset.toUpperCase(),
+          amount: parseFloat(formData.amount),
+          price_usd: parseFloat(formData.price_usd),
+          timestamp: formData.timestamp,
+          source: formData.source,
+          notes: formData.notes || null
+        },
+        { headers: getAuthHeader() }
+      );
+      
+      onSuccess(`Added ${formData.amount} ${formData.asset.toUpperCase()} acquisition`);
+      setFormData({
+        asset: '',
+        amount: '',
+        price_usd: '',
+        timestamp: '',
+        source: 'OTC/Manual',
+        notes: ''
+      });
+      fetchOrphanSummary(); // Refresh summary
+    } catch (err) {
+      onError(err.response?.data?.detail || 'Failed to add acquisition');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fillFromOrphan = (orphan) => {
+    setFormData({
+      ...formData,
+      asset: orphan.asset,
+      amount: orphan.shortfall.toFixed(4),
+      timestamp: orphan.first_disposal_date ? orphan.first_disposal_date.split('T')[0] : ''
+    });
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="text-center pb-2">
+        <Plus className="w-10 h-10 text-green-400 mx-auto mb-2" />
+        <h3 className="text-lg font-semibold text-white">Manual Acquisition Entry</h3>
+        <p className="text-xs text-gray-400">
+          Add missing buy/acquisition records to fix orphan disposals
+        </p>
+      </div>
+
+      {/* Orphan Summary Alert */}
+      {orphanSummary?.has_orphans && (
+        <Alert className="bg-yellow-900/20 border-yellow-700/50 py-2">
+          <AlertCircle className="w-4 h-4 text-yellow-400" />
+          <AlertDescription className="text-yellow-300 text-xs">
+            <strong>{orphanSummary.orphan_assets.length} assets</strong> have orphan disposals. 
+            Click an asset below to auto-fill.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Quick Fill Buttons */}
+      {orphanSummary?.orphan_assets?.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {orphanSummary.orphan_assets.slice(0, 6).map((orphan) => (
+            <Button
+              key={orphan.asset}
+              variant="outline"
+              size="sm"
+              onClick={() => fillFromOrphan(orphan)}
+              className="text-xs border-yellow-700 text-yellow-300 hover:bg-yellow-900/30"
+              data-testid={`fill-orphan-${orphan.asset.toLowerCase()}`}
+            >
+              {orphan.asset}: {orphan.shortfall.toFixed(2)}
+            </Button>
+          ))}
+        </div>
+      )}
+
+      {/* Manual Entry Form */}
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs text-gray-300 mb-1 block">Asset *</label>
+            <Input
+              value={formData.asset}
+              onChange={(e) => setFormData({...formData, asset: e.target.value})}
+              placeholder="BTC, ETH, USDC..."
+              className="bg-slate-700 border-slate-600 text-white text-sm"
+              data-testid="manual-asset-input"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-300 mb-1 block">Amount *</label>
+            <Input
+              type="number"
+              step="any"
+              value={formData.amount}
+              onChange={(e) => setFormData({...formData, amount: e.target.value})}
+              placeholder="0.00"
+              className="bg-slate-700 border-slate-600 text-white text-sm"
+              data-testid="manual-amount-input"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs text-gray-300 mb-1 block">Price per Unit (USD) *</label>
+            <Input
+              type="number"
+              step="any"
+              value={formData.price_usd}
+              onChange={(e) => setFormData({...formData, price_usd: e.target.value})}
+              placeholder="0.00"
+              className="bg-slate-700 border-slate-600 text-white text-sm"
+              data-testid="manual-price-input"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-300 mb-1 block">Date Acquired *</label>
+            <Input
+              type="date"
+              value={formData.timestamp}
+              onChange={(e) => setFormData({...formData, timestamp: e.target.value})}
+              className="bg-slate-700 border-slate-600 text-white text-sm"
+              data-testid="manual-date-input"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="text-xs text-gray-300 mb-1 block">Source</label>
+          <Input
+            value={formData.source}
+            onChange={(e) => setFormData({...formData, source: e.target.value})}
+            placeholder="OTC, Gift, Mining, etc."
+            className="bg-slate-700 border-slate-600 text-white text-sm"
+            data-testid="manual-source-input"
+          />
+        </div>
+
+        <div>
+          <label className="text-xs text-gray-300 mb-1 block">Notes (optional)</label>
+          <Input
+            value={formData.notes}
+            onChange={(e) => setFormData({...formData, notes: e.target.value})}
+            placeholder="Any additional details..."
+            className="bg-slate-700 border-slate-600 text-white text-sm"
+            data-testid="manual-notes-input"
+          />
+        </div>
+
+        <Button 
+          type="submit" 
+          disabled={loading}
+          className="w-full bg-green-600 hover:bg-green-700 text-white"
+          data-testid="add-manual-acquisition-btn"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Adding...
+            </>
+          ) : (
+            <>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Acquisition
+            </>
+          )}
+        </Button>
+      </form>
+
+      <Alert className="bg-blue-900/20 border-blue-700/50 py-2">
+        <Info className="w-3 h-3 text-blue-400" />
+        <AlertDescription className="text-blue-300 text-[10px]">
+          <strong>Tip:</strong> Enter acquisitions dated BEFORE the disposal date to establish cost basis.
+        </AlertDescription>
+      </Alert>
+    </div>
+  );
+};
+
 export const AddDataModal = ({ isOpen, onClose, onDataAdded, onOpenExchangeApi }) => {
   const { getAuthHeader, user } = useAuth();
   const [activeTab, setActiveTab] = useState('wallet');
@@ -247,18 +469,22 @@ export const AddDataModal = ({ isOpen, onClose, onDataAdded, onOpenExchangeApi }
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-slate-700 h-auto">
+          <TabsList className="grid w-full grid-cols-4 bg-slate-700 h-auto">
             <TabsTrigger value="wallet" className="data-[state=active]:bg-purple-600 text-xs sm:text-sm py-2">
               <Wallet className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              <span>Wallet</span>
+              <span className="hidden sm:inline">Wallet</span>
             </TabsTrigger>
             <TabsTrigger value="csv" className="data-[state=active]:bg-purple-600 text-xs sm:text-sm py-2">
               <Upload className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              <span>CSV</span>
+              <span className="hidden sm:inline">CSV</span>
             </TabsTrigger>
             <TabsTrigger value="api" className="data-[state=active]:bg-purple-600 text-xs sm:text-sm py-2">
               <Key className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              <span>API</span>
+              <span className="hidden sm:inline">API</span>
+            </TabsTrigger>
+            <TabsTrigger value="manual" className="data-[state=active]:bg-purple-600 text-xs sm:text-sm py-2">
+              <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Manual</span>
             </TabsTrigger>
           </TabsList>
 
@@ -440,6 +666,19 @@ export const AddDataModal = ({ isOpen, onClose, onDataAdded, onOpenExchangeApi }
                 </AlertDescription>
               </Alert>
             </div>
+          </TabsContent>
+
+          {/* Manual Entry Tab */}
+          <TabsContent value="manual" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
+            <ManualAcquisitionForm 
+              getAuthHeader={getAuthHeader}
+              onSuccess={(msg) => {
+                setSuccess(msg);
+                fetchDataSummary();
+                if (onDataAdded) onDataAdded();
+              }}
+              onError={setError}
+            />
           </TabsContent>
         </Tabs>
 

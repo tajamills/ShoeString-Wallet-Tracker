@@ -988,3 +988,274 @@ async def sync_coinbase_transactions(user: dict = Depends(get_current_user)):
     except Exception as e:
         logger.error(f"Coinbase sync error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Sync failed: {str(e)}")
+
+
+
+# ==============================================================================
+# Manual Transaction Entry - For Fixing Orphan Disposals
+# ==============================================================================
+
+from pydantic import BaseModel
+from typing import Optional
+
+class ManualAcquisitionRequest(BaseModel):
+    """Request model for manually adding an acquisition transaction"""
+    asset: str  # e.g., "USDC", "XLM"
+    amount: float
+    price_usd: float  # Price per unit at acquisition
+    timestamp: str  # ISO format date e.g., "2024-01-15" or "2024-01-15T10:30:00"
+    source: str = "manual"  # Where the acquisition came from
+    notes: Optional[str] = None  # Optional notes about this acquisition
+
+
+@router.post("/manual-acquisition")
+async def add_manual_acquisition(
+    request: ManualAcquisitionRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Manually add an acquisition transaction to fix orphan disposals.
+    
+    Use this when you sold crypto that you acquired outside of tracked exchanges
+    (e.g., OTC purchases, gifts, mining, etc.)
+    """
+    try:
+        # Parse and validate timestamp
+        timestamp_str = request.timestamp
+        try:
+            if 'T' in timestamp_str:
+                dt = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+            else:
+                # Just a date, add midnight
+                dt = datetime.fromisoformat(f"{timestamp_str}T00:00:00")
+            
+            # Ensure timezone awareness
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Invalid timestamp format: {e}")
+        
+        # Validate amount and price
+        if request.amount <= 0:
+            raise HTTPException(status_code=400, detail="Amount must be positive")
+        if request.price_usd < 0:
+            raise HTTPException(status_code=400, detail="Price cannot be negative")
+        
+        # Calculate total value
+        total_usd = request.amount * request.price_usd
+        
+        # Create transaction record
+        tx_id = f"manual_{uuid.uuid4().hex[:12]}"
+        tx_doc = {
+            "user_id": user["id"],
+            "tx_id": tx_id,
+            "exchange": "manual",
+            "tx_type": "buy",  # Manual acquisitions are treated as buys
+            "asset": request.asset.upper(),
+            "amount": request.amount,
+            "price_usd": request.price_usd,
+            "total_usd": total_usd,
+            "timestamp": dt,
+            "chain_status": "confirmed",
+            "source_file": f"manual_entry_{request.source}",
+            "notes": request.notes,
+            "is_manual_entry": True,
+            "created_at": datetime.now(timezone.utc)
+        }
+        
+        # Insert the transaction
+        await db.exchange_transactions.insert_one(tx_doc)
+        
+        logger.info(f"Manual acquisition added for user {user['id']}: {request.amount} {request.asset.upper()} @ ${request.price_usd}")
+        
+        return {
+            "success": True,
+            "message": f"Added manual acquisition of {request.amount} {request.asset.upper()}",
+            "transaction": {
+                "tx_id": tx_id,
+                "asset": request.asset.upper(),
+                "amount": request.amount,
+                "price_usd": request.price_usd,
+                "total_usd": total_usd,
+                "timestamp": dt.isoformat(),
+                "source": request.source
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error adding manual acquisition: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/orphan-disposal-summary")
+async def get_orphan_disposal_summary(
+    user: dict = Depends(get_current_user)
+):
+    """
+    Get a summary of orphan disposals (assets sold without enough acquisitions).
+    
+    Returns the shortfall for each asset that needs manual acquisition entries.
+    """
+    try:
+        # Get all transactions for user
+        transactions = await db.exchange_transactions.find(
+            {"user_id": user["id"]},
+            {"_id": 0}
+        ).to_list(50000)
+        
+        if not transactions:
+            return {
+                "success": True,
+                "orphan_assets": [],
+                "total_shortfall_usd": 0,
+                "message": "No transactions found"
+            }
+        
+        # Calculate acquired vs disposed per asset
+        asset_balances = {}
+        for tx in transactions:
+            asset = tx.get('asset', '').upper()
+            if not asset:
+                continue
+            
+            if asset not in asset_balances:
+                asset_balances[asset] = {
+                    'acquired': 0,
+                    'disposed': 0,
+                    'first_disposal_date': None,
+                    'acquisition_sources': set()
+                }
+            
+            amount = float(tx.get('amount', 0))
+            tx_type = tx.get('tx_type', '').lower()
+            
+            # Track acquisitions
+            if tx_type in ['buy', 'receive', 'reward', 'staking', 'airdrop', 'mining', 'interest', 'income']:
+                asset_balances[asset]['acquired'] += amount
+                source = tx.get('exchange', 'unknown')
+                asset_balances[asset]['acquisition_sources'].add(source)
+            # Track disposals
+            elif tx_type in ['sell', 'send', 'withdrawal']:
+                asset_balances[asset]['disposed'] += amount
+                # Track earliest disposal date
+                ts = tx.get('timestamp')
+                if ts:
+                    if isinstance(ts, str):
+                        ts_str = ts
+                    elif hasattr(ts, 'isoformat'):
+                        ts_str = ts.isoformat()
+                    else:
+                        ts_str = str(ts)
+                    
+                    if not asset_balances[asset]['first_disposal_date'] or ts_str < asset_balances[asset]['first_disposal_date']:
+                        asset_balances[asset]['first_disposal_date'] = ts_str
+        
+        # Find orphan assets (disposed > acquired)
+        orphan_assets = []
+        total_shortfall_usd = 0
+        
+        for asset, data in asset_balances.items():
+            shortfall = data['disposed'] - data['acquired']
+            if shortfall > 0.0001:  # Has orphan disposal (small tolerance for floating point)
+                # Get current price for USD estimate
+                from price_service import price_service
+                current_price = price_service.get_current_price(asset) or 0
+                shortfall_usd = shortfall * current_price
+                total_shortfall_usd += shortfall_usd
+                
+                orphan_assets.append({
+                    'asset': asset,
+                    'acquired': data['acquired'],
+                    'disposed': data['disposed'],
+                    'shortfall': shortfall,
+                    'shortfall_usd': shortfall_usd,
+                    'current_price': current_price,
+                    'first_disposal_date': data['first_disposal_date'],
+                    'acquisition_sources': list(data['acquisition_sources']),
+                    'recommendation': f"Add manual acquisition of at least {shortfall:.4f} {asset} dated before {data['first_disposal_date'][:10] if data['first_disposal_date'] else 'first disposal'}"
+                })
+        
+        # Sort by USD shortfall (biggest first)
+        orphan_assets.sort(key=lambda x: x['shortfall_usd'], reverse=True)
+        
+        return {
+            "success": True,
+            "orphan_assets": orphan_assets,
+            "total_shortfall_usd": total_shortfall_usd,
+            "has_orphans": len(orphan_assets) > 0,
+            "message": f"Found {len(orphan_assets)} assets with orphan disposals" if orphan_assets else "No orphan disposals found"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting orphan disposal summary: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/manual-acquisition/{tx_id}")
+async def delete_manual_acquisition(
+    tx_id: str,
+    user: dict = Depends(get_current_user)
+):
+    """Delete a manual acquisition transaction"""
+    try:
+        # Find the transaction
+        tx = await db.exchange_transactions.find_one({
+            "user_id": user["id"],
+            "tx_id": tx_id,
+            "is_manual_entry": True
+        })
+        
+        if not tx:
+            raise HTTPException(status_code=404, detail="Manual acquisition not found")
+        
+        # Delete it
+        await db.exchange_transactions.delete_one({"_id": tx["_id"]})
+        
+        return {
+            "success": True,
+            "message": f"Deleted manual acquisition {tx_id}"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting manual acquisition: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/manual-acquisitions")
+async def get_manual_acquisitions(
+    user: dict = Depends(get_current_user)
+):
+    """Get all manual acquisition entries for the user"""
+    try:
+        transactions = await db.exchange_transactions.find(
+            {
+                "user_id": user["id"],
+                "is_manual_entry": True
+            },
+            {"_id": 0}
+        ).to_list(1000)
+        
+        # Convert timestamps
+        for tx in transactions:
+            if tx.get('timestamp'):
+                ts = tx['timestamp']
+                if hasattr(ts, 'isoformat'):
+                    tx['timestamp'] = ts.isoformat()
+            if tx.get('created_at'):
+                ts = tx['created_at']
+                if hasattr(ts, 'isoformat'):
+                    tx['created_at'] = ts.isoformat()
+        
+        return {
+            "success": True,
+            "manual_acquisitions": transactions,
+            "count": len(transactions)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting manual acquisitions: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

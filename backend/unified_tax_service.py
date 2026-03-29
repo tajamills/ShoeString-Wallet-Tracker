@@ -40,9 +40,12 @@ class UnifiedTaxService:
         else:
             unified_type = tx_type
         
-        # Parse timestamp
+        # Parse timestamp - handle datetime objects, strings, ints, and missing values
         timestamp = tx.get('timestamp')
-        if isinstance(timestamp, (int, float)):
+        if isinstance(timestamp, datetime):
+            # Already a datetime object - ensure timezone awareness
+            dt = timestamp if timestamp.tzinfo else timestamp.replace(tzinfo=timezone.utc)
+        elif isinstance(timestamp, (int, float)):
             dt = datetime.fromtimestamp(timestamp, tz=timezone.utc)
         elif isinstance(timestamp, str):
             try:
@@ -150,11 +153,17 @@ class UnifiedTaxService:
         MAX_PRICE_USD = 500_000  # $500k per unit max (even BTC isn't this high)
         MAX_TX_VALUE_USD = 100_000_000_000  # $100B max transaction value
         
-        # Parse timestamp
-        timestamp_str = tx.get('timestamp', '')
+        # Parse timestamp - handle datetime objects, strings, and missing values
+        timestamp_val = tx.get('timestamp', '')
         try:
-            if isinstance(timestamp_str, str):
-                dt = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+            if isinstance(timestamp_val, datetime):
+                # Already a datetime object - ensure timezone awareness
+                dt = timestamp_val if timestamp_val.tzinfo else timestamp_val.replace(tzinfo=timezone.utc)
+            elif isinstance(timestamp_val, str):
+                # Parse string timestamp
+                parsed = datetime.fromisoformat(timestamp_val.replace('Z', '+00:00'))
+                # Ensure timezone awareness
+                dt = parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
             else:
                 dt = datetime.now(timezone.utc)
         except:
@@ -709,10 +718,17 @@ class UnifiedTaxService:
     def _get_holding_period(self, buy_time: datetime, sell_time: datetime) -> str:
         """Determine if holding period is short-term or long-term"""
         try:
+            # Handle string timestamps
             if isinstance(buy_time, str):
                 buy_time = datetime.fromisoformat(buy_time.replace('Z', '+00:00'))
             if isinstance(sell_time, str):
                 sell_time = datetime.fromisoformat(sell_time.replace('Z', '+00:00'))
+            
+            # Ensure both are timezone-aware for comparison
+            if isinstance(buy_time, datetime) and buy_time.tzinfo is None:
+                buy_time = buy_time.replace(tzinfo=timezone.utc)
+            if isinstance(sell_time, datetime) and sell_time.tzinfo is None:
+                sell_time = sell_time.replace(tzinfo=timezone.utc)
             
             delta = sell_time - buy_time
             
