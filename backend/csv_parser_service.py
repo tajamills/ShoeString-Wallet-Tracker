@@ -45,6 +45,8 @@ EXCHANGE_SIGNATURES = {
             ["Transaction ID", "Transaction Type", "Date & time", "Asset Acquired", "Asset Disposed"],
             # Format 6: CoinTracker/Generic Universal Format
             ["Date", "Received Quantity", "Received Currency", "Sent Quantity", "Sent Currency"],
+            # Format 7: Coinbase RAW TX with "ID" column (not "Transaction ID")
+            ["ID", "Timestamp", "Transaction Type", "Asset", "Quantity Transacted"],
         ]
     },
     ExchangeFormat.BINANCE: {
@@ -243,6 +245,13 @@ class CSVParserService:
         Returns:
             Tuple of (detected_exchange, list_of_transactions)
         """
+        # Pre-process content to handle Coinbase's multi-header format
+        # Coinbase RAW TX exports have format:
+        # Line 1: "Transactions"
+        # Line 2: "User,Name,UUID"
+        # Line 3: "ID,Timestamp,Transaction Type,..."  <- actual headers
+        content = self._preprocess_coinbase_rawtx(content)
+        
         # Read CSV
         reader = csv.DictReader(io.StringIO(content))
         headers = reader.fieldnames or []
@@ -288,6 +297,47 @@ class CSVParserService:
         # Pass format_variant to parser for exchanges with multiple formats
         transactions = parser(rows, headers, format_variant)
         return exchange, transactions
+    
+    def _preprocess_coinbase_rawtx(self, content: str) -> str:
+        """
+        Pre-process Coinbase RAW TX format to extract the actual CSV content.
+        
+        Coinbase RAW TX exports have:
+        - Line 1: "Transactions" (title)
+        - Line 2: "User,Name,UUID" (user info)
+        - Line 3+: Actual CSV data with headers
+        
+        Returns the content starting from the actual headers.
+        """
+        lines = content.strip().split('\n')
+        
+        if len(lines) < 3:
+            return content
+        
+        # Check if this looks like a Coinbase RAW TX format
+        first_line = lines[0].strip().lower()
+        
+        # If first line is just "transactions", skip header rows
+        if first_line == 'transactions':
+            # Line 2 should be User info, Line 3 should be actual headers
+            # Look for the line that starts with actual column headers
+            for i, line in enumerate(lines[1:], start=1):
+                # Check if this line looks like column headers
+                if 'timestamp' in line.lower() and 'transaction type' in line.lower():
+                    logger.info(f"Detected Coinbase RAW TX format, skipping {i} header lines")
+                    return '\n'.join(lines[i:])
+                elif line.lower().startswith('id,') and 'timestamp' in line.lower():
+                    logger.info(f"Detected Coinbase RAW TX format, skipping {i} header lines")
+                    return '\n'.join(lines[i:])
+        
+        # Check for other header patterns (e.g., "You can use this...")
+        if 'you can use this' in first_line or first_line.startswith('created'):
+            for i, line in enumerate(lines[1:], start=1):
+                if 'timestamp' in line.lower() and 'transaction type' in line.lower():
+                    logger.info(f"Skipping {i} intro lines in Coinbase export")
+                    return '\n'.join(lines[i:])
+        
+        return content
     
     def _parse_coinbase(self, rows: List[Dict], headers: List[str], format_variant: str = "primary") -> List[ExchangeTransaction]:
         """Parse Coinbase CSV format - supports multiple export formats"""
