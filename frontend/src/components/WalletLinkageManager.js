@@ -286,7 +286,12 @@ export const WalletLinkageManager = ({ getAuthHeader, onUpdate }) => {
         {/* Review Queue Tab */}
         <TabsContent value="review" className="space-y-3 mt-3">
           <div className="flex justify-between items-center">
-            <h3 className="text-sm font-medium text-gray-300">Chain Break Reviews</h3>
+            <div>
+              <h3 className="text-sm font-medium text-gray-300">Transaction Reviews</h3>
+              {reviews.length > 0 && (
+                <p className="text-xs text-amber-400">{reviews.length} transactions need verification</p>
+              )}
+            </div>
             <div className="flex gap-2">
               <Button
                 size="sm"
@@ -308,6 +313,18 @@ export const WalletLinkageManager = ({ getAuthHeader, onUpdate }) => {
             </div>
           </div>
 
+          {/* Info Banner */}
+          {reviews.length > 0 && (
+            <Card className="bg-blue-900/20 border-blue-700/50">
+              <CardContent className="py-2 px-3">
+                <p className="text-xs text-blue-300">
+                  <strong>Review outgoing transactions:</strong> Mark transfers to your own wallets as "Mine" (not taxable). 
+                  Mark external payments as "External" (taxable disposal).
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
           {reviews.length === 0 ? (
             <Card className="bg-slate-800/50 border-slate-700">
               <CardContent className="py-8 text-center">
@@ -319,32 +336,40 @@ export const WalletLinkageManager = ({ getAuthHeader, onUpdate }) => {
           ) : (
             <div className="space-y-2 max-h-[400px] overflow-y-auto">
               {reviews.map((review) => (
-                <Card key={review.id} className="bg-slate-800/50 border-slate-700">
+                <Card key={review.tx_id || review.id || review.review_id} className="bg-slate-800/50 border-slate-700">
                   <CardContent className="p-3">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 text-sm">
                           <span className="text-gray-400">{review.amount?.toFixed(6)}</span>
                           <Badge className="bg-blue-600">{review.asset}</Badge>
+                          {review.exchange && (
+                            <Badge variant="outline" className="text-xs border-purple-600 text-purple-400">
+                              {review.exchange}
+                            </Badge>
+                          )}
                           <ArrowRight className="w-3 h-3 text-gray-500" />
                           <span className="text-gray-300 font-mono text-xs">
                             {truncateAddress(review.destination_address)}
                           </span>
                         </div>
                         <p className="text-xs text-amber-400 mt-1">
-                          {review.prompt_text || "Is this another wallet you own?"}
+                          {review.question || review.prompt_text || "Is this another wallet you own?"}
                         </p>
+                        {review.help_text && (
+                          <p className="text-xs text-gray-500 mt-1">{review.help_text}</p>
+                        )}
                       </div>
                       
                       <div className="flex gap-1">
                         <Button
                           size="sm"
-                          onClick={() => resolveReview(review.id, 'yes')}
-                          disabled={resolvingId === review.id}
+                          onClick={() => resolveReview(review.tx_id || review.id || review.review_id, 'yes')}
+                          disabled={resolvingId === (review.tx_id || review.id || review.review_id)}
                           className="bg-green-600 hover:bg-green-700 text-xs px-2"
-                          title="Yes, this is my wallet"
+                          title="Yes, this is my wallet (internal transfer)"
                         >
-                          {resolvingId === review.id ? (
+                          {resolvingId === (review.tx_id || review.id || review.review_id) ? (
                             <Loader2 className="w-3 h-3 animate-spin" />
                           ) : (
                             <>
@@ -355,10 +380,10 @@ export const WalletLinkageManager = ({ getAuthHeader, onUpdate }) => {
                         </Button>
                         <Button
                           size="sm"
-                          onClick={() => resolveReview(review.id, 'no')}
-                          disabled={resolvingId === review.id}
+                          onClick={() => resolveReview(review.tx_id || review.id || review.review_id, 'no')}
+                          disabled={resolvingId === (review.tx_id || review.id || review.review_id)}
                           className="bg-red-600 hover:bg-red-700 text-xs px-2"
-                          title="No, this is external"
+                          title="No, this is external (taxable)"
                         >
                           <XCircle className="w-3 h-3 mr-1" />
                           External
@@ -366,8 +391,8 @@ export const WalletLinkageManager = ({ getAuthHeader, onUpdate }) => {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => resolveReview(review.id, 'ignore')}
-                          disabled={resolvingId === review.id}
+                          onClick={() => resolveReview(review.tx_id || review.id || review.review_id, 'ignore')}
+                          disabled={resolvingId === (review.tx_id || review.id || review.review_id)}
                           className="text-xs px-2 border-slate-600"
                           title="Skip for now"
                         >

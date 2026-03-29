@@ -389,20 +389,78 @@ async def recompute_clusters(
 
 @router.get("/review-queue")
 async def get_review_queue(
-    user: dict = Depends(get_current_user)
+    user: dict = Depends(get_current_user),
+    include_pending_sends: bool = True
 ):
-    """Get pending chain break reviews for the user"""
+    """
+    Get pending chain break reviews for the user.
+    
+    Also includes exchange send/withdrawal transactions that haven't been
+    verified as internal transfers or external sends.
+    """
     try:
         user_id = user["id"]
         logger.info(f"Fetching reviews for user_id: {user_id}")
         
-        reviews = await linkage_engine.get_pending_reviews(user_id)
+        items = []
         
-        logger.info(f"Found {len(reviews)} reviews for user {user_id}")
+        # 1. Get traditional chain break reviews
+        reviews = await linkage_engine.get_pending_reviews(user_id)
+        items.extend(reviews)
+        
+        # 2. Get pending send/withdrawal transactions from exchange data
+        if include_pending_sends:
+            pending_sends = await db.exchange_transactions.find({
+                "user_id": user_id,
+                "tx_type": {"$in": ["send", "withdrawal", "transfer"]},
+                "chain_status": {"$in": ["pending", "unknown", None]}
+            }, {"_id": 0}).to_list(1000)
+            
+            # Convert to review format
+            for tx in pending_sends:
+                # Skip if already in reviews
+                existing = next((r for r in reviews if r.get("tx_id") == tx.get("tx_id")), None)
+                if existing:
+                    continue
+                
+                items.append({
+                    "tx_id": tx.get("tx_id"),
+                    "review_id": tx.get("tx_id"),  # For compatibility
+                    "user_id": user_id,
+                    "review_status": "pending",
+                    "source_type": "exchange_transaction",
+                    "source_address": f"{tx.get('exchange', 'exchange')}_wallet",
+                    "destination_address": tx.get("notes", "unknown_destination")[:50] if tx.get("notes") else "unknown",
+                    "asset": tx.get("asset"),
+                    "amount": tx.get("amount"),
+                    "timestamp": tx.get("timestamp").isoformat() if hasattr(tx.get("timestamp"), 'isoformat') else str(tx.get("timestamp", "")),
+                    "exchange": tx.get("exchange"),
+                    "detected_reason": "outgoing_transfer_needs_verification",
+                    "question": f"Did you send {tx.get('amount', 0):.4f} {tx.get('asset', 'CRYPTO')} to your own wallet?",
+                    "options": [
+                        {"value": "yes", "label": "Yes, my wallet (internal transfer - not taxable)"},
+                        {"value": "no", "label": "No, external payment (taxable event)"},
+                        {"value": "connect_wallet", "label": "I need to connect a wallet to verify"}
+                    ],
+                    "help_text": "If this was a transfer to another wallet you own (like a hardware wallet or another exchange), mark it as 'My wallet'. Otherwise, it will be treated as a taxable disposal."
+                })
+        
+        # Sort by timestamp (newest first)
+        items.sort(key=lambda x: str(x.get("timestamp", "")), reverse=True)
+        
+        # Count stats
+        pending_count = len([i for i in items if i.get("review_status") == "pending"])
+        exchange_sends = len([i for i in items if i.get("source_type") == "exchange_transaction"])
+        
+        logger.info(f"Found {len(items)} total reviews for user {user_id} ({exchange_sends} exchange sends)")
         
         return {
-            "reviews": reviews,
-            "count": len(reviews)
+            "reviews": items,
+            "count": len(items),
+            "pending_count": pending_count,
+            "exchange_sends_count": exchange_sends,
+            "message": f"{pending_count} transactions need review. Connect wallets to auto-verify ownership." if pending_count > 0 else "All transactions verified.",
+            "action_required": pending_count > 0
         }
         
     except Exception as e:
@@ -416,10 +474,10 @@ async def resolve_review(
     user: dict = Depends(get_current_user)
 ):
     """
-    Resolve a chain break review.
+    Resolve a chain break review or exchange send transaction.
     
-    - decision: "yes" = it's my wallet (creates linkage, no tax event)
-    - decision: "no" = external transfer (creates tax event)
+    - decision: "yes" = it's my wallet (internal transfer, no tax event)
+    - decision: "no" = external transfer (taxable disposal event)
     - decision: "ignore" = skip for now
     
     P1: Auto-triggers recompute when linkage changes
@@ -431,6 +489,64 @@ async def resolve_review(
                 detail="Decision must be 'yes', 'no', or 'ignore'"
             )
         
+        # First, check if this is an exchange transaction
+        exchange_tx = await db.exchange_transactions.find_one({
+            "tx_id": request.review_id,
+            "user_id": user["id"],
+            "tx_type": {"$in": ["send", "withdrawal", "transfer"]}
+        })
+        
+        if exchange_tx:
+            # Handle exchange transaction resolution
+            if request.decision == "yes":
+                # Internal transfer - not taxable
+                await db.exchange_transactions.update_one(
+                    {"tx_id": request.review_id, "user_id": user["id"]},
+                    {"$set": {
+                        "chain_status": "linked",
+                        "is_internal_transfer": True,
+                        "resolved_at": datetime.now(timezone.utc).isoformat(),
+                        "resolution_decision": "internal"
+                    }}
+                )
+                return {
+                    "success": True,
+                    "message": "Marked as internal transfer (not taxable)",
+                    "tx_id": request.review_id,
+                    "chain_status": "linked"
+                }
+            elif request.decision == "no":
+                # External send - taxable disposal
+                await db.exchange_transactions.update_one(
+                    {"tx_id": request.review_id, "user_id": user["id"]},
+                    {"$set": {
+                        "chain_status": "external",
+                        "is_internal_transfer": False,
+                        "resolved_at": datetime.now(timezone.utc).isoformat(),
+                        "resolution_decision": "external"
+                    }}
+                )
+                return {
+                    "success": True,
+                    "message": "Marked as external send (taxable disposal)",
+                    "tx_id": request.review_id,
+                    "chain_status": "external"
+                }
+            else:  # ignore
+                await db.exchange_transactions.update_one(
+                    {"tx_id": request.review_id, "user_id": user["id"]},
+                    {"$set": {
+                        "chain_status": "ignored",
+                        "resolved_at": datetime.now(timezone.utc).isoformat()
+                    }}
+                )
+                return {
+                    "success": True,
+                    "message": "Transaction ignored",
+                    "tx_id": request.review_id
+                }
+        
+        # Fall back to linkage engine for traditional chain break reviews
         result = await linkage_engine.resolve_review(
             review_id=request.review_id,
             user_id=user["id"],
