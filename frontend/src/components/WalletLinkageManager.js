@@ -28,7 +28,8 @@ import {
   ArrowRight,
   FileText,
   Clock,
-  DollarSign
+  DollarSign,
+  Link
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -44,6 +45,10 @@ export const WalletLinkageManager = ({ getAuthHeader, onUpdate }) => {
   // Review queue state
   const [reviews, setReviews] = useState([]);
   const [resolvingId, setResolvingId] = useState(null);
+  
+  // Auto-link state
+  const [autoLinking, setAutoLinking] = useState(false);
+  const [autoLinkResult, setAutoLinkResult] = useState('');
   
   // Linkages state
   const [linkages, setLinkages] = useState([]);
@@ -83,6 +88,45 @@ export const WalletLinkageManager = ({ getAuthHeader, onUpdate }) => {
       setReviews(uniqueReviews);
     } catch (err) {
       console.error('Error fetching review queue:', err);
+    }
+  };
+
+  const detectAndLinkTransfers = async () => {
+    setAutoLinking(true);
+    setAutoLinkResult('');
+    try {
+      // First detect matches
+      const detectResponse = await axios.get(`${API}/custody/detect-internal-transfers`, {
+        headers: getAuthHeader()
+      });
+      
+      const matches = detectResponse.data.matches || [];
+      if (matches.length === 0) {
+        setAutoLinkResult('No matching internal transfers found to auto-link.');
+        return;
+      }
+      
+      // Auto-link with high confidence (95%+)
+      const linkResponse = await axios.post(
+        `${API}/custody/bulk-link-internal-transfers?min_confidence=95`,
+        {},
+        { headers: getAuthHeader() }
+      );
+      
+      const linkedCount = linkResponse.data.linked_count || 0;
+      if (linkedCount > 0) {
+        setAutoLinkResult(`Auto-linked ${linkedCount} internal transfers (sends matched with receives from different exchanges)`);
+        // Refresh the review queue
+        fetchReviewQueue();
+        if (onUpdate) onUpdate();
+      } else {
+        setAutoLinkResult(`Found ${matches.length} potential matches, but none met the 95% confidence threshold. Review manually.`);
+      }
+    } catch (err) {
+      console.error('Error auto-linking transfers:', err);
+      setError(err.response?.data?.detail || 'Failed to auto-link transfers');
+    } finally {
+      setAutoLinking(false);
     }
   };
 
@@ -300,14 +344,28 @@ export const WalletLinkageManager = ({ getAuthHeader, onUpdate }) => {
 
         {/* Review Queue Tab */}
         <TabsContent value="review" className="space-y-3 mt-3">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center flex-wrap gap-2">
             <div>
               <h3 className="text-sm font-medium text-gray-300">Transaction Reviews</h3>
               {reviews.length > 0 && (
                 <p className="text-xs text-amber-400">{reviews.length} transactions need verification</p>
               )}
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
+              <Button
+                size="sm"
+                onClick={detectAndLinkTransfers}
+                disabled={autoLinking}
+                className="text-xs bg-green-600 hover:bg-green-700"
+                title="Auto-detect and link internal transfers between your exchanges"
+              >
+                {autoLinking ? (
+                  <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                ) : (
+                  <Link className="w-3 h-3 mr-1" />
+                )}
+                Auto-Link Transfers
+              </Button>
               <Button
                 size="sm"
                 variant="outline"
@@ -315,7 +373,7 @@ export const WalletLinkageManager = ({ getAuthHeader, onUpdate }) => {
                 className="text-xs border-slate-600"
               >
                 <Download className="w-3 h-3 mr-1" />
-                Export CSV
+                Export
               </Button>
               <Button
                 size="sm"
@@ -327,6 +385,18 @@ export const WalletLinkageManager = ({ getAuthHeader, onUpdate }) => {
               </Button>
             </div>
           </div>
+
+          {/* Auto-Link Results */}
+          {autoLinkResult && (
+            <Card className="bg-green-900/20 border-green-700/50">
+              <CardContent className="py-2 px-3">
+                <p className="text-xs text-green-300">
+                  <CheckCircle className="w-3 h-3 inline mr-1" />
+                  {autoLinkResult}
+                </p>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Info Banner */}
           {reviews.length > 0 && (

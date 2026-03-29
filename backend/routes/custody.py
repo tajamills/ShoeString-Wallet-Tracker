@@ -485,6 +485,326 @@ async def get_review_queue(
         raise HTTPException(status_code=500, detail=f"Failed to fetch review queue: {str(e)}")
 
 
+
+@router.get("/detect-internal-transfers")
+async def detect_internal_transfers(
+    user: dict = Depends(get_current_user),
+    max_time_diff_hours: float = 48,
+    max_amount_diff_pct: float = 5
+):
+    """
+    Detect potential internal transfers by matching sends with receives.
+    
+    Matches are based on:
+    - Same asset
+    - Similar amount (within max_amount_diff_pct)
+    - Receive happens after send (within max_time_diff_hours)
+    - Different exchange/source (e.g., Coinbase send -> Ledger receive)
+    """
+    try:
+        # Get sends and receives
+        sends = await db.exchange_transactions.find({
+            "user_id": user["id"],
+            "tx_type": {"$in": ["send", "withdrawal"]},
+            "chain_status": {"$in": ["pending", "unknown", None]}
+        }, {"_id": 0}).to_list(5000)
+        
+        receives = await db.exchange_transactions.find({
+            "user_id": user["id"],
+            "tx_type": {"$in": ["receive", "deposit"]}
+        }, {"_id": 0}).to_list(5000)
+        
+        def parse_ts(ts):
+            if ts is None:
+                return None
+            if isinstance(ts, datetime):
+                return ts.replace(tzinfo=timezone.utc) if ts.tzinfo is None else ts
+            try:
+                dt = datetime.fromisoformat(str(ts).replace('Z', '+00:00').replace(' ', 'T'))
+                return dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt
+            except:
+                return None
+        
+        matches = []
+        used_receives = set()
+        
+        for send in sends:
+            send_asset = send.get('asset')
+            send_amount = float(send.get('amount', 0))
+            send_ts = parse_ts(send.get('timestamp'))
+            send_exchange = send.get('exchange')
+            
+            if not send_ts or send_amount <= 0:
+                continue
+            
+            best_match = None
+            best_score = float('inf')
+            
+            for recv in receives:
+                recv_id = recv.get('tx_id')
+                if recv_id in used_receives:
+                    continue
+                    
+                if recv.get('asset') != send_asset:
+                    continue
+                
+                recv_amount = float(recv.get('amount', 0))
+                recv_ts = parse_ts(recv.get('timestamp'))
+                recv_exchange = recv.get('exchange')
+                
+                if not recv_ts or recv_amount <= 0:
+                    continue
+                
+                # Must be different sources
+                if recv_exchange == send_exchange:
+                    continue
+                
+                # Check amount match
+                amount_diff_pct = abs(send_amount - recv_amount) / max(send_amount, 0.0001) * 100
+                if amount_diff_pct > max_amount_diff_pct:
+                    continue
+                
+                # Check time match (receive should be after send)
+                time_diff_hours = (recv_ts - send_ts).total_seconds() / 3600
+                if time_diff_hours < -2 or time_diff_hours > max_time_diff_hours:
+                    continue
+                
+                # Calculate confidence score
+                score = abs(time_diff_hours) + amount_diff_pct
+                confidence = max(0, 100 - score * 5)  # Higher score = lower confidence
+                
+                if score < best_score:
+                    best_score = score
+                    best_match = {
+                        "send_tx_id": send.get('tx_id'),
+                        "recv_tx_id": recv.get('tx_id'),
+                        "asset": send_asset,
+                        "send_amount": send_amount,
+                        "recv_amount": recv_amount,
+                        "amount_diff": send_amount - recv_amount,
+                        "amount_diff_pct": amount_diff_pct,
+                        "send_exchange": send_exchange,
+                        "recv_exchange": recv_exchange,
+                        "send_timestamp": send_ts.isoformat(),
+                        "recv_timestamp": recv_ts.isoformat(),
+                        "time_diff_hours": round(time_diff_hours, 2),
+                        "confidence": round(confidence, 1),
+                        "suggested_action": "link_as_internal",
+                        "explanation": f"Sent {send_amount:.6f} {send_asset} from {send_exchange}, received {recv_amount:.6f} in {recv_exchange} {time_diff_hours:.1f}h later"
+                    }
+            
+            if best_match:
+                matches.append(best_match)
+                used_receives.add(best_match['recv_tx_id'])
+        
+        # Sort by confidence (highest first)
+        matches.sort(key=lambda x: x['confidence'], reverse=True)
+        
+        return {
+            "success": True,
+            "matches": matches,
+            "count": len(matches),
+            "sends_analyzed": len(sends),
+            "receives_available": len(receives),
+            "message": f"Found {len(matches)} potential internal transfers that can be auto-linked"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error detecting internal transfers: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/link-internal-transfer")
+async def link_internal_transfer(
+    send_tx_id: str,
+    recv_tx_id: str,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Link a send and receive transaction as an internal transfer.
+    This marks both transactions as 'linked' and not taxable.
+    """
+    try:
+        # Verify both transactions belong to user
+        send_tx = await db.exchange_transactions.find_one({
+            "tx_id": send_tx_id,
+            "user_id": user["id"]
+        })
+        recv_tx = await db.exchange_transactions.find_one({
+            "tx_id": recv_tx_id,
+            "user_id": user["id"]
+        })
+        
+        if not send_tx:
+            raise HTTPException(status_code=404, detail="Send transaction not found")
+        if not recv_tx:
+            raise HTTPException(status_code=404, detail="Receive transaction not found")
+        
+        # Link both transactions
+        now = datetime.now(timezone.utc).isoformat()
+        
+        await db.exchange_transactions.update_one(
+            {"tx_id": send_tx_id, "user_id": user["id"]},
+            {"$set": {
+                "chain_status": "linked",
+                "is_internal_transfer": True,
+                "linked_to_tx_id": recv_tx_id,
+                "linked_at": now
+            }}
+        )
+        
+        await db.exchange_transactions.update_one(
+            {"tx_id": recv_tx_id, "user_id": user["id"]},
+            {"$set": {
+                "chain_status": "linked",
+                "is_internal_transfer": True,
+                "linked_from_tx_id": send_tx_id,
+                "linked_at": now
+            }}
+        )
+        
+        return {
+            "success": True,
+            "message": f"Linked {send_tx.get('asset')} transfer: {send_tx.get('exchange')} -> {recv_tx.get('exchange')}",
+            "send_tx_id": send_tx_id,
+            "recv_tx_id": recv_tx_id
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error linking internal transfer: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/bulk-link-internal-transfers")
+async def bulk_link_internal_transfers(
+    min_confidence: float = 90,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Auto-link all detected internal transfers above a confidence threshold.
+    """
+    try:
+        # First detect matches
+        from fastapi import Request
+        
+        # Get matches
+        sends = await db.exchange_transactions.find({
+            "user_id": user["id"],
+            "tx_type": {"$in": ["send", "withdrawal"]},
+            "chain_status": {"$in": ["pending", "unknown", None]}
+        }, {"_id": 0}).to_list(5000)
+        
+        receives = await db.exchange_transactions.find({
+            "user_id": user["id"],
+            "tx_type": {"$in": ["receive", "deposit"]}
+        }, {"_id": 0}).to_list(5000)
+        
+        def parse_ts(ts):
+            if ts is None:
+                return None
+            if isinstance(ts, datetime):
+                return ts.replace(tzinfo=timezone.utc) if ts.tzinfo is None else ts
+            try:
+                dt = datetime.fromisoformat(str(ts).replace('Z', '+00:00').replace(' ', 'T'))
+                return dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt
+            except:
+                return None
+        
+        matches = []
+        used_receives = set()
+        
+        for send in sends:
+            send_asset = send.get('asset')
+            send_amount = float(send.get('amount', 0))
+            send_ts = parse_ts(send.get('timestamp'))
+            send_exchange = send.get('exchange')
+            
+            if not send_ts or send_amount <= 0:
+                continue
+            
+            best_match = None
+            best_score = float('inf')
+            
+            for recv in receives:
+                recv_id = recv.get('tx_id')
+                if recv_id in used_receives:
+                    continue
+                if recv.get('asset') != send_asset:
+                    continue
+                
+                recv_amount = float(recv.get('amount', 0))
+                recv_ts = parse_ts(recv.get('timestamp'))
+                recv_exchange = recv.get('exchange')
+                
+                if not recv_ts or recv_amount <= 0 or recv_exchange == send_exchange:
+                    continue
+                
+                amount_diff_pct = abs(send_amount - recv_amount) / max(send_amount, 0.0001) * 100
+                if amount_diff_pct > 5:
+                    continue
+                
+                time_diff_hours = (recv_ts - send_ts).total_seconds() / 3600
+                if time_diff_hours < -2 or time_diff_hours > 48:
+                    continue
+                
+                score = abs(time_diff_hours) + amount_diff_pct
+                confidence = max(0, 100 - score * 5)
+                
+                if score < best_score and confidence >= min_confidence:
+                    best_score = score
+                    best_match = {
+                        "send_tx_id": send.get('tx_id'),
+                        "recv_tx_id": recv.get('tx_id'),
+                        "asset": send_asset,
+                        "confidence": confidence
+                    }
+            
+            if best_match:
+                matches.append(best_match)
+                used_receives.add(best_match['recv_tx_id'])
+        
+        # Link all matches
+        linked_count = 0
+        now = datetime.now(timezone.utc).isoformat()
+        
+        for match in matches:
+            await db.exchange_transactions.update_one(
+                {"tx_id": match['send_tx_id'], "user_id": user["id"]},
+                {"$set": {
+                    "chain_status": "linked",
+                    "is_internal_transfer": True,
+                    "linked_to_tx_id": match['recv_tx_id'],
+                    "linked_at": now,
+                    "auto_linked_confidence": match['confidence']
+                }}
+            )
+            
+            await db.exchange_transactions.update_one(
+                {"tx_id": match['recv_tx_id'], "user_id": user["id"]},
+                {"$set": {
+                    "chain_status": "linked",
+                    "is_internal_transfer": True,
+                    "linked_from_tx_id": match['send_tx_id'],
+                    "linked_at": now
+                }}
+            )
+            linked_count += 1
+        
+        return {
+            "success": True,
+            "linked_count": linked_count,
+            "min_confidence": min_confidence,
+            "message": f"Auto-linked {linked_count} internal transfers with confidence >= {min_confidence}%"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error bulk linking: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
 @router.post("/resolve-review")
 async def resolve_review(
     request: ResolveReviewRequest,
