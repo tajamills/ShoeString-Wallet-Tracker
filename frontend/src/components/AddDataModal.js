@@ -303,6 +303,7 @@ export const AddDataModal = ({ isOpen, onClose, onDataAdded, onOpenExchangeApi }
   
   // CSV upload state
   const [uploading, setUploading] = useState(false);
+  const [selectedExchange, setSelectedExchange] = useState('auto');
   const fileInputRef = useRef(null);
   
   // Data summary
@@ -403,6 +404,11 @@ export const AddDataModal = ({ isOpen, onClose, onDataAdded, onOpenExchangeApi }
     try {
       const formData = new FormData();
       formData.append('file', file);
+      
+      // Add exchange hint if manually selected
+      if (selectedExchange !== 'auto') {
+        formData.append('exchange_hint', selectedExchange);
+      }
 
       const response = await axios.post(`${API}/exchanges/import-csv`, formData, {
         headers: {
@@ -570,6 +576,27 @@ export const AddDataModal = ({ isOpen, onClose, onDataAdded, onOpenExchangeApi }
 
           {/* CSV Import Tab */}
           <TabsContent value="csv" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
+            {/* Format Selector */}
+            <div className="flex items-center gap-3">
+              <label className="text-xs sm:text-sm text-gray-300 whitespace-nowrap">Format:</label>
+              <select
+                value={selectedExchange}
+                onChange={(e) => setSelectedExchange(e.target.value)}
+                className="flex-1 bg-slate-700 border border-slate-600 text-white rounded-md px-3 py-2 text-sm"
+                data-testid="csv-exchange-selector"
+              >
+                <option value="auto">Auto-detect</option>
+                <option value="coinbase">Coinbase</option>
+                <option value="coinbase_rawtx">Coinbase RAW TX</option>
+                <option value="kraken">Kraken</option>
+                <option value="binance">Binance</option>
+                <option value="gemini">Gemini</option>
+                <option value="ledger">Ledger Live</option>
+                <option value="kucoin">KuCoin</option>
+                <option value="crypto_com">Crypto.com</option>
+              </select>
+            </div>
+
             {/* Upload Area */}
             <Card className="bg-slate-900/50 border-slate-700 border-dashed border-2">
               <CardContent className="pt-4 sm:pt-6 pb-4">
@@ -601,7 +628,7 @@ export const AddDataModal = ({ isOpen, onClose, onDataAdded, onOpenExchangeApi }
                     )}
                   </Button>
                   <p className="text-gray-400 text-xs sm:text-sm mt-2 sm:mt-3">
-                    Auto-detects Coinbase, Kraken, Binance, etc.
+                    {selectedExchange === 'auto' ? 'Auto-detects format from headers' : `Using ${selectedExchange} format`}
                   </p>
                 </div>
               </CardContent>

@@ -1,5 +1,5 @@
 """Exchange routes - CSV import, API connections, transactions, Coinbase"""
-from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
 from fastapi.responses import Response
 from typing import Dict, Any, Optional, List
 from datetime import datetime, timezone
@@ -59,7 +59,7 @@ async def get_supported_exchanges():
 @router.post("/import-csv")
 async def import_exchange_csv(
     file: UploadFile = File(...),
-    exchange_hint: Optional[str] = None,
+    exchange_hint: Optional[str] = Form(None),
     user: dict = Depends(get_current_user)
 ):
     """Import transactions from exchange CSV file"""

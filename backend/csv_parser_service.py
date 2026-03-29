@@ -240,17 +240,23 @@ class CSVParserService:
         
         Args:
             content: CSV file content as string
-            exchange_hint: Optional hint for exchange type
+            exchange_hint: Optional hint for exchange type (e.g., 'coinbase', 'coinbase_rawtx', 'kraken')
         
         Returns:
             Tuple of (detected_exchange, list_of_transactions)
         """
-        # Pre-process content to handle Coinbase's multi-header format
-        # Coinbase RAW TX exports have format:
-        # Line 1: "Transactions"
-        # Line 2: "User,Name,UUID"
-        # Line 3: "ID,Timestamp,Transaction Type,..."  <- actual headers
-        content = self._preprocess_coinbase_rawtx(content)
+        # Handle special coinbase_rawtx hint - force RAW TX preprocessing
+        if exchange_hint and exchange_hint.lower() == 'coinbase_rawtx':
+            exchange_hint = 'coinbase'
+            # Force preprocessing for RAW TX format
+            content = self._preprocess_coinbase_rawtx(content)
+        else:
+            # Pre-process content to handle Coinbase's multi-header format
+            # Coinbase RAW TX exports have format:
+            # Line 1: "Transactions"
+            # Line 2: "User,Name,UUID"
+            # Line 3: "ID,Timestamp,Transaction Type,..."  <- actual headers
+            content = self._preprocess_coinbase_rawtx(content)
         
         # Read CSV
         reader = csv.DictReader(io.StringIO(content))
