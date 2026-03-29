@@ -1001,3 +1001,68 @@ REACT_APP_BACKEND_URL=https://...
   
 - [x] **Test Suite**: 24 new tests + 32 regression = 56 tests passing (iteration 28)
 
+
+### Phase 26: Tax Summary API Fix & Manual Acquisition Entry (Completed - Mar 29, 2026)
+
+#### P0: 2025 Tax Summary Datetime Fix
+- [x] **Root Cause**: `unified_tax_service.py` - String timestamps from `derived_proceeds` transactions were being parsed as timezone-naive datetimes, causing comparison errors with timezone-aware datetimes
+- [x] **Fix**: Enhanced timestamp normalization in `normalize_exchange_transaction()` to ensure all parsed datetimes (from strings or datetime objects) are timezone-aware (UTC)
+- [x] **Result**: 2025 Tax Summary now returns proper data:
+  - 311 realized gains (was 0)
+  - $3,259.54 total realized gain
+  - $3,113.36 short-term gains
+  - $146.18 long-term gains
+  - 360 buys, 146 sells processed
+
+#### P1: Manual Acquisition Entry (Orphan Disposal Fix)
+- [x] **New API Endpoints** (`/app/backend/routes/exchanges.py`):
+  - `POST /api/exchanges/manual-acquisition` - Add manual buy record
+    - Required: asset, amount, price_usd, timestamp
+    - Optional: source, notes
+    - Validates: positive amount, non-negative price, valid timestamp format
+  - `GET /api/exchanges/orphan-disposal-summary` - Get assets with orphan disposals
+    - Returns shortfall amounts, current prices, recommendations
+    - Sorted by USD shortfall (largest first)
+  - `GET /api/exchanges/manual-acquisitions` - List all manual entries
+  - `DELETE /api/exchanges/manual-acquisition/{tx_id}` - Remove manual entry
+
+- [x] **Frontend UI** (`AddDataModal.js`):
+  - New "Manual" tab in Add Data modal
+  - `ManualAcquisitionForm` component (~170 lines)
+  - Quick-fill buttons for orphan assets (USDC, ALGO, SOL, FLR, AXL, BCH)
+  - Auto-populates asset, amount, and date from orphan data
+  - Form validation with error messages
+  - Success feedback with data refresh
+
+- [x] **Orphan Disposal Summary**: User has 6 assets with orphan disposals:
+  - USDC: ~41,253 shortfall
+  - ALGO: ~255,828 shortfall
+  - SOL: ~6.90 shortfall
+  - FLR: ~47,516 shortfall
+  - AXL: ~760 shortfall
+  - BCH: ~3.17 shortfall
+
+- [x] **Test Suite**: 15 new tests passing (iteration 30)
+
+## Current Validation Status
+- **46 Blocking Issues** (orphan disposals)
+- **0 Unresolved Reviews**
+- **Export Blocked** until orphan disposals resolved via manual acquisition entries
+
+## Upcoming Tasks (P1/P2)
+- Import missing USDC/XLM/ALGO acquisitions (user must add via Manual Entry tab)
+- Frontend UI for Regression Fixture Management
+- DeFi Position Tracking
+- NFT Portfolio Tracking
+- Refactor `ChainOfCustodyModal.js` and `App.js` into smaller components
+
+## Test Credentials
+- Email: `mobiletest@test.com`
+- Password: `test123456`
+- UUID: `6f9b5c58-a65b-42c4-afa6-f206bbb4876c`
+
+## Test Reports
+- Iteration 30: `/app/test_reports/iteration_30.json` (15 tests - Manual Acquisition)
+- Iteration 29: `/app/test_reports/iteration_29.json` (21 tests - Tax Regression)
+- Iteration 28: `/app/test_reports/iteration_28.json` (56 tests - Classification Effectiveness)
+
