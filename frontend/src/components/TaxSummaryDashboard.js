@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, CheckCircle, RefreshCw, Download, Lock, Calendar, X } from 'lucide-react';
+import { Loader2, CheckCircle, RefreshCw, Download, Lock, Calendar, X, Table } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import axios from 'axios';
 import ValidationStatusPanel from './ValidationStatusPanel';
 import UnknownTransactionClassifier from './UnknownTransactionClassifier';
+import TaxReportTable from './TaxReportTable';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -27,8 +28,10 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal: onAddData, onOpenChai
   const [connections, setConnections] = useState([]);
   const [exchangeSummary, setExchangeSummary] = useState([]);
   const [portfolioByExchange, setPortfolioByExchange] = useState({});
+  const [holdings, setHoldings] = useState({});
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [showClassifier, setShowClassifier] = useState(false);
+  const [showDetailedReport, setShowDetailedReport] = useState(false);
   const availableYears = getAvailableYears();
 
   useEffect(() => {
@@ -202,6 +205,60 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal: onAddData, onOpenChai
         .sort((a, b) => b.portfolioValue - a.portfolioValue || b.transactions - a.transactions)
       );
 
+      // Build holdings data for TaxReportTable
+      const holdingsMap = {};
+      const allTx = allTransactions;
+      
+      // Calculate holdings per asset
+      allTx.forEach(tx => {
+        const asset = tx.asset;
+        if (!asset) return;
+        
+        if (!holdingsMap[asset]) {
+          holdingsMap[asset] = {
+            quantity: 0,
+            cost_basis_total: 0,
+            current_price: tx.price_usd || 0,
+            current_value: 0,
+            unrealized_gain: 0,
+            unrealized_gain_pct: 0,
+            avg_cost_basis: 0
+          };
+        }
+        
+        const amount = parseFloat(tx.amount) || 0;
+        const price = parseFloat(tx.price_usd) || parseFloat(tx.total_usd / tx.amount) || 0;
+        const type = (tx.tx_type || '').toLowerCase();
+        
+        // Track cost basis for buys/receives
+        if (['buy', 'receive', 'reward', 'staking', 'airdrop', 'income'].includes(type)) {
+          holdingsMap[asset].quantity += amount;
+          holdingsMap[asset].cost_basis_total += amount * price;
+        } else if (['sell', 'send', 'withdrawal'].includes(type)) {
+          holdingsMap[asset].quantity -= amount;
+        }
+        
+        // Update price if we have it
+        if (price > 0) {
+          holdingsMap[asset].current_price = price;
+        }
+      });
+      
+      // Calculate derived values
+      Object.keys(holdingsMap).forEach(asset => {
+        const h = holdingsMap[asset];
+        if (h.quantity > 0) {
+          h.avg_cost_basis = h.cost_basis_total / h.quantity;
+          h.current_value = h.quantity * h.current_price;
+          h.unrealized_gain = h.current_value - h.cost_basis_total;
+          h.unrealized_gain_pct = h.cost_basis_total > 0 
+            ? (h.unrealized_gain / h.cost_basis_total) * 100 
+            : 0;
+        }
+      });
+      
+      setHoldings(holdingsMap);
+
     } catch (err) {
       console.error('Failed to fetch tax summary:', err);
     } finally {
@@ -313,8 +370,38 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal: onAddData, onOpenChai
         </Button>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* View Toggle */}
+      <div className="flex gap-2">
+        <Button
+          variant={!showDetailedReport ? "default" : "outline"}
+          onClick={() => setShowDetailedReport(false)}
+          className={!showDetailedReport ? "bg-purple-600 hover:bg-purple-700" : "border-gray-600 text-gray-300"}
+          size="sm"
+        >
+          Summary View
+        </Button>
+        <Button
+          variant={showDetailedReport ? "default" : "outline"}
+          onClick={() => setShowDetailedReport(true)}
+          className={showDetailedReport ? "bg-purple-600 hover:bg-purple-700" : "border-gray-600 text-gray-300"}
+          size="sm"
+        >
+          <Table className="w-4 h-4 mr-1" />
+          Detailed Report
+        </Button>
+      </div>
+
+      {/* Detailed Report View */}
+      {showDetailedReport ? (
+        <TaxReportTable 
+          taxData={taxData} 
+          holdings={holdings} 
+          selectedYear={selectedYear}
+        />
+      ) : (
+        <>
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="bg-gray-800 border-gray-700 shadow-sm">
           <CardContent className="p-6">
             <p className="text-sm text-gray-400 mb-2">Short term capital gain</p>
@@ -486,6 +573,8 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal: onAddData, onOpenChai
             Download {selectedYear} Tax Report
           </Button>
         </div>
+      )}
+        </>
       )}
     </div>
   );

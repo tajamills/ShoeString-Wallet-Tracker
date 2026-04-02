@@ -1066,3 +1066,71 @@ REACT_APP_BACKEND_URL=https://...
 - Iteration 29: `/app/test_reports/iteration_29.json` (21 tests - Tax Regression)
 - Iteration 28: `/app/test_reports/iteration_28.json` (56 tests - Classification Effectiveness)
 
+
+### Phase 27: Tax Report Table & Internal Transfer Detection (Completed - Apr 2, 2026)
+
+#### New Features
+
+**1. Detailed Tax Report Table** (`TaxReportTable.js`)
+- Portfolio-style spreadsheet view similar to brokerage statements
+- Columns: Symbol, Last Price, Quantity, Avg Cost, Cost Basis, Current Value, Realized G/L, Unrealized G/L, Short-Term, Long-Term
+- Sortable columns (click headers to sort ascending/descending)
+- Color-coded gains/losses (green=positive, red=negative)
+- Export to CSV functionality
+- Summary cards showing:
+  - Total Realized Gain
+  - Short-Term Gains (held < 1 year)
+  - Long-Term Gains (held > 1 year)
+  - Unrealized Gain (current holdings)
+- Side-by-side breakdown:
+  - Realized Gains (Taxable): Short-term vs Long-term
+  - Unrealized Gains (Not Yet Taxable): Current Value vs Cost Basis
+
+**2. Summary View / Detailed Report Toggle**
+- Button toggle between Summary View and Detailed Report
+- Detailed Report shows the full spreadsheet table
+- Holdings data computed from all transactions
+
+**3. Internal Transfer Auto-Detection** 
+- New API endpoints:
+  - `GET /api/custody/detect-internal-transfers` - Find matching send/receive pairs
+  - `POST /api/custody/link-internal-transfer` - Link specific transactions
+  - `POST /api/custody/bulk-link-internal-transfers` - Auto-link high confidence matches
+- Matching algorithm:
+  - Same asset
+  - Similar amount (within 5% for network fees)
+  - Receive happens after send (within 48 hours)
+  - Different exchange sources (e.g., Coinbase → Ledger)
+- Confidence scoring: 100% = exact match, lower scores for larger differences
+- Auto-linked 34+ internal transfers with 95%+ confidence
+
+**4. Review Queue Enhancements**
+- Full TX IDs displayed (no truncation)
+- Duplicates removed from queue
+- "Auto-Link Transfers" button to detect and link matches
+- Success message shows number of transfers linked
+- Question prompts: "Did you send X BTC to your own wallet?"
+- Options: Mine (internal), External (taxable), Skip
+
+**5. CSV Format Filter**
+- Dropdown selector in CSV upload tab
+- Options: Auto-detect, Coinbase, Coinbase RAW TX, Kraken, Binance, Gemini, Ledger Live, KuCoin, Crypto.com
+- Coinbase RAW TX format support (multi-header format preprocessing)
+
+**6. Manual Acquisition Entry**
+- New "Manual" tab in Add Data modal
+- Form fields: Asset, Amount, Price per Unit, Date Acquired, Source, Notes
+- Quick-fill buttons for orphan assets
+- API endpoints: POST/GET/DELETE for manual acquisitions
+- Orphan disposal summary endpoint
+
+## Test Credentials
+- Email: `mobiletest@test.com`
+- Password: `test123456`
+- UUID: `6f9b5c58-a65b-42c4-afa6-f206bbb4876c`
+
+## Current Stats
+- 2,712 exchange transactions
+- 72 internal transfers auto-linked
+- 373 pending review items
+- 47 blocking issues (orphan disposals)
