@@ -112,6 +112,18 @@ class AlertMonitor:
         )
         
         if triggered:
+            # Check cooldown - don't spam, only notify once per hour
+            last_triggered = alert.get("last_triggered_at")
+            if last_triggered:
+                if isinstance(last_triggered, str):
+                    last_triggered = datetime.fromisoformat(last_triggered.replace("Z", "+00:00"))
+                if isinstance(last_triggered, datetime):
+                    if last_triggered.tzinfo is None:
+                        last_triggered = last_triggered.replace(tzinfo=timezone.utc)
+                    time_since = (datetime.now(timezone.utc) - last_triggered).total_seconds()
+                    if time_since < 3600:  # 1 hour cooldown
+                        return
+            
             await self._trigger_alert(alert, current_price)
     
     async def _trigger_alert(self, alert: Dict, current_price: float):
@@ -159,13 +171,13 @@ class AlertMonitor:
                 note=alert.get("note")
             )
         
-        # Update alert status
+        # Update alert - keep active, add cooldown to prevent spam
+        # Only send notification once per hour for same condition
         await self.db.alerts.update_one(
             {"alert_id": alert_id},
             {"$set": {
-                "status": "triggered",
-                "triggered_at": datetime.now(timezone.utc).isoformat(),
-                "triggered_price": current_price
+                "last_triggered_at": datetime.now(timezone.utc).isoformat(),
+                "last_triggered_price": current_price
             },
             "$inc": {"trigger_count": 1}}
         )

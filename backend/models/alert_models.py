@@ -89,14 +89,14 @@ ALERT_TIERS = {
         max_alerts=-1,  # Unlimited during trial
         price_monthly=0,
         price_yearly=0,
-        features=["7-day free trial", "Unlimited alerts during trial", "Email + SMS notifications", "Crypto alerts", "Price & % change alerts"]
+        features=["7-day free trial", "Unlimited alerts during trial", "Telegram notifications", "Crypto alerts", "Price & % change alerts"]
     ),
     "unlimited": AlertTier(
         name="Unlimited",
         max_alerts=-1,  # Unlimited
         price_monthly=18.88,
         price_yearly=199.00,
-        features=["Unlimited alerts", "Email + SMS notifications", "Crypto alerts", "Price & % change alerts", "Priority support"]
+        features=["Unlimited alerts", "Telegram notifications", "Crypto alerts", "Price & % change alerts", "Priority support"]
     )
 }
 
