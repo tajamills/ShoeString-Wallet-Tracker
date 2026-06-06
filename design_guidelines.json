@@ -1,0 +1,95 @@
+{
+  "theme": "Dark",
+  "archetype": "Archetype 4: Swiss & High-Contrast (Institutional Trading Variant)",
+  "design_philosophy": {
+    "vibe": "Objective, precise, institutional. Feels like a Bloomberg Terminal or Robinhood Pro, replacing the 'cartoonish' purple theme with absolute data clarity.",
+    "anti_patterns": [
+      "No purple or violet accents",
+      "No rounded, colorful single-letter crypto circles",
+      "No large drop shadows or soft gradients",
+      "No rounded-xl or bubbly containers",
+      "No generic 'Inter' font for headings"
+    ]
+  },
+  "colors": {
+    "background": "#050505",
+    "surface": "#0C0C0E",
+    "surface_hover": "#161618",
+    "border": "#1F1F22",
+    "text": {
+      "primary": "#FFFFFF",
+      "secondary": "#8A8A93",
+      "disabled": "#4A4A52"
+    },
+    "accents": {
+      "positive": "#00C805",
+      "negative": "#FF3B30",
+      "primary_action": "#FFFFFF",
+      "primary_action_text": "#000000"
+    }
+  },
+  "typography": {
+    "font_families": {
+      "headings": "Chivo, sans-serif",
+      "body": "IBM Plex Sans, sans-serif",
+      "data": "JetBrains Mono, monospace"
+    },
+    "hierarchy_rules": {
+      "h1": "text-3xl md:text-4xl font-bold tracking-tight",
+      "h2": "text-xl md:text-2xl font-semibold tracking-tight",
+      "labels": "text-xs font-semibold tracking-[0.2em] uppercase text-[#8A8A93]",
+      "data_values": "font-mono text-base md:text-lg tabular-nums"
+    }
+  },
+  "layout_and_spacing": {
+    "strategy": "The 'Control Room' Grid",
+    "sidebar": "Fixed width w-64, bg-[#0C0C0E], border-r border-[#1F1F22]. High density navigation items.",
+    "main_content": "bg-[#050505], p-6 md:p-8.",
+    "spacing_scale": "Dense. Use gap-4 for grids, py-2 or py-3 for list items.",
+    "border_radius": "Sharp. Use rounded-none or max rounded-sm (4px)."
+  },
+  "surface_strategies": {
+    "cards": "Flat solid backgrounds (bg-[#0C0C0E]), 1px border border-[#1F1F22], no shadow. Grid borders technique.",
+    "modals": "Solid flat bg-[#0A0A0C], stark borders, backdrop-blur-md on overlay but strictly dark.",
+    "buttons": "Square edges. Primary: bg-white text-black hover:bg-gray-200. Secondary: border border-[#1F1F22] hover:bg-[#161618]."
+  },
+  "motion_and_interactions": {
+    "hover_states": "Subtle background lightening (bg-[#161618]) and text brightening.",
+    "focus_states": "focus:ring-1 focus:ring-white focus:outline-none.",
+    "live_ticker": "react-fast-marquee running continuously at top or bottom with Monospace crypto pairs and green/red pricing."
+  },
+  "components": {
+    "crypto_icons": "BANNED: Soft colored circles. REQUIRED: Sharp monochrome squares with exact token logos OR stark 2-letter monospace abbreviations (e.g., [BT] or [ET]) if icons absent.",
+    "price_alerts_table": "Dense data table. Right-aligned numerical columns. Use JetBrains Mono. Badges should be sharp-edged: border border-green-500/30 text-green-400 bg-green-500/10.",
+    "telegram_connect": "Terminal-style CLI block or stark widget. High contrast text.",
+    "user_profile": "Minimalist layout in sidebar bottom. Use exact avatar media URL provided."
+  },
+  "icons": {
+    "library": "@phosphor-icons/react",
+    "style": "Regular or Duotone for active states, sharp lines."
+  },
+  "media": {
+    "user_profile_avatar": {
+      "url": "https://images.unsplash.com/photo-1765776830139-72b2184dae5a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBoZWFkc2hvdCUyMHBvcnRyYWl0JTIwZGFyayUyMGJhY2tncm91bmR8ZW58MHx8fHwxNzgwNzYwMzQwfDA&ixlib=rb-4.1.0&q=85",
+      "description": "Professional headshot for the user profile section in the sidebar."
+    },
+    "empty_state_texture": {
+      "url": "https://images.pexels.com/photos/10647633/pexels-photo-10647633.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "description": "Dark abstract metal mesh texture. Use with very low opacity (e.g., opacity-10) for empty states or modal backgrounds to break up flat digital black."
+    }
+  },
+  "accessibility_and_testing": {
+    "contrast": "Ensure all text meets APCA/WCAG standards against #050505.",
+    "testing_attributes": "All interactive elements, forms, and table rows MUST include data-testid (e.g., data-testid='create-alert-button')."
+  },
+  "instructions_to_main_agent": [
+    "Execute `yarn add @phosphor-icons/react react-fast-marquee`",
+    "Replace all instances of purple/violet with the monochromatic or red/green palette.",
+    "Refactor the sidebar to use the #0C0C0E background with strict 1px right border.",
+    "Replace 'rounded-full' single letter icons with strict geometric representations or precise SVGs.",
+    "Use Shadcn components but override their default rounded corners to `rounded-none` or `rounded-sm`.",
+    "Implement the live price ticker using `react-fast-marquee`.",
+    "Add the user_profile_avatar image to the profile section.",
+    "Avoid standard Vercel styles; ensure heavy use of Mono font for tabular/financial data."
+  ]
+}
