@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown } from 'lucide-react';
+import { ChartLineUp, ChartLineDown } from '@phosphor-icons/react';
+import Marquee from 'react-fast-marquee';
 import axios from 'axios';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -58,19 +59,51 @@ export const LivePricesTicker = () => {
     };
 
     fetchPrices();
-    const interval = setInterval(fetchPrices, 30000); // Update every 30s
+    const interval = setInterval(fetchPrices, 30000);
     return () => clearInterval(interval);
   }, []);
 
+  const renderPriceItem = (asset) => {
+    const priceData = prices[asset.symbol];
+    const change = priceData?.change_24h;
+    const isPositive = change >= 0;
+    
+    return (
+      <div 
+        key={asset.symbol} 
+        className="flex items-center gap-3 mx-8 shrink-0"
+      >
+        <span className="text-[#8A8A93] text-xs font-mono tracking-wider">
+          {asset.symbol}
+        </span>
+        <span className="text-white font-mono text-sm tabular-nums">
+          {formatPrice(priceData?.price)}
+        </span>
+        {change !== null && change !== undefined && (
+          <span className={`flex items-center gap-1 text-xs font-mono tabular-nums ${
+            isPositive ? 'text-[#00C805]' : 'text-[#FF3B30]'
+          }`}>
+            {isPositive ? (
+              <ChartLineUp size={12} weight="bold" />
+            ) : (
+              <ChartLineDown size={12} weight="bold" />
+            )}
+            {formatChange(change)}
+          </span>
+        )}
+      </div>
+    );
+  };
+
   if (loading) {
     return (
-      <div className="w-full bg-black/40 backdrop-blur-sm border-b border-white/5">
-        <div className="max-w-6xl mx-auto px-4 py-3">
-          <div className="flex items-center justify-center gap-8 overflow-x-auto">
+      <div className="w-full bg-[#0C0C0E] border-b border-[#1F1F22]">
+        <div className="px-4 py-2">
+          <div className="flex items-center justify-center gap-8">
             {TRACKED_ASSETS.map((asset) => (
-              <div key={asset.symbol} className="flex items-center gap-3 animate-pulse">
-                <span className="text-white/40 font-medium">{asset.symbol}</span>
-                <div className="h-4 w-20 bg-white/10 rounded"></div>
+              <div key={asset.symbol} className="flex items-center gap-3">
+                <span className="text-[#4A4A52] font-mono text-xs">{asset.symbol}</span>
+                <div className="h-4 w-20 bg-[#1F1F22]"></div>
               </div>
             ))}
           </div>
@@ -80,42 +113,11 @@ export const LivePricesTicker = () => {
   }
 
   return (
-    <div className="w-full bg-black/40 backdrop-blur-sm border-b border-white/5">
-      <div className="max-w-6xl mx-auto px-4 py-3">
-        <div className="flex items-center justify-center gap-6 md:gap-10 overflow-x-auto scrollbar-hide">
-          {TRACKED_ASSETS.map((asset) => {
-            const priceData = prices[asset.symbol];
-            const change = priceData?.change_24h;
-            const isPositive = change >= 0;
-            
-            return (
-              <div 
-                key={asset.symbol} 
-                className="flex items-center gap-2 md:gap-3 shrink-0"
-              >
-                <span className="text-white/60 text-sm font-medium tracking-wide">
-                  {asset.symbol}
-                </span>
-                <span className="text-white font-semibold text-sm md:text-base">
-                  {formatPrice(priceData?.price)}
-                </span>
-                {change !== null && change !== undefined && (
-                  <span className={`flex items-center gap-0.5 text-xs font-medium ${
-                    isPositive ? 'text-emerald-400' : 'text-red-400'
-                  }`}>
-                    {isPositive ? (
-                      <TrendingUp className="w-3 h-3" />
-                    ) : (
-                      <TrendingDown className="w-3 h-3" />
-                    )}
-                    {formatChange(change)}
-                  </span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
+    <div className="w-full bg-[#0C0C0E] border-b border-[#1F1F22]">
+      <Marquee gradient={false} speed={40} pauseOnHover={true}>
+        {TRACKED_ASSETS.map(renderPriceItem)}
+        {TRACKED_ASSETS.map((asset) => renderPriceItem({ ...asset, symbol: asset.symbol }))}
+      </Marquee>
     </div>
   );
 };

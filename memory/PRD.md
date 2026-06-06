@@ -47,9 +47,18 @@ Build a cryptocurrency wallet analyzer with a **PIVOT to Price Alerts** as the p
 
 ## Completed Features
 
+### June 6, 2026 - Professional Dashboard Redesign
+- [x] Bloomberg Terminal / Robinhood Pro aesthetic
+- [x] Obsidian black (#050505) + Terminal green (#00C805) + Signal red (#FF3B30)
+- [x] Sharp square edges (no rounded corners)
+- [x] Monospace fonts for financial data (tabular-nums)
+- [x] Token badges with 2-letter codes (BT, ET) instead of colorful circles
+- [x] Phosphor icons + react-fast-marquee libraries
+- [x] Dense data table layout with column headers
+- [x] Sidebar persists across Price Alerts and Bag Tracker views
+
 ### June 6, 2026 - Sidebar Dashboard UI
 - [x] Professional sidebar dashboard layout (AlertDashboardV2.js)
-- [x] Sidebar persists across both Price Alerts and Bag Tracker views
 - [x] Sidebar navigation with active state highlighting
 - [x] User profile section with subscription status and trial progress bar
 - [x] Telegram notifications UI with connect/disconnect/test
