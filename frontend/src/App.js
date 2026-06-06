@@ -317,267 +317,268 @@ function App() {
     // Create portfolio content to pass to AlertDashboard
     const portfolioContent = (
       <>
-        {/* Beta Notice */}
+        {/* Beta Notice - Professional Style */}
         <div className="mb-6">
-          <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg px-4 py-3 text-center">
-            <span className="text-amber-400 text-sm">
-              <span className="font-semibold">Portfolio Tracker</span> — Free during beta. Track transactions & generate tax reports.
+          <div className="bg-[#0C0C0E] border border-[#1F1F22] px-4 py-3 text-center">
+            <span className="text-[#8A8A93] text-sm font-mono">
+              <span className="text-white font-semibold">PORTFOLIO TRACKER</span> — Free during beta. Track transactions & generate tax reports.
             </span>
           </div>
         </div>
 
-        {/* User Info Bar for Portfolio */}
-        <Card className="bg-slate-800/50 border-slate-700 mb-4" data-testid="user-info-bar">
-          <CardContent className="py-3 md:py-4">
-            <div className="flex flex-col space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 md:gap-4 min-w-0">
-                  <User className="w-4 h-4 md:w-5 md:h-5 text-purple-400 flex-shrink-0" />
-                  <div className="min-w-0">
-                    <p className="text-white font-medium text-sm md:text-base truncate">{user.email}</p>
-                    <div className="flex flex-wrap items-center gap-1 md:gap-2 mt-1">
-                      <Badge className={`text-xs ${user.subscription_tier === 'free' ? 'bg-gray-600' : 'bg-gradient-to-r from-yellow-600 to-orange-600'}`}>
-                        {user.subscription_tier !== 'free' && <Crown className="w-3 h-3 mr-1" />}
-                        {user.subscription_tier === 'free' ? 'FREE' : 'UNLIMITED'}
-                      </Badge>
-                      <span className="text-xs md:text-sm text-gray-400">
-                        {user.subscription_tier === 'free' 
-                          ? `${user.analysis_count || 0}/1` 
-                          : 'Unlimited'}
-                      </span>
-                    </div>
+        {/* User Info Bar for Portfolio - Professional Style */}
+        <div className="bg-[#0C0C0E] border border-[#1F1F22] mb-4 p-4" data-testid="user-info-bar">
+          <div className="flex flex-col space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 bg-[#161618] border border-[#1F1F22] flex items-center justify-center text-white text-sm font-mono">
+                  {user.email?.charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-white font-medium text-sm truncate">{user.email}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className={`text-[10px] px-2 py-0.5 font-mono border ${
+                      user.subscription_tier === 'free' 
+                        ? 'border-[#1F1F22] text-[#8A8A93]' 
+                        : 'border-[#00C805]/30 text-[#00C805] bg-[#00C805]/10'
+                    }`}>
+                      {user.subscription_tier === 'free' ? 'FREE' : 'UNLIMITED'}
+                    </span>
+                    <span className="text-xs text-[#8A8A93] font-mono">
+                      {user.subscription_tier === 'free' 
+                        ? `${user.analysis_count || 0}/1 ANALYSES` 
+                        : 'UNLIMITED'}
+                    </span>
                   </div>
                 </div>
               </div>
-              
-              {/* Action Buttons */}
-              <div className="flex flex-wrap gap-2">
-                {user.subscription_tier === 'free' && (
-                  <Button 
-                    onClick={() => setShowUpgradeModal(true)}
-                    className="bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 h-8 text-xs md:text-sm"
-                  >
-                    <Crown className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
-                    Upgrade
-                  </Button>
-                )}
-                {user.subscription_tier !== 'free' && (
-                  <Button 
-                    onClick={() => setShowAddDataModal(true)}
-                    className="bg-purple-600 hover:bg-purple-700 text-white h-8 text-xs md:text-sm font-medium"
-                  >
-                    <Plus className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
-                    Add Data
-                  </Button>
-                )}
-                {user.subscription_tier !== 'free' && (
-                  <Button 
-                    onClick={() => setShowCustodyModal(true)}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 text-xs md:text-sm font-medium"
-                  >
-                    <Link2 className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
-                    Chain of Custody
-                  </Button>
-                )}
-                <Button 
-                  onClick={() => setShowSupportModal(true)}
-                  className="bg-cyan-600 hover:bg-cyan-700 text-white h-8 text-xs md:text-sm font-medium"
-                >
-                  <HelpCircle className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
-                  Help
-                </Button>
-              </div>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Saved Wallets Toggle */}
-        <div className="mb-4">
-          <Button
-            onClick={() => setShowSavedWallets(!showSavedWallets)}
-            className="bg-slate-700 hover:bg-slate-600 text-white border border-slate-500"
-          >
-            <Wallet className="w-4 h-4 mr-2" />
-            {showSavedWallets ? 'Hide' : 'Show'} Saved Wallets
-          </Button>
+            
+            {/* Action Buttons - Professional Style */}
+            <div className="flex flex-wrap gap-2">
+              {user.subscription_tier === 'free' && (
+                <button 
+                  onClick={() => setShowUpgradeModal(true)}
+                  className="bg-white text-black px-3 py-1.5 text-xs font-semibold hover:bg-gray-200 transition-colors flex items-center gap-1"
+                >
+                  <Crown className="w-3 h-3" />
+                  UPGRADE
+                </button>
+              )}
+              {user.subscription_tier !== 'free' && (
+                <button 
+                  onClick={() => setShowAddDataModal(true)}
+                  className="bg-white text-black px-3 py-1.5 text-xs font-semibold hover:bg-gray-200 transition-colors flex items-center gap-1"
+                >
+                  <Plus className="w-3 h-3" />
+                  ADD DATA
+                </button>
+              )}
+              {user.subscription_tier !== 'free' && (
+                <button 
+                  onClick={() => setShowCustodyModal(true)}
+                  className="border border-[#1F1F22] text-white px-3 py-1.5 text-xs font-mono hover:bg-[#161618] transition-colors flex items-center gap-1"
+                >
+                  <Link2 className="w-3 h-3" />
+                  CHAIN OF CUSTODY
+                </button>
+              )}
+              <button 
+                onClick={() => setShowSupportModal(true)}
+                className="border border-[#1F1F22] text-[#8A8A93] px-3 py-1.5 text-xs font-mono hover:bg-[#161618] hover:text-white transition-colors flex items-center gap-1"
+              >
+                <HelpCircle className="w-3 h-3" />
+                HELP
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* Saved Wallets Section */}
+        {/* Saved Wallets Toggle - Professional Style */}
+        <div className="mb-4">
+          <button
+            onClick={() => setShowSavedWallets(!showSavedWallets)}
+            className="border border-[#1F1F22] text-white px-3 py-2 text-sm font-mono hover:bg-[#161618] transition-colors flex items-center gap-2"
+          >
+            <Wallet className="w-4 h-4" />
+            {showSavedWallets ? 'HIDE' : 'SHOW'} SAVED WALLETS
+          </button>
+        </div>
+
+        {/* Saved Wallets Section - Professional Style */}
         {showSavedWallets && (
-          <Card className="bg-slate-800/50 border-slate-700 mb-8">
-            <CardContent className="pt-6">
-              <SavedWallets 
-                getAuthHeader={getAuthHeader}
-                userTier={user?.subscription_tier || 'free'}
-                onSelectWallet={(address, chain) => {
-                  setWalletAddress(address);
-                  setSelectedChain(chain);
-                  setShowSavedWallets(false);
-                  analyzeWallet(address, chain);
-                }}
-              />
-            </CardContent>
-          </Card>
+          <div className="bg-[#0C0C0E] border border-[#1F1F22] mb-6 p-4">
+            <SavedWallets 
+              getAuthHeader={getAuthHeader}
+              userTier={user?.subscription_tier || 'free'}
+              onSelectWallet={(address, chain) => {
+                setWalletAddress(address);
+                setSelectedChain(chain);
+                setShowSavedWallets(false);
+                analyzeWallet(address, chain);
+              }}
+            />
+          </div>
         )}
 
-        {/* Wallet Input Section */}
-        <Card className="mb-8 bg-slate-800/50 border-slate-700" data-testid="wallet-input-card">
-          <CardHeader>
-            <CardTitle className="text-white">Analyze Wallet</CardTitle>
-            <CardDescription className="text-gray-400">
+        {/* Wallet Input Section - Professional Style */}
+        <div className="bg-[#0C0C0E] border border-[#1F1F22] mb-6" data-testid="wallet-input-card">
+          <div className="p-4 border-b border-[#1F1F22]">
+            <h3 className="text-white font-semibold text-sm">ANALYZE WALLET</h3>
+            <p className="text-[#8A8A93] text-xs mt-1">
               Multi-chain wallet analysis: 12+ blockchains including ETH, BTC, SOL, ALGO, AVAX, DOGE
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {/* Chain Selector */}
-              <div>
-                <label className="text-sm text-gray-400 block mb-2">
-                  Blockchain Network
-                  {user?.subscription_tier === 'free' && (
-                    <span className="ml-2 text-xs text-purple-400">(Upgrade for multi-chain)</span>
-                  )}
-                </label>
-                <select
-                  value={selectedChain}
-                  onChange={(e) => {
-                    if (user?.subscription_tier === 'free' && e.target.value !== 'ethereum' && e.target.value !== 'bitcoin') {
-                      setError('Additional chains require Unlimited. Upgrade to unlock!');
-                      setShowUpgradeModal(true);
-                      return;
-                    }
-                    setSelectedChain(e.target.value);
-                    setError('');
-                  }}
-                  className="w-full bg-slate-900 border border-slate-600 text-white rounded-md px-3 py-2"
-                >
-                  <option value="ethereum">⟠ Ethereum (ETH)</option>
-                  <option value="bitcoin">₿ Bitcoin (BTC)</option>
-                  <option value="solana" disabled={user?.subscription_tier === 'free'}>
-                    ◎ Solana (SOL) {user?.subscription_tier === 'free' ? '🔒' : ''}
-                  </option>
-                  {user?.subscription_tier !== 'free' && (
-                    <>
-                      <option disabled>──── More Chains ────</option>
-                      <option value="polygon">🔺 Polygon (MATIC)</option>
-                      <option value="arbitrum">🔷 Arbitrum (ETH)</option>
-                      <option value="bsc">🟡 BNB Chain (BNB)</option>
-                      <option value="base">🔵 Base (ETH)</option>
-                      <option value="optimism">🔴 Optimism (ETH)</option>
-                      <option value="avalanche">🔺 Avalanche (AVAX)</option>
-                      <option value="fantom">👻 Fantom (FTM)</option>
-                      <option value="algorand">🔷 Algorand (ALGO)</option>
-                      <option value="dogecoin">🐕 Dogecoin (DOGE)</option>
-                      <option value="xrp">💧 XRP/Ripple (XRP)</option>
-                      <option value="xlm">⭐ Stellar (XLM)</option>
-                    </>
-                  )}
-                </select>
-              </div>
+            </p>
+          </div>
+          <div className="p-4 space-y-4">
+            {/* Chain Selector */}
+            <div>
+              <label className="text-xs font-semibold tracking-[0.1em] uppercase text-[#8A8A93] block mb-2">
+                BLOCKCHAIN NETWORK
+                {user?.subscription_tier === 'free' && (
+                  <span className="ml-2 text-[#00C805]">(Upgrade for multi-chain)</span>
+                )}
+              </label>
+              <select
+                value={selectedChain}
+                onChange={(e) => {
+                  if (user?.subscription_tier === 'free' && e.target.value !== 'ethereum' && e.target.value !== 'bitcoin') {
+                    setError('Additional chains require Unlimited. Upgrade to unlock!');
+                    setShowUpgradeModal(true);
+                    return;
+                  }
+                  setSelectedChain(e.target.value);
+                  setError('');
+                }}
+                className="w-full bg-[#161618] border border-[#1F1F22] text-white px-3 py-2 font-mono text-sm focus:outline-none focus:ring-1 focus:ring-white"
+              >
+                <option value="ethereum">ETH — Ethereum</option>
+                <option value="bitcoin">BTC — Bitcoin</option>
+                <option value="solana" disabled={user?.subscription_tier === 'free'}>
+                  SOL — Solana {user?.subscription_tier === 'free' ? '[LOCKED]' : ''}
+                </option>
+                {user?.subscription_tier !== 'free' && (
+                  <>
+                    <option disabled>──────────────────</option>
+                    <option value="polygon">MATIC — Polygon</option>
+                    <option value="arbitrum">ARB — Arbitrum</option>
+                    <option value="bsc">BNB — BNB Chain</option>
+                    <option value="base">BASE — Base</option>
+                    <option value="optimism">OP — Optimism</option>
+                    <option value="avalanche">AVAX — Avalanche</option>
+                    <option value="fantom">FTM — Fantom</option>
+                    <option value="algorand">ALGO — Algorand</option>
+                    <option value="dogecoin">DOGE — Dogecoin</option>
+                    <option value="xrp">XRP — Ripple</option>
+                    <option value="xlm">XLM — Stellar</option>
+                  </>
+                )}
+              </select>
+            </div>
 
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
-                <div className="flex-1">
-                  <Input
-                    data-testid="wallet-address-input"
-                    type="text"
-                    placeholder="Enter any wallet address (auto-detects chain)"
-                    value={walletAddress}
-                    onChange={(e) => {
-                      const addr = e.target.value;
-                      setWalletAddress(addr);
-                      const detectedChain = detectChainFromAddress(addr);
-                      if (detectedChain && detectedChain !== selectedChain) {
-                        if (user?.subscription_tier === 'free' && detectedChain !== 'ethereum' && detectedChain !== 'bitcoin') {
-                          return;
-                        }
-                        setSelectedChain(detectedChain);
-                        setError('');
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+              <div className="flex-1">
+                <Input
+                  data-testid="wallet-address-input"
+                  type="text"
+                  placeholder="Enter wallet address (auto-detects chain)"
+                  value={walletAddress}
+                  onChange={(e) => {
+                    const addr = e.target.value;
+                    setWalletAddress(addr);
+                    const detectedChain = detectChainFromAddress(addr);
+                    if (detectedChain && detectedChain !== selectedChain) {
+                      if (user?.subscription_tier === 'free' && detectedChain !== 'ethereum' && detectedChain !== 'bitcoin') {
+                        return;
                       }
-                    }}
-                    className="bg-slate-700 border-slate-600 text-white placeholder:text-gray-500"
-                    disabled={loading}
-                  />
-                  {walletAddress && detectChainFromAddress(walletAddress) && (
-                    <p className="text-xs mt-1 text-green-400">
-                      Detected: {detectChainFromAddress(walletAddress)?.toUpperCase()} address
-                    </p>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    data-testid="analyze-button"
-                    onClick={() => analyzeWallet()}
-                    disabled={loading || analyzingAll}
-                    className="bg-purple-600 hover:bg-purple-700 flex-1 sm:flex-none"
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        <span className="hidden sm:inline">Analyzing...</span>
-                      </>
-                    ) : (
-                      'Analyze'
-                    )}
-                  </Button>
-                  
-                  {(user?.subscription_tier === 'pro' || user?.subscription_tier === 'unlimited') && (
-                    <Button
-                      onClick={analyzeAllChains}
-                      disabled={loading || analyzingAll}
-                      className="bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700"
-                    >
-                      {analyzingAll ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <>
-                          <Crown className="mr-1 sm:mr-2 h-4 w-4" />
-                          <span className="hidden sm:inline">Scan All EVM Chains</span>
-                        </>
-                      )}
-                    </Button>
-                  )}
-                </div>
+                      setSelectedChain(detectedChain);
+                      setError('');
+                    }
+                  }}
+                  className="bg-[#161618] border-[#1F1F22] text-white placeholder:text-[#4A4A52] font-mono rounded-none"
+                  disabled={loading}
+                />
+                {walletAddress && detectChainFromAddress(walletAddress) && (
+                  <p className="text-xs mt-1 text-[#00C805] font-mono">
+                    DETECTED: {detectChainFromAddress(walletAddress)?.toUpperCase()}
+                  </p>
+                )}
               </div>
-              
-              {/* Date Range Filter */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm text-gray-400 block mb-2">Start Date (Optional)</label>
-                  <Input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="bg-slate-700 border-slate-600 text-white"
-                    disabled={loading}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm text-gray-400 block mb-2">End Date (Optional)</label>
-                  <Input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="bg-slate-700 border-slate-600 text-white"
-                    disabled={loading}
-                  />
-                </div>
+              <div className="flex gap-2">
+                <button
+                  data-testid="analyze-button"
+                  onClick={() => analyzeWallet()}
+                  disabled={loading || analyzingAll}
+                  className="bg-white text-black px-4 py-2 text-sm font-semibold hover:bg-gray-200 transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span className="hidden sm:inline">ANALYZING...</span>
+                    </>
+                  ) : (
+                    'ANALYZE'
+                  )}
+                </button>
+                
+                {(user?.subscription_tier === 'pro' || user?.subscription_tier === 'unlimited') && (
+                  <button
+                    onClick={analyzeAllChains}
+                    disabled={loading || analyzingAll}
+                    className="border border-[#1F1F22] text-white px-4 py-2 text-sm font-mono hover:bg-[#161618] transition-colors disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {analyzingAll ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <>
+                        <Crown className="h-4 w-4" />
+                        <span className="hidden sm:inline">SCAN ALL</span>
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
             </div>
+            
+            {/* Date Range Filter */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-semibold tracking-[0.1em] uppercase text-[#8A8A93] block mb-2">START DATE (OPTIONAL)</label>
+                <Input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="bg-[#161618] border-[#1F1F22] text-white font-mono rounded-none"
+                  disabled={loading}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold tracking-[0.1em] uppercase text-[#8A8A93] block mb-2">END DATE (OPTIONAL)</label>
+                <Input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="bg-[#161618] border-[#1F1F22] text-white font-mono rounded-none"
+                  disabled={loading}
+                />
+              </div>
+            </div>
+            
             {error && (
-              <Alert className="mt-4 bg-red-900/20 border-red-900 text-red-300">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
+              <div className="bg-[#FF3B30]/10 border border-[#FF3B30]/30 px-4 py-3 text-[#FF3B30] text-sm">
+                {error}
+              </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Tax Summary Dashboard */}
         {user.subscription_tier !== 'free' && (
-          <div className="mb-8">
+          <div className="mb-6">
             <TaxSummaryDashboard 
               onOpenExchangeModal={() => setShowAddDataModal(true)}
               onOpenChainOfCustody={() => setShowCustodyModal(true)}
               onOpenReviewQueue={() => setShowCustodyModal(true)}
+            />
             />
           </div>
         )}
