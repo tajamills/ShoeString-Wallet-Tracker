@@ -28,7 +28,7 @@ import { SupportModal } from '@/components/SupportModal';
 import { ExchangeConnectionModal } from '@/components/ExchangeConnectionModal';
 import { TaxSummaryDashboard } from '@/components/TaxSummaryDashboard';
 import { AddDataModal } from '@/components/AddDataModal';
-import { AlertDashboard } from '@/components/AlertDashboard';
+import { AlertDashboard } from '@/components/AlertDashboardV2';
 import { LivePricesTicker } from '@/components/LivePricesTicker';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -312,6 +312,24 @@ function App() {
     );
   }
 
+  // If logged in and on alerts tab, show the full dashboard layout
+  if (user && activeTab === 'alerts') {
+    return (
+      <>
+        <AlertDashboard 
+          getAuthHeader={getAuthHeader} 
+          user={user} 
+          onLogout={logout}
+          onSwitchToPortfolio={() => setActiveTab('beta')}
+        />
+        
+        {/* Modals */}
+        <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
+        <SupportModal isOpen={showSupportModal} onClose={() => setShowSupportModal(false)} />
+      </>
+    );
+  }
+  
   return (
     <div className="min-h-screen bg-[#0a0a0f]">
       {/* Live Prices Ticker */}
@@ -396,37 +414,7 @@ function App() {
                 </p>
               </div>
             ) : (
-              <>
-                {/* User Header for Alerts */}
-                <div className="bg-white/5 border border-white/10 rounded-lg px-4 py-3 mb-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
-                        <User className="w-4 h-4 text-white/60" />
-                      </div>
-                      <span className="text-white/80 text-sm">{user.email}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button 
-                        onClick={() => setShowSupportModal(true)}
-                        className="p-2 text-white/40 hover:text-white/80 transition-colors"
-                      >
-                        <HelpCircle className="w-4 h-4" />
-                      </button>
-                      <button 
-                        onClick={logout}
-                        className="p-2 text-white/40 hover:text-white/80 transition-colors"
-                        data-testid="logout-button"
-                      >
-                        <LogOut className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Alert Dashboard Component */}
-                <AlertDashboard getAuthHeader={getAuthHeader} />
-              </>
+              <AlertDashboard getAuthHeader={getAuthHeader} user={user} onLogout={logout} />
             )}
           </div>
         )}

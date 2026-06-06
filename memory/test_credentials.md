@@ -4,7 +4,7 @@
 - **Email**: mobiletest@test.com
 - **Password**: test123456
 - **User ID**: 6f9b5c58-a65b-42c4-afa6-f206bbb4876c
-- **Subscription**: Free Trial (7 days from 2026-06-06)
+- **Subscription**: Free Trial (6 days remaining as of Jun 6, 2026)
 - **Features**: Unlimited alerts during trial
 
 ## Notes
@@ -12,12 +12,21 @@
 - One BTC price alert exists ($100,000 price_above threshold)
 - Trial expires 2026-06-13
 
-## Stripe Test Keys
-- Test keys available in pod environment at `/app/.stripe/`
+## Stripe Configuration (Live)
+- API Key: sk_live_51SS4RvAXuTzNcQX7... (in backend/.env)
 - Product ID: prod_UecNCOQUgkIyrk
 - Price ID: price_1TfJ8WAXuTzNcQX7GPkmVilU
 - Subscription: $18.88/month unlimited alerts with 7-day free trial
 
-## Notification APIs (Not Yet Configured)
-- SendGrid: Requires SENDGRID_API_KEY and SENDER_EMAIL in backend/.env
-- Twilio: Requires TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER in backend/.env
+## Telegram Bot
+- Bot Username: @cryptobagtrackerbot
+- Bot Token: 8248830850:AAGJerBuuF8JfyAZy9i5BoTLMQDTDDDZzdo (in backend/.env)
+- Webhook URL: https://proceeds-validator.preview.emergentagent.com/api/alerts/telegram/webhook
+
+## Zapier Webhook (SMS)
+- URL: https://hooks.zapier.com/hooks/catch/27857399/4bx050v/
+- Used for SMS notifications
+
+## Notification Methods
+- **Telegram**: Primary - unlimited, instant (requires user to connect via @cryptobagtrackerbot)
+- **SMS**: Secondary - via Zapier webhook (no email due to rate limits)
