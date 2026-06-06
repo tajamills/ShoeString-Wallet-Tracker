@@ -79,6 +79,8 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
   const [currentPrice, setCurrentPrice] = useState(null);
   const [alertType, setAlertType] = useState('price_above');
   const [targetValue, setTargetValue] = useState('');
+  const [notificationMethod, setNotificationMethod] = useState('telegram');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [note, setNote] = useState('');
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
@@ -144,6 +146,12 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
       setError('Please fill in all required fields');
       return;
     }
+    
+    // Require phone for SMS
+    if (notificationMethod === 'sms' && !phoneNumber) {
+      setError('Phone number is required for SMS notifications');
+      return;
+    }
 
     setCreating(true);
     setError('');
@@ -154,7 +162,8 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
         asset_type: selectedAsset.type,
         alert_type: alertType,
         target_value: parseFloat(targetValue),
-        notification_method: 'telegram',
+        notification_method: notificationMethod,
+        phone_number: phoneNumber || null,
         note: note || null
       }, { headers: getAuthHeader() });
 
@@ -186,6 +195,8 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
     setCurrentPrice(null);
     setAlertType('price_above');
     setTargetValue('');
+    setNotificationMethod('telegram');
+    setPhoneNumber('');
     setNote('');
     setError('');
     onClose();
@@ -332,6 +343,58 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
                 )}
               </div>
 
+              {/* Notification Method - Telegram or SMS */}
+              <div>
+                <label className="text-sm text-gray-300 mb-2 block">Notify via</label>
+                <div className="flex gap-2">
+                  <Button
+                    variant={notificationMethod === 'telegram' ? 'default' : 'outline'}
+                    onClick={() => setNotificationMethod('telegram')}
+                    className={notificationMethod === 'telegram' ? 'bg-blue-600' : 'border-slate-600'}
+                    size="sm"
+                    data-testid="notify-telegram"
+                  >
+                    <MessageCircle className="w-4 h-4 mr-1" />
+                    Telegram
+                  </Button>
+                  <Button
+                    variant={notificationMethod === 'sms' ? 'default' : 'outline'}
+                    onClick={() => setNotificationMethod('sms')}
+                    className={notificationMethod === 'sms' ? 'bg-purple-600' : 'border-slate-600'}
+                    size="sm"
+                    data-testid="notify-sms"
+                  >
+                    SMS
+                  </Button>
+                </div>
+              </div>
+
+              {/* Phone Number - show when SMS selected */}
+              {notificationMethod === 'sms' && (
+                <div>
+                  <label className="text-sm text-gray-300 mb-2 block">Phone Number</label>
+                  <Input
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    placeholder="+1 (555) 123-4567"
+                    className="bg-slate-700 border-slate-600 text-white"
+                    data-testid="alert-phone-input"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Include country code (e.g., +1 for US)</p>
+                </div>
+              )}
+
+              {/* Telegram reminder when telegram selected */}
+              {notificationMethod === 'telegram' && (
+                <div className="bg-blue-900/30 border border-blue-700/50 rounded-lg p-3">
+                  <p className="text-blue-300 text-sm flex items-center gap-2">
+                    <MessageCircle className="w-4 h-4" />
+                    Connect your Telegram below to receive alerts
+                  </p>
+                </div>
+              )}
+
               {/* Note */}
               <div>
                 <label className="text-sm text-gray-300 mb-2 block">Note (optional)</label>
@@ -341,14 +404,6 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
                   placeholder="e.g., Buy signal"
                   className="bg-slate-700 border-slate-600 text-white"
                 />
-              </div>
-
-              {/* Telegram Reminder */}
-              <div className="bg-blue-900/30 border border-blue-700/50 rounded-lg p-3">
-                <p className="text-blue-300 text-sm flex items-center gap-2">
-                  <MessageCircle className="w-4 h-4" />
-                  Alerts sent via Telegram. Connect your Telegram below.
-                </p>
               </div>
 
               {/* Actions */}
