@@ -99,53 +99,53 @@ export const AffiliateModal = ({ isOpen, onClose, getAuthHeader }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl bg-slate-800 border-slate-700 max-h-[90vh] overflow-y-auto" data-testid="affiliate-modal">
+      <DialogContent className="sm:max-w-2xl bg-[#0C0C0E] border-[#1F1F22] max-h-[90vh] overflow-y-auto" data-testid="affiliate-modal">
         <DialogHeader>
           <DialogTitle className="text-white text-2xl flex items-center gap-2" data-testid="affiliate-modal-title">
-            <Users className="w-6 h-6 text-purple-400" />
+            <Users className="w-6 h-6 text-[#00C805]" />
             Affiliate Program
           </DialogTitle>
-          <DialogDescription className="text-gray-400">
+          <DialogDescription className="text-[#8A8A93]">
             Earn $10 for every customer you refer. They get $10 off too!
           </DialogDescription>
         </DialogHeader>
 
         {loading ? (
           <div className="flex items-center justify-center py-12" data-testid="affiliate-loading">
-            <Loader2 className="w-8 h-8 animate-spin text-purple-400" />
+            <Loader2 className="w-8 h-8 animate-spin text-[#00C805]" />
           </div>
         ) : affiliateData?.is_affiliate ? (
           // Affiliate Dashboard
           <div className="space-y-6" data-testid="affiliate-dashboard">
             {/* Stats Cards */}
             <div className="grid grid-cols-3 gap-4">
-              <Card className="bg-slate-900/50 border-slate-700">
+              <Card className="bg-[#050505]/50 border-[#1F1F22]">
                 <CardContent className="pt-4">
-                  <div className="flex items-center gap-2 text-gray-400 text-sm mb-1">
+                  <div className="flex items-center gap-2 text-[#8A8A93] text-sm mb-1">
                     <DollarSign className="w-4 h-4" />
                     Total Earned
                   </div>
-                  <div className="text-2xl font-bold text-green-400">
+                  <div className="text-2xl font-bold text-[#00C805]">
                     ${affiliateData.total_earnings.toFixed(2)}
                   </div>
                 </CardContent>
               </Card>
               
-              <Card className="bg-slate-900/50 border-slate-700">
+              <Card className="bg-[#050505]/50 border-[#1F1F22]">
                 <CardContent className="pt-4">
-                  <div className="flex items-center gap-2 text-gray-400 text-sm mb-1">
+                  <div className="flex items-center gap-2 text-[#8A8A93] text-sm mb-1">
                     <Clock className="w-4 h-4" />
                     Pending Payout
                   </div>
-                  <div className="text-2xl font-bold text-yellow-400">
+                  <div className="text-2xl font-bold text-[#FFB800]">
                     ${affiliateData.pending_earnings.toFixed(2)}
                   </div>
                 </CardContent>
               </Card>
               
-              <Card className="bg-slate-900/50 border-slate-700">
+              <Card className="bg-[#050505]/50 border-[#1F1F22]">
                 <CardContent className="pt-4">
-                  <div className="flex items-center gap-2 text-gray-400 text-sm mb-1">
+                  <div className="flex items-center gap-2 text-[#8A8A93] text-sm mb-1">
                     <TrendingUp className="w-4 h-4" />
                     Referrals
                   </div>
@@ -157,22 +157,22 @@ export const AffiliateModal = ({ isOpen, onClose, getAuthHeader }) => {
             </div>
 
             {/* Share Code */}
-            <Card className="bg-gradient-to-r from-purple-900/30 to-pink-900/30 border-purple-700">
+            <Card className="bg-gradient-to-r from-[#0C0C0E] to-[#0C0C0E] border-[#1F1F22]">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
-                  <Share2 className="w-5 h-5 text-purple-400" />
+                  <Share2 className="w-5 h-5 text-[#00C805]" />
                   Your Affiliate Code
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-3">
-                  <Badge className="bg-purple-600 text-xl px-4 py-2" data-testid="affiliate-code-badge">
+                  <Badge className="bg-white text-black text-xl px-4 py-2" data-testid="affiliate-code-badge">
                     {affiliateData.affiliate_code}
                   </Badge>
                   <Button
                     onClick={() => copyToClipboard(affiliateData.affiliate_code)}
                     variant="outline"
-                    className="border-purple-600 text-purple-300"
+                    className="border-[#00C805] text-[#00C805]"
                   >
                     {copied ? (
                       <>
@@ -187,7 +187,7 @@ export const AffiliateModal = ({ isOpen, onClose, getAuthHeader }) => {
                     )}
                   </Button>
                 </div>
-                <p className="text-sm text-gray-400 mt-3">
+                <p className="text-sm text-[#8A8A93] mt-3">
                   Share this code with friends. They get $10 off, you earn $10!
                 </p>
               </CardContent>
@@ -195,24 +195,24 @@ export const AffiliateModal = ({ isOpen, onClose, getAuthHeader }) => {
 
             {/* Recent Referrals */}
             {affiliateData.recent_referrals?.length > 0 && (
-              <Card className="bg-slate-900/50 border-slate-700">
+              <Card className="bg-[#050505]/50 border-[#1F1F22]">
                 <CardHeader>
                   <CardTitle className="text-white">Recent Referrals</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     {affiliateData.recent_referrals.map((ref, idx) => (
-                      <div key={idx} className="flex items-center justify-between py-2 border-b border-slate-700 last:border-0">
+                      <div key={idx} className="flex items-center justify-between py-2 border-b border-[#1F1F22] last:border-0">
                         <div>
-                          <span className="text-gray-300">{ref.customer_email}</span>
-                          <span className="text-gray-500 text-sm ml-2">
+                          <span className="text-white">{ref.customer_email}</span>
+                          <span className="text-[#4A4A52] text-sm ml-2">
                             {formatDate(ref.created_at)}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-green-400 font-semibold">+${ref.amount_earned}</span>
+                          <span className="text-[#00C805] font-semibold">+${ref.amount_earned}</span>
                           {ref.paid_out ? (
-                            <Badge className="bg-green-900/50 text-green-300 text-xs">Paid</Badge>
+                            <Badge className="bg-green-900/50 text-[#00C805] text-xs">Paid</Badge>
                           ) : (
                             <Badge className="bg-yellow-900/50 text-yellow-300 text-xs">Pending</Badge>
                           )}
@@ -234,28 +234,28 @@ export const AffiliateModal = ({ isOpen, onClose, getAuthHeader }) => {
         ) : (
           // Registration Form
           <div className="space-y-6" data-testid="affiliate-registration-form">
-            <div className="bg-gradient-to-r from-purple-900/20 to-pink-900/20 rounded-lg p-6 border border-purple-700/50">
+            <div className="bg-gradient-to-r from-[#0C0C0E] to-[#0C0C0E] rounded-lg p-6 border border-[#1F1F22]/50">
               <h3 className="text-xl font-bold text-white mb-2">Join Our Affiliate Program</h3>
-              <p className="text-gray-400 mb-4">
+              <p className="text-[#8A8A93] mb-4">
                 Earn $10 for every person who signs up using your unique code. 
                 They also get $10 off their subscription!
               </p>
               
-              <ul className="space-y-2 text-sm text-gray-300">
+              <ul className="space-y-2 text-sm text-white">
                 <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-green-400" />
+                  <Check className="w-4 h-4 text-[#00C805]" />
                   Earn $10 per successful referral
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-green-400" />
+                  <Check className="w-4 h-4 text-[#00C805]" />
                   Your friends save $10 on their subscription
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-green-400" />
+                  <Check className="w-4 h-4 text-[#00C805]" />
                   Quarterly PayPal payouts
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-green-400" />
+                  <Check className="w-4 h-4 text-[#00C805]" />
                   Track your earnings in real-time
                 </li>
               </ul>
@@ -263,35 +263,35 @@ export const AffiliateModal = ({ isOpen, onClose, getAuthHeader }) => {
 
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-300 mb-1 block">
+                <label className="text-sm font-medium text-white mb-1 block">
                   Choose Your Affiliate Code *
                 </label>
                 <Input
                   value={affiliateCode}
                   onChange={(e) => setAffiliateCode(e.target.value.toUpperCase())}
                   placeholder="e.g., JOHN10, CRYPTOPRO"
-                  className="bg-slate-900 border-slate-600 text-white uppercase"
+                  className="bg-[#050505] border-[#1F1F22] text-white uppercase"
                   maxLength={20}
                   data-testid="affiliate-code-input"
                 />
-                <p className="text-xs text-gray-500 mt-1">3-20 characters, letters and numbers only</p>
+                <p className="text-xs text-[#4A4A52] mt-1">3-20 characters, letters and numbers only</p>
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-300 mb-1 block">
+                <label className="text-sm font-medium text-white mb-1 block">
                   Your Name *
                 </label>
                 <Input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="John Smith"
-                  className="bg-slate-900 border-slate-600 text-white"
+                  className="bg-[#050505] border-[#1F1F22] text-white"
                   data-testid="affiliate-name-input"
                 />
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-300 mb-1 block">
+                <label className="text-sm font-medium text-white mb-1 block">
                   PayPal Email (for payouts)
                 </label>
                 <Input
@@ -299,21 +299,21 @@ export const AffiliateModal = ({ isOpen, onClose, getAuthHeader }) => {
                   onChange={(e) => setPaypalEmail(e.target.value)}
                   placeholder="your@paypal.com"
                   type="email"
-                  className="bg-slate-900 border-slate-600 text-white"
+                  className="bg-[#050505] border-[#1F1F22] text-white"
                   data-testid="affiliate-paypal-input"
                 />
-                <p className="text-xs text-gray-500 mt-1">You can add this later</p>
+                <p className="text-xs text-[#4A4A52] mt-1">You can add this later</p>
               </div>
             </div>
 
             {error && (
-              <Alert className="bg-red-900/20 border-red-700 text-red-300">
+              <Alert className="bg-red-900/20 border-red-700 text-[#FF3B30]">
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
 
             {success && (
-              <Alert className="bg-green-900/20 border-green-700 text-green-300">
+              <Alert className="bg-green-900/20 border-green-700 text-[#00C805]">
                 <AlertDescription>{success}</AlertDescription>
               </Alert>
             )}
@@ -321,7 +321,7 @@ export const AffiliateModal = ({ isOpen, onClose, getAuthHeader }) => {
             <Button
               onClick={handleRegister}
               disabled={registering || !affiliateCode || !name}
-              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 h-12"
+              className="w-full bg-gradient-to-r from-[#00C805] to-[#00C805] hover:from-[#00C805]/80 hover:to-[#00C805]/80 h-12"
               data-testid="affiliate-register-button"
             >
               {registering ? (

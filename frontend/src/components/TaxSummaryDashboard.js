@@ -288,7 +288,7 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal: onAddData, onOpenChai
     return (
       <Card className="bg-gray-800 border-gray-700 shadow-sm">
         <CardContent className="py-12 flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-purple-400" />
+          <Loader2 className="h-8 w-8 animate-spin text-[#00C805]" />
         </CardContent>
       </Card>
     );
@@ -306,7 +306,7 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal: onAddData, onOpenChai
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowClassifier(false)}
-                className="text-gray-400 hover:text-white"
+                className="text-[#8A8A93] hover:text-white"
                 data-testid="close-classifier-btn"
               >
                 <X className="w-5 h-5" />
@@ -342,20 +342,20 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal: onAddData, onOpenChai
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-              className="bg-gray-800 border border-gray-600 text-white rounded-md px-3 py-1 text-sm font-medium focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              className="bg-gray-800 border border-gray-600 text-white rounded-md px-3 py-1 text-sm font-medium focus:ring-2 focus:ring-[#00C805] focus:border-[#00C805]"
             >
               {availableYears.map(year => (
                 <option key={year} value={year}>{year}</option>
               ))}
             </select>
           </div>
-          <div className="flex items-center gap-4 mt-2 text-sm text-gray-300">
+          <div className="flex items-center gap-4 mt-2 text-sm text-white">
             <span className="flex items-center gap-1">
-              <CheckCircle className="w-4 h-4 text-green-400" />
+              <CheckCircle className="w-4 h-4 text-[#00C805]" />
               {connections.length} account{connections.length !== 1 ? 's' : ''} synced
             </span>
             <span className="flex items-center gap-1">
-              <CheckCircle className="w-4 h-4 text-green-400" />
+              <CheckCircle className="w-4 h-4 text-[#00C805]" />
               {totalTransactions} transactions in {selectedYear}
             </span>
           </div>
@@ -375,7 +375,7 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal: onAddData, onOpenChai
         <Button
           variant={!showDetailedReport ? "default" : "outline"}
           onClick={() => setShowDetailedReport(false)}
-          className={!showDetailedReport ? "bg-purple-600 hover:bg-purple-700" : "border-gray-600 text-gray-300"}
+          className={!showDetailedReport ? "bg-white text-black hover:bg-gray-200" : "border-gray-600 text-white"}
           size="sm"
         >
           Summary View
@@ -383,7 +383,7 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal: onAddData, onOpenChai
         <Button
           variant={showDetailedReport ? "default" : "outline"}
           onClick={() => setShowDetailedReport(true)}
-          className={showDetailedReport ? "bg-purple-600 hover:bg-purple-700" : "border-gray-600 text-gray-300"}
+          className={showDetailedReport ? "bg-white text-black hover:bg-gray-200" : "border-gray-600 text-white"}
           size="sm"
         >
           <Table className="w-4 h-4 mr-1" />
@@ -404,35 +404,35 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal: onAddData, onOpenChai
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="bg-gray-800 border-gray-700 shadow-sm">
           <CardContent className="p-6">
-            <p className="text-sm text-gray-400 mb-2">Short term capital gain</p>
+            <p className="text-sm text-[#8A8A93] mb-2">Short term capital gain</p>
             <div className="flex items-center gap-2">
-              <span className={`text-2xl font-semibold ${shortTermGain >= 0 ? 'text-white' : 'text-red-400'}`}>
+              <span className={`text-2xl font-semibold ${shortTermGain >= 0 ? 'text-white' : 'text-[#FF3B30]'}`}>
                 {formatCurrency(shortTermGain)}
               </span>
-              {!isPaidUser && <Lock className="w-4 h-4 text-gray-500" />}
+              {!isPaidUser && <Lock className="w-4 h-4 text-[#4A4A52]" />}
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-gray-800 border-gray-700 shadow-sm">
           <CardContent className="p-6">
-            <p className="text-sm text-gray-400 mb-2">Long term capital gain</p>
+            <p className="text-sm text-[#8A8A93] mb-2">Long term capital gain</p>
             <div className="flex items-center gap-2">
-              <span className={`text-2xl font-semibold ${longTermGain >= 0 ? 'text-white' : 'text-red-400'}`}>
+              <span className={`text-2xl font-semibold ${longTermGain >= 0 ? 'text-white' : 'text-[#FF3B30]'}`}>
                 {formatCurrency(longTermGain)}
               </span>
-              {!isPaidUser && <Lock className="w-4 h-4 text-gray-500" />}
+              {!isPaidUser && <Lock className="w-4 h-4 text-[#4A4A52]" />}
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-gray-800 border-gray-700 shadow-sm">
           <CardContent className="p-6">
-            <p className="text-sm text-gray-400 mb-2">Crypto income</p>
+            <p className="text-sm text-[#8A8A93] mb-2">Crypto income</p>
             <span className="text-2xl font-semibold text-white">
               {formatCurrency(cryptoIncome)}
             </span>
-            <p className="text-xs text-gray-500 mt-1">Staking rewards, airdrops</p>
+            <p className="text-xs text-[#4A4A52] mt-1">Staking rewards, airdrops</p>
           </CardContent>
         </Card>
       </div>
@@ -442,21 +442,21 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal: onAddData, onOpenChai
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card className="bg-gray-800 border-gray-700 shadow-sm">
             <CardContent className="p-6">
-              <p className="text-sm text-gray-400 mb-2">Cost Basis from Purchases</p>
+              <p className="text-sm text-[#8A8A93] mb-2">Cost Basis from Purchases</p>
               <span className="text-xl font-semibold text-white">
                 {formatCurrency(taxData.tax_data.cost_basis_breakdown.purchases || 0)}
               </span>
-              <p className="text-xs text-gray-500 mt-1">Actual USD spent on buys</p>
+              <p className="text-xs text-[#4A4A52] mt-1">Actual USD spent on buys</p>
             </CardContent>
           </Card>
 
           <Card className="bg-gray-800 border-gray-700 shadow-sm">
             <CardContent className="p-6">
-              <p className="text-sm text-gray-400 mb-2">Cost Basis from Income</p>
+              <p className="text-sm text-[#8A8A93] mb-2">Cost Basis from Income</p>
               <span className="text-xl font-semibold text-white">
                 {formatCurrency(taxData.tax_data.cost_basis_breakdown.income || 0)}
               </span>
-              <p className="text-xs text-gray-500 mt-1">FMV of rewards when received</p>
+              <p className="text-xs text-[#4A4A52] mt-1">FMV of rewards when received</p>
             </CardContent>
           </Card>
         </div>
@@ -468,20 +468,20 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal: onAddData, onOpenChai
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-700">
-                <th className="text-left py-4 px-6 text-sm font-medium text-gray-400">Account</th>
-                <th className="text-center py-4 px-6 text-sm font-medium text-gray-400">Transactions</th>
-                <th className="text-right py-4 px-6 text-sm font-medium text-gray-400">Portfolio Value</th>
-                <th className="text-right py-4 px-6 text-sm font-medium text-gray-400">Gain/Loss</th>
+                <th className="text-left py-4 px-6 text-sm font-medium text-[#8A8A93]">Account</th>
+                <th className="text-center py-4 px-6 text-sm font-medium text-[#8A8A93]">Transactions</th>
+                <th className="text-right py-4 px-6 text-sm font-medium text-[#8A8A93]">Portfolio Value</th>
+                <th className="text-right py-4 px-6 text-sm font-medium text-[#8A8A93]">Gain/Loss</th>
               </tr>
             </thead>
             <tbody>
               {exchangeSummary.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="py-8 text-center text-gray-400">
+                  <td colSpan={4} className="py-8 text-center text-[#8A8A93]">
                     No accounts connected yet.{' '}
                     <button 
                       onClick={onAddData}
-                      className="text-purple-400 hover:underline"
+                      className="text-[#00C805] hover:underline"
                     >
                       Add your data
                     </button>
@@ -493,26 +493,26 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal: onAddData, onOpenChai
                     <tr key={idx} className="border-b border-gray-700 hover:bg-gray-700/50">
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-purple-900/50 flex items-center justify-center">
-                            <span className="text-purple-400 font-semibold text-sm">
+                          <div className="w-8 h-8 rounded-full bg-[#0C0C0E]/50 flex items-center justify-center">
+                            <span className="text-[#00C805] font-semibold text-sm">
                               {exchange.name.charAt(0).toUpperCase()}
                             </span>
                           </div>
                           <div>
                             <span className="font-medium text-white capitalize">{exchange.name}</span>
                             {Object.keys(exchange.assets || {}).length > 0 && (
-                              <p className="text-xs text-gray-500">
+                              <p className="text-xs text-[#4A4A52]">
                                 {Object.keys(exchange.assets).length} asset{Object.keys(exchange.assets).length !== 1 ? 's' : ''}
                               </p>
                             )}
                           </div>
                         </div>
                       </td>
-                      <td className="py-4 px-6 text-center text-gray-300">{exchange.transactions}</td>
+                      <td className="py-4 px-6 text-center text-white">{exchange.transactions}</td>
                       <td className="py-4 px-6 text-right font-medium text-white">
                         {formatCurrency(exchange.portfolioValue)}
                       </td>
-                      <td className={`py-4 px-6 text-right font-medium ${exchange.gainLoss >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      <td className={`py-4 px-6 text-right font-medium ${exchange.gainLoss >= 0 ? 'text-[#00C805]' : 'text-[#FF3B30]'}`}>
                         {formatCurrency(exchange.gainLoss)}
                       </td>
                     </tr>
@@ -523,7 +523,7 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal: onAddData, onOpenChai
                     <td className="py-4 px-6 text-right font-semibold text-white">
                       {formatCurrency(exchangeSummary.reduce((sum, ex) => sum + (ex.portfolioValue || 0), 0))}
                     </td>
-                    <td className={`py-4 px-6 text-right font-semibold ${totalGainLoss >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    <td className={`py-4 px-6 text-right font-semibold ${totalGainLoss >= 0 ? 'text-[#00C805]' : 'text-[#FF3B30]'}`}>
                       {formatCurrency(totalGainLoss)}
                     </td>
                   </tr>
@@ -538,7 +538,7 @@ export const TaxSummaryDashboard = ({ onOpenExchangeModal: onAddData, onOpenChai
       {exchangeSummary.length > 0 && (
         <div className="flex justify-end">
           <Button 
-            className="bg-purple-600 hover:bg-purple-700 text-white"
+            className="bg-white text-black hover:bg-gray-200 text-white"
             onClick={async () => {
               try {
                 const response = await axios.post(

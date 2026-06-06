@@ -22,8 +22,8 @@ const WalletNode = ({ data }) => {
       case 'exchange': return 'bg-green-900 border-green-500';
       case 'dex': return 'bg-blue-900 border-blue-500';
       case 'dormant': return 'bg-orange-900 border-orange-500';
-      case 'target': return 'bg-purple-900 border-purple-500';
-      default: return 'bg-slate-800 border-slate-600';
+      case 'target': return 'bg-[#0C0C0E] border-[#00C805]';
+      default: return 'bg-[#0C0C0E] border-[#1F1F22]';
     }
   };
 
@@ -45,7 +45,7 @@ const WalletNode = ({ data }) => {
           {data.label || data.type}
         </span>
       </div>
-      <div className="text-xs font-mono text-gray-300 truncate" title={data.address}>
+      <div className="text-xs font-mono text-white truncate" title={data.address}>
         {data.address ? `${data.address.slice(0, 8)}...${data.address.slice(-6)}` : ''}
       </div>
       {data.value && (
@@ -54,7 +54,7 @@ const WalletNode = ({ data }) => {
         </div>
       )}
       {data.exchangeName && (
-        <div className="text-xs text-green-300 mt-1 font-semibold">
+        <div className="text-xs text-[#00C805] mt-1 font-semibold">
           {data.exchangeName}
         </div>
       )}
@@ -190,15 +190,15 @@ export const CustodyFlowGraph = ({ result, chain }) => {
       case 'exchange': return '#22c55e';
       case 'dex': return '#3b82f6';
       case 'dormant': return '#f97316';
-      case 'target': return '#a855f7';
+      case 'target': return '#00C805';
       default: return '#475569';
     }
   }, []);
 
   if (!result || !result.custody_chain || result.custody_chain.length === 0) {
     return (
-      <div className="h-[500px] flex items-center justify-center bg-slate-900/50 rounded-lg border border-slate-700">
-        <div className="text-center text-gray-400">
+      <div className="h-[500px] flex items-center justify-center bg-[#050505]/50 rounded-lg border border-[#1F1F22]">
+        <div className="text-center text-[#8A8A93]">
           <p className="text-lg mb-2">No custody data to visualize</p>
           <p className="text-sm">Run an analysis to see the flow graph</p>
         </div>
@@ -207,7 +207,7 @@ export const CustodyFlowGraph = ({ result, chain }) => {
   }
 
   return (
-    <div className="h-[500px] bg-slate-900 rounded-lg border border-slate-700 overflow-hidden">
+    <div className="h-[500px] bg-[#050505] rounded-lg border border-[#1F1F22] overflow-hidden">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -222,39 +222,39 @@ export const CustodyFlowGraph = ({ result, chain }) => {
       >
         <Background color="#334155" gap={20} size={1} />
         <Controls 
-          className="bg-slate-800 border-slate-600 rounded-lg"
+          className="bg-[#0C0C0E] border-[#1F1F22] rounded-lg"
           showInteractive={false}
         />
         <MiniMap 
           nodeColor={nodeColor}
           maskColor="rgba(15, 23, 42, 0.8)"
-          className="bg-slate-800 border-slate-600 rounded-lg"
+          className="bg-[#0C0C0E] border-[#1F1F22] rounded-lg"
         />
       </ReactFlow>
       
       {/* Legend */}
-      <div className="absolute bottom-4 left-4 bg-slate-800/90 p-3 rounded-lg border border-slate-700 text-xs">
+      <div className="absolute bottom-4 left-4 bg-[#0C0C0E]/90 p-3 rounded-lg border border-[#1F1F22] text-xs">
         <div className="font-semibold text-white mb-2">Legend</div>
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded bg-purple-500"></div>
-            <span className="text-gray-300">Target Wallet</span>
+            <div className="w-3 h-3 rounded bg-[#00C805]"></div>
+            <span className="text-white">Target Wallet</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded bg-green-500"></div>
-            <span className="text-gray-300">Exchange Origin</span>
+            <span className="text-white">Exchange Origin</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded bg-blue-500"></div>
-            <span className="text-gray-300">DEX Swap</span>
+            <span className="text-white">DEX Swap</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded bg-orange-500"></div>
-            <span className="text-gray-300">Dormant Wallet</span>
+            <span className="text-white">Dormant Wallet</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded bg-slate-500"></div>
-            <span className="text-gray-300">Transfer</span>
+            <div className="w-3 h-3 rounded bg-[#4A4A52]"></div>
+            <span className="text-white">Transfer</span>
           </div>
         </div>
       </div>

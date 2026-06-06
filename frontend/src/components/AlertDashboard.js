@@ -45,15 +45,15 @@ const formatPrice = (price) => {
 
 // Alert type labels
 const ALERT_TYPE_LABELS = {
-  price_above: { label: 'Price Above', icon: ArrowUp, color: 'text-green-400' },
-  price_below: { label: 'Price Below', icon: ArrowDown, color: 'text-red-400' },
-  percent_change_up: { label: '% Change Up', icon: TrendingUp, color: 'text-green-400' },
-  percent_change_down: { label: '% Change Down', icon: TrendingDown, color: 'text-red-400' }
+  price_above: { label: 'Price Above', icon: ArrowUp, color: 'text-[#00C805]' },
+  price_below: { label: 'Price Below', icon: ArrowDown, color: 'text-[#FF3B30]' },
+  percent_change_up: { label: '% Change Up', icon: TrendingUp, color: 'text-[#00C805]' },
+  percent_change_down: { label: '% Change Down', icon: TrendingDown, color: 'text-[#FF3B30]' }
 };
 
 // Asset type badges
 const AssetBadge = ({ type }) => (
-  <Badge className={type === 'crypto' ? 'bg-orange-600' : 'bg-blue-600'}>
+  <Badge className={type === 'crypto' ? 'bg-orange-600' : 'bg-white text-black'}>
     {type === 'crypto' ? 'CRYPTO' : 'STOCK'}
   </Badge>
 );
@@ -61,9 +61,9 @@ const AssetBadge = ({ type }) => (
 // Status badge
 const StatusBadge = ({ status }) => {
   const styles = {
-    active: 'bg-green-600',
+    active: 'bg-[#00C805]',
     paused: 'bg-yellow-600',
-    triggered: 'bg-purple-600',
+    triggered: 'bg-white text-black',
     expired: 'bg-gray-600'
   };
   return <Badge className={styles[status] || 'bg-gray-600'}>{status.toUpperCase()}</Badge>;
@@ -206,7 +206,7 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <Card className="bg-slate-800 border-slate-700 w-full max-w-md max-h-[90vh] overflow-y-auto">
+      <Card className="bg-[#0C0C0E] border-[#1F1F22] w-full max-w-md max-h-[90vh] overflow-y-auto">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-white text-lg">
             {step === 1 ? 'Search Asset' : 'Configure Alert'}
@@ -218,8 +218,8 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
         <CardContent className="space-y-4">
           {error && (
             <Alert className="bg-red-900/20 border-red-700">
-              <AlertCircle className="w-4 h-4 text-red-400" />
-              <AlertDescription className="text-red-300">{error}</AlertDescription>
+              <AlertCircle className="w-4 h-4 text-[#FF3B30]" />
+              <AlertDescription className="text-[#FF3B30]">{error}</AlertDescription>
             </Alert>
           )}
 
@@ -227,16 +227,16 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
             <>
               {/* Search Input */}
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8A8A93]" />
                 <Input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search BTC, ETH, SOL..."
-                  className="pl-10 bg-slate-700 border-slate-600 text-white"
+                  className="pl-10 bg-[#161618] border-[#1F1F22] text-white"
                   autoFocus
                   data-testid="alert-search-input"
                 />
-                {searching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-gray-400" />}
+                {searching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-[#8A8A93]" />}
               </div>
 
               {/* Search Results */}
@@ -245,7 +245,7 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
                   <div
                     key={`${result.type}-${result.symbol}`}
                     onClick={() => handleSelectAsset(result)}
-                    className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg cursor-pointer hover:bg-slate-700 transition-colors"
+                    className="flex items-center justify-between p-3 bg-[#161618]/50 rounded-lg cursor-pointer hover:bg-[#161618] transition-colors"
                     data-testid={`search-result-${result.symbol}`}
                   >
                     <div>
@@ -253,18 +253,18 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
                         <span className="text-white font-medium">{result.symbol}</span>
                         <AssetBadge type={result.type} />
                       </div>
-                      <p className="text-xs text-gray-400">{result.name}</p>
+                      <p className="text-xs text-[#8A8A93]">{result.name}</p>
                     </div>
-                    <ArrowUp className="w-4 h-4 text-gray-400" />
+                    <ArrowUp className="w-4 h-4 text-[#8A8A93]" />
                   </div>
                 ))}
                 
                 {searchQuery && !searching && searchResults.length === 0 && (
-                  <p className="text-center text-gray-400 py-4">No results found</p>
+                  <p className="text-center text-[#8A8A93] py-4">No results found</p>
                 )}
                 
                 {!searchQuery && (
-                  <div className="text-center text-gray-400 py-8">
+                  <div className="text-center text-[#8A8A93] py-8">
                     <Search className="w-12 h-12 mx-auto mb-2 opacity-50" />
                     <p>Search for a crypto symbol</p>
                     <p className="text-xs mt-1">e.g., BTC, ETH, SOL, DOGE</p>
@@ -277,20 +277,20 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
           {step === 2 && selectedAsset && (
             <>
               {/* Selected Asset */}
-              <div className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg">
+              <div className="flex items-center justify-between p-3 bg-[#161618]/50 rounded-lg">
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-white font-medium text-lg">{selectedAsset.symbol}</span>
                     <AssetBadge type={selectedAsset.type} />
                   </div>
-                  <p className="text-xs text-gray-400">{selectedAsset.name}</p>
+                  <p className="text-xs text-[#8A8A93]">{selectedAsset.name}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-white font-medium">
                     {currentPrice ? formatPrice(currentPrice.price) : 'Loading...'}
                   </p>
                   {currentPrice?.change_24h && (
-                    <p className={`text-xs ${currentPrice.change_24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    <p className={`text-xs ${currentPrice.change_24h >= 0 ? 'text-[#00C805]' : 'text-[#FF3B30]'}`}>
                       {currentPrice.change_24h >= 0 ? '+' : ''}{currentPrice.change_24h.toFixed(2)}% (24h)
                     </p>
                   )}
@@ -299,14 +299,14 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
 
               {/* Alert Type */}
               <div>
-                <label className="text-sm text-gray-300 mb-2 block">Alert Type</label>
+                <label className="text-sm text-white mb-2 block">Alert Type</label>
                 <div className="grid grid-cols-2 gap-2">
                   {Object.entries(ALERT_TYPE_LABELS).map(([key, { label, icon: Icon, color }]) => (
                     <Button
                       key={key}
                       variant={alertType === key ? 'default' : 'outline'}
                       onClick={() => setAlertType(key)}
-                      className={`justify-start ${alertType === key ? 'bg-purple-600' : 'border-slate-600'}`}
+                      className={`justify-start ${alertType === key ? 'bg-white text-black' : 'border-[#1F1F22]'}`}
                       data-testid={`alert-type-${key}`}
                     >
                       <Icon className={`w-4 h-4 mr-2 ${color}`} />
@@ -318,26 +318,26 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
 
               {/* Target Value */}
               <div>
-                <label className="text-sm text-gray-300 mb-2 block">
+                <label className="text-sm text-white mb-2 block">
                   {alertType.includes('percent') ? 'Percentage Change' : 'Target Price'}
                 </label>
                 <div className="relative">
                   {alertType.includes('percent') ? (
-                    <Percent className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Percent className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8A8A93]" />
                   ) : (
-                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8A8A93]" />
                   )}
                   <Input
                     type="number"
                     value={targetValue}
                     onChange={(e) => setTargetValue(e.target.value)}
                     placeholder={alertType.includes('percent') ? '5' : currentPrice?.price?.toString() || '0'}
-                    className="pl-10 bg-slate-700 border-slate-600 text-white"
+                    className="pl-10 bg-[#161618] border-[#1F1F22] text-white"
                     data-testid="alert-target-value"
                   />
                 </div>
                 {currentPrice && !alertType.includes('percent') && (
-                  <p className="text-xs text-gray-400 mt-1">
+                  <p className="text-xs text-[#8A8A93] mt-1">
                     Current: {formatPrice(currentPrice.price)}
                   </p>
                 )}
@@ -345,12 +345,12 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
 
               {/* Notification Method - Telegram or SMS */}
               <div>
-                <label className="text-sm text-gray-300 mb-2 block">Notify via</label>
+                <label className="text-sm text-white mb-2 block">Notify via</label>
                 <div className="flex gap-2">
                   <Button
                     variant={notificationMethod === 'telegram' ? 'default' : 'outline'}
                     onClick={() => setNotificationMethod('telegram')}
-                    className={notificationMethod === 'telegram' ? 'bg-blue-600' : 'border-slate-600'}
+                    className={notificationMethod === 'telegram' ? 'bg-white text-black' : 'border-[#1F1F22]'}
                     size="sm"
                     data-testid="notify-telegram"
                   >
@@ -360,7 +360,7 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
                   <Button
                     variant={notificationMethod === 'sms' ? 'default' : 'outline'}
                     onClick={() => setNotificationMethod('sms')}
-                    className={notificationMethod === 'sms' ? 'bg-purple-600' : 'border-slate-600'}
+                    className={notificationMethod === 'sms' ? 'bg-white text-black' : 'border-[#1F1F22]'}
                     size="sm"
                     data-testid="notify-sms"
                   >
@@ -372,16 +372,16 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
               {/* Phone Number - show when SMS selected */}
               {notificationMethod === 'sms' && (
                 <div>
-                  <label className="text-sm text-gray-300 mb-2 block">Phone Number</label>
+                  <label className="text-sm text-white mb-2 block">Phone Number</label>
                   <Input
                     type="tel"
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
                     placeholder="+1 (555) 123-4567"
-                    className="bg-slate-700 border-slate-600 text-white"
+                    className="bg-[#161618] border-[#1F1F22] text-white"
                     data-testid="alert-phone-input"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Include country code (e.g., +1 for US)</p>
+                  <p className="text-xs text-[#4A4A52] mt-1">Include country code (e.g., +1 for US)</p>
                 </div>
               )}
 
@@ -397,12 +397,12 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
 
               {/* Note */}
               <div>
-                <label className="text-sm text-gray-300 mb-2 block">Note (optional)</label>
+                <label className="text-sm text-white mb-2 block">Note (optional)</label>
                 <Input
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   placeholder="e.g., Buy signal"
-                  className="bg-slate-700 border-slate-600 text-white"
+                  className="bg-[#161618] border-[#1F1F22] text-white"
                 />
               </div>
 
@@ -411,14 +411,14 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
                 <Button
                   variant="outline"
                   onClick={() => setStep(1)}
-                  className="flex-1 border-slate-600"
+                  className="flex-1 border-[#1F1F22]"
                 >
                   Back
                 </Button>
                 <Button
                   onClick={handleCreate}
                   disabled={creating || !targetValue}
-                  className="flex-1 bg-purple-600 hover:bg-purple-700"
+                  className="flex-1 bg-white text-black hover:bg-gray-200"
                   data-testid="create-alert-submit"
                 >
                   {creating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Bell className="w-4 h-4 mr-2" />}
@@ -442,12 +442,12 @@ const SubscriptionBanner = ({ subscription, onSubscribe, loading }) => {
     return (
       <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-4 py-3 mb-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <CheckCircle className="w-4 h-4 text-emerald-400" />
+          <CheckCircle className="w-4 h-4 text-[#00C805]" />
           <span className="text-white/80 text-sm">
             <span className="font-medium">Unlimited Plan</span> — Create unlimited alerts
           </span>
         </div>
-        <span className="text-emerald-400 text-xs font-medium">Active</span>
+        <span className="text-[#00C805] text-xs font-medium">Active</span>
       </div>
     );
   }
@@ -469,7 +469,7 @@ const SubscriptionBanner = ({ subscription, onSubscribe, loading }) => {
   if (status === 'expired') {
     return (
       <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-6 mb-6 text-center">
-        <AlertCircle className="w-8 h-8 text-red-400 mx-auto mb-3" />
+        <AlertCircle className="w-8 h-8 text-[#FF3B30] mx-auto mb-3" />
         <h3 className="text-white font-medium mb-1">Trial Expired</h3>
         <p className="text-white/50 text-sm mb-4">Subscribe to continue using alerts</p>
         <button 
@@ -488,7 +488,7 @@ const SubscriptionBanner = ({ subscription, onSubscribe, loading }) => {
   return (
     <div className="bg-white/5 border border-white/10 rounded-xl p-8 mb-6 text-center">
       <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-4">
-        <Zap className="w-6 h-6 text-amber-400" />
+        <Zap className="w-6 h-6 text-[#FFB800]" />
       </div>
       <h3 className="text-lg font-semibold text-white mb-2">Start Free Trial</h3>
       <p className="text-white/50 text-sm mb-6 max-w-sm mx-auto">
@@ -719,14 +719,14 @@ export const AlertDashboard = ({ getAuthHeader }) => {
 
       {/* Alerts */}
       {error && (
-        <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3 text-red-400 text-sm flex items-center gap-2">
+        <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3 text-[#FF3B30] text-sm flex items-center gap-2">
           <AlertCircle className="w-4 h-4" />
           {error}
         </div>
       )}
       
       {success && (
-        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-4 py-3 text-emerald-400 text-sm flex items-center gap-2">
+        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-4 py-3 text-[#00C805] text-sm flex items-center gap-2">
           <CheckCircle className="w-4 h-4" />
           {success}
         </div>
@@ -746,7 +746,7 @@ export const AlertDashboard = ({ getAuthHeader }) => {
           {canCreateAlerts && (
             <button 
               onClick={() => setShowCreateModal(true)} 
-                className="bg-purple-600 hover:bg-purple-700"
+                className="bg-white text-black hover:bg-gray-200"
                 data-testid="create-first-alert-btn"
               >
                 <Plus className="w-4 h-4 mr-1" />
@@ -772,7 +772,7 @@ export const AlertDashboard = ({ getAuthHeader }) => {
                     }`}>
                       <TypeIcon className={`w-5 h-5 ${
                         alert.status === 'active'
-                          ? isUp ? 'text-emerald-400' : 'text-red-400'
+                          ? isUp ? 'text-[#00C805]' : 'text-[#FF3B30]'
                           : 'text-white/30'
                       }`} />
                     </div>
@@ -780,7 +780,7 @@ export const AlertDashboard = ({ getAuthHeader }) => {
                       <div className="flex items-center gap-2">
                         <span className="text-white font-medium">{alert.asset_symbol}</span>
                         <span className={`text-xs px-1.5 py-0.5 rounded ${
-                          alert.status === 'active' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-white/40'
+                          alert.status === 'active' ? 'bg-emerald-500/20 text-[#00C805]' : 'bg-white/10 text-white/40'
                         }`}>
                           {alert.status}
                         </span>
@@ -805,7 +805,7 @@ export const AlertDashboard = ({ getAuthHeader }) => {
                     </button>
                     <button
                       onClick={() => deleteAlert(alert.alert_id)}
-                      className="p-2 text-white/40 hover:text-red-400 transition-colors"
+                      className="p-2 text-white/40 hover:text-[#FF3B30] transition-colors"
                       data-testid={`delete-alert-${alert.alert_id}`}
                     >
                       <Trash2 className="w-4 h-4" />
@@ -827,7 +827,7 @@ export const AlertDashboard = ({ getAuthHeader }) => {
               <span className="text-white/80 text-sm font-medium">Telegram</span>
             </div>
             {telegramStatus?.connected && (
-              <span className="text-emerald-400 text-xs">Connected</span>
+              <span className="text-[#00C805] text-xs">Connected</span>
             )}
           </div>
           
@@ -843,7 +843,7 @@ export const AlertDashboard = ({ getAuthHeader }) => {
                 </button>
                 <button
                   onClick={disconnectTelegram}
-                  className="text-red-400/80 hover:text-red-400 text-sm px-3 py-1.5 rounded border border-red-500/20 hover:border-red-500/30 transition-colors"
+                  className="text-[#FF3B30]/80 hover:text-[#FF3B30] text-sm px-3 py-1.5 rounded border border-red-500/20 hover:border-red-500/30 transition-colors"
                 >
                   Disconnect
                 </button>
@@ -879,7 +879,7 @@ export const AlertDashboard = ({ getAuthHeader }) => {
                 <button
                   onClick={connectTelegram}
                   disabled={connectingTelegram || !telegramChatId.trim()}
-                  className="bg-blue-500 hover:bg-blue-600 disabled:bg-blue-500/50 text-white text-sm px-4 py-2 rounded-lg transition-colors"
+                  className="bg-blue-500 hover:bg-white text-black disabled:bg-blue-500/50 text-white text-sm px-4 py-2 rounded-lg transition-colors"
                   data-testid="connect-telegram-btn"
                 >
                   {connectingTelegram ? (

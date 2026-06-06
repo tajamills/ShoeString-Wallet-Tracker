@@ -164,22 +164,22 @@ export const ExchangeConnectionModal = ({ isOpen, onClose }) => {
   const getTxTypeIcon = (txType) => {
     const type = txType?.toLowerCase();
     if (['buy', 'receive', 'deposit', 'reward'].includes(type)) {
-      return <ArrowDownLeft className="w-4 h-4 text-green-400" />;
+      return <ArrowDownLeft className="w-4 h-4 text-[#00C805]" />;
     }
-    return <ArrowUpRight className="w-4 h-4 text-red-400" />;
+    return <ArrowUpRight className="w-4 h-4 text-[#FF3B30]" />;
   };
 
   const getTxTypeBadge = (txType) => {
     const type = txType?.toLowerCase();
     const colors = {
-      buy: 'bg-green-600',
-      sell: 'bg-red-600',
-      deposit: 'bg-blue-600',
+      buy: 'bg-[#00C805]',
+      sell: 'bg-[#FF3B30]',
+      deposit: 'bg-white text-black',
       withdrawal: 'bg-orange-600',
-      reward: 'bg-purple-600',
+      reward: 'bg-white text-black',
       trade: 'bg-yellow-600',
-      receive: 'bg-green-600',
-      send: 'bg-red-600',
+      receive: 'bg-[#00C805]',
+      send: 'bg-[#FF3B30]',
     };
     return colors[type] || 'bg-gray-600';
   };
@@ -189,13 +189,13 @@ export const ExchangeConnectionModal = ({ isOpen, onClose }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-3xl bg-slate-800 border-slate-700 max-h-[90vh] overflow-y-auto" data-testid="exchange-connection-modal">
+      <DialogContent className="sm:max-w-3xl bg-[#0C0C0E] border-[#1F1F22] max-h-[90vh] overflow-y-auto" data-testid="exchange-connection-modal">
         <DialogHeader>
           <DialogTitle className="text-white text-xl flex items-center gap-2">
-            <Key className="w-5 h-5 text-purple-400" />
+            <Key className="w-5 h-5 text-[#00C805]" />
             Exchange Connections
           </DialogTitle>
-          <DialogDescription className="text-gray-400">
+          <DialogDescription className="text-[#8A8A93]">
             Connect exchanges via API or view synced transactions
           </DialogDescription>
         </DialogHeader>
@@ -210,15 +210,15 @@ export const ExchangeConnectionModal = ({ isOpen, onClose }) => {
         )}
 
         <Tabs defaultValue="transactions" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-slate-700">
-            <TabsTrigger value="transactions" className="data-[state=active]:bg-purple-600">
+          <TabsList className="grid w-full grid-cols-3 bg-[#161618]">
+            <TabsTrigger value="transactions" className="data-[state=active]:bg-white text-black">
               <List className="w-4 h-4 mr-2" />
               Transactions ({transactions.length})
             </TabsTrigger>
-            <TabsTrigger value="connect" className="data-[state=active]:bg-purple-600">
+            <TabsTrigger value="connect" className="data-[state=active]:bg-white text-black">
               Connect New
             </TabsTrigger>
-            <TabsTrigger value="manage" className="data-[state=active]:bg-purple-600">
+            <TabsTrigger value="manage" className="data-[state=active]:bg-white text-black">
               Manage ({connections.length})
             </TabsTrigger>
           </TabsList>
@@ -227,10 +227,10 @@ export const ExchangeConnectionModal = ({ isOpen, onClose }) => {
           <TabsContent value="transactions" className="space-y-4 mt-4">
             {loadingTransactions ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-purple-400" />
+                <Loader2 className="h-6 w-6 animate-spin text-[#00C805]" />
               </div>
             ) : transactions.length === 0 ? (
-              <div className="text-center py-8 text-gray-400">
+              <div className="text-center py-8 text-[#8A8A93]">
                 <List className="h-12 w-12 mx-auto mb-3 opacity-50" />
                 <p>No transactions yet</p>
                 <p className="text-sm">Connect an exchange and sync, or import a CSV</p>
@@ -240,21 +240,21 @@ export const ExchangeConnectionModal = ({ isOpen, onClose }) => {
                 {/* Summary */}
                 {txSummary && (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
-                    <div className="bg-slate-700 rounded-lg p-3 text-center">
+                    <div className="bg-[#161618] rounded-lg p-3 text-center">
                       <p className="text-2xl font-bold text-white">{txSummary.total_transactions}</p>
-                      <p className="text-xs text-gray-400">Total</p>
+                      <p className="text-xs text-[#8A8A93]">Total</p>
                     </div>
-                    <div className="bg-slate-700 rounded-lg p-3 text-center">
-                      <p className="text-2xl font-bold text-green-400">{txSummary.by_type?.buy || 0}</p>
-                      <p className="text-xs text-gray-400">Buys</p>
+                    <div className="bg-[#161618] rounded-lg p-3 text-center">
+                      <p className="text-2xl font-bold text-[#00C805]">{txSummary.by_type?.buy || 0}</p>
+                      <p className="text-xs text-[#8A8A93]">Buys</p>
                     </div>
-                    <div className="bg-slate-700 rounded-lg p-3 text-center">
-                      <p className="text-2xl font-bold text-red-400">{txSummary.by_type?.sell || 0}</p>
-                      <p className="text-xs text-gray-400">Sells</p>
+                    <div className="bg-[#161618] rounded-lg p-3 text-center">
+                      <p className="text-2xl font-bold text-[#FF3B30]">{txSummary.by_type?.sell || 0}</p>
+                      <p className="text-xs text-[#8A8A93]">Sells</p>
                     </div>
-                    <div className="bg-slate-700 rounded-lg p-3 text-center">
-                      <p className="text-2xl font-bold text-purple-400">{Object.keys(txSummary.by_asset || {}).length}</p>
-                      <p className="text-xs text-gray-400">Assets</p>
+                    <div className="bg-[#161618] rounded-lg p-3 text-center">
+                      <p className="text-2xl font-bold text-[#00C805]">{Object.keys(txSummary.by_asset || {}).length}</p>
+                      <p className="text-xs text-[#8A8A93]">Assets</p>
                     </div>
                   </div>
                 )}
@@ -264,7 +264,7 @@ export const ExchangeConnectionModal = ({ isOpen, onClose }) => {
                   {transactions.map((tx, idx) => (
                     <div 
                       key={tx.tx_id || idx}
-                      className="bg-slate-700 rounded-lg p-3 flex items-center justify-between"
+                      className="bg-[#161618] rounded-lg p-3 flex items-center justify-between"
                     >
                       <div className="flex items-center gap-3">
                         {getTxTypeIcon(tx.tx_type)}
@@ -277,7 +277,7 @@ export const ExchangeConnectionModal = ({ isOpen, onClose }) => {
                               {tx.amount?.toFixed(6)} {tx.asset}
                             </span>
                           </div>
-                          <p className="text-xs text-gray-400">
+                          <p className="text-xs text-[#8A8A93]">
                             {formatDate(tx.timestamp)} • {tx.exchange}
                           </p>
                         </div>
@@ -287,7 +287,7 @@ export const ExchangeConnectionModal = ({ isOpen, onClose }) => {
                           <p className="text-white font-medium">${tx.total_usd.toFixed(2)}</p>
                         )}
                         {tx.price_usd && (
-                          <p className="text-xs text-gray-400">@ ${tx.price_usd.toFixed(2)}</p>
+                          <p className="text-xs text-[#8A8A93]">@ ${tx.price_usd.toFixed(2)}</p>
                         )}
                       </div>
                     </div>
@@ -297,7 +297,7 @@ export const ExchangeConnectionModal = ({ isOpen, onClose }) => {
                 <Button 
                   variant="outline" 
                   onClick={fetchTransactions}
-                  className="w-full border-slate-600 text-gray-300"
+                  className="w-full border-[#1F1F22] text-white"
                 >
                   <RefreshCw className="w-4 h-4 mr-2" />
                   Refresh Transactions
@@ -310,15 +310,15 @@ export const ExchangeConnectionModal = ({ isOpen, onClose }) => {
           <TabsContent value="connect" className="space-y-4 mt-4">
             {/* Exchange Selection */}
             <div>
-              <label className="text-sm text-gray-300 mb-2 block">Select Exchange</label>
+              <label className="text-sm text-white mb-2 block">Select Exchange</label>
               <div className="grid grid-cols-3 gap-2">
                 {SUPPORTED_EXCHANGES.map(exchange => (
                   <Button
                     key={exchange.id}
                     variant={selectedExchange === exchange.id ? "default" : "outline"}
                     className={`${selectedExchange === exchange.id 
-                      ? 'bg-purple-600 text-white' 
-                      : 'bg-slate-700 text-gray-300 border-slate-600 hover:bg-slate-600'}`}
+                      ? 'bg-white text-black text-white' 
+                      : 'bg-[#161618] text-white border-[#1F1F22] hover:bg-[#1F1F22]'}`}
                     onClick={() => setSelectedExchange(exchange.id)}
                     disabled={!isPaidUser}
                   >
@@ -329,18 +329,18 @@ export const ExchangeConnectionModal = ({ isOpen, onClose }) => {
             </div>
 
             {/* API Key Instructions */}
-            <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+            <div className="bg-[#050505]/50 rounded-lg p-4 border border-[#1F1F22]">
               <h4 className="text-white font-medium mb-2 flex items-center gap-2">
-                <Shield className="w-4 h-4 text-green-400" />
+                <Shield className="w-4 h-4 text-[#00C805]" />
                 How to get your {selectedExchangeInfo?.name} API Key
               </h4>
-              <ol className="text-sm text-gray-400 space-y-1 list-decimal list-inside">
+              <ol className="text-sm text-[#8A8A93] space-y-1 list-decimal list-inside">
                 <li>Log in to your {selectedExchangeInfo?.name} account</li>
                 <li>Go to Settings → API Management</li>
-                <li>Create a new API key with <span className="text-yellow-400">READ-ONLY</span> permissions</li>
+                <li>Create a new API key with <span className="text-[#FFB800]">READ-ONLY</span> permissions</li>
                 <li>Copy the API Key and Secret</li>
               </ol>
-              <p className="text-xs text-green-400 mt-2">
+              <p className="text-xs text-[#00C805] mt-2">
                 We only need read access to view your transactions. Never enable trading permissions.
               </p>
             </div>
@@ -348,37 +348,37 @@ export const ExchangeConnectionModal = ({ isOpen, onClose }) => {
             {/* API Credentials Form */}
             <div className="space-y-3">
               <div>
-                <label className="text-sm text-gray-300 mb-1 block">API Key</label>
+                <label className="text-sm text-white mb-1 block">API Key</label>
                 <Input
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
                   placeholder="Enter your API key"
-                  className="bg-slate-700 border-slate-600 text-white"
+                  className="bg-[#161618] border-[#1F1F22] text-white"
                   disabled={!isPaidUser}
                   data-testid="exchange-api-key-input"
                 />
               </div>
               <div>
-                <label className="text-sm text-gray-300 mb-1 block">API Secret</label>
+                <label className="text-sm text-white mb-1 block">API Secret</label>
                 <Input
                   type="password"
                   value={apiSecret}
                   onChange={(e) => setApiSecret(e.target.value)}
                   placeholder="Enter your API secret"
-                  className="bg-slate-700 border-slate-600 text-white"
+                  className="bg-[#161618] border-[#1F1F22] text-white"
                   disabled={!isPaidUser}
                   data-testid="exchange-api-secret-input"
                 />
               </div>
               {selectedExchangeInfo?.hasPassphrase && (
                 <div>
-                  <label className="text-sm text-gray-300 mb-1 block">Passphrase</label>
+                  <label className="text-sm text-white mb-1 block">Passphrase</label>
                   <Input
                     type="password"
                     value={passphrase}
                     onChange={(e) => setPassphrase(e.target.value)}
                     placeholder="Enter your API passphrase"
-                    className="bg-slate-700 border-slate-600 text-white"
+                    className="bg-[#161618] border-[#1F1F22] text-white"
                     disabled={!isPaidUser}
                   />
                 </div>
@@ -386,14 +386,14 @@ export const ExchangeConnectionModal = ({ isOpen, onClose }) => {
             </div>
 
             {error && (
-              <Alert className="bg-red-900/20 border-red-700 text-red-300">
+              <Alert className="bg-red-900/20 border-red-700 text-[#FF3B30]">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
 
             {success && (
-              <Alert className="bg-green-900/20 border-green-700 text-green-300">
+              <Alert className="bg-green-900/20 border-green-700 text-[#00C805]">
                 <CheckCircle className="h-4 w-4" />
                 <AlertDescription>{success}</AlertDescription>
               </Alert>
@@ -402,7 +402,7 @@ export const ExchangeConnectionModal = ({ isOpen, onClose }) => {
             <Button
               onClick={handleConnect}
               disabled={loading || !isPaidUser || !apiKey || !apiSecret}
-              className="w-full bg-purple-600 hover:bg-purple-700"
+              className="w-full bg-white text-black hover:bg-gray-200"
               data-testid="connect-exchange-button"
             >
               {loading ? (
@@ -423,10 +423,10 @@ export const ExchangeConnectionModal = ({ isOpen, onClose }) => {
           <TabsContent value="manage" className="space-y-4 mt-4">
             {loadingConnections ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-purple-400" />
+                <Loader2 className="h-6 w-6 animate-spin text-[#00C805]" />
               </div>
             ) : connections.length === 0 ? (
-              <div className="text-center py-8 text-gray-400">
+              <div className="text-center py-8 text-[#8A8A93]">
                 <Key className="h-12 w-12 mx-auto mb-3 opacity-50" />
                 <p>No exchanges connected yet</p>
                 <p className="text-sm">Connect an exchange to get started</p>
@@ -436,13 +436,13 @@ export const ExchangeConnectionModal = ({ isOpen, onClose }) => {
                 {connections.map(conn => (
                   <div 
                     key={conn.exchange}
-                    className="bg-slate-700 rounded-lg p-4 flex items-center justify-between"
+                    className="bg-[#161618] rounded-lg p-4 flex items-center justify-between"
                   >
                     <div className="flex items-center gap-3">
-                      <CheckCircle className="h-5 w-5 text-green-400" />
+                      <CheckCircle className="h-5 w-5 text-[#00C805]" />
                       <div>
                         <p className="text-white font-medium capitalize">{conn.exchange}</p>
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-[#8A8A93]">
                           Connected {conn.connected_at ? new Date(conn.connected_at).toLocaleDateString() : 'recently'}
                         </p>
                       </div>
@@ -454,7 +454,7 @@ export const ExchangeConnectionModal = ({ isOpen, onClose }) => {
                           variant="outline"
                           onClick={() => handleSyncTransactions(conn.exchange)}
                           disabled={syncing}
-                          className="bg-slate-600 border-slate-500 text-white hover:bg-slate-500"
+                          className="bg-[#1F1F22] border-[#1F1F22] text-white hover:bg-[#1F1F22]"
                         >
                           {syncing ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -470,7 +470,7 @@ export const ExchangeConnectionModal = ({ isOpen, onClose }) => {
                         size="sm"
                         variant="destructive"
                         onClick={() => handleDisconnect(conn.exchange)}
-                        className="bg-red-600 hover:bg-red-700"
+                        className="bg-[#FF3B30] hover:bg-[#FF3B30]/80"
                       >
                         <Unlink className="h-4 w-4 mr-1" />
                         Disconnect
@@ -482,14 +482,14 @@ export const ExchangeConnectionModal = ({ isOpen, onClose }) => {
             )}
 
             {error && (
-              <Alert className="bg-red-900/20 border-red-700 text-red-300">
+              <Alert className="bg-red-900/20 border-red-700 text-[#FF3B30]">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
 
             {success && (
-              <Alert className="bg-green-900/20 border-green-700 text-green-300">
+              <Alert className="bg-green-900/20 border-green-700 text-[#00C805]">
                 <CheckCircle className="h-4 w-4" />
                 <AlertDescription>{success}</AlertDescription>
               </Alert>
@@ -497,8 +497,8 @@ export const ExchangeConnectionModal = ({ isOpen, onClose }) => {
           </TabsContent>
         </Tabs>
 
-        <div className="border-t border-slate-700 pt-4 mt-4">
-          <p className="text-xs text-gray-500 text-center">
+        <div className="border-t border-[#1F1F22] pt-4 mt-4">
+          <p className="text-xs text-[#4A4A52] text-center">
             Your API credentials are encrypted and stored securely. We only request read-only access.
           </p>
         </div>

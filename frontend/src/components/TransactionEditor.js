@@ -112,13 +112,13 @@ export const TransactionEditor = ({ isOpen, onClose, getAuthHeader, onUpdate }) 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-slate-900 border-slate-700 max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="bg-[#050505] border-[#1F1F22] max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-white flex items-center gap-2">
-            <Edit2 className="w-5 h-5 text-purple-400" />
+            <Edit2 className="w-5 h-5 text-[#00C805]" />
             Adjust Cost Basis for Transfers
           </DialogTitle>
-          <DialogDescription className="text-gray-400">
+          <DialogDescription className="text-[#8A8A93]">
             When you transfer crypto from a cold wallet, update the original purchase date for accurate tax calculations.
           </DialogDescription>
         </DialogHeader>
@@ -135,12 +135,12 @@ export const TransactionEditor = ({ isOpen, onClose, getAuthHeader, onUpdate }) 
 
         {/* Messages */}
         {message && (
-          <Alert className="bg-green-900/30 border-green-700 text-green-300">
+          <Alert className="bg-green-900/30 border-green-700 text-[#00C805]">
             <AlertDescription>{message}</AlertDescription>
           </Alert>
         )}
         {error && (
-          <Alert className="bg-red-900/30 border-red-700 text-red-300">
+          <Alert className="bg-red-900/30 border-red-700 text-[#FF3B30]">
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
@@ -148,26 +148,26 @@ export const TransactionEditor = ({ isOpen, onClose, getAuthHeader, onUpdate }) 
         {/* Loading State */}
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-8 h-8 animate-spin text-purple-400" />
+            <Loader2 className="w-8 h-8 animate-spin text-[#00C805]" />
           </div>
         ) : (
           <>
             {/* Edit Form */}
             {editingTx && (
-              <Card className="bg-slate-800/50 border-purple-600">
+              <Card className="bg-[#0C0C0E]/50 border-[#00C805]">
                 <CardContent className="pt-4 space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="text-white font-medium">
                       Editing: {editingTx.amount} {editingTx.asset}
                     </h3>
-                    <Badge className="bg-purple-600">
+                    <Badge className="bg-white text-black">
                       Received: {formatDate(editingTx.timestamp)}
                     </Badge>
                   </div>
 
                   <div className="grid gap-4">
                     <div>
-                      <label className="text-sm text-gray-400 mb-1 block">
+                      <label className="text-sm text-[#8A8A93] mb-1 block">
                         <Calendar className="w-3 h-3 inline mr-1" />
                         Original Purchase Date
                       </label>
@@ -175,15 +175,15 @@ export const TransactionEditor = ({ isOpen, onClose, getAuthHeader, onUpdate }) 
                         type="date"
                         value={formData.original_purchase_date}
                         onChange={(e) => setFormData({...formData, original_purchase_date: e.target.value})}
-                        className="bg-slate-700 border-slate-600 text-white"
+                        className="bg-[#161618] border-[#1F1F22] text-white"
                       />
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-[#4A4A52] mt-1">
                         When did you originally buy this {editingTx.asset}?
                       </p>
                     </div>
 
                     <div>
-                      <label className="text-sm text-gray-400 mb-1 block">
+                      <label className="text-sm text-[#8A8A93] mb-1 block">
                         <DollarSign className="w-3 h-3 inline mr-1" />
                         Original Cost Basis (USD) - Optional
                       </label>
@@ -193,20 +193,20 @@ export const TransactionEditor = ({ isOpen, onClose, getAuthHeader, onUpdate }) 
                         placeholder="e.g., 5000.00"
                         value={formData.original_cost_basis}
                         onChange={(e) => setFormData({...formData, original_cost_basis: e.target.value})}
-                        className="bg-slate-700 border-slate-600 text-white"
+                        className="bg-[#161618] border-[#1F1F22] text-white"
                       />
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-[#4A4A52] mt-1">
                         Total USD you paid for this {editingTx.asset}
                       </p>
                     </div>
 
                     <div>
-                      <label className="text-sm text-gray-400 mb-1 block">Notes (Optional)</label>
+                      <label className="text-sm text-[#8A8A93] mb-1 block">Notes (Optional)</label>
                       <Input
                         type="text"
                         value={formData.notes}
                         onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                        className="bg-slate-700 border-slate-600 text-white"
+                        className="bg-[#161618] border-[#1F1F22] text-white"
                       />
                     </div>
                   </div>
@@ -215,14 +215,14 @@ export const TransactionEditor = ({ isOpen, onClose, getAuthHeader, onUpdate }) 
                     <Button
                       variant="outline"
                       onClick={() => setEditingTx(null)}
-                      className="border-slate-600 text-gray-300"
+                      className="border-[#1F1F22] text-white"
                     >
                       Cancel
                     </Button>
                     <Button
                       onClick={handleSave}
                       disabled={saving || !formData.original_purchase_date}
-                      className="bg-purple-600 hover:bg-purple-700"
+                      className="bg-white text-black hover:bg-gray-200"
                     >
                       {saving ? (
                         <Loader2 className="w-4 h-4 animate-spin mr-2" />
@@ -244,23 +244,23 @@ export const TransactionEditor = ({ isOpen, onClose, getAuthHeader, onUpdate }) 
                 </h3>
                 
                 {potentialTransfers.length === 0 ? (
-                  <p className="text-gray-400 text-sm py-4 text-center">
+                  <p className="text-[#8A8A93] text-sm py-4 text-center">
                     No potential transfers detected. Transfers are identified when crypto is 
                     received and sold within 30 days.
                   </p>
                 ) : (
                   potentialTransfers.slice(0, 10).map((transfer, idx) => (
-                    <Card key={idx} className="bg-slate-800/50 border-slate-700">
+                    <Card key={idx} className="bg-[#0C0C0E]/50 border-[#1F1F22]">
                       <CardContent className="pt-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <Badge className="bg-blue-600">{transfer.asset}</Badge>
+                            <Badge className="bg-white text-black">{transfer.asset}</Badge>
                             <div className="text-sm">
-                              <span className="text-green-400">
+                              <span className="text-[#00C805]">
                                 Received {transfer.receive_tx.amount?.toFixed(4)}
                               </span>
-                              <ArrowRight className="w-3 h-3 inline mx-2 text-gray-500" />
-                              <span className="text-red-400">
+                              <ArrowRight className="w-3 h-3 inline mx-2 text-[#4A4A52]" />
+                              <span className="text-[#FF3B30]">
                                 Sold {transfer.days_between} days later
                               </span>
                             </div>
@@ -268,13 +268,13 @@ export const TransactionEditor = ({ isOpen, onClose, getAuthHeader, onUpdate }) 
                           <Button
                             size="sm"
                             onClick={() => handleEdit(transfer)}
-                            className="bg-purple-600 hover:bg-purple-700"
+                            className="bg-white text-black hover:bg-gray-200"
                           >
                             <Edit2 className="w-3 h-3 mr-1" />
                             Edit
                           </Button>
                         </div>
-                        <p className="text-xs text-gray-500 mt-2">
+                        <p className="text-xs text-[#4A4A52] mt-2">
                           Received: {formatDate(transfer.receive_tx.timestamp)}
                         </p>
                       </CardContent>
@@ -283,7 +283,7 @@ export const TransactionEditor = ({ isOpen, onClose, getAuthHeader, onUpdate }) 
                 )}
 
                 {potentialTransfers.length > 10 && (
-                  <p className="text-xs text-gray-500 text-center">
+                  <p className="text-xs text-[#4A4A52] text-center">
                     Showing first 10 of {potentialTransfers.length} potential transfers
                   </p>
                 )}

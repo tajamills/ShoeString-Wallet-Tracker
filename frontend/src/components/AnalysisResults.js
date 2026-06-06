@@ -43,10 +43,10 @@ export const PortfolioValueCard = ({ totalValueUsd, netBalance, symbol, priceUsd
   <Card className="bg-gradient-to-r from-green-900/30 to-emerald-800/30 border-green-700">
     <CardContent className="pt-6">
       <div className="text-center">
-        <p className="text-gray-400 text-sm mb-2">Portfolio Value</p>
+        <p className="text-[#8A8A93] text-sm mb-2">Portfolio Value</p>
         <h2 className="text-5xl font-bold text-white mb-2">{formatUSD(totalValueUsd)}</h2>
         {priceUsd && (
-          <p className="text-gray-400 text-sm">
+          <p className="text-[#8A8A93] text-sm">
             {formatNumber(netBalance)} {symbol}
             <span className="mx-2">•</span>1 {symbol} = {formatUSD(priceUsd)}
           </p>
@@ -81,37 +81,37 @@ export const MultiChainResultsCard = ({ multiChainResults }) => {
     <Card className="bg-gradient-to-br from-orange-900/30 to-yellow-800/20 border-orange-700">
       <CardHeader>
         <CardTitle className="text-white flex items-center gap-2">
-          <Crown className="w-6 h-6 text-yellow-400" />
+          <Crown className="w-6 h-6 text-[#FFB800]" />
           Multi-Chain Portfolio Analysis
           <Badge className="bg-yellow-600 ml-2">Pro Feature</Badge>
         </CardTitle>
-        <CardDescription className="text-gray-400">
+        <CardDescription className="text-[#8A8A93]">
           Analyzed {multiChainResults.address} across {multiChainResults.chains_analyzed} blockchains
         </CardDescription>
       </CardHeader>
       <CardContent>
         {/* Aggregated Totals */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-slate-900/50 rounded-lg p-4">
-            <div className="text-sm text-gray-400 mb-1">Total Transactions</div>
+          <div className="bg-[#050505]/50 rounded-lg p-4">
+            <div className="text-sm text-[#8A8A93] mb-1">Total Transactions</div>
             <div className="text-3xl font-bold text-white">
               {multiChainResults.aggregated.total_transactions.toLocaleString()}
             </div>
-            <div className="text-xs text-gray-500 mt-1">Across all chains</div>
+            <div className="text-xs text-[#4A4A52] mt-1">Across all chains</div>
           </div>
-          <div className="bg-slate-900/50 rounded-lg p-4">
-            <div className="text-sm text-gray-400 mb-1">Total Gas Fees</div>
+          <div className="bg-[#050505]/50 rounded-lg p-4">
+            <div className="text-sm text-[#8A8A93] mb-1">Total Gas Fees</div>
             <div className="text-3xl font-bold text-orange-400">
               {formatNumber(multiChainResults.aggregated.total_gas_fees)}
             </div>
-            <div className="text-xs text-gray-500 mt-1">Combined across chains</div>
+            <div className="text-xs text-[#4A4A52] mt-1">Combined across chains</div>
           </div>
-          <div className="bg-slate-900/50 rounded-lg p-4">
-            <div className="text-sm text-gray-400 mb-1">Chains Analyzed</div>
-            <div className="text-3xl font-bold text-green-400">
+          <div className="bg-[#050505]/50 rounded-lg p-4">
+            <div className="text-sm text-[#8A8A93] mb-1">Chains Analyzed</div>
+            <div className="text-3xl font-bold text-[#00C805]">
               {multiChainResults.chains_analyzed}/{multiChainResults.total_chains}
             </div>
-            <div className="text-xs text-gray-500 mt-1">Successfully analyzed</div>
+            <div className="text-xs text-[#4A4A52] mt-1">Successfully analyzed</div>
           </div>
         </div>
 
@@ -119,31 +119,31 @@ export const MultiChainResultsCard = ({ multiChainResults }) => {
         <div className="space-y-3">
           <h3 className="text-lg font-semibold text-white mb-3">Chain Breakdown</h3>
           {multiChainResults.results.map((result) => (
-            <div key={result.chain} className="bg-slate-900/30 rounded-lg p-4 border border-slate-700">
+            <div key={result.chain} className="bg-[#050505]/30 rounded-lg p-4 border border-[#1F1F22]">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <span className="text-2xl">{getChainIcon(result.chain)}</span>
                   <span className="text-lg font-semibold text-white capitalize">{result.chain}</span>
                 </div>
-                <Badge className="bg-green-900/50 text-green-300">Active</Badge>
+                <Badge className="bg-green-900/50 text-[#00C805]">Active</Badge>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                 <div>
-                  <div className="text-gray-400">Sent</div>
+                  <div className="text-[#8A8A93]">Sent</div>
                   <div className="text-white font-semibold">{formatNumber(result.totalSent)}</div>
                 </div>
                 <div>
-                  <div className="text-gray-400">Received</div>
+                  <div className="text-[#8A8A93]">Received</div>
                   <div className="text-white font-semibold">{formatNumber(result.totalReceived)}</div>
                 </div>
                 <div>
-                  <div className="text-gray-400">Net Balance</div>
-                  <div className={`font-semibold ${result.netBalance >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  <div className="text-[#8A8A93]">Net Balance</div>
+                  <div className={`font-semibold ${result.netBalance >= 0 ? 'text-[#00C805]' : 'text-[#FF3B30]'}`}>
                     {result.netBalance >= 0 ? '+' : ''}{formatNumber(result.netBalance)}
                   </div>
                 </div>
                 <div>
-                  <div className="text-gray-400">Transactions</div>
+                  <div className="text-[#8A8A93]">Transactions</div>
                   <div className="text-white font-semibold">{result.transactionCount}</div>
                 </div>
               </div>
@@ -177,12 +177,12 @@ export const TransactionsTable = ({ transactions, chain, selectedChain, onExport
   const hasMore = transactions.length > maxPreviewRows;
 
   return (
-    <Card className="bg-slate-800/50 border-slate-700" data-testid="transactions-table">
+    <Card className="bg-[#0C0C0E]/50 border-[#1F1F22]" data-testid="transactions-table">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="text-white text-lg">Recent Transactions</CardTitle>
-            <CardDescription className="text-gray-400">
+            <CardDescription className="text-[#8A8A93]">
               {transactions.length} transaction{transactions.length !== 1 ? 's' : ''}
             </CardDescription>
           </div>
@@ -191,7 +191,7 @@ export const TransactionsTable = ({ transactions, chain, selectedChain, onExport
               onClick={onExport}
               variant="outline"
               size="sm"
-              className="border-slate-600 text-gray-300"
+              className="border-[#1F1F22] text-white"
             >
               <Download className="w-4 h-4 mr-2" />
               Export
@@ -202,11 +202,11 @@ export const TransactionsTable = ({ transactions, chain, selectedChain, onExport
       <CardContent className="pt-0">
         <div className="space-y-2">
           {displayTransactions.map((tx, idx) => (
-            <div key={idx} className="flex items-center justify-between py-2 border-b border-slate-700/50 last:border-0">
+            <div key={idx} className="flex items-center justify-between py-2 border-b border-[#1F1F22]/50 last:border-0">
               <div className="flex items-center gap-3">
                 <Badge
                   variant="outline"
-                  className={tx.type === 'sent' ? 'text-red-300 border-red-700' : 'text-green-300 border-green-700'}
+                  className={tx.type === 'sent' ? 'text-[#FF3B30] border-red-700' : 'text-[#00C805] border-green-700'}
                 >
                   {tx.type === 'sent' ? 'Out' : 'In'}
                 </Badge>
@@ -215,7 +215,7 @@ export const TransactionsTable = ({ transactions, chain, selectedChain, onExport
               <div className="text-right">
                 <span className="text-white font-mono text-sm">{formatNumber(tx.value)}</span>
                 {tx.value_usd && (
-                  <span className="text-gray-400 text-xs ml-2">{formatUSD(tx.value_usd)}</span>
+                  <span className="text-[#8A8A93] text-xs ml-2">{formatUSD(tx.value_usd)}</span>
                 )}
               </div>
             </div>
@@ -224,7 +224,7 @@ export const TransactionsTable = ({ transactions, chain, selectedChain, onExport
         {hasMore && (
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="w-full mt-3 py-2 text-sm text-purple-400 hover:text-purple-300"
+            className="w-full mt-3 py-2 text-sm text-[#00C805] hover:text-[#00C805]"
           >
             {isExpanded ? 'Show less' : `View all ${transactions.length} transactions`}
           </button>
@@ -245,78 +245,78 @@ export const AdvancedAnalyticsCard = ({ analysis, selectedChain }) => {
         <CardTitle className="text-white flex items-center gap-2">
           <Activity className="w-5 h-5 text-indigo-400" />
           Advanced Analytics
-          <Badge className="bg-purple-600 ml-2">Premium</Badge>
+          <Badge className="bg-white text-black ml-2">Premium</Badge>
         </CardTitle>
-        <CardDescription className="text-gray-400">
+        <CardDescription className="text-[#8A8A93]">
           Deeper insights into your wallet activity
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Average Transaction Value */}
-          <div className="bg-slate-900/50 rounded-lg p-4">
-            <div className="text-sm text-gray-400 mb-1">Avg Transaction Value</div>
+          <div className="bg-[#050505]/50 rounded-lg p-4">
+            <div className="text-sm text-[#8A8A93] mb-1">Avg Transaction Value</div>
             <div className="text-2xl font-bold text-white">
               {formatNumber(
                 (analysis.totalEthReceived + analysis.totalEthSent) /
                 Math.max(1, analysis.incomingTransactionCount + analysis.outgoingTransactionCount)
               )} {symbol}
             </div>
-            <div className="text-xs text-gray-500 mt-1">Per transaction</div>
+            <div className="text-xs text-[#4A4A52] mt-1">Per transaction</div>
           </div>
 
           {/* Activity Ratio */}
-          <div className="bg-slate-900/50 rounded-lg p-4">
-            <div className="text-sm text-gray-400 mb-1">Activity Ratio</div>
+          <div className="bg-[#050505]/50 rounded-lg p-4">
+            <div className="text-sm text-[#8A8A93] mb-1">Activity Ratio</div>
             <div className="text-2xl font-bold text-white">
               {analysis.outgoingTransactionCount > 0
                 ? (analysis.incomingTransactionCount / analysis.outgoingTransactionCount).toFixed(2)
                 : analysis.incomingTransactionCount.toFixed(2)}:1
             </div>
-            <div className="text-xs text-gray-500 mt-1">Incoming : Outgoing</div>
+            <div className="text-xs text-[#4A4A52] mt-1">Incoming : Outgoing</div>
           </div>
 
           {/* Unique Assets */}
-          <div className="bg-slate-900/50 rounded-lg p-4">
-            <div className="text-sm text-gray-400 mb-1">Unique Assets</div>
+          <div className="bg-[#050505]/50 rounded-lg p-4">
+            <div className="text-sm text-[#8A8A93] mb-1">Unique Assets</div>
             <div className="text-2xl font-bold text-white">
               {1 + new Set([
                 ...Object.keys(analysis.tokensReceived || {}),
                 ...Object.keys(analysis.tokensSent || {})
               ]).size}
             </div>
-            <div className="text-xs text-gray-500 mt-1">Native + Tokens</div>
+            <div className="text-xs text-[#4A4A52] mt-1">Native + Tokens</div>
           </div>
 
           {/* Gas Efficiency (EVM only) */}
           {['ethereum', 'arbitrum', 'polygon', 'bsc'].includes(chain) && analysis.totalGasFees > 0 && (
-            <div className="bg-slate-900/50 rounded-lg p-4">
-              <div className="text-sm text-gray-400 mb-1">Avg Gas per TX</div>
+            <div className="bg-[#050505]/50 rounded-lg p-4">
+              <div className="text-sm text-[#8A8A93] mb-1">Avg Gas per TX</div>
               <div className="text-2xl font-bold text-white">
                 {formatNumber(analysis.totalGasFees / Math.max(1, analysis.outgoingTransactionCount))} {symbol}
               </div>
-              <div className="text-xs text-gray-500 mt-1">Average gas cost</div>
+              <div className="text-xs text-[#4A4A52] mt-1">Average gas cost</div>
             </div>
           )}
 
           {/* Net Flow */}
-          <div className="bg-slate-900/50 rounded-lg p-4">
-            <div className="text-sm text-gray-400 mb-1">Net Flow</div>
-            <div className={`text-2xl font-bold ${analysis.netEth >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+          <div className="bg-[#050505]/50 rounded-lg p-4">
+            <div className="text-sm text-[#8A8A93] mb-1">Net Flow</div>
+            <div className={`text-2xl font-bold ${analysis.netEth >= 0 ? 'text-[#00C805]' : 'text-[#FF3B30]'}`}>
               {analysis.netEth >= 0 ? '+' : ''}{formatNumber(analysis.netEth)} {symbol}
             </div>
-            <div className="text-xs text-gray-500 mt-1">
+            <div className="text-xs text-[#4A4A52] mt-1">
               {analysis.netEth >= 0 ? 'Net accumulation' : 'Net spending'}
             </div>
           </div>
 
           {/* Total Volume */}
-          <div className="bg-slate-900/50 rounded-lg p-4">
-            <div className="text-sm text-gray-400 mb-1">Total Volume</div>
+          <div className="bg-[#050505]/50 rounded-lg p-4">
+            <div className="text-sm text-[#8A8A93] mb-1">Total Volume</div>
             <div className="text-2xl font-bold text-white">
               {formatNumber(analysis.totalEthReceived + analysis.totalEthSent)} {symbol}
             </div>
-            <div className="text-xs text-gray-500 mt-1">Combined flow</div>
+            <div className="text-xs text-[#4A4A52] mt-1">Combined flow</div>
           </div>
         </div>
       </CardContent>
@@ -334,7 +334,7 @@ export const TokensCard = ({ tokensReceived, tokensSent }) => {
   }
 
   return (
-    <Card className="bg-slate-800/50 border-slate-700" data-testid="tokens-card">
+    <Card className="bg-[#0C0C0E]/50 border-[#1F1F22]" data-testid="tokens-card">
       <CardHeader>
         <CardTitle className="text-white">ERC-20 Token Activity</CardTitle>
       </CardHeader>
@@ -342,11 +342,11 @@ export const TokensCard = ({ tokensReceived, tokensSent }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {Object.keys(tokensReceived || {}).length > 0 && (
             <div>
-              <h3 className="text-green-300 font-semibold mb-3">Tokens Received</h3>
+              <h3 className="text-[#00C805] font-semibold mb-3">Tokens Received</h3>
               <div className="space-y-2">
                 {Object.entries(tokensReceived).map(([token, amount]) => (
                   <div key={token} className="flex items-center justify-between bg-green-900/10 p-2 rounded">
-                    <Badge variant="outline" className="text-green-300 border-green-700">{token}</Badge>
+                    <Badge variant="outline" className="text-[#00C805] border-green-700">{token}</Badge>
                     <span className="text-white font-mono text-sm">{formatNumber(amount)}</span>
                   </div>
                 ))}
@@ -355,11 +355,11 @@ export const TokensCard = ({ tokensReceived, tokensSent }) => {
           )}
           {Object.keys(tokensSent || {}).length > 0 && (
             <div>
-              <h3 className="text-red-300 font-semibold mb-3">Tokens Sent</h3>
+              <h3 className="text-[#FF3B30] font-semibold mb-3">Tokens Sent</h3>
               <div className="space-y-2">
                 {Object.entries(tokensSent).map(([token, amount]) => (
                   <div key={token} className="flex items-center justify-between bg-red-900/10 p-2 rounded">
-                    <Badge variant="outline" className="text-red-300 border-red-700">{token}</Badge>
+                    <Badge variant="outline" className="text-[#FF3B30] border-red-700">{token}</Badge>
                     <span className="text-white font-mono text-sm">{formatNumber(amount)}</span>
                   </div>
                 ))}

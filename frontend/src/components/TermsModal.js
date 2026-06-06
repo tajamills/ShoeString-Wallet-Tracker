@@ -27,7 +27,7 @@ export const TermsModal = ({ isOpen, onAccept }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={() => {}}>
-      <DialogContent className="sm:max-w-4xl bg-slate-800 border-slate-700 max-h-[95vh] overflow-hidden" hideCloseButton>
+      <DialogContent className="sm:max-w-4xl bg-[#0C0C0E] border-[#1F1F22] max-h-[95vh] overflow-hidden" hideCloseButton>
         <DialogHeader>
           <DialogTitle className="text-white text-2xl flex items-center gap-2">
             <FileText className="w-6 h-6 text-blue-400" />
@@ -43,11 +43,11 @@ export const TermsModal = ({ isOpen, onAccept }) => {
         </Alert>
 
         <ScrollArea 
-          className="h-[50vh] pr-4 border border-slate-700 rounded-lg"
+          className="h-[50vh] pr-4 border border-[#1F1F22] rounded-lg"
           onScrollCapture={handleScroll}
           ref={scrollRef}
         >
-          <div className="p-4 text-gray-300 text-sm space-y-6">
+          <div className="p-4 text-white text-sm space-y-6">
             <h2 className="text-xl font-bold text-white">Crypto Bag Tracker Terms of Service</h2>
             
             <section>
@@ -84,7 +84,7 @@ export const TermsModal = ({ isOpen, onAccept }) => {
 
             <section>
               <h3 className="text-lg font-semibold text-white mb-2">4. No Financial, Legal, Tax, or Professional Advice</h3>
-              <p className="font-semibold text-yellow-400">The Platform and all content, data, analytics, labels, classifications, reports, and outputs made available through the Platform are provided for informational purposes only.</p>
+              <p className="font-semibold text-[#FFB800]">The Platform and all content, data, analytics, labels, classifications, reports, and outputs made available through the Platform are provided for informational purposes only.</p>
               <p className="mt-2">Crypto Bag Tracker does not provide:</p>
               <ul className="list-disc pl-6 mt-2 space-y-1">
                 <li>financial or investment advice;</li>
@@ -94,7 +94,7 @@ export const TermsModal = ({ isOpen, onAccept }) => {
                 <li>any other professional advice.</li>
               </ul>
               <p className="mt-2">Nothing on the Platform constitutes a recommendation, solicitation, endorsement, or instruction to buy, sell, hold, transfer, report, classify, or otherwise take action with respect to any digital asset, wallet, address, transaction, or blockchain activity.</p>
-              <p className="mt-2 font-semibold text-yellow-400">You are solely responsible for independently verifying all information and consulting qualified professionals before making any decision based on the Platform.</p>
+              <p className="mt-2 font-semibold text-[#FFB800]">You are solely responsible for independently verifying all information and consulting qualified professionals before making any decision based on the Platform.</p>
             </section>
 
             <section>
@@ -193,9 +193,9 @@ export const TermsModal = ({ isOpen, onAccept }) => {
 
             <section>
               <h3 className="text-lg font-semibold text-white mb-2">12. Disclaimer of Warranties</h3>
-              <p className="font-semibold text-red-400">TO THE FULLEST EXTENT PERMITTED BY LAW, THE PLATFORM IS PROVIDED "AS IS," "AS AVAILABLE," AND "WITH ALL FAULTS."</p>
+              <p className="font-semibold text-[#FF3B30]">TO THE FULLEST EXTENT PERMITTED BY LAW, THE PLATFORM IS PROVIDED "AS IS," "AS AVAILABLE," AND "WITH ALL FAULTS."</p>
               <p className="mt-2">CRYPTO BAG TRACKER DISCLAIMS ALL WARRANTIES, EXPRESS, IMPLIED, STATUTORY, OR OTHERWISE, INCLUDING WITHOUT LIMITATION:</p>
-              <ul className="list-disc pl-6 mt-2 space-y-1 text-red-300">
+              <ul className="list-disc pl-6 mt-2 space-y-1 text-[#FF3B30]">
                 <li>WARRANTIES OF MERCHANTABILITY;</li>
                 <li>FITNESS FOR A PARTICULAR PURPOSE;</li>
                 <li>TITLE;</li>
@@ -219,7 +219,7 @@ export const TermsModal = ({ isOpen, onAccept }) => {
 
             <section>
               <h3 className="text-lg font-semibold text-white mb-2">13. Limitation of Liability</h3>
-              <p className="text-red-400">TO THE FULLEST EXTENT PERMITTED BY LAW, CRYPTO BAG TRACKER AND ITS OWNERS, OFFICERS, DIRECTORS, EMPLOYEES, CONTRACTORS, AFFILIATES, LICENSORS, AND SERVICE PROVIDERS SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, EXEMPLARY, OR PUNITIVE DAMAGES, OR FOR ANY LOSS OF PROFITS, REVENUE, BUSINESS, GOODWILL, DATA, USE, DIGITAL ASSETS, OR OTHER INTANGIBLE LOSSES.</p>
+              <p className="text-[#FF3B30]">TO THE FULLEST EXTENT PERMITTED BY LAW, CRYPTO BAG TRACKER AND ITS OWNERS, OFFICERS, DIRECTORS, EMPLOYEES, CONTRACTORS, AFFILIATES, LICENSORS, AND SERVICE PROVIDERS SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, EXEMPLARY, OR PUNITIVE DAMAGES, OR FOR ANY LOSS OF PROFITS, REVENUE, BUSINESS, GOODWILL, DATA, USE, DIGITAL ASSETS, OR OTHER INTANGIBLE LOSSES.</p>
               <p className="mt-2">TO THE FULLEST EXTENT PERMITTED BY LAW, OUR TOTAL AGGREGATE LIABILITY FOR ALL CLAIMS ARISING OUT OF OR RELATING TO THESE TERMS OR THE PLATFORM SHALL NOT EXCEED THE GREATER OF:</p>
               <ul className="list-disc pl-6 mt-2 space-y-1">
                 <li>THE AMOUNT YOU PAID TO US FOR USE OF THE PLATFORM IN THE TWELVE (12) MONTHS PRECEDING THE EVENT GIVING RISE TO THE CLAIM; OR</li>
@@ -250,7 +250,7 @@ export const TermsModal = ({ isOpen, onAccept }) => {
               <h3 className="text-lg font-semibold text-white mb-2">16. Dispute Resolution; Arbitration; Class Action Waiver</h3>
               <p>To the fullest extent permitted by law, you and Crypto Bag Tracker agree that any dispute, claim, or controversy arising out of or relating to these Terms or the Platform shall first be attempted to be resolved informally by contacting the other party in writing.</p>
               <p className="mt-2">If the dispute is not resolved informally within thirty (30) days, the dispute shall be resolved by binding arbitration on an individual basis.</p>
-              <p className="mt-2 font-semibold text-yellow-400">You and Crypto Bag Tracker each agree that claims will be brought only in an individual capacity and not as a plaintiff or class member in any purported class, collective, representative, or private attorney general proceeding, and you waive any right to participate in a class action, collective action, or representative action.</p>
+              <p className="mt-2 font-semibold text-[#FFB800]">You and Crypto Bag Tracker each agree that claims will be brought only in an individual capacity and not as a plaintiff or class member in any purported class, collective, representative, or private attorney general proceeding, and you waive any right to participate in a class action, collective action, or representative action.</p>
             </section>
 
             <section>
@@ -281,26 +281,26 @@ export const TermsModal = ({ isOpen, onAccept }) => {
         </ScrollArea>
 
         <div className="space-y-4 pt-4">
-          <div className="flex items-start space-x-3 p-4 bg-slate-900/50 rounded-lg border border-slate-700">
+          <div className="flex items-start space-x-3 p-4 bg-[#050505]/50 rounded-lg border border-[#1F1F22]">
             <Checkbox 
               id="terms-agreement" 
               checked={agreed}
               onCheckedChange={setAgreed}
-              className="mt-1 border-slate-500 data-[state=checked]:bg-blue-600"
+              className="mt-1 border-[#1F1F22] data-[state=checked]:bg-white text-black"
               data-testid="terms-checkbox"
             />
             <label 
               htmlFor="terms-agreement" 
-              className="text-sm text-gray-300 cursor-pointer leading-relaxed"
+              className="text-sm text-white cursor-pointer leading-relaxed"
             >
-              I have read and agree to the <span className="text-blue-400 font-semibold">Terms of Service</span>, <span className="text-blue-400 font-semibold">Privacy Policy</span>, and <span className="text-blue-400 font-semibold">Disclaimer</span>, and I understand that Crypto Bag Tracker provides informational blockchain analytics only, on a best-effort basis, with <span className="text-yellow-400 font-semibold">no guarantee of accuracy or completeness</span>.
+              I have read and agree to the <span className="text-blue-400 font-semibold">Terms of Service</span>, <span className="text-blue-400 font-semibold">Privacy Policy</span>, and <span className="text-blue-400 font-semibold">Disclaimer</span>, and I understand that Crypto Bag Tracker provides informational blockchain analytics only, on a best-effort basis, with <span className="text-[#FFB800] font-semibold">no guarantee of accuracy or completeness</span>.
             </label>
           </div>
 
           <Button
             onClick={handleAccept}
             disabled={!agreed}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-500 h-12 text-lg"
+            className="w-full bg-white text-black hover:bg-gray-200 disabled:bg-[#161618] disabled:text-[#8A8A93]500 h-12 text-lg"
             data-testid="accept-terms-btn"
           >
             {agreed ? 'I Accept - Continue to Crypto Bag Tracker' : 'Please read and accept the Terms of Service'}

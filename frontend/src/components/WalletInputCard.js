@@ -71,10 +71,10 @@ export const WalletInputCard = ({
   };
 
   return (
-    <Card className="bg-slate-800/50 border-slate-700" data-testid="wallet-input-card">
+    <Card className="bg-[#0C0C0E]/50 border-[#1F1F22]" data-testid="wallet-input-card">
       <CardHeader>
         <CardTitle className="text-white">Analyze Wallet</CardTitle>
-        <CardDescription className="text-gray-400">
+        <CardDescription className="text-[#8A8A93]">
           Multi-chain wallet analysis: Ethereum, Bitcoin, Polygon, Arbitrum, BSC, and Solana
         </CardDescription>
       </CardHeader>
@@ -82,16 +82,16 @@ export const WalletInputCard = ({
         <div className="space-y-4">
           {/* Chain Selector */}
           <div>
-            <label className="text-sm text-gray-400 block mb-2">
+            <label className="text-sm text-[#8A8A93] block mb-2">
               Blockchain Network
               {user?.subscription_tier === 'free' && (
-                <span className="ml-2 text-xs text-purple-400">(Upgrade for multi-chain)</span>
+                <span className="ml-2 text-xs text-[#00C805]">(Upgrade for multi-chain)</span>
               )}
             </label>
             <select
               value={selectedChain}
               onChange={handleChainChange}
-              className="w-full bg-slate-900 border border-slate-600 text-white rounded-md px-3 py-2"
+              className="w-full bg-[#050505] border border-[#1F1F22] text-white rounded-md px-3 py-2"
               disabled={!user}
             >
               <option value="ethereum">{CHAIN_ICONS.ethereum} Ethereum</option>
@@ -114,7 +114,7 @@ export const WalletInputCard = ({
             {user?.subscription_tier === 'pro' && (
               <button
                 onClick={onChainRequest}
-                className="text-xs text-purple-400 hover:text-purple-300 underline mt-2"
+                className="text-xs text-[#00C805] hover:text-[#00C805] underline mt-2"
               >
                 Need a different chain? Request it here
               </button>
@@ -130,11 +130,11 @@ export const WalletInputCard = ({
                 placeholder={getPlaceholder()}
                 value={walletAddress}
                 onChange={(e) => setWalletAddress(e.target.value)}
-                className="bg-slate-700 border-slate-600 text-white placeholder:text-gray-500"
+                className="bg-[#161618] border-[#1F1F22] text-white placeholder:text-[#4A4A52]"
                 disabled={loading}
               />
               {selectedChain === 'bitcoin' && (
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs text-[#8A8A93] mt-1">
                   {user?.subscription_tier === 'pro' 
                     ? "Pro tip: Use your xPub/yPub/zPub for full wallet history"
                     : "Tip: Single addresses may miss transactions. Upgrade for xPub support."}
@@ -142,15 +142,15 @@ export const WalletInputCard = ({
               )}
               {selectedChain === 'bitcoin' && (
                 <details className="mt-2">
-                  <summary className="text-xs text-purple-400 cursor-pointer hover:text-purple-300">
+                  <summary className="text-xs text-[#00C805] cursor-pointer hover:text-[#00C805]">
                     How to find your Bitcoin xPub
                   </summary>
-                  <div className="text-xs text-gray-400 mt-2 p-2 bg-slate-900/50 rounded">
-                    <p className="font-medium text-gray-300 mb-1">Ledger Live:</p>
+                  <div className="text-xs text-[#8A8A93] mt-2 p-2 bg-[#050505]/50 rounded">
+                    <p className="font-medium text-white mb-1">Ledger Live:</p>
                     <p>Account → Edit → Advanced → Extended public key</p>
-                    <p className="font-medium text-gray-300 mt-2 mb-1">Trezor Suite:</p>
+                    <p className="font-medium text-white mt-2 mb-1">Trezor Suite:</p>
                     <p>Account → Details → Show public key</p>
-                    <p className="text-gray-500 mt-2 italic">
+                    <p className="text-[#4A4A52] mt-2 italic">
                       xPub allows tracking all addresses in your wallet without exposing private keys.
                     </p>
                   </div>
@@ -161,7 +161,7 @@ export const WalletInputCard = ({
               data-testid="analyze-button"
               onClick={() => onAnalyze(walletAddress, selectedChain)}
               disabled={loading || analyzingAll || !user}
-              className="bg-purple-600 hover:bg-purple-700"
+              className="bg-white text-black hover:bg-gray-200"
             >
               {loading ? (
                 <>
@@ -197,31 +197,31 @@ export const WalletInputCard = ({
           {/* Date Range Filter */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-sm text-gray-400 block mb-2">Start Date (Optional)</label>
+              <label className="text-sm text-[#8A8A93] block mb-2">Start Date (Optional)</label>
               <Input
                 data-testid="start-date-input"
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="bg-slate-700 border-slate-600 text-white"
+                className="bg-[#161618] border-[#1F1F22] text-white"
                 disabled={loading}
               />
             </div>
             <div>
-              <label className="text-sm text-gray-400 block mb-2">End Date (Optional)</label>
+              <label className="text-sm text-[#8A8A93] block mb-2">End Date (Optional)</label>
               <Input
                 data-testid="end-date-input"
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="bg-slate-700 border-slate-600 text-white"
+                className="bg-[#161618] border-[#1F1F22] text-white"
                 disabled={loading}
               />
             </div>
           </div>
 
           {(startDate || endDate) && (
-            <div className="text-sm text-gray-400">
+            <div className="text-sm text-[#8A8A93]">
               Filtering transactions {startDate && `from ${startDate}`} {endDate && `to ${endDate}`}
             </div>
           )}

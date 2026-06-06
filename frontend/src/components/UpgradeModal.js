@@ -61,13 +61,13 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg bg-slate-800 border-slate-700 max-h-[90vh] overflow-y-auto" data-testid="upgrade-modal">
+      <DialogContent className="sm:max-w-lg bg-[#0C0C0E] border-[#1F1F22] max-h-[90vh] overflow-y-auto" data-testid="upgrade-modal">
         <DialogHeader>
           <DialogTitle className="text-white text-2xl flex items-center gap-2">
-            <Crown className="w-6 h-6 text-yellow-400" />
+            <Crown className="w-6 h-6 text-[#FFB800]" />
             Upgrade to Unlimited
           </DialogTitle>
-          <DialogDescription className="text-gray-400">
+          <DialogDescription className="text-[#8A8A93]">
             Get full access to all features
           </DialogDescription>
         </DialogHeader>
@@ -76,8 +76,8 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
           {/* Beta Trial Banner */}
           <div className="bg-gradient-to-r from-green-900/50 to-emerald-900/50 border border-green-500/50 rounded-lg p-4 text-center">
             <div className="flex items-center justify-center gap-2 mb-2">
-              <Gift className="w-5 h-5 text-green-400" />
-              <span className="text-green-300 font-bold text-lg">45 Days FREE Trial!</span>
+              <Gift className="w-5 h-5 text-[#00C805]" />
+              <span className="text-[#00C805] font-bold text-lg">45 Days FREE Trial!</span>
             </div>
             <p className="text-green-200 text-sm">
               No charge for 45 days. Cancel anytime during trial.
@@ -99,14 +99,14 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
                 <Badge className="bg-yellow-600 text-lg px-3 py-1">
                   $100.88/year
                 </Badge>
-                <p className="text-green-400 text-xs mt-1">After 45-day trial</p>
+                <p className="text-[#00C805] text-xs mt-1">After 45-day trial</p>
               </div>
             </div>
             
             <ul className="space-y-3">
               {features.map((feature, idx) => (
-                <li key={idx} className="flex items-center gap-3 text-gray-300">
-                  <feature.icon className="w-5 h-5 text-yellow-400 flex-shrink-0" />
+                <li key={idx} className="flex items-center gap-3 text-white">
+                  <feature.icon className="w-5 h-5 text-[#FFB800] flex-shrink-0" />
                   <span>{feature.text}</span>
                 </li>
               ))}
@@ -114,18 +114,18 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
           </div>
 
           {error && (
-            <Alert className="bg-red-900/20 border-red-900 text-red-300" data-testid="payment-error">
+            <Alert className="bg-red-900/20 border-red-900 text-[#FF3B30]" data-testid="payment-error">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
 
-          <div className="flex items-center justify-center gap-2 text-gray-400 text-sm">
-            <Shield className="w-5 h-5 text-green-400" />
+          <div className="flex items-center justify-center gap-2 text-[#8A8A93] text-sm">
+            <Shield className="w-5 h-5 text-[#00C805]" />
             <span>Secure payment powered by Stripe</span>
           </div>
 
           {hasUnlimited ? (
-            <Alert className="bg-green-900/20 border-green-700 text-green-300">
+            <Alert className="bg-green-900/20 border-green-700 text-[#00C805]">
               <Check className="h-4 w-4" />
               <AlertDescription>
                 You already have an active Unlimited subscription
@@ -152,7 +152,7 @@ export const UpgradeModal = ({ isOpen, onClose }) => {
             </Button>
           )}
 
-          <p className="text-xs text-gray-500 text-center">
+          <p className="text-xs text-[#4A4A52] text-center">
             No charge for 45 days. After trial, $100.88/year (or 50% off with Beta26).
             Cancel anytime. By subscribing, you agree to our Terms of Service.
           </p>

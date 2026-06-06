@@ -69,36 +69,36 @@ export const DowngradeModal = ({ isOpen, onClose, user, getAuthHeader, onSuccess
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md bg-slate-800 border-slate-700">
+      <DialogContent className="sm:max-w-md bg-[#0C0C0E] border-[#1F1F22]">
         <DialogHeader>
           <DialogTitle className="text-white flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-yellow-400" />
+            <AlertTriangle className="w-5 h-5 text-[#FFB800]" />
             Downgrade Subscription
           </DialogTitle>
-          <DialogDescription className="text-gray-400">
+          <DialogDescription className="text-[#8A8A93]">
             Are you sure you want to downgrade?
           </DialogDescription>
         </DialogHeader>
 
         {confirmed ? (
-          <Alert className="bg-green-900/20 border-green-700 text-green-300">
+          <Alert className="bg-green-900/20 border-green-700 text-[#00C805]">
             <AlertDescription>
               ✅ Subscription downgraded successfully!
             </AlertDescription>
           </Alert>
         ) : (
           <div className="space-y-4">
-            <div className="bg-slate-900/50 rounded-lg p-4 space-y-3">
+            <div className="bg-[#050505]/50 rounded-lg p-4 space-y-3">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-400">Current Plan:</span>
+                <span className="text-[#8A8A93]">Current Plan:</span>
                 <span className="text-white font-semibold">{downgradeInfo.from}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-400">New Plan:</span>
+                <span className="text-[#8A8A93]">New Plan:</span>
                 <span className="text-white font-semibold">{downgradeInfo.to}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-400">New Price:</span>
+                <span className="text-[#8A8A93]">New Price:</span>
                 <span className="text-white font-semibold">{downgradeInfo.newPrice}</span>
               </div>
             </div>
@@ -115,7 +115,7 @@ export const DowngradeModal = ({ isOpen, onClose, user, getAuthHeader, onSuccess
             </Alert>
 
             {error && (
-              <Alert className="bg-red-900/20 border-red-700 text-red-300">
+              <Alert className="bg-red-900/20 border-red-700 text-[#FF3B30]">
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
@@ -125,14 +125,14 @@ export const DowngradeModal = ({ isOpen, onClose, user, getAuthHeader, onSuccess
                 onClick={handleDowngrade}
                 disabled={loading}
                 variant="destructive"
-                className="flex-1 bg-red-600 hover:bg-red-700"
+                className="flex-1 bg-[#FF3B30] hover:bg-[#FF3B30]/80"
               >
                 {loading ? 'Downgrading...' : 'Yes, Downgrade'}
               </Button>
               <Button
                 onClick={onClose}
                 variant="outline"
-                className="flex-1 border-slate-600"
+                className="flex-1 border-[#1F1F22]"
               >
                 Cancel
               </Button>

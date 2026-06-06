@@ -90,7 +90,7 @@ const ValidationStatusPanel = ({ apiUrl, authHeader, onRefresh, onOpenClassifier
   if (loading) {
     return (
       <div className="bg-gray-800 rounded-lg p-4 border border-gray-700" data-testid="validation-status-loading">
-        <div className="flex items-center gap-2 text-gray-400">
+        <div className="flex items-center gap-2 text-[#8A8A93]">
           <RefreshCw className="w-4 h-4 animate-spin" />
           <span>Checking validation status...</span>
         </div>
@@ -101,7 +101,7 @@ const ValidationStatusPanel = ({ apiUrl, authHeader, onRefresh, onOpenClassifier
   if (error) {
     return (
       <div className="bg-red-900/20 rounded-lg p-4 border border-red-700" data-testid="validation-status-error">
-        <div className="flex items-center gap-2 text-red-400">
+        <div className="flex items-center gap-2 text-[#FF3B30]">
           <XCircle className="w-4 h-4" />
           <span>Error: {error}</span>
         </div>
@@ -121,9 +121,9 @@ const ValidationStatusPanel = ({ apiUrl, authHeader, onRefresh, onOpenClassifier
   };
 
   const getStatusIcon = () => {
-    if (canExport) return <CheckCircle className="w-5 h-5 text-green-400" />;
-    if (validationStatus === 'needs_review') return <AlertTriangle className="w-5 h-5 text-yellow-400" />;
-    return <XCircle className="w-5 h-5 text-red-400" />;
+    if (canExport) return <CheckCircle className="w-5 h-5 text-[#00C805]" />;
+    if (validationStatus === 'needs_review') return <AlertTriangle className="w-5 h-5 text-[#FFB800]" />;
+    return <XCircle className="w-5 h-5 text-[#FF3B30]" />;
   };
 
   const getStatusText = () => {
@@ -142,7 +142,7 @@ const ValidationStatusPanel = ({ apiUrl, authHeader, onRefresh, onOpenClassifier
             <h3 className="font-semibold text-white" data-testid="validation-status-title">
               Tax Validation Status
             </h3>
-            <p className={`text-sm ${canExport ? 'text-green-400' : 'text-red-400'}`} data-testid="validation-status-text">
+            <p className={`text-sm ${canExport ? 'text-[#00C805]' : 'text-[#FF3B30]'}`} data-testid="validation-status-text">
               {getStatusText()}
             </p>
           </div>
@@ -155,7 +155,7 @@ const ValidationStatusPanel = ({ apiUrl, authHeader, onRefresh, onOpenClassifier
             title="Refresh status"
             data-testid="validation-refresh-btn"
           >
-            <RefreshCw className="w-4 h-4 text-gray-300" />
+            <RefreshCw className="w-4 h-4 text-white" />
           </button>
           
           <button
@@ -164,9 +164,9 @@ const ValidationStatusPanel = ({ apiUrl, authHeader, onRefresh, onOpenClassifier
             data-testid="validation-expand-btn"
           >
             {expanded ? (
-              <ChevronUp className="w-4 h-4 text-gray-400" />
+              <ChevronUp className="w-4 h-4 text-[#8A8A93]" />
             ) : (
-              <ChevronDown className="w-4 h-4 text-gray-400" />
+              <ChevronDown className="w-4 h-4 text-[#8A8A93]" />
             )}
           </button>
         </div>
@@ -175,24 +175,24 @@ const ValidationStatusPanel = ({ apiUrl, authHeader, onRefresh, onOpenClassifier
       {/* Summary Stats */}
       <div className="grid grid-cols-3 gap-4 mt-4">
         <div className="bg-gray-900/50 rounded-lg p-3 text-center">
-          <div className={`text-2xl font-bold ${blockingIssues > 0 ? 'text-red-400' : 'text-green-400'}`}>
+          <div className={`text-2xl font-bold ${blockingIssues > 0 ? 'text-[#FF3B30]' : 'text-[#00C805]'}`}>
             {blockingIssues}
           </div>
-          <div className="text-xs text-gray-400">Blocking Issues</div>
+          <div className="text-xs text-[#8A8A93]">Blocking Issues</div>
         </div>
         
         <div className="bg-gray-900/50 rounded-lg p-3 text-center">
-          <div className={`text-2xl font-bold ${unresolvedReviews > 0 ? 'text-yellow-400' : 'text-green-400'}`}>
+          <div className={`text-2xl font-bold ${unresolvedReviews > 0 ? 'text-[#FFB800]' : 'text-[#00C805]'}`}>
             {unresolvedReviews}
           </div>
-          <div className="text-xs text-gray-400">Unresolved Reviews</div>
+          <div className="text-xs text-[#8A8A93]">Unresolved Reviews</div>
         </div>
         
         <div className="bg-gray-900/50 rounded-lg p-3 text-center">
-          <div className={`text-2xl font-bold ${canExport ? 'text-green-400' : 'text-red-400'}`}>
+          <div className={`text-2xl font-bold ${canExport ? 'text-[#00C805]' : 'text-[#FF3B30]'}`}>
             {canExport ? 'YES' : 'NO'}
           </div>
-          <div className="text-xs text-gray-400">Can Export</div>
+          <div className="text-xs text-[#8A8A93]">Can Export</div>
         </div>
       </div>
 
@@ -202,19 +202,19 @@ const ValidationStatusPanel = ({ apiUrl, authHeader, onRefresh, onOpenClassifier
           {/* Blocking Issues */}
           {preExportCheck.blocking_issues && preExportCheck.blocking_issues.length > 0 && (
             <div>
-              <h4 className="text-sm font-medium text-red-400 mb-2">Blocking Issues</h4>
+              <h4 className="text-sm font-medium text-[#FF3B30] mb-2">Blocking Issues</h4>
               <div className="space-y-2">
                 {preExportCheck.blocking_issues.slice(0, 5).map((issue, idx) => (
                   <div key={idx} className="bg-red-900/20 rounded-lg p-3 text-sm">
                     <div className="flex items-center gap-2">
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                        issue.severity === 'critical' ? 'bg-red-600' : 'bg-orange-600'
+                        issue.severity === 'critical' ? 'bg-[#FF3B30]' : 'bg-orange-600'
                       }`}>
                         {issue.severity?.toUpperCase()}
                       </span>
-                      <span className="text-gray-300">{issue.asset}</span>
+                      <span className="text-white">{issue.asset}</span>
                     </div>
-                    <p className="text-gray-400 mt-1">{issue.description}</p>
+                    <p className="text-[#8A8A93] mt-1">{issue.description}</p>
                     {issue.recommendation && (
                       <p className="text-blue-400 text-xs mt-1">Fix: {issue.recommendation}</p>
                     )}
@@ -227,13 +227,13 @@ const ValidationStatusPanel = ({ apiUrl, authHeader, onRefresh, onOpenClassifier
           {/* Failed Invariants */}
           {preExportCheck.failed_invariants && preExportCheck.failed_invariants.length > 0 && (
             <div>
-              <h4 className="text-sm font-medium text-yellow-400 mb-2">Failed Checks</h4>
+              <h4 className="text-sm font-medium text-[#FFB800] mb-2">Failed Checks</h4>
               <div className="space-y-2">
                 {preExportCheck.failed_invariants.map((check, idx) => (
                   <div key={idx} className="bg-yellow-900/20 rounded-lg p-3 text-sm">
-                    <div className="font-medium text-gray-300">{check.check_name}</div>
+                    <div className="font-medium text-white">{check.check_name}</div>
                     {check.affected_assets && check.affected_assets.length > 0 && (
-                      <div className="text-gray-400 text-xs mt-1">
+                      <div className="text-[#8A8A93] text-xs mt-1">
                         Affected: {check.affected_assets.join(', ')}
                       </div>
                     )}
@@ -260,7 +260,7 @@ const ValidationStatusPanel = ({ apiUrl, authHeader, onRefresh, onOpenClassifier
         <div className="mt-4">
           <button
             onClick={() => setShowEffectiveness(!showEffectiveness)}
-            className="flex items-center gap-2 text-sm text-gray-400 hover:text-gray-200 transition-colors"
+            className="flex items-center gap-2 text-sm text-[#8A8A93] hover:text-gray-200 transition-colors"
             data-testid="toggle-effectiveness-btn"
           >
             <BarChart2 className="w-4 h-4" />
@@ -277,39 +277,39 @@ const ValidationStatusPanel = ({ apiUrl, authHeader, onRefresh, onOpenClassifier
               {/* Summary Stats */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 <div className="bg-gray-900/50 rounded-lg p-2 text-center">
-                  <div className="text-lg font-bold text-green-400">
+                  <div className="text-lg font-bold text-[#00C805]">
                     {effectiveness.unknown_reduction}
                   </div>
-                  <div className="text-xs text-gray-400">Unknowns Reduced</div>
+                  <div className="text-xs text-[#8A8A93]">Unknowns Reduced</div>
                 </div>
                 <div className="bg-gray-900/50 rounded-lg p-2 text-center">
                   <div className="text-lg font-bold text-blue-400">
                     {effectiveness.auto_classified_count}
                   </div>
-                  <div className="text-xs text-gray-400">Auto-Classified</div>
+                  <div className="text-xs text-[#8A8A93]">Auto-Classified</div>
                 </div>
                 <div className="bg-gray-900/50 rounded-lg p-2 text-center">
-                  <div className="text-lg font-bold text-purple-400">
+                  <div className="text-lg font-bold text-[#00C805]">
                     {effectiveness.user_confirmed_count}
                   </div>
-                  <div className="text-xs text-gray-400">User Confirmed</div>
+                  <div className="text-xs text-[#8A8A93]">User Confirmed</div>
                 </div>
                 <div className="bg-gray-900/50 rounded-lg p-2 text-center">
-                  <div className={`text-lg font-bold ${effectiveness.overall_precision >= 0.9 ? 'text-green-400' : effectiveness.overall_precision >= 0.7 ? 'text-yellow-400' : 'text-red-400'}`}>
+                  <div className={`text-lg font-bold ${effectiveness.overall_precision >= 0.9 ? 'text-[#00C805]' : effectiveness.overall_precision >= 0.7 ? 'text-[#FFB800]' : 'text-[#FF3B30]'}`}>
                     {Math.round(effectiveness.overall_precision * 100)}%
                   </div>
-                  <div className="text-xs text-gray-400">Precision</div>
+                  <div className="text-xs text-[#8A8A93]">Precision</div>
                 </div>
               </div>
               
               {/* Export Readiness Improvement */}
               {effectiveness.export_readiness_improved && (
                 <div className="bg-green-900/20 border border-green-700 rounded-lg p-2 text-center">
-                  <div className="flex items-center justify-center gap-2 text-green-400">
+                  <div className="flex items-center justify-center gap-2 text-[#00C805]">
                     <TrendingUp className="w-4 h-4" />
                     <span className="text-sm font-medium">Export Readiness Improved!</span>
                   </div>
-                  <div className="text-xs text-gray-400 mt-1">
+                  <div className="text-xs text-[#8A8A93] mt-1">
                     {effectiveness.validation_status_before} → {effectiveness.validation_status_after}
                   </div>
                 </div>
@@ -318,16 +318,16 @@ const ValidationStatusPanel = ({ apiUrl, authHeader, onRefresh, onOpenClassifier
               {/* Confidence Bucket Breakdown */}
               {effectiveness.confidence_buckets && effectiveness.confidence_buckets.length > 0 && (
                 <div>
-                  <h5 className="text-xs font-medium text-gray-400 mb-2">Precision by Confidence</h5>
+                  <h5 className="text-xs font-medium text-[#8A8A93] mb-2">Precision by Confidence</h5>
                   <div className="space-y-1">
                     {effectiveness.confidence_buckets
                       .filter(b => b.total_classified > 0)
                       .map((bucket, idx) => (
                         <div key={idx} className="flex items-center justify-between text-xs">
-                          <span className="text-gray-400 capitalize">{bucket.bucket_name.replace('_', ' ')}</span>
-                          <span className="text-gray-300">
+                          <span className="text-[#8A8A93] capitalize">{bucket.bucket_name.replace('_', ' ')}</span>
+                          <span className="text-white">
                             {bucket.user_confirmed}/{bucket.user_confirmed + bucket.user_rejected} 
-                            <span className={`ml-2 ${bucket.precision >= 0.9 ? 'text-green-400' : bucket.precision >= 0.7 ? 'text-yellow-400' : 'text-red-400'}`}>
+                            <span className={`ml-2 ${bucket.precision >= 0.9 ? 'text-[#00C805]' : bucket.precision >= 0.7 ? 'text-[#FFB800]' : 'text-[#FF3B30]'}`}>
                               ({Math.round(bucket.precision * 100)}%)
                             </span>
                           </span>
@@ -340,15 +340,15 @@ const ValidationStatusPanel = ({ apiUrl, authHeader, onRefresh, onOpenClassifier
               {/* Classification Type Breakdown */}
               {effectiveness.classification_types && effectiveness.classification_types.length > 0 && (
                 <div>
-                  <h5 className="text-xs font-medium text-gray-400 mb-2">By Classification Type</h5>
+                  <h5 className="text-xs font-medium text-[#8A8A93] mb-2">By Classification Type</h5>
                   <div className="grid grid-cols-2 gap-1">
                     {effectiveness.classification_types
                       .filter(t => t.total_classified > 0)
                       .slice(0, 6)
                       .map((type, idx) => (
                         <div key={idx} className="flex items-center justify-between text-xs bg-gray-900/30 rounded px-2 py-1">
-                          <span className="text-gray-400 capitalize">{type.classification_type.replace('_', ' ')}</span>
-                          <span className="text-gray-300">{type.total_classified}</span>
+                          <span className="text-[#8A8A93] capitalize">{type.classification_type.replace('_', ' ')}</span>
+                          <span className="text-white">{type.total_classified}</span>
                         </div>
                       ))}
                   </div>
@@ -357,7 +357,7 @@ const ValidationStatusPanel = ({ apiUrl, authHeader, onRefresh, onOpenClassifier
               
               {/* Rollback Warning */}
               {effectiveness.rollback_count > 0 && (
-                <div className="flex items-center gap-2 text-xs text-yellow-400">
+                <div className="flex items-center gap-2 text-xs text-[#FFB800]">
                   <AlertTriangle className="w-3 h-3" />
                   <span>{effectiveness.rollback_count} classification(s) rolled back</span>
                 </div>
@@ -371,18 +371,18 @@ const ValidationStatusPanel = ({ apiUrl, authHeader, onRefresh, onOpenClassifier
       <div className="mt-4 space-y-2">
         {/* Unknown Transaction Classifier - Show if there are unknowns */}
         {unknownCount > 0 && (
-          <div className="bg-purple-900/20 border border-purple-700 rounded-lg p-3">
+          <div className="bg-[#0C0C0E]/20 border border-[#1F1F22] rounded-lg p-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Target className="w-4 h-4 text-purple-400" />
-                <span className="text-purple-300 text-sm">
+                <Target className="w-4 h-4 text-[#00C805]" />
+                <span className="text-[#00C805] text-sm">
                   {unknownCount} unknown transactions need classification
                 </span>
               </div>
               {onOpenClassifier && (
                 <button
                   onClick={onOpenClassifier}
-                  className="bg-purple-600 hover:bg-purple-700 text-white text-sm py-1 px-3 rounded transition-colors"
+                  className="bg-white text-black hover:bg-gray-200 text-white text-sm py-1 px-3 rounded transition-colors"
                   data-testid="open-classifier-btn"
                 >
                   Classify
@@ -396,7 +396,7 @@ const ValidationStatusPanel = ({ apiUrl, authHeader, onRefresh, onOpenClassifier
           <div className="flex gap-2">
             <button
               onClick={onOpenReviewQueue}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm py-2 px-4 rounded-lg text-center transition-colors"
+              className="flex-1 bg-white text-black hover:bg-gray-200 text-white text-sm py-2 px-4 rounded-lg text-center transition-colors"
               data-testid="review-queue-link"
             >
               Review Queue

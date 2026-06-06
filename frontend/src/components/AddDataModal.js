@@ -149,9 +149,9 @@ const ManualAcquisitionForm = ({ getAuthHeader, onSuccess, onError }) => {
   return (
     <div className="space-y-4">
       <div className="text-center pb-2">
-        <Plus className="w-10 h-10 text-green-400 mx-auto mb-2" />
+        <Plus className="w-10 h-10 text-[#00C805] mx-auto mb-2" />
         <h3 className="text-lg font-semibold text-white">Manual Acquisition Entry</h3>
-        <p className="text-xs text-gray-400">
+        <p className="text-xs text-[#8A8A93]">
           Add missing buy/acquisition records to fix orphan disposals
         </p>
       </div>
@@ -159,7 +159,7 @@ const ManualAcquisitionForm = ({ getAuthHeader, onSuccess, onError }) => {
       {/* Orphan Summary Alert */}
       {orphanSummary?.has_orphans && (
         <Alert className="bg-yellow-900/20 border-yellow-700/50 py-2">
-          <AlertCircle className="w-4 h-4 text-yellow-400" />
+          <AlertCircle className="w-4 h-4 text-[#FFB800]" />
           <AlertDescription className="text-yellow-300 text-xs">
             <strong>{orphanSummary.orphan_assets.length} assets</strong> have orphan disposals. 
             Click an asset below to auto-fill.
@@ -189,24 +189,24 @@ const ManualAcquisitionForm = ({ getAuthHeader, onSuccess, onError }) => {
       <form onSubmit={handleSubmit} className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-xs text-gray-300 mb-1 block">Asset *</label>
+            <label className="text-xs text-white mb-1 block">Asset *</label>
             <Input
               value={formData.asset}
               onChange={(e) => setFormData({...formData, asset: e.target.value})}
               placeholder="BTC, ETH, USDC..."
-              className="bg-slate-700 border-slate-600 text-white text-sm"
+              className="bg-[#161618] border-[#1F1F22] text-white text-sm"
               data-testid="manual-asset-input"
             />
           </div>
           <div>
-            <label className="text-xs text-gray-300 mb-1 block">Amount *</label>
+            <label className="text-xs text-white mb-1 block">Amount *</label>
             <Input
               type="number"
               step="any"
               value={formData.amount}
               onChange={(e) => setFormData({...formData, amount: e.target.value})}
               placeholder="0.00"
-              className="bg-slate-700 border-slate-600 text-white text-sm"
+              className="bg-[#161618] border-[#1F1F22] text-white text-sm"
               data-testid="manual-amount-input"
             />
           </div>
@@ -214,47 +214,47 @@ const ManualAcquisitionForm = ({ getAuthHeader, onSuccess, onError }) => {
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-xs text-gray-300 mb-1 block">Price per Unit (USD) *</label>
+            <label className="text-xs text-white mb-1 block">Price per Unit (USD) *</label>
             <Input
               type="number"
               step="any"
               value={formData.price_usd}
               onChange={(e) => setFormData({...formData, price_usd: e.target.value})}
               placeholder="0.00"
-              className="bg-slate-700 border-slate-600 text-white text-sm"
+              className="bg-[#161618] border-[#1F1F22] text-white text-sm"
               data-testid="manual-price-input"
             />
           </div>
           <div>
-            <label className="text-xs text-gray-300 mb-1 block">Date Acquired *</label>
+            <label className="text-xs text-white mb-1 block">Date Acquired *</label>
             <Input
               type="date"
               value={formData.timestamp}
               onChange={(e) => setFormData({...formData, timestamp: e.target.value})}
-              className="bg-slate-700 border-slate-600 text-white text-sm"
+              className="bg-[#161618] border-[#1F1F22] text-white text-sm"
               data-testid="manual-date-input"
             />
           </div>
         </div>
 
         <div>
-          <label className="text-xs text-gray-300 mb-1 block">Source</label>
+          <label className="text-xs text-white mb-1 block">Source</label>
           <Input
             value={formData.source}
             onChange={(e) => setFormData({...formData, source: e.target.value})}
             placeholder="OTC, Gift, Mining, etc."
-            className="bg-slate-700 border-slate-600 text-white text-sm"
+            className="bg-[#161618] border-[#1F1F22] text-white text-sm"
             data-testid="manual-source-input"
           />
         </div>
 
         <div>
-          <label className="text-xs text-gray-300 mb-1 block">Notes (optional)</label>
+          <label className="text-xs text-white mb-1 block">Notes (optional)</label>
           <Input
             value={formData.notes}
             onChange={(e) => setFormData({...formData, notes: e.target.value})}
             placeholder="Any additional details..."
-            className="bg-slate-700 border-slate-600 text-white text-sm"
+            className="bg-[#161618] border-[#1F1F22] text-white text-sm"
             data-testid="manual-notes-input"
           />
         </div>
@@ -262,7 +262,7 @@ const ManualAcquisitionForm = ({ getAuthHeader, onSuccess, onError }) => {
         <Button 
           type="submit" 
           disabled={loading}
-          className="w-full bg-green-600 hover:bg-green-700 text-white"
+          className="w-full bg-[#00C805] hover:bg-[#00C805]/80 text-white"
           data-testid="add-manual-acquisition-btn"
         >
           {loading ? (
@@ -435,39 +435,39 @@ export const AddDataModal = ({ isOpen, onClose, onDataAdded, onOpenExchangeApi }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[95vw] max-w-2xl bg-slate-800 border-slate-700 max-h-[85vh] overflow-y-auto mx-auto" data-testid="add-data-modal">
+      <DialogContent className="w-[95vw] max-w-2xl bg-[#0C0C0E] border-[#1F1F22] max-h-[85vh] overflow-y-auto mx-auto" data-testid="add-data-modal">
         <DialogHeader className="pb-2">
           <DialogTitle className="text-white text-lg sm:text-xl flex items-center gap-2">
-            <Plus className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
+            <Plus className="w-4 h-4 sm:w-5 sm:h-5 text-[#00C805]" />
             Add Your Crypto Data
           </DialogTitle>
-          <DialogDescription className="text-gray-400 text-sm">
+          <DialogDescription className="text-[#8A8A93] text-sm">
             Import transactions from wallets or exchanges
           </DialogDescription>
         </DialogHeader>
 
         {/* Data Summary Bar */}
         {dataSummary && dataSummary.total_transactions > 0 && (
-          <div className="bg-slate-700/50 rounded-lg p-2 sm:p-3 flex items-center justify-between">
+          <div className="bg-[#161618]/50 rounded-lg p-2 sm:p-3 flex items-center justify-between">
             <div className="flex items-center gap-2 sm:gap-4">
               <div className="text-center">
                 <p className="text-base sm:text-lg font-bold text-white">{dataSummary.total_transactions}</p>
-                <p className="text-[10px] sm:text-xs text-gray-400">Transactions</p>
+                <p className="text-[10px] sm:text-xs text-[#8A8A93]">Transactions</p>
               </div>
               <div className="text-center">
-                <p className="text-base sm:text-lg font-bold text-purple-400">{Object.keys(dataSummary.by_asset || {}).length}</p>
-                <p className="text-[10px] sm:text-xs text-gray-400">Assets</p>
+                <p className="text-base sm:text-lg font-bold text-[#00C805]">{Object.keys(dataSummary.by_asset || {}).length}</p>
+                <p className="text-[10px] sm:text-xs text-[#8A8A93]">Assets</p>
               </div>
               <div className="text-center">
                 <p className="text-base sm:text-lg font-bold text-blue-400">{Object.keys(dataSummary.by_exchange || {}).length}</p>
-                <p className="text-[10px] sm:text-xs text-gray-400">Sources</p>
+                <p className="text-[10px] sm:text-xs text-[#8A8A93]">Sources</p>
               </div>
             </div>
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={fetchDataSummary}
-              className="text-gray-400 hover:text-white p-1 sm:p-2"
+              className="text-[#8A8A93] hover:text-white p-1 sm:p-2"
             >
               <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4" />
             </Button>
@@ -475,20 +475,20 @@ export const AddDataModal = ({ isOpen, onClose, onDataAdded, onOpenExchangeApi }
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 bg-slate-700 h-auto">
-            <TabsTrigger value="wallet" className="data-[state=active]:bg-purple-600 text-xs sm:text-sm py-2">
+          <TabsList className="grid w-full grid-cols-4 bg-[#161618] h-auto">
+            <TabsTrigger value="wallet" className="data-[state=active]:bg-white text-black text-xs sm:text-sm py-2">
               <Wallet className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               <span className="hidden sm:inline">Wallet</span>
             </TabsTrigger>
-            <TabsTrigger value="csv" className="data-[state=active]:bg-purple-600 text-xs sm:text-sm py-2">
+            <TabsTrigger value="csv" className="data-[state=active]:bg-white text-black text-xs sm:text-sm py-2">
               <Upload className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               <span className="hidden sm:inline">CSV</span>
             </TabsTrigger>
-            <TabsTrigger value="api" className="data-[state=active]:bg-purple-600 text-xs sm:text-sm py-2">
+            <TabsTrigger value="api" className="data-[state=active]:bg-white text-black text-xs sm:text-sm py-2">
               <Key className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               <span className="hidden sm:inline">API</span>
             </TabsTrigger>
-            <TabsTrigger value="manual" className="data-[state=active]:bg-purple-600 text-xs sm:text-sm py-2">
+            <TabsTrigger value="manual" className="data-[state=active]:bg-white text-black text-xs sm:text-sm py-2">
               <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               <span className="hidden sm:inline">Manual</span>
             </TabsTrigger>
@@ -499,7 +499,7 @@ export const AddDataModal = ({ isOpen, onClose, onDataAdded, onOpenExchangeApi }
             <div className="space-y-3 sm:space-y-4">
               {/* Address Input */}
               <div>
-                <label className="text-xs sm:text-sm text-gray-300 mb-1 sm:mb-2 block">
+                <label className="text-xs sm:text-sm text-white mb-1 sm:mb-2 block">
                   Wallet Address or xPub
                 </label>
                 <div className="relative">
@@ -507,23 +507,23 @@ export const AddDataModal = ({ isOpen, onClose, onDataAdded, onOpenExchangeApi }
                     value={walletAddress}
                     onChange={handleAddressChange}
                     placeholder="0x... or bc1... or xpub..."
-                    className="bg-slate-700 border-slate-600 text-white text-sm pr-20 sm:pr-24"
+                    className="bg-[#161618] border-[#1F1F22] text-white text-sm pr-20 sm:pr-24"
                     data-testid="wallet-address-input"
                   />
                   {detectedChain && (
-                    <Badge className="absolute right-2 top-1/2 -translate-y-1/2 bg-green-600 text-[10px] sm:text-xs px-1 sm:px-2">
+                    <Badge className="absolute right-2 top-1/2 -translate-y-1/2 bg-[#00C805] text-[10px] sm:text-xs px-1 sm:px-2">
                       {SUPPORTED_CHAINS.find(c => c.id === detectedChain)?.icon} {detectedChain}
                     </Badge>
                   )}
                 </div>
-                <p className="text-[10px] sm:text-xs text-gray-500 mt-1">
+                <p className="text-[10px] sm:text-xs text-[#4A4A52] mt-1">
                   Auto-detects: ETH, BTC, SOL, Polygon
                 </p>
               </div>
               
               {/* As Of Date */}
               <div>
-                <label className="text-xs sm:text-sm text-gray-300 mb-1 sm:mb-2 flex items-center gap-1 sm:gap-2">
+                <label className="text-xs sm:text-sm text-white mb-1 sm:mb-2 flex items-center gap-1 sm:gap-2">
                   <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
                   Value As Of Date
                 </label>
@@ -531,9 +531,9 @@ export const AddDataModal = ({ isOpen, onClose, onDataAdded, onOpenExchangeApi }
                   type="date"
                   value={asOfDate}
                   onChange={(e) => setAsOfDate(e.target.value)}
-                  className="bg-slate-700 border-slate-600 text-white text-sm"
+                  className="bg-[#161618] border-[#1F1F22] text-white text-sm"
                 />
-                <p className="text-[10px] sm:text-xs text-gray-500 mt-1">
+                <p className="text-[10px] sm:text-xs text-[#4A4A52] mt-1">
                   For tax year calculations. Holdings are valued at this date.
                 </p>
               </div>
@@ -556,7 +556,7 @@ export const AddDataModal = ({ isOpen, onClose, onDataAdded, onOpenExchangeApi }
               <Button
                 onClick={handleAddWallet}
                 disabled={loading || !walletAddress.trim()}
-                className="w-full bg-purple-600 hover:bg-purple-700 text-sm sm:text-base"
+                className="w-full bg-white text-black hover:bg-gray-200 text-sm sm:text-base"
                 data-testid="add-wallet-button"
               >
                 {loading ? (
@@ -578,11 +578,11 @@ export const AddDataModal = ({ isOpen, onClose, onDataAdded, onOpenExchangeApi }
           <TabsContent value="csv" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
             {/* Format Selector */}
             <div className="flex items-center gap-3">
-              <label className="text-xs sm:text-sm text-gray-300 whitespace-nowrap">Format:</label>
+              <label className="text-xs sm:text-sm text-white whitespace-nowrap">Format:</label>
               <select
                 value={selectedExchange}
                 onChange={(e) => setSelectedExchange(e.target.value)}
-                className="flex-1 bg-slate-700 border border-slate-600 text-white rounded-md px-3 py-2 text-sm"
+                className="flex-1 bg-[#161618] border border-[#1F1F22] text-white rounded-md px-3 py-2 text-sm"
                 data-testid="csv-exchange-selector"
               >
                 <option value="auto">Auto-detect</option>
@@ -598,7 +598,7 @@ export const AddDataModal = ({ isOpen, onClose, onDataAdded, onOpenExchangeApi }
             </div>
 
             {/* Upload Area */}
-            <Card className="bg-slate-900/50 border-slate-700 border-dashed border-2">
+            <Card className="bg-[#050505]/50 border-[#1F1F22] border-dashed border-2">
               <CardContent className="pt-4 sm:pt-6 pb-4">
                 <div className="text-center">
                   <input
@@ -612,7 +612,7 @@ export const AddDataModal = ({ isOpen, onClose, onDataAdded, onOpenExchangeApi }
                   <Button
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploading}
-                    className="bg-purple-600 hover:bg-purple-700 px-4 sm:px-8 py-4 sm:py-6 text-sm sm:text-lg"
+                    className="bg-white text-black hover:bg-gray-200 px-4 sm:px-8 py-4 sm:py-6 text-sm sm:text-lg"
                     data-testid="upload-csv-button"
                   >
                     {uploading ? (
@@ -627,7 +627,7 @@ export const AddDataModal = ({ isOpen, onClose, onDataAdded, onOpenExchangeApi }
                       </>
                     )}
                   </Button>
-                  <p className="text-gray-400 text-xs sm:text-sm mt-2 sm:mt-3">
+                  <p className="text-[#8A8A93] text-xs sm:text-sm mt-2 sm:mt-3">
                     {selectedExchange === 'auto' ? 'Auto-detects format from headers' : `Using ${selectedExchange} format`}
                   </p>
                 </div>
@@ -636,12 +636,12 @@ export const AddDataModal = ({ isOpen, onClose, onDataAdded, onOpenExchangeApi }
 
             {/* Supported Exchanges */}
             <div>
-              <p className="text-xs sm:text-sm text-gray-400 mb-2 sm:mb-3">Supported formats:</p>
+              <p className="text-xs sm:text-sm text-[#8A8A93] mb-2 sm:mb-3">Supported formats:</p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 sm:gap-2">
                 {SUPPORTED_EXCHANGES.map(exchange => (
                   <div
                     key={exchange.id}
-                    className="bg-slate-700/50 rounded-lg p-1.5 sm:p-2 flex items-center gap-1.5 sm:gap-2"
+                    className="bg-[#161618]/50 rounded-lg p-1.5 sm:p-2 flex items-center gap-1.5 sm:gap-2"
                   >
                     <div 
                       className="w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-white text-[10px] sm:text-xs font-bold flex-shrink-0"
@@ -649,7 +649,7 @@ export const AddDataModal = ({ isOpen, onClose, onDataAdded, onOpenExchangeApi }
                     >
                       {exchange.name[0]}
                     </div>
-                    <span className="text-xs sm:text-sm text-gray-300 truncate">{exchange.name}</span>
+                    <span className="text-xs sm:text-sm text-white truncate">{exchange.name}</span>
                   </div>
                 ))}
               </div>
@@ -668,9 +668,9 @@ export const AddDataModal = ({ isOpen, onClose, onDataAdded, onOpenExchangeApi }
           <TabsContent value="api" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
             <div className="space-y-4">
               <div className="text-center py-4">
-                <Key className="w-12 h-12 text-purple-400 mx-auto mb-3" />
+                <Key className="w-12 h-12 text-[#00C805] mx-auto mb-3" />
                 <h3 className="text-lg font-semibold text-white mb-2">Connect Exchange API</h3>
-                <p className="text-sm text-gray-400 mb-4">
+                <p className="text-sm text-[#8A8A93] mb-4">
                   Auto-sync your transactions directly from exchanges like Coinbase, Binance, and more.
                 </p>
                 <Button 
@@ -678,7 +678,7 @@ export const AddDataModal = ({ isOpen, onClose, onDataAdded, onOpenExchangeApi }
                     onClose();
                     if (onOpenExchangeApi) onOpenExchangeApi();
                   }}
-                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                  className="bg-white text-black hover:bg-gray-200 text-white"
                   data-testid="open-api-connection-btn"
                 >
                   <Key className="w-4 h-4 mr-2" />
@@ -711,22 +711,22 @@ export const AddDataModal = ({ isOpen, onClose, onDataAdded, onOpenExchangeApi }
 
         {/* Messages */}
         {error && (
-          <Alert className="bg-red-900/20 border-red-700 text-red-300 py-2">
+          <Alert className="bg-red-900/20 border-red-700 text-[#FF3B30] py-2">
             <AlertCircle className="w-3 h-3 sm:w-4 sm:h-4" />
             <AlertDescription className="text-xs sm:text-sm">{error}</AlertDescription>
           </Alert>
         )}
         
         {success && (
-          <Alert className="bg-green-900/20 border-green-700 text-green-300 py-2">
+          <Alert className="bg-green-900/20 border-green-700 text-[#00C805] py-2">
             <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" />
             <AlertDescription className="text-xs sm:text-sm">{success}</AlertDescription>
           </Alert>
         )}
 
         {/* Quick Links */}
-        <div className="border-t border-slate-700 pt-2 sm:pt-4 mt-1 sm:mt-2">
-          <p className="text-[10px] sm:text-xs text-gray-500 text-center">
+        <div className="border-t border-[#1F1F22] pt-2 sm:pt-4 mt-1 sm:mt-2">
+          <p className="text-[10px] sm:text-xs text-[#4A4A52] text-center">
             All data processed securely. No API keys stored.
           </p>
         </div>

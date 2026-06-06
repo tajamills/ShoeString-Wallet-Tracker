@@ -81,7 +81,7 @@ export const ChainRequestModal = ({ isOpen, onClose, getAuthHeader, userTier }) 
   if (userTier === 'free') {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="bg-slate-900 border-slate-700">
+        <DialogContent className="bg-[#050505] border-[#1F1F22]">
           <DialogHeader>
             <DialogTitle className="text-white">Request a Chain</DialogTitle>
           </DialogHeader>
@@ -98,32 +98,32 @@ export const ChainRequestModal = ({ isOpen, onClose, getAuthHeader, userTier }) 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-slate-900 border-slate-700 max-w-lg">
+      <DialogContent className="bg-[#050505] border-[#1F1F22] max-w-lg">
         <DialogHeader>
           <DialogTitle className="text-white flex items-center gap-2">
-            <Plus className="w-5 h-5 text-purple-400" />
+            <Plus className="w-5 h-5 text-[#00C805]" />
             Request a Chain
           </DialogTitle>
-          <DialogDescription className="text-gray-400">
+          <DialogDescription className="text-[#8A8A93]">
             Don't see your blockchain? Request it and we'll add it within 48 hours!
           </DialogDescription>
         </DialogHeader>
 
         {success ? (
           <div className="text-center py-6">
-            <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
+            <CheckCircle className="w-16 h-16 text-[#00C805] mx-auto mb-4" />
             <h3 className="text-xl text-white font-semibold mb-2">Request Submitted!</h3>
-            <p className="text-gray-400 mb-4">
+            <p className="text-[#8A8A93] mb-4">
               We'll review your request and typically add new chains within 48 hours.
               You'll receive an email notification when it's ready.
             </p>
-            <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+            <div className="flex items-center justify-center gap-2 text-sm text-[#4A4A52]">
               <Clock className="w-4 h-4" />
               Estimated: 48 hours
             </div>
             <Button 
               onClick={() => { setSuccess(false); onClose(); }}
-              className="mt-4 bg-purple-600 hover:bg-purple-700"
+              className="mt-4 bg-white text-black hover:bg-gray-200"
             >
               Done
             </Button>
@@ -132,12 +132,12 @@ export const ChainRequestModal = ({ isOpen, onClose, getAuthHeader, userTier }) 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Quick Select Popular Chains */}
             <div>
-              <label className="text-sm text-gray-400 mb-2 block">Quick Select:</label>
+              <label className="text-sm text-[#8A8A93] mb-2 block">Quick Select:</label>
               <div className="flex flex-wrap gap-2">
                 {popularRequests.slice(0, 5).map((chain) => (
                   <Badge
                     key={chain.symbol}
-                    className="bg-slate-700 hover:bg-slate-600 cursor-pointer transition-colors"
+                    className="bg-[#161618] hover:bg-[#1F1F22] cursor-pointer transition-colors"
                     onClick={() => selectPopular(chain)}
                   >
                     {chain.name} ({chain.symbol})
@@ -148,55 +148,55 @@ export const ChainRequestModal = ({ isOpen, onClose, getAuthHeader, userTier }) 
 
             {/* Chain Name */}
             <div>
-              <label className="text-sm text-gray-400 mb-1 block">Chain Name *</label>
+              <label className="text-sm text-[#8A8A93] mb-1 block">Chain Name *</label>
               <Input
                 value={formData.chain_name}
                 onChange={(e) => setFormData({...formData, chain_name: e.target.value})}
                 placeholder="e.g., Cardano, XRP Ledger, Tron"
-                className="bg-slate-800 border-slate-600 text-white"
+                className="bg-[#0C0C0E] border-[#1F1F22] text-white"
                 required
               />
             </div>
 
             {/* Symbol */}
             <div>
-              <label className="text-sm text-gray-400 mb-1 block">Symbol (Optional)</label>
+              <label className="text-sm text-[#8A8A93] mb-1 block">Symbol (Optional)</label>
               <Input
                 value={formData.chain_symbol}
                 onChange={(e) => setFormData({...formData, chain_symbol: e.target.value.toUpperCase()})}
                 placeholder="e.g., ADA, XRP, TRX"
-                className="bg-slate-800 border-slate-600 text-white"
+                className="bg-[#0C0C0E] border-[#1F1F22] text-white"
                 maxLength={10}
               />
             </div>
 
             {/* Sample Address */}
             <div>
-              <label className="text-sm text-gray-400 mb-1 block">Sample Address (Optional)</label>
+              <label className="text-sm text-[#8A8A93] mb-1 block">Sample Address (Optional)</label>
               <Input
                 value={formData.sample_address}
                 onChange={(e) => setFormData({...formData, sample_address: e.target.value})}
                 placeholder="A wallet address on this chain"
-                className="bg-slate-800 border-slate-600 text-white"
+                className="bg-[#0C0C0E] border-[#1F1F22] text-white"
               />
-              <p className="text-xs text-gray-500 mt-1">Helps us test the integration faster</p>
+              <p className="text-xs text-[#4A4A52] mt-1">Helps us test the integration faster</p>
             </div>
 
             {/* Reason */}
             <div>
-              <label className="text-sm text-gray-400 mb-1 block">Why do you need this chain? (Optional)</label>
+              <label className="text-sm text-[#8A8A93] mb-1 block">Why do you need this chain? (Optional)</label>
               <Textarea
                 value={formData.reason}
                 onChange={(e) => setFormData({...formData, reason: e.target.value})}
                 placeholder="e.g., I have significant holdings, need tax reports..."
-                className="bg-slate-800 border-slate-600 text-white resize-none"
+                className="bg-[#0C0C0E] border-[#1F1F22] text-white resize-none"
                 rows={2}
               />
             </div>
 
             {error && (
               <Alert className="bg-red-900/30 border-red-700">
-                <AlertDescription className="text-red-300">{error}</AlertDescription>
+                <AlertDescription className="text-[#FF3B30]">{error}</AlertDescription>
               </Alert>
             )}
 
@@ -205,14 +205,14 @@ export const ChainRequestModal = ({ isOpen, onClose, getAuthHeader, userTier }) 
                 type="button"
                 variant="outline"
                 onClick={onClose}
-                className="border-slate-600 text-gray-300"
+                className="border-[#1F1F22] text-white"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={loading}
-                className="bg-purple-600 hover:bg-purple-700"
+                className="bg-white text-black hover:bg-gray-200"
               >
                 {loading ? (
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />

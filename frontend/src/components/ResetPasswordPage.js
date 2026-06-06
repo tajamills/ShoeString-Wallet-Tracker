@@ -58,19 +58,19 @@ export const ResetPasswordPage = () => {
   // If no token, show error
   if (!isValidToken) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md bg-slate-800/50 border-slate-700">
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4">
+        <Card className="w-full max-w-md bg-[#0C0C0E]/50 border-[#1F1F22]">
           <CardHeader className="text-center">
-            <XCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
+            <XCircle className="w-16 h-16 text-[#FF3B30] mx-auto mb-4" />
             <CardTitle className="text-white text-2xl">Invalid Reset Link</CardTitle>
-            <CardDescription className="text-gray-400">
+            <CardDescription className="text-[#8A8A93]">
               This password reset link is invalid or has expired.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button
               onClick={() => window.location.href = '/'}
-              className="w-full bg-purple-600 hover:bg-purple-700"
+              className="w-full bg-white text-black hover:bg-gray-200"
             >
               Go to Homepage
             </Button>
@@ -83,19 +83,19 @@ export const ResetPasswordPage = () => {
   // Success state
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md bg-slate-800/50 border-slate-700">
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4">
+        <Card className="w-full max-w-md bg-[#0C0C0E]/50 border-[#1F1F22]">
           <CardHeader className="text-center">
-            <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
+            <CheckCircle className="w-16 h-16 text-[#00C805] mx-auto mb-4" />
             <CardTitle className="text-white text-2xl">Password Reset!</CardTitle>
-            <CardDescription className="text-gray-400">
+            <CardDescription className="text-[#8A8A93]">
               Your password has been successfully reset. You can now log in with your new password.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button
               onClick={() => window.location.href = '/'}
-              className="w-full bg-purple-600 hover:bg-purple-700"
+              className="w-full bg-white text-black hover:bg-gray-200"
             >
               Go to Login
             </Button>
@@ -107,19 +107,19 @@ export const ResetPasswordPage = () => {
 
   // Reset password form
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md bg-slate-800/50 border-slate-700">
+    <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4">
+      <Card className="w-full max-w-md bg-[#0C0C0E]/50 border-[#1F1F22]">
         <CardHeader className="text-center">
-          <Lock className="w-12 h-12 text-purple-400 mx-auto mb-2" />
+          <Lock className="w-12 h-12 text-[#00C805] mx-auto mb-2" />
           <CardTitle className="text-white text-2xl">Reset Your Password</CardTitle>
-          <CardDescription className="text-gray-400">
+          <CardDescription className="text-[#8A8A93]">
             Enter your new password below
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-gray-300">New Password</Label>
+              <Label htmlFor="password" className="text-white">New Password</Label>
               <Input
                 id="password"
                 type="password"
@@ -128,13 +128,13 @@ export const ResetPasswordPage = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="bg-slate-700 border-slate-600 text-white"
+                className="bg-[#161618] border-[#1F1F22] text-white"
                 data-testid="new-password-input"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword" className="text-gray-300">Confirm Password</Label>
+              <Label htmlFor="confirmPassword" className="text-white">Confirm Password</Label>
               <Input
                 id="confirmPassword"
                 type="password"
@@ -143,20 +143,20 @@ export const ResetPasswordPage = () => {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 minLength={6}
-                className="bg-slate-700 border-slate-600 text-white"
+                className="bg-[#161618] border-[#1F1F22] text-white"
                 data-testid="confirm-password-input"
               />
             </div>
 
             {error && (
-              <Alert className="bg-red-900/20 border-red-900 text-red-300">
+              <Alert className="bg-red-900/20 border-red-900 text-[#FF3B30]">
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
 
             <Button
               type="submit"
-              className="w-full bg-purple-600 hover:bg-purple-700"
+              className="w-full bg-white text-black hover:bg-gray-200"
               disabled={loading}
               data-testid="reset-password-submit"
             >
@@ -172,7 +172,7 @@ export const ResetPasswordPage = () => {
           </form>
 
           <div className="mt-4 text-center">
-            <a href="/" className="text-sm text-purple-400 hover:text-purple-300">
+            <a href="/" className="text-sm text-[#00C805] hover:text-[#00C805]">
               Back to Homepage
             </a>
           </div>

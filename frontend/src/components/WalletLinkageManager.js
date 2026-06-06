@@ -307,36 +307,36 @@ export const WalletLinkageManager = ({ getAuthHeader, onUpdate }) => {
       {/* Messages */}
       {error && (
         <Alert className="bg-red-900/20 border-red-700">
-          <AlertTriangle className="w-4 h-4 text-red-400" />
-          <AlertDescription className="text-red-300">{error}</AlertDescription>
+          <AlertTriangle className="w-4 h-4 text-[#FF3B30]" />
+          <AlertDescription className="text-[#FF3B30]">{error}</AlertDescription>
         </Alert>
       )}
       
       {success && (
         <Alert className="bg-green-900/20 border-green-700">
-          <CheckCircle className="w-4 h-4 text-green-400" />
-          <AlertDescription className="text-green-300">{success}</AlertDescription>
+          <CheckCircle className="w-4 h-4 text-[#00C805]" />
+          <AlertDescription className="text-[#00C805]">{success}</AlertDescription>
         </Alert>
       )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 bg-slate-700">
-          <TabsTrigger value="review" className="text-xs sm:text-sm data-[state=active]:bg-purple-600">
+        <TabsList className="grid w-full grid-cols-4 bg-[#161618]">
+          <TabsTrigger value="review" className="text-xs sm:text-sm data-[state=active]:bg-white text-black">
             <HelpCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
             <span className="hidden sm:inline">Review</span>
             {reviews.length > 0 && (
               <Badge className="ml-1 bg-red-500 text-white text-xs">{reviews.length}</Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="linkages" className="text-xs sm:text-sm data-[state=active]:bg-purple-600">
+          <TabsTrigger value="linkages" className="text-xs sm:text-sm data-[state=active]:bg-white text-black">
             <Link2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
             <span className="hidden sm:inline">Linkages</span>
           </TabsTrigger>
-          <TabsTrigger value="clusters" className="text-xs sm:text-sm data-[state=active]:bg-purple-600">
+          <TabsTrigger value="clusters" className="text-xs sm:text-sm data-[state=active]:bg-white text-black">
             <Wallet className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
             <span className="hidden sm:inline">Wallets</span>
           </TabsTrigger>
-          <TabsTrigger value="tax" className="text-xs sm:text-sm data-[state=active]:bg-purple-600">
+          <TabsTrigger value="tax" className="text-xs sm:text-sm data-[state=active]:bg-white text-black">
             <FileText className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
             <span className="hidden sm:inline">Tax</span>
           </TabsTrigger>
@@ -346,9 +346,9 @@ export const WalletLinkageManager = ({ getAuthHeader, onUpdate }) => {
         <TabsContent value="review" className="space-y-3 mt-3">
           <div className="flex justify-between items-center flex-wrap gap-2">
             <div>
-              <h3 className="text-sm font-medium text-gray-300">Transaction Reviews</h3>
+              <h3 className="text-sm font-medium text-white">Transaction Reviews</h3>
               {reviews.length > 0 && (
-                <p className="text-xs text-amber-400">{reviews.length} transactions need verification</p>
+                <p className="text-xs text-[#FFB800]">{reviews.length} transactions need verification</p>
               )}
             </div>
             <div className="flex gap-2 flex-wrap">
@@ -356,7 +356,7 @@ export const WalletLinkageManager = ({ getAuthHeader, onUpdate }) => {
                 size="sm"
                 onClick={detectAndLinkTransfers}
                 disabled={autoLinking}
-                className="text-xs bg-green-600 hover:bg-green-700"
+                className="text-xs bg-[#00C805] hover:bg-[#00C805]/80"
                 title="Auto-detect and link internal transfers between your exchanges"
               >
                 {autoLinking ? (
@@ -370,7 +370,7 @@ export const WalletLinkageManager = ({ getAuthHeader, onUpdate }) => {
                 size="sm"
                 variant="outline"
                 onClick={exportReviewQueue}
-                className="text-xs border-slate-600"
+                className="text-xs border-[#1F1F22]"
               >
                 <Download className="w-3 h-3 mr-1" />
                 Export
@@ -379,7 +379,7 @@ export const WalletLinkageManager = ({ getAuthHeader, onUpdate }) => {
                 size="sm"
                 variant="outline"
                 onClick={fetchReviewQueue}
-                className="text-xs border-slate-600"
+                className="text-xs border-[#1F1F22]"
               >
                 <RefreshCw className="w-3 h-3" />
               </Button>
@@ -390,7 +390,7 @@ export const WalletLinkageManager = ({ getAuthHeader, onUpdate }) => {
           {autoLinkResult && (
             <Card className="bg-green-900/20 border-green-700/50">
               <CardContent className="py-2 px-3">
-                <p className="text-xs text-green-300">
+                <p className="text-xs text-[#00C805]">
                   <CheckCircle className="w-3 h-3 inline mr-1" />
                   {autoLinkResult}
                 </p>
@@ -411,25 +411,25 @@ export const WalletLinkageManager = ({ getAuthHeader, onUpdate }) => {
           )}
 
           {reviews.length === 0 ? (
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-[#0C0C0E]/50 border-[#1F1F22]">
               <CardContent className="py-8 text-center">
                 <CheckCircle className="w-12 h-12 mx-auto text-green-500 mb-3" />
-                <p className="text-gray-400">No pending reviews!</p>
-                <p className="text-xs text-gray-500 mt-1">All transfers have been resolved.</p>
+                <p className="text-[#8A8A93]">No pending reviews!</p>
+                <p className="text-xs text-[#4A4A52] mt-1">All transfers have been resolved.</p>
               </CardContent>
             </Card>
           ) : (
             <div className="space-y-2 max-h-[400px] overflow-y-auto">
               {reviews.map((review) => (
-                <Card key={review.tx_id || review.id || review.review_id} className="bg-slate-800/50 border-slate-700">
+                <Card key={review.tx_id || review.id || review.review_id} className="bg-[#0C0C0E]/50 border-[#1F1F22]">
                   <CardContent className="p-3">
                     <div className="flex flex-col gap-2">
                       {/* Transaction info row */}
                       <div className="flex items-center gap-2 text-sm flex-wrap">
-                        <span className="text-gray-400 font-medium">{review.amount?.toFixed(6)}</span>
-                        <Badge className="bg-blue-600">{review.asset}</Badge>
+                        <span className="text-[#8A8A93] font-medium">{review.amount?.toFixed(6)}</span>
+                        <Badge className="bg-white text-black">{review.asset}</Badge>
                         {review.exchange && (
-                          <Badge variant="outline" className="text-xs border-purple-600 text-purple-400">
+                          <Badge variant="outline" className="text-xs border-[#00C805] text-[#00C805]">
                             {review.exchange}
                           </Badge>
                         )}
@@ -437,20 +437,20 @@ export const WalletLinkageManager = ({ getAuthHeader, onUpdate }) => {
                       
                       {/* Destination address - full display */}
                       <div className="flex items-center gap-2">
-                        <ArrowRight className="w-3 h-3 text-gray-500 flex-shrink-0" />
-                        <span className="text-gray-300 font-mono text-xs break-all">
+                        <ArrowRight className="w-3 h-3 text-[#4A4A52] flex-shrink-0" />
+                        <span className="text-white font-mono text-xs break-all">
                           {showFullAddresses ? review.destination_address : truncateAddress(review.destination_address)}
                         </span>
                       </div>
                       
                       {/* Question */}
-                      <p className="text-xs text-amber-400">
+                      <p className="text-xs text-[#FFB800]">
                         {review.question || review.prompt_text || "Is this another wallet you own?"}
                       </p>
                       
                       {/* Help text */}
                       {review.help_text && (
-                        <p className="text-xs text-gray-500">{review.help_text}</p>
+                        <p className="text-xs text-[#4A4A52]">{review.help_text}</p>
                       )}
                       
                       {/* Action buttons */}
@@ -459,7 +459,7 @@ export const WalletLinkageManager = ({ getAuthHeader, onUpdate }) => {
                           size="sm"
                           onClick={() => resolveReview(review.tx_id || review.id || review.review_id, 'yes')}
                           disabled={resolvingId === (review.tx_id || review.id || review.review_id)}
-                          className="bg-green-600 hover:bg-green-700 text-xs px-2"
+                          className="bg-[#00C805] hover:bg-[#00C805]/80 text-xs px-2"
                           title="Yes, this is my wallet (internal transfer)"
                         >
                           {resolvingId === (review.tx_id || review.id || review.review_id) ? (
@@ -475,7 +475,7 @@ export const WalletLinkageManager = ({ getAuthHeader, onUpdate }) => {
                           size="sm"
                           onClick={() => resolveReview(review.tx_id || review.id || review.review_id, 'no')}
                           disabled={resolvingId === (review.tx_id || review.id || review.review_id)}
-                          className="bg-red-600 hover:bg-red-700 text-xs px-2"
+                          className="bg-[#FF3B30] hover:bg-[#FF3B30]/80 text-xs px-2"
                           title="No, this is external (taxable)"
                         >
                           <XCircle className="w-3 h-3 mr-1" />
@@ -486,7 +486,7 @@ export const WalletLinkageManager = ({ getAuthHeader, onUpdate }) => {
                           variant="outline"
                           onClick={() => resolveReview(review.tx_id || review.id || review.review_id, 'ignore')}
                           disabled={resolvingId === (review.tx_id || review.id || review.review_id)}
-                          className="text-xs px-2 border-slate-600"
+                          className="text-xs px-2 border-[#1F1F22]"
                           title="Skip for now"
                         >
                           Skip
@@ -503,9 +503,9 @@ export const WalletLinkageManager = ({ getAuthHeader, onUpdate }) => {
         {/* Linkages Tab */}
         <TabsContent value="linkages" className="space-y-3 mt-3">
           {/* Manual Link Form */}
-          <Card className="bg-slate-800/50 border-slate-700">
+          <Card className="bg-[#0C0C0E]/50 border-[#1F1F22]">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-gray-300">Link Wallets Manually</CardTitle>
+              <CardTitle className="text-sm text-white">Link Wallets Manually</CardTitle>
               <CardDescription className="text-xs">
                 Connect two wallet addresses you own to maintain cost basis continuity.
               </CardDescription>
@@ -516,19 +516,19 @@ export const WalletLinkageManager = ({ getAuthHeader, onUpdate }) => {
                   value={fromAddress}
                   onChange={(e) => setFromAddress(e.target.value)}
                   placeholder="From address (0x...)"
-                  className="bg-slate-700 border-slate-600 text-white text-xs"
+                  className="bg-[#161618] border-[#1F1F22] text-white text-xs"
                 />
                 <Input
                   value={toAddress}
                   onChange={(e) => setToAddress(e.target.value)}
                   placeholder="To address (0x...)"
-                  className="bg-slate-700 border-slate-600 text-white text-xs"
+                  className="bg-[#161618] border-[#1F1F22] text-white text-xs"
                 />
               </div>
               <Button
                 onClick={linkWallets}
                 disabled={linkingWallets || !fromAddress || !toAddress}
-                className="w-full bg-purple-600 hover:bg-purple-700 text-sm"
+                className="w-full bg-white text-black hover:bg-gray-200 text-sm"
               >
                 {linkingWallets ? (
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />
@@ -542,36 +542,36 @@ export const WalletLinkageManager = ({ getAuthHeader, onUpdate }) => {
 
           {/* Existing Linkages */}
           <div className="flex justify-between items-center">
-            <h3 className="text-sm font-medium text-gray-300">Active Linkages ({linkages.length})</h3>
+            <h3 className="text-sm font-medium text-white">Active Linkages ({linkages.length})</h3>
             <Button
               size="sm"
               variant="outline"
               onClick={fetchLinkages}
-              className="text-xs border-slate-600"
+              className="text-xs border-[#1F1F22]"
             >
               <RefreshCw className="w-3 h-3" />
             </Button>
           </div>
 
           {linkages.length === 0 ? (
-            <p className="text-gray-500 text-sm text-center py-4">No wallet linkages yet.</p>
+            <p className="text-[#4A4A52] text-sm text-center py-4">No wallet linkages yet.</p>
           ) : (
             <div className="space-y-1 max-h-[300px] overflow-y-auto">
               {linkages.map((edge) => (
                 <div
                   key={edge.id}
-                  className="flex items-center justify-between bg-slate-800/50 rounded p-2"
+                  className="flex items-center justify-between bg-[#0C0C0E]/50 rounded p-2"
                 >
                   <div className="flex items-center gap-2 text-xs">
-                    <span className="font-mono text-gray-400">
+                    <span className="font-mono text-[#8A8A93]">
                       {truncateAddress(edge.from_address)}
                     </span>
-                    <ArrowRight className="w-3 h-3 text-purple-400" />
-                    <span className="font-mono text-gray-400">
+                    <ArrowRight className="w-3 h-3 text-[#00C805]" />
+                    <span className="font-mono text-[#8A8A93]">
                       {truncateAddress(edge.to_address)}
                     </span>
                     <Badge className={`text-[10px] ${
-                      edge.confidence >= 0.95 ? 'bg-green-600' :
+                      edge.confidence >= 0.95 ? 'bg-[#00C805]' :
                       edge.confidence >= 0.8 ? 'bg-yellow-600' : 'bg-orange-600'
                     }`}>
                       {(edge.confidence * 100).toFixed(0)}%
@@ -581,7 +581,7 @@ export const WalletLinkageManager = ({ getAuthHeader, onUpdate }) => {
                     size="sm"
                     variant="ghost"
                     onClick={() => unlinkWallet(edge.id)}
-                    className="text-red-400 hover:text-red-300 p-1"
+                    className="text-[#FF3B30] hover:text-[#FF3B30] p-1"
                     title="Remove linkage"
                   >
                     <Unlink className="w-3 h-3" />
@@ -595,23 +595,23 @@ export const WalletLinkageManager = ({ getAuthHeader, onUpdate }) => {
         {/* Clusters Tab */}
         <TabsContent value="clusters" className="space-y-3 mt-3">
           <div className="flex justify-between items-center">
-            <h3 className="text-sm font-medium text-gray-300">Wallet Groups ({clusters.length})</h3>
+            <h3 className="text-sm font-medium text-white">Wallet Groups ({clusters.length})</h3>
             <Button
               size="sm"
               variant="outline"
               onClick={fetchClusters}
-              className="text-xs border-slate-600"
+              className="text-xs border-[#1F1F22]"
             >
               <RefreshCw className="w-3 h-3" />
             </Button>
           </div>
 
           {clusters.length === 0 ? (
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-[#0C0C0E]/50 border-[#1F1F22]">
               <CardContent className="py-8 text-center">
-                <Wallet className="w-12 h-12 mx-auto text-gray-500 mb-3" />
-                <p className="text-gray-400">No wallet groups yet.</p>
-                <p className="text-xs text-gray-500 mt-1">
+                <Wallet className="w-12 h-12 mx-auto text-[#4A4A52] mb-3" />
+                <p className="text-[#8A8A93]">No wallet groups yet.</p>
+                <p className="text-xs text-[#4A4A52] mt-1">
                   Link wallets to automatically group them.
                 </p>
               </CardContent>
@@ -619,13 +619,13 @@ export const WalletLinkageManager = ({ getAuthHeader, onUpdate }) => {
           ) : (
             <div className="space-y-2">
               {clusters.map((cluster) => (
-                <Card key={cluster.id} className="bg-slate-800/50 border-slate-700">
+                <Card key={cluster.id} className="bg-[#0C0C0E]/50 border-[#1F1F22]">
                   <CardContent className="p-3">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-300">
+                      <span className="text-sm font-medium text-white">
                         {cluster.name || `Group ${cluster.id.slice(0, 8)}`}
                       </span>
-                      <Badge className="bg-purple-600">
+                      <Badge className="bg-white text-black">
                         {cluster.addresses?.length || cluster.address_count || 0} wallets
                       </Badge>
                     </div>
@@ -633,13 +633,13 @@ export const WalletLinkageManager = ({ getAuthHeader, onUpdate }) => {
                       {(cluster.addresses || []).slice(0, 5).map((addr, i) => (
                         <span
                           key={i}
-                          className="font-mono text-[10px] bg-slate-700 px-1.5 py-0.5 rounded text-gray-400"
+                          className="font-mono text-[10px] bg-[#161618] px-1.5 py-0.5 rounded text-[#8A8A93]"
                         >
                           {truncateAddress(addr)}
                         </span>
                       ))}
                       {(cluster.addresses?.length || 0) > 5 && (
-                        <span className="text-[10px] text-gray-500">
+                        <span className="text-[10px] text-[#4A4A52]">
                           +{cluster.addresses.length - 5} more
                         </span>
                       )}
@@ -655,11 +655,11 @@ export const WalletLinkageManager = ({ getAuthHeader, onUpdate }) => {
         <TabsContent value="tax" className="space-y-3 mt-3">
           <div className="flex flex-col sm:flex-row justify-between gap-2">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-400">Tax Year:</span>
+              <span className="text-sm text-[#8A8A93]">Tax Year:</span>
               <select
                 value={taxYear}
                 onChange={(e) => setTaxYear(parseInt(e.target.value))}
-                className="bg-slate-700 border-slate-600 rounded px-2 py-1 text-sm text-white"
+                className="bg-[#161618] border-[#1F1F22] rounded px-2 py-1 text-sm text-white"
               >
                 {[2024, 2023, 2022, 2021, 2020].map((year) => (
                   <option key={year} value={year}>{year}</option>
@@ -669,7 +669,7 @@ export const WalletLinkageManager = ({ getAuthHeader, onUpdate }) => {
                 size="sm"
                 onClick={fetchTaxEvents}
                 disabled={loading}
-                className="bg-purple-600 hover:bg-purple-700 text-xs"
+                className="bg-white text-black hover:bg-gray-200 text-xs"
               >
                 {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Load'}
               </Button>
@@ -677,7 +677,7 @@ export const WalletLinkageManager = ({ getAuthHeader, onUpdate }) => {
             <Button
               size="sm"
               onClick={exportForm8949}
-              className="bg-green-600 hover:bg-green-700 text-xs"
+              className="bg-[#00C805] hover:bg-[#00C805]/80 text-xs"
             >
               <Download className="w-3 h-3 mr-1" />
               Export Form 8949
@@ -685,11 +685,11 @@ export const WalletLinkageManager = ({ getAuthHeader, onUpdate }) => {
           </div>
 
           {taxEvents.length === 0 ? (
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-[#0C0C0E]/50 border-[#1F1F22]">
               <CardContent className="py-8 text-center">
-                <FileText className="w-12 h-12 mx-auto text-gray-500 mb-3" />
-                <p className="text-gray-400">No tax events from chain breaks.</p>
-                <p className="text-xs text-gray-500 mt-1">
+                <FileText className="w-12 h-12 mx-auto text-[#4A4A52] mb-3" />
+                <p className="text-[#8A8A93]">No tax events from chain breaks.</p>
+                <p className="text-xs text-[#4A4A52] mt-1">
                   Tax events are created when you mark transfers as "external".
                 </p>
               </CardContent>
@@ -699,19 +699,19 @@ export const WalletLinkageManager = ({ getAuthHeader, onUpdate }) => {
               {taxEvents.map((event) => (
                 <div
                   key={event.id}
-                  className="flex items-center justify-between bg-slate-800/50 rounded p-2"
+                  className="flex items-center justify-between bg-[#0C0C0E]/50 rounded p-2"
                 >
                   <div className="flex items-center gap-2">
-                    <Badge className="bg-blue-600 text-xs">{event.asset}</Badge>
-                    <span className="text-xs text-gray-400">
+                    <Badge className="bg-white text-black text-xs">{event.asset}</Badge>
+                    <span className="text-xs text-[#8A8A93]">
                       {event.quantity?.toFixed(6)}
                     </span>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-[#4A4A52]">
                       {event.date_disposed?.split('T')[0]}
                     </span>
                   </div>
                   <div className={`text-xs font-medium ${
-                    event.gain_loss >= 0 ? 'text-green-400' : 'text-red-400'
+                    event.gain_loss >= 0 ? 'text-[#00C805]' : 'text-[#FF3B30]'
                   }`}>
                     {event.gain_loss >= 0 ? '+' : ''}${event.gain_loss?.toFixed(2)}
                   </div>

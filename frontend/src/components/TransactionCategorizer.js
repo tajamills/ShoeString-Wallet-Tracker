@@ -20,15 +20,15 @@ import {
 } from 'lucide-react';
 
 const TRANSACTION_CATEGORIES = [
-  { value: 'trade', label: 'Trade', description: 'Exchange of one asset for another', color: 'bg-blue-600' },
-  { value: 'income', label: 'Income', description: 'Mining, staking rewards, airdrops', color: 'bg-green-600' },
-  { value: 'gift_received', label: 'Gift Received', description: 'Crypto received as a gift', color: 'bg-purple-600' },
+  { value: 'trade', label: 'Trade', description: 'Exchange of one asset for another', color: 'bg-white text-black' },
+  { value: 'income', label: 'Income', description: 'Mining, staking rewards, airdrops', color: 'bg-[#00C805]' },
+  { value: 'gift_received', label: 'Gift Received', description: 'Crypto received as a gift', color: 'bg-white text-black' },
   { value: 'gift_sent', label: 'Gift Sent', description: 'Crypto sent as a gift', color: 'bg-pink-600' },
   { value: 'payment', label: 'Payment', description: 'Payment for goods/services', color: 'bg-orange-600' },
   { value: 'transfer', label: 'Transfer', description: 'Movement between your own wallets', color: 'bg-gray-600' },
-  { value: 'lost', label: 'Lost/Stolen', description: 'Lost access or theft', color: 'bg-red-600' },
+  { value: 'lost', label: 'Lost/Stolen', description: 'Lost access or theft', color: 'bg-[#FF3B30]' },
   { value: 'fee', label: 'Fee', description: 'Network/transaction fees', color: 'bg-yellow-600' },
-  { value: 'other', label: 'Other', description: 'Uncategorized transaction', color: 'bg-slate-600' }
+  { value: 'other', label: 'Other', description: 'Uncategorized transaction', color: 'bg-[#1F1F22]' }
 ];
 
 export const TransactionCategorizer = ({ 
@@ -120,20 +120,20 @@ export const TransactionCategorizer = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-4xl bg-slate-800 border-slate-700 max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-4xl bg-[#0C0C0E] border-[#1F1F22] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-white flex items-center gap-2">
-            <Tag className="w-6 h-6 text-purple-400" />
+            <Tag className="w-6 h-6 text-[#00C805]" />
             Categorize Transactions
           </DialogTitle>
-          <DialogDescription className="text-gray-400">
+          <DialogDescription className="text-[#8A8A93]">
             Categorize your transactions for accurate tax reporting. Categories affect how gains/losses are calculated.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
           {/* Bulk Actions */}
-          <div className="bg-slate-900/50 rounded-lg p-4">
+          <div className="bg-[#050505]/50 rounded-lg p-4">
             <h3 className="text-sm font-semibold text-white mb-3">Quick Actions</h3>
             <div className="flex flex-wrap gap-2">
               {TRANSACTION_CATEGORIES.slice(0, 5).map(cat => (
@@ -141,7 +141,7 @@ export const TransactionCategorizer = ({
                   key={cat.value}
                   size="sm"
                   variant="outline"
-                  className={`border-slate-600 text-gray-300 hover:${cat.color}`}
+                  className={`border-[#1F1F22] text-white hover:${cat.color}`}
                   onClick={() => applyBulkCategory(cat.value)}
                 >
                   Mark All as {cat.label}
@@ -156,19 +156,19 @@ export const TransactionCategorizer = ({
               transactions.slice(0, 50).map((tx, idx) => (
                 <div 
                   key={tx.hash || idx} 
-                  className="bg-slate-900/30 rounded-lg p-4 border border-slate-700"
+                  className="bg-[#050505]/30 rounded-lg p-4 border border-[#1F1F22]"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <Badge 
                           variant="outline" 
-                          className={tx.type === 'sent' ? 'text-red-300 border-red-700' : 'text-green-300 border-green-700'}
+                          className={tx.type === 'sent' ? 'text-[#FF3B30] border-red-700' : 'text-[#00C805] border-green-700'}
                         >
                           {tx.type === 'sent' ? 'Sent' : 'Received'}
                         </Badge>
                         {tx.hash && (
-                          <span className="text-gray-500 text-sm font-mono">
+                          <span className="text-[#4A4A52] text-sm font-mono">
                             {formatAddress(tx.hash)}
                           </span>
                         )}
@@ -178,11 +178,11 @@ export const TransactionCategorizer = ({
                           {tx.value} {tx.asset}
                         </span>
                         {tx.value_usd && (
-                          <span className="text-gray-400">
+                          <span className="text-[#8A8A93]">
                             (${tx.value_usd.toFixed(2)})
                           </span>
                         )}
-                        <span className="text-gray-500">
+                        <span className="text-[#4A4A52]">
                           {tx.type === 'sent' ? 'To: ' : 'From: '}
                           {formatAddress(tx.type === 'sent' ? tx.to : tx.from)}
                         </span>
@@ -194,15 +194,15 @@ export const TransactionCategorizer = ({
                         value={categories[tx.hash] || 'other'}
                         onValueChange={(value) => handleCategoryChange(tx.hash, value)}
                       >
-                        <SelectTrigger className="bg-slate-800 border-slate-600 text-white">
+                        <SelectTrigger className="bg-[#0C0C0E] border-[#1F1F22] text-white">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="bg-slate-800 border-slate-600">
+                        <SelectContent className="bg-[#0C0C0E] border-[#1F1F22]">
                           {TRANSACTION_CATEGORIES.map(cat => (
                             <SelectItem 
                               key={cat.value} 
                               value={cat.value}
-                              className="text-white hover:bg-slate-700"
+                              className="text-white hover:bg-[#161618]"
                             >
                               <div className="flex items-center gap-2">
                                 <div className={`w-3 h-3 rounded-full ${cat.color}`} />
@@ -217,7 +217,7 @@ export const TransactionCategorizer = ({
                 </div>
               ))
             ) : (
-              <div className="text-center text-gray-400 py-8">
+              <div className="text-center text-[#8A8A93] py-8">
                 No transactions to categorize
               </div>
             )}
@@ -233,28 +233,28 @@ export const TransactionCategorizer = ({
           )}
 
           {/* Category Legend */}
-          <div className="bg-slate-900/50 rounded-lg p-4">
+          <div className="bg-[#050505]/50 rounded-lg p-4">
             <h3 className="text-sm font-semibold text-white mb-3">Category Guide</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
               {TRANSACTION_CATEGORIES.map(cat => (
                 <div key={cat.value} className="flex items-center gap-2">
                   <div className={`w-3 h-3 rounded-full ${cat.color}`} />
                   <span className="text-white font-medium">{cat.label}:</span>
-                  <span className="text-gray-400 text-xs">{cat.description}</span>
+                  <span className="text-[#8A8A93] text-xs">{cat.description}</span>
                 </div>
               ))}
             </div>
           </div>
 
           {error && (
-            <Alert className="bg-red-900/20 border-red-700 text-red-300">
+            <Alert className="bg-red-900/20 border-red-700 text-[#FF3B30]">
               <X className="h-4 w-4" />
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
 
           {success && (
-            <Alert className="bg-green-900/20 border-green-700 text-green-300">
+            <Alert className="bg-green-900/20 border-green-700 text-[#00C805]">
               <Check className="h-4 w-4" />
               <AlertDescription>Categories saved successfully!</AlertDescription>
             </Alert>
@@ -265,7 +265,7 @@ export const TransactionCategorizer = ({
             <Button
               onClick={handleSave}
               disabled={saving}
-              className="flex-1 bg-purple-600 hover:bg-purple-700"
+              className="flex-1 bg-white text-black hover:bg-gray-200"
             >
               {saving ? (
                 <>
@@ -282,7 +282,7 @@ export const TransactionCategorizer = ({
             <Button
               onClick={onClose}
               variant="outline"
-              className="border-slate-600"
+              className="border-[#1F1F22]"
               disabled={saving}
             >
               Cancel

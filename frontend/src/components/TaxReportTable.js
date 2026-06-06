@@ -48,7 +48,7 @@ const formatQty = (value) => {
 const GainLossCell = ({ value, isPercent = false }) => {
   const num = Number(value) || 0;
   const isPositive = num >= 0;
-  const color = isPositive ? 'text-green-400' : 'text-red-400';
+  const color = isPositive ? 'text-[#00C805]' : 'text-[#FF3B30]';
   
   return (
     <span className={`${color} font-medium`}>
@@ -59,18 +59,18 @@ const GainLossCell = ({ value, isPercent = false }) => {
 
 // Summary Card Component
 const SummaryCard = ({ title, value, subtitle, icon: Icon, trend, trendValue }) => (
-  <Card className="bg-slate-800/50 border-slate-700">
+  <Card className="bg-[#0C0C0E]/50 border-[#1F1F22]">
     <CardContent className="p-4">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs text-gray-400 uppercase tracking-wide">{title}</p>
+          <p className="text-xs text-[#8A8A93] uppercase tracking-wide">{title}</p>
           <p className="text-xl font-bold text-white mt-1">{value}</p>
-          {subtitle && <p className="text-xs text-gray-500 mt-1">{subtitle}</p>}
+          {subtitle && <p className="text-xs text-[#4A4A52] mt-1">{subtitle}</p>}
         </div>
         <div className="flex flex-col items-end">
-          {Icon && <Icon className="w-8 h-8 text-purple-400 opacity-50" />}
+          {Icon && <Icon className="w-8 h-8 text-[#00C805] opacity-50" />}
           {trend && (
-            <div className={`flex items-center text-xs mt-2 ${trend === 'up' ? 'text-green-400' : 'text-red-400'}`}>
+            <div className={`flex items-center text-xs mt-2 ${trend === 'up' ? 'text-[#00C805]' : 'text-[#FF3B30]'}`}>
               {trend === 'up' ? <TrendingUp className="w-3 h-3 mr-1" /> : <TrendingDown className="w-3 h-3 mr-1" />}
               {trendValue}
             </div>
@@ -318,24 +318,24 @@ export const TaxReportTable = ({ taxData, holdings, selectedYear }) => {
 
       {/* Realized vs Unrealized Breakdown */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-[#0C0C0E]/50 border-[#1F1F22]">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-gray-300">Realized Gains (Taxable)</CardTitle>
+            <CardTitle className="text-sm text-white">Realized Gains (Taxable)</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-400">Short-Term (taxed as income)</span>
+                <span className="text-xs text-[#8A8A93]">Short-Term (taxed as income)</span>
                 <GainLossCell value={totals.totalShortTerm} />
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-400">Long-Term (capital gains rate)</span>
+                <span className="text-xs text-[#8A8A93]">Long-Term (capital gains rate)</span>
                 <GainLossCell value={totals.totalLongTerm} />
               </div>
-              <div className="border-t border-slate-600 pt-2 mt-2">
+              <div className="border-t border-[#1F1F22] pt-2 mt-2">
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-white">Total Realized</span>
-                  <span className={`text-lg font-bold ${totals.totalRealizedGain >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  <span className={`text-lg font-bold ${totals.totalRealizedGain >= 0 ? 'text-[#00C805]' : 'text-[#FF3B30]'}`}>
                     {formatCurrency(totals.totalRealizedGain)}
                   </span>
                 </div>
@@ -344,24 +344,24 @@ export const TaxReportTable = ({ taxData, holdings, selectedYear }) => {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-[#0C0C0E]/50 border-[#1F1F22]">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-gray-300">Unrealized Gains (Not Yet Taxable)</CardTitle>
+            <CardTitle className="text-sm text-white">Unrealized Gains (Not Yet Taxable)</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-400">Current Holdings Value</span>
+                <span className="text-xs text-[#8A8A93]">Current Holdings Value</span>
                 <span className="text-white">{formatCurrency(totals.totalCurrentValue)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-400">Total Cost Basis</span>
-                <span className="text-gray-300">{formatCurrency(totals.totalCostBasis)}</span>
+                <span className="text-xs text-[#8A8A93]">Total Cost Basis</span>
+                <span className="text-white">{formatCurrency(totals.totalCostBasis)}</span>
               </div>
-              <div className="border-t border-slate-600 pt-2 mt-2">
+              <div className="border-t border-[#1F1F22] pt-2 mt-2">
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-white">Total Unrealized</span>
-                  <span className={`text-lg font-bold ${totals.totalUnrealizedGain >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  <span className={`text-lg font-bold ${totals.totalUnrealizedGain >= 0 ? 'text-[#00C805]' : 'text-[#FF3B30]'}`}>
                     {formatCurrency(totals.totalUnrealizedGain)}
                   </span>
                 </div>
@@ -372,16 +372,16 @@ export const TaxReportTable = ({ taxData, holdings, selectedYear }) => {
       </div>
 
       {/* Main Table */}
-      <Card className="bg-slate-800/50 border-slate-700">
+      <Card className="bg-[#0C0C0E]/50 border-[#1F1F22]">
         <CardHeader className="pb-2 flex flex-row items-center justify-between">
-          <CardTitle className="text-sm text-gray-300">
+          <CardTitle className="text-sm text-white">
             Portfolio Holdings & Tax Lots ({selectedYear})
           </CardTitle>
           <Button
             size="sm"
             variant="outline"
             onClick={exportToCSV}
-            className="text-xs border-slate-600"
+            className="text-xs border-[#1F1F22]"
           >
             <Download className="w-3 h-3 mr-1" />
             Export CSV
@@ -390,10 +390,10 @@ export const TaxReportTable = ({ taxData, holdings, selectedYear }) => {
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
-              <thead className="bg-slate-900/50">
-                <tr className="text-left text-gray-400 border-b border-slate-700">
+              <thead className="bg-[#050505]/50">
+                <tr className="text-left text-[#8A8A93] border-b border-[#1F1F22]">
                   <th 
-                    className="p-2 cursor-pointer hover:bg-slate-700/50 whitespace-nowrap"
+                    className="p-2 cursor-pointer hover:bg-[#161618]/50 whitespace-nowrap"
                     onClick={() => handleSort('symbol')}
                   >
                     <div className="flex items-center">
@@ -402,7 +402,7 @@ export const TaxReportTable = ({ taxData, holdings, selectedYear }) => {
                     </div>
                   </th>
                   <th 
-                    className="p-2 cursor-pointer hover:bg-slate-700/50 text-right whitespace-nowrap"
+                    className="p-2 cursor-pointer hover:bg-[#161618]/50 text-right whitespace-nowrap"
                     onClick={() => handleSort('currentPrice')}
                   >
                     <div className="flex items-center justify-end">
@@ -411,7 +411,7 @@ export const TaxReportTable = ({ taxData, holdings, selectedYear }) => {
                     </div>
                   </th>
                   <th 
-                    className="p-2 cursor-pointer hover:bg-slate-700/50 text-right whitespace-nowrap"
+                    className="p-2 cursor-pointer hover:bg-[#161618]/50 text-right whitespace-nowrap"
                     onClick={() => handleSort('quantity')}
                   >
                     <div className="flex items-center justify-end">
@@ -420,7 +420,7 @@ export const TaxReportTable = ({ taxData, holdings, selectedYear }) => {
                     </div>
                   </th>
                   <th 
-                    className="p-2 cursor-pointer hover:bg-slate-700/50 text-right whitespace-nowrap"
+                    className="p-2 cursor-pointer hover:bg-[#161618]/50 text-right whitespace-nowrap"
                     onClick={() => handleSort('avgCostBasis')}
                   >
                     <div className="flex items-center justify-end">
@@ -429,7 +429,7 @@ export const TaxReportTable = ({ taxData, holdings, selectedYear }) => {
                     </div>
                   </th>
                   <th 
-                    className="p-2 cursor-pointer hover:bg-slate-700/50 text-right whitespace-nowrap"
+                    className="p-2 cursor-pointer hover:bg-[#161618]/50 text-right whitespace-nowrap"
                     onClick={() => handleSort('costBasisTotal')}
                   >
                     <div className="flex items-center justify-end">
@@ -438,7 +438,7 @@ export const TaxReportTable = ({ taxData, holdings, selectedYear }) => {
                     </div>
                   </th>
                   <th 
-                    className="p-2 cursor-pointer hover:bg-slate-700/50 text-right whitespace-nowrap"
+                    className="p-2 cursor-pointer hover:bg-[#161618]/50 text-right whitespace-nowrap"
                     onClick={() => handleSort('currentValue')}
                   >
                     <div className="flex items-center justify-end">
@@ -447,7 +447,7 @@ export const TaxReportTable = ({ taxData, holdings, selectedYear }) => {
                     </div>
                   </th>
                   <th 
-                    className="p-2 cursor-pointer hover:bg-slate-700/50 text-right whitespace-nowrap"
+                    className="p-2 cursor-pointer hover:bg-[#161618]/50 text-right whitespace-nowrap"
                     onClick={() => handleSort('realizedGainLoss')}
                   >
                     <div className="flex items-center justify-end">
@@ -456,7 +456,7 @@ export const TaxReportTable = ({ taxData, holdings, selectedYear }) => {
                     </div>
                   </th>
                   <th 
-                    className="p-2 cursor-pointer hover:bg-slate-700/50 text-right whitespace-nowrap"
+                    className="p-2 cursor-pointer hover:bg-[#161618]/50 text-right whitespace-nowrap"
                     onClick={() => handleSort('unrealizedGainLoss')}
                   >
                     <div className="flex items-center justify-end">
@@ -465,7 +465,7 @@ export const TaxReportTable = ({ taxData, holdings, selectedYear }) => {
                     </div>
                   </th>
                   <th 
-                    className="p-2 cursor-pointer hover:bg-slate-700/50 text-right whitespace-nowrap"
+                    className="p-2 cursor-pointer hover:bg-[#161618]/50 text-right whitespace-nowrap"
                     onClick={() => handleSort('shortTermGain')}
                   >
                     <div className="flex items-center justify-end">
@@ -474,7 +474,7 @@ export const TaxReportTable = ({ taxData, holdings, selectedYear }) => {
                     </div>
                   </th>
                   <th 
-                    className="p-2 cursor-pointer hover:bg-slate-700/50 text-right whitespace-nowrap"
+                    className="p-2 cursor-pointer hover:bg-[#161618]/50 text-right whitespace-nowrap"
                     onClick={() => handleSort('longTermGain')}
                   >
                     <div className="flex items-center justify-end">
@@ -488,17 +488,17 @@ export const TaxReportTable = ({ taxData, holdings, selectedYear }) => {
                 {sortedRows.map((row, idx) => (
                   <tr 
                     key={row.symbol} 
-                    className={`border-b border-slate-700/50 hover:bg-slate-700/30 ${idx % 2 === 0 ? 'bg-slate-800/30' : ''}`}
+                    className={`border-b border-[#1F1F22]/50 hover:bg-[#161618]/30 ${idx % 2 === 0 ? 'bg-[#0C0C0E]/30' : ''}`}
                   >
                     <td className="p-2">
                       <div className="flex items-center gap-2">
-                        <Badge className="bg-purple-600 text-xs">{row.symbol}</Badge>
+                        <Badge className="bg-white text-black text-xs">{row.symbol}</Badge>
                       </div>
                     </td>
-                    <td className="p-2 text-right text-gray-300">{formatCurrency(row.currentPrice)}</td>
-                    <td className="p-2 text-right text-gray-300">{formatQty(row.quantity)}</td>
-                    <td className="p-2 text-right text-gray-300">{formatCurrency(row.avgCostBasis)}</td>
-                    <td className="p-2 text-right text-gray-300">{formatCurrency(row.costBasisTotal)}</td>
+                    <td className="p-2 text-right text-white">{formatCurrency(row.currentPrice)}</td>
+                    <td className="p-2 text-right text-white">{formatQty(row.quantity)}</td>
+                    <td className="p-2 text-right text-white">{formatCurrency(row.avgCostBasis)}</td>
+                    <td className="p-2 text-right text-white">{formatCurrency(row.costBasisTotal)}</td>
                     <td className="p-2 text-right text-white font-medium">{formatCurrency(row.currentValue)}</td>
                     <td className="p-2 text-right">
                       <GainLossCell value={row.realizedGainLoss} />
@@ -515,11 +515,11 @@ export const TaxReportTable = ({ taxData, holdings, selectedYear }) => {
                   </tr>
                 ))}
                 {/* Totals Row */}
-                <tr className="bg-slate-900/80 font-medium border-t-2 border-slate-600">
+                <tr className="bg-[#050505]/80 font-medium border-t-2 border-[#1F1F22]">
                   <td className="p-2 text-white">TOTAL</td>
-                  <td className="p-2 text-right text-gray-400">—</td>
-                  <td className="p-2 text-right text-gray-400">—</td>
-                  <td className="p-2 text-right text-gray-400">—</td>
+                  <td className="p-2 text-right text-[#8A8A93]">—</td>
+                  <td className="p-2 text-right text-[#8A8A93]">—</td>
+                  <td className="p-2 text-right text-[#8A8A93]">—</td>
                   <td className="p-2 text-right text-white">{formatCurrency(totals.totalCostBasis)}</td>
                   <td className="p-2 text-right text-white">{formatCurrency(totals.totalCurrentValue)}</td>
                   <td className="p-2 text-right">

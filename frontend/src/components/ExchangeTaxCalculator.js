@@ -155,9 +155,9 @@ export const ExchangeTaxCalculator = ({ getAuthHeader, isVisible }) => {
 
   const formatGain = (value) => {
     if (value >= 0) {
-      return <span className="text-green-400">+{formatUSD(value)}</span>;
+      return <span className="text-[#00C805]">+{formatUSD(value)}</span>;
     }
-    return <span className="text-red-400">{formatUSD(value)}</span>;
+    return <span className="text-[#FF3B30]">{formatUSD(value)}</span>;
   };
 
   if (!isVisible) return null;
@@ -170,10 +170,10 @@ export const ExchangeTaxCalculator = ({ getAuthHeader, isVisible }) => {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <CardTitle className="text-white text-lg sm:text-2xl flex items-center gap-2">
-                <Calculator className="w-5 h-5 sm:w-7 sm:h-7 text-green-400" />
+                <Calculator className="w-5 h-5 sm:w-7 sm:h-7 text-[#00C805]" />
                 Exchange Tax Calculator
               </CardTitle>
-              <CardDescription className="text-gray-400 text-xs sm:text-sm mt-1">
+              <CardDescription className="text-[#8A8A93] text-xs sm:text-sm mt-1">
                 Upload CSVs → Get cost basis & gains
               </CardDescription>
             </div>
@@ -191,7 +191,7 @@ export const ExchangeTaxCalculator = ({ getAuthHeader, isVisible }) => {
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
                 size="sm"
-                className="bg-green-600 hover:bg-green-700 text-xs sm:text-sm"
+                className="bg-[#00C805] hover:bg-[#00C805]/80 text-xs sm:text-sm"
               >
                 {uploading ? (
                   <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin mr-1 sm:mr-2" />
@@ -206,7 +206,7 @@ export const ExchangeTaxCalculator = ({ getAuthHeader, isVisible }) => {
               <select
                 value={selectedYear || ''}
                 onChange={(e) => setSelectedYear(e.target.value ? parseInt(e.target.value) : null)}
-                className="bg-slate-800 border border-slate-600 text-white rounded-md px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm"
+                className="bg-[#0C0C0E] border border-[#1F1F22] text-white rounded-md px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm"
               >
                 <option value="">All Years</option>
                 {taxYears.map(year => (
@@ -219,7 +219,7 @@ export const ExchangeTaxCalculator = ({ getAuthHeader, isVisible }) => {
                 <select
                   value={selectedAsset || ''}
                   onChange={(e) => setSelectedAsset(e.target.value || null)}
-                  className="bg-slate-800 border border-slate-600 text-white rounded-md px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm max-w-[80px] sm:max-w-none"
+                  className="bg-[#0C0C0E] border border-[#1F1F22] text-white rounded-md px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm max-w-[80px] sm:max-w-none"
                 >
                   <option value="">All Assets</option>
                   {taxData.tax_data.asset_summary.map(a => (
@@ -233,7 +233,7 @@ export const ExchangeTaxCalculator = ({ getAuthHeader, isVisible }) => {
                 disabled={loading}
                 size="sm"
                 variant="outline"
-                className="border-slate-600"
+                className="border-[#1F1F22]"
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               </Button>
@@ -244,8 +244,8 @@ export const ExchangeTaxCalculator = ({ getAuthHeader, isVisible }) => {
 
       {/* CPA DISCLAIMER - Important Legal Notice */}
       <Alert className="bg-amber-900/30 border-amber-600 text-amber-200 px-3 sm:px-4 py-2 sm:py-3">
-        <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 flex-shrink-0" />
-        <AlertTitle className="text-amber-300 font-semibold text-xs sm:text-sm">Tax Disclaimer</AlertTitle>
+        <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-[#FFB800] flex-shrink-0" />
+        <AlertTitle className="text-[#FFB800] font-semibold text-xs sm:text-sm">Tax Disclaimer</AlertTitle>
         <AlertDescription className="text-amber-200/90 text-[10px] sm:text-sm mt-1">
           Estimates only. <strong>Verify with a CPA</strong> before filing.
           <span className="hidden sm:inline"> • FIFO method • Stablecoins excluded</span>
@@ -254,38 +254,38 @@ export const ExchangeTaxCalculator = ({ getAuthHeader, isVisible }) => {
 
       {/* Messages */}
       {error && (
-        <Alert className="bg-red-900/20 border-red-700 text-red-300">
+        <Alert className="bg-red-900/20 border-red-700 text-[#FF3B30]">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
       
       {success && (
-        <Alert className="bg-green-900/20 border-green-700 text-green-300">
+        <Alert className="bg-green-900/20 border-green-700 text-[#00C805]">
           <AlertDescription>{success}</AlertDescription>
         </Alert>
       )}
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-green-400" />
-          <span className="ml-3 text-gray-400">Calculating cost basis...</span>
+          <Loader2 className="w-8 h-8 animate-spin text-[#00C805]" />
+          <span className="ml-3 text-[#8A8A93]">Calculating cost basis...</span>
         </div>
       ) : !taxData?.has_data ? (
-        <Card className="bg-slate-800/50 border-slate-700 border-dashed border-2">
+        <Card className="bg-[#0C0C0E]/50 border-[#1F1F22] border-dashed border-2">
           <CardContent className="py-12 text-center">
-            <Upload className="w-12 h-12 text-gray-500 mx-auto mb-4" />
+            <Upload className="w-12 h-12 text-[#4A4A52] mx-auto mb-4" />
             <h3 className="text-xl text-white mb-2">No Exchange Data Yet</h3>
-            <p className="text-gray-400 mb-4">
+            <p className="text-[#8A8A93] mb-4">
               Upload your exchange CSV exports to calculate cost basis and capital gains
             </p>
             <Button
               onClick={() => fileInputRef.current?.click()}
-              className="bg-green-600 hover:bg-green-700"
+              className="bg-[#00C805] hover:bg-[#00C805]/80"
             >
               <Upload className="w-4 h-4 mr-2" />
               Upload Your First CSV
             </Button>
-            <p className="text-gray-500 text-sm mt-4">
+            <p className="text-[#4A4A52] text-sm mt-4">
               Supports: Coinbase, Binance, Kraken, Gemini, Crypto.com, KuCoin
             </p>
           </CardContent>
@@ -294,61 +294,61 @@ export const ExchangeTaxCalculator = ({ getAuthHeader, isVisible }) => {
         <>
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-[#0C0C0E]/50 border-[#1F1F22]">
               <CardContent className="pt-6">
-                <div className="flex items-center gap-2 text-sm text-gray-400 mb-2">
-                  <DollarSign className="w-4 h-4 text-green-400" />
+                <div className="flex items-center gap-2 text-sm text-[#8A8A93] mb-2">
+                  <DollarSign className="w-4 h-4 text-[#00C805]" />
                   Total Realized Gains
                 </div>
                 <div className="text-2xl font-bold">
                   {formatGain(taxData.tax_data.summary?.total_realized_gain)}
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
+                <div className="text-xs text-[#4A4A52] mt-1">
                   {taxData.tax_data.summary?.dispositions_count || 0} dispositions
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-[#0C0C0E]/50 border-[#1F1F22]">
               <CardContent className="pt-6">
-                <div className="flex items-center gap-2 text-sm text-gray-400 mb-2">
+                <div className="flex items-center gap-2 text-sm text-[#8A8A93] mb-2">
                   <TrendingDown className="w-4 h-4 text-orange-400" />
                   Short-term Gains
                 </div>
                 <div className="text-2xl font-bold">
                   {formatGain(taxData.tax_data.summary?.short_term_gains)}
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
+                <div className="text-xs text-[#4A4A52] mt-1">
                   Taxed as ordinary income
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-[#0C0C0E]/50 border-[#1F1F22]">
               <CardContent className="pt-6">
-                <div className="flex items-center gap-2 text-sm text-gray-400 mb-2">
-                  <TrendingUp className="w-4 h-4 text-green-400" />
+                <div className="flex items-center gap-2 text-sm text-[#8A8A93] mb-2">
+                  <TrendingUp className="w-4 h-4 text-[#00C805]" />
                   Long-term Gains
                 </div>
                 <div className="text-2xl font-bold">
                   {formatGain(taxData.tax_data.summary?.long_term_gains)}
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
+                <div className="text-xs text-[#4A4A52] mt-1">
                   Preferential tax rates
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-[#0C0C0E]/50 border-[#1F1F22]">
               <CardContent className="pt-6">
-                <div className="flex items-center gap-2 text-sm text-gray-400 mb-2">
+                <div className="flex items-center gap-2 text-sm text-[#8A8A93] mb-2">
                   <PieChart className="w-4 h-4 text-blue-400" />
                   Unrealized Gains
                 </div>
                 <div className="text-2xl font-bold">
                   {formatGain(taxData.tax_data.summary?.total_unrealized_gain)}
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
+                <div className="text-xs text-[#4A4A52] mt-1">
                   {taxData.tax_data.summary?.open_positions || 0} open positions
                 </div>
               </CardContent>
@@ -356,29 +356,29 @@ export const ExchangeTaxCalculator = ({ getAuthHeader, isVisible }) => {
           </div>
 
           {/* Cost Basis Summary */}
-          <Card className="bg-slate-800/50 border-slate-700">
+          <Card className="bg-[#0C0C0E]/50 border-[#1F1F22]">
             <CardContent className="pt-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
-                  <div className="text-sm text-gray-400 mb-1">Total Cost Basis</div>
+                  <div className="text-sm text-[#8A8A93] mb-1">Total Cost Basis</div>
                   <div className="text-xl font-bold text-white">
                     {formatUSD(taxData.tax_data.summary?.total_cost_basis)}
                   </div>
-                  <div className="text-xs text-gray-500">What you paid</div>
+                  <div className="text-xs text-[#4A4A52]">What you paid</div>
                 </div>
                 <div>
-                  <div className="text-sm text-gray-400 mb-1">Current Value</div>
+                  <div className="text-sm text-[#8A8A93] mb-1">Current Value</div>
                   <div className="text-xl font-bold text-white">
                     {formatUSD(taxData.tax_data.summary?.total_current_value)}
                   </div>
-                  <div className="text-xs text-gray-500">Current market value</div>
+                  <div className="text-xs text-[#4A4A52]">Current market value</div>
                 </div>
                 <div>
-                  <div className="text-sm text-gray-400 mb-1">Transactions</div>
+                  <div className="text-sm text-[#8A8A93] mb-1">Transactions</div>
                   <div className="text-xl font-bold text-white">
                     {taxData.tax_data.total_transactions}
                   </div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-[#4A4A52]">
                     From: {taxData.tax_data.exchanges?.join(', ')}
                   </div>
                 </div>
@@ -388,7 +388,7 @@ export const ExchangeTaxCalculator = ({ getAuthHeader, isVisible }) => {
 
           {/* Asset Breakdown */}
           {taxData.tax_data.asset_summary?.length > 0 && (
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-[#0C0C0E]/50 border-[#1F1F22]">
               <CardHeader>
                 <CardTitle className="text-white text-lg">Assets</CardTitle>
               </CardHeader>
@@ -397,16 +397,16 @@ export const ExchangeTaxCalculator = ({ getAuthHeader, isVisible }) => {
                   {taxData.tax_data.asset_summary.map(asset => (
                     <div 
                       key={asset.asset}
-                      className={`bg-slate-900/50 rounded-lg p-3 cursor-pointer transition-colors ${
-                        selectedAsset === asset.asset ? 'ring-2 ring-green-500' : 'hover:bg-slate-800'
+                      className={`bg-[#050505]/50 rounded-lg p-3 cursor-pointer transition-colors ${
+                        selectedAsset === asset.asset ? 'ring-2 ring-green-500' : 'hover:bg-[#0C0C0E]'
                       }`}
                       onClick={() => setSelectedAsset(selectedAsset === asset.asset ? null : asset.asset)}
                     >
                       <div className="font-bold text-white">{asset.asset}</div>
-                      <div className="text-xs text-gray-400 mt-1">
+                      <div className="text-xs text-[#8A8A93] mt-1">
                         {asset.buy_count} buys, {asset.sell_count} sells
                       </div>
-                      <div className="text-sm text-green-400 mt-1">
+                      <div className="text-sm text-[#00C805] mt-1">
                         {asset.net_position?.toFixed(4)} held
                       </div>
                     </div>
@@ -418,14 +418,14 @@ export const ExchangeTaxCalculator = ({ getAuthHeader, isVisible }) => {
 
           {/* Realized Gains Detail */}
           {taxData.tax_data.realized_gains?.length > 0 && (
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-[#0C0C0E]/50 border-[#1F1F22]">
               <CardHeader 
                 className="cursor-pointer"
                 onClick={() => setShowDetails(!showDetails)}
               >
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-white flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-green-400" />
+                    <FileText className="w-5 h-5 text-[#00C805]" />
                     Realized Gains ({taxData.tax_data.realized_gains.length})
                   </CardTitle>
                   {showDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -436,26 +436,26 @@ export const ExchangeTaxCalculator = ({ getAuthHeader, isVisible }) => {
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="border-b border-slate-700">
-                          <th className="text-left py-2 px-2 text-gray-400">Asset</th>
-                          <th className="text-left py-2 px-2 text-gray-400">Amount</th>
-                          <th className="text-left py-2 px-2 text-gray-400">Buy Date</th>
-                          <th className="text-left py-2 px-2 text-gray-400">Sell Date</th>
-                          <th className="text-right py-2 px-2 text-gray-400">Cost Basis</th>
-                          <th className="text-right py-2 px-2 text-gray-400">Proceeds</th>
-                          <th className="text-right py-2 px-2 text-gray-400">Gain/Loss</th>
-                          <th className="text-center py-2 px-2 text-gray-400">Term</th>
+                        <tr className="border-b border-[#1F1F22]">
+                          <th className="text-left py-2 px-2 text-[#8A8A93]">Asset</th>
+                          <th className="text-left py-2 px-2 text-[#8A8A93]">Amount</th>
+                          <th className="text-left py-2 px-2 text-[#8A8A93]">Buy Date</th>
+                          <th className="text-left py-2 px-2 text-[#8A8A93]">Sell Date</th>
+                          <th className="text-right py-2 px-2 text-[#8A8A93]">Cost Basis</th>
+                          <th className="text-right py-2 px-2 text-[#8A8A93]">Proceeds</th>
+                          <th className="text-right py-2 px-2 text-[#8A8A93]">Gain/Loss</th>
+                          <th className="text-center py-2 px-2 text-[#8A8A93]">Term</th>
                         </tr>
                       </thead>
                       <tbody>
                         {taxData.tax_data.realized_gains.slice(0, 50).map((gain, idx) => (
-                          <tr key={idx} className="border-b border-slate-700/50 hover:bg-slate-700/30">
+                          <tr key={idx} className="border-b border-[#1F1F22]/50 hover:bg-[#161618]/30">
                             <td className="py-2 px-2 text-white font-medium">{gain.asset}</td>
-                            <td className="py-2 px-2 text-gray-300 font-mono">{gain.amount?.toFixed(6)}</td>
-                            <td className="py-2 px-2 text-gray-300">{gain.buy_date}</td>
-                            <td className="py-2 px-2 text-gray-300">{gain.sell_date}</td>
-                            <td className="py-2 px-2 text-right text-gray-300">{formatUSD(gain.cost_basis)}</td>
-                            <td className="py-2 px-2 text-right text-gray-300">{formatUSD(gain.proceeds)}</td>
+                            <td className="py-2 px-2 text-white font-mono">{gain.amount?.toFixed(6)}</td>
+                            <td className="py-2 px-2 text-white">{gain.buy_date}</td>
+                            <td className="py-2 px-2 text-white">{gain.sell_date}</td>
+                            <td className="py-2 px-2 text-right text-white">{formatUSD(gain.cost_basis)}</td>
+                            <td className="py-2 px-2 text-right text-white">{formatUSD(gain.proceeds)}</td>
                             <td className="py-2 px-2 text-right font-semibold">{formatGain(gain.gain_loss)}</td>
                             <td className="py-2 px-2 text-center">
                               <Badge className={gain.holding_period === 'long-term' ? 'bg-green-900/50' : 'bg-orange-900/50'}>
@@ -467,7 +467,7 @@ export const ExchangeTaxCalculator = ({ getAuthHeader, isVisible }) => {
                       </tbody>
                     </table>
                     {taxData.tax_data.realized_gains.length > 50 && (
-                      <p className="text-center text-gray-500 text-sm mt-3">
+                      <p className="text-center text-[#4A4A52] text-sm mt-3">
                         Showing 50 of {taxData.tax_data.realized_gains.length}. Export for complete list.
                       </p>
                     )}
@@ -478,13 +478,13 @@ export const ExchangeTaxCalculator = ({ getAuthHeader, isVisible }) => {
           )}
 
           {/* Export Actions */}
-          <Card className="bg-slate-800/50 border-slate-700">
+          <Card className="bg-[#0C0C0E]/50 border-[#1F1F22]">
             <CardContent className="pt-6">
               <div className="flex flex-wrap gap-3">
                 <Button
                   onClick={() => exportForm8949()}
                   disabled={exportingCSV}
-                  className="bg-green-600 hover:bg-green-700"
+                  className="bg-[#00C805] hover:bg-[#00C805]/80"
                 >
                   {exportingCSV ? (
                     <Loader2 className="w-4 h-4 animate-spin mr-2" />
@@ -506,7 +506,7 @@ export const ExchangeTaxCalculator = ({ getAuthHeader, isVisible }) => {
                   onClick={() => exportForm8949('long-term')}
                   disabled={exportingCSV}
                   variant="outline"
-                  className="border-green-600 text-green-300 hover:bg-green-900/30"
+                  className="border-green-600 text-[#00C805] hover:bg-green-900/30"
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Long-term Only
@@ -522,18 +522,18 @@ export const ExchangeTaxCalculator = ({ getAuthHeader, isVisible }) => {
               </Alert>
 
               {/* Calculation Transparency */}
-              <div className="mt-4 p-4 bg-slate-900/50 rounded-lg border border-slate-700">
+              <div className="mt-4 p-4 bg-[#050505]/50 rounded-lg border border-[#1F1F22]">
                 <h4 className="text-sm font-semibold text-white mb-2 flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-purple-400" />
+                  <Shield className="w-4 h-4 text-[#00C805]" />
                   What's Included in These Calculations
                 </h4>
-                <ul className="text-xs text-gray-400 space-y-1">
-                  <li>• <strong className="text-gray-300">Crypto purchases/sales</strong> (BTC, ETH, etc.) - tracked for cost basis</li>
-                  <li>• <strong className="text-gray-300">Stablecoins EXCLUDED</strong> (USDC, USDT, BUSD, DAI) - not taxable events</li>
-                  <li>• <strong className="text-gray-300">Current prices</strong> from CoinGecko API for unrealized gains</li>
-                  <li>• <strong className="text-gray-300">Holding period</strong>: &gt;365 days = long-term, ≤365 days = short-term</li>
+                <ul className="text-xs text-[#8A8A93] space-y-1">
+                  <li>• <strong className="text-white">Crypto purchases/sales</strong> (BTC, ETH, etc.) - tracked for cost basis</li>
+                  <li>• <strong className="text-white">Stablecoins EXCLUDED</strong> (USDC, USDT, BUSD, DAI) - not taxable events</li>
+                  <li>• <strong className="text-white">Current prices</strong> from CoinGecko API for unrealized gains</li>
+                  <li>• <strong className="text-white">Holding period</strong>: &gt;365 days = long-term, ≤365 days = short-term</li>
                 </ul>
-                <p className="text-xs text-amber-400/80 mt-3">
+                <p className="text-xs text-[#FFB800]/80 mt-3">
                   ⚠️ Always verify these figures against your exchange statements and consult a tax professional.
                 </p>
               </div>

@@ -38,15 +38,15 @@ const API = `${BACKEND_URL}/api`;
 const CryptoIcon = ({ symbol }) => {
   const colors = {
     BTC: 'bg-orange-500',
-    ETH: 'bg-purple-500',
-    SOL: 'bg-gradient-to-br from-purple-500 to-teal-400',
+    ETH: 'bg-[#00C805]',
+    SOL: 'bg-gradient-to-br from-[#00C805] to-teal-400',
     XRP: 'bg-gray-600',
     DOGE: 'bg-yellow-500',
     ADA: 'bg-blue-500',
     DOT: 'bg-pink-500',
-    LINK: 'bg-blue-600',
+    LINK: 'bg-white text-black',
     AVAX: 'bg-red-500',
-    MATIC: 'bg-purple-600'
+    MATIC: 'bg-white text-black'
   };
   
   return (
@@ -77,7 +77,7 @@ const HelpModal = ({ isOpen, onClose }) => {
   
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-      <div className="bg-[#1a1a2e] border border-purple-500/20 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <div className="bg-[#1a1a2e] border border-[#00C805]/20 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-4 border-b border-white/10">
           <h2 className="text-white font-semibold">Help & Setup</h2>
           <button onClick={onClose} className="text-white/40 hover:text-white">
@@ -88,48 +88,48 @@ const HelpModal = ({ isOpen, onClose }) => {
         <div className="p-4 space-y-6">
           {/* Telegram Setup */}
           <div>
-            <h3 className="text-purple-400 font-medium mb-3 flex items-center gap-2">
+            <h3 className="text-[#00C805] font-medium mb-3 flex items-center gap-2">
               <MessageCircle className="w-5 h-5" />
               How to Connect Telegram
             </h3>
             <div className="space-y-3 text-sm">
               <div className="flex gap-3">
-                <span className="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center text-xs font-bold shrink-0">1</span>
+                <span className="w-6 h-6 rounded-full bg-[#00C805]/20 text-[#00C805] flex items-center justify-center text-xs font-bold shrink-0">1</span>
                 <div>
                   <p className="text-white">Open Telegram and search for our bot</p>
                   <a 
                     href="https://t.me/cryptobagtrackerbot" 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="text-purple-400 hover:underline inline-flex items-center gap-1"
+                    className="text-[#00C805] hover:underline inline-flex items-center gap-1"
                   >
                     @cryptobagtrackerbot <ExternalLink className="w-3 h-3" />
                   </a>
                 </div>
               </div>
               <div className="flex gap-3">
-                <span className="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center text-xs font-bold shrink-0">2</span>
+                <span className="w-6 h-6 rounded-full bg-[#00C805]/20 text-[#00C805] flex items-center justify-center text-xs font-bold shrink-0">2</span>
                 <div>
                   <p className="text-white">Start a chat with the bot</p>
                   <p className="text-white/50">Click "Start" or send any message</p>
                 </div>
               </div>
               <div className="flex gap-3">
-                <span className="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center text-xs font-bold shrink-0">3</span>
+                <span className="w-6 h-6 rounded-full bg-[#00C805]/20 text-[#00C805] flex items-center justify-center text-xs font-bold shrink-0">3</span>
                 <div>
                   <p className="text-white">Send the command <code className="bg-white/10 px-1.5 py-0.5 rounded">/start</code></p>
                   <p className="text-white/50">The bot will reply with your Chat ID</p>
                 </div>
               </div>
               <div className="flex gap-3">
-                <span className="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center text-xs font-bold shrink-0">4</span>
+                <span className="w-6 h-6 rounded-full bg-[#00C805]/20 text-[#00C805] flex items-center justify-center text-xs font-bold shrink-0">4</span>
                 <div>
                   <p className="text-white">Copy your Chat ID</p>
                   <p className="text-white/50">It's a number like <code className="bg-white/10 px-1.5 py-0.5 rounded">123456789</code></p>
                 </div>
               </div>
               <div className="flex gap-3">
-                <span className="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center text-xs font-bold shrink-0">5</span>
+                <span className="w-6 h-6 rounded-full bg-[#00C805]/20 text-[#00C805] flex items-center justify-center text-xs font-bold shrink-0">5</span>
                 <div>
                   <p className="text-white">Paste it here and click Connect</p>
                   <p className="text-white/50">You'll receive a confirmation message in Telegram</p>
@@ -140,7 +140,7 @@ const HelpModal = ({ isOpen, onClose }) => {
           
           {/* SMS Setup */}
           <div>
-            <h3 className="text-purple-400 font-medium mb-3">SMS Notifications</h3>
+            <h3 className="text-[#00C805] font-medium mb-3">SMS Notifications</h3>
             <p className="text-white/60 text-sm">
               Select SMS when creating an alert and enter your phone number with country code (e.g., +1 for US).
             </p>
@@ -280,7 +280,7 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-      <div className="bg-[#1a1a2e] border border-purple-500/20 rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+      <div className="bg-[#1a1a2e] border border-[#00C805]/20 rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-4 border-b border-white/10">
           <h2 className="text-white font-semibold">
             {step === 1 ? 'Search Asset' : 'Configure Alert'}
@@ -292,7 +292,7 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
         
         <div className="p-4 space-y-4">
           {error && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 text-red-400 text-sm flex items-center gap-2">
+            <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 text-[#FF3B30] text-sm flex items-center gap-2">
               <AlertCircle className="w-4 h-4" />
               {error}
             </div>
@@ -309,7 +309,7 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
                   className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/30"
                   autoFocus
                 />
-                {searching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-purple-400" />}
+                {searching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-[#00C805]" />}
               </div>
 
               <div className="space-y-2 max-h-64 overflow-y-auto">
@@ -317,7 +317,7 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
                   <div
                     key={`${result.type}-${result.symbol}`}
                     onClick={() => handleSelectAsset(result)}
-                    className="flex items-center justify-between p-3 bg-white/5 rounded-lg cursor-pointer hover:bg-purple-500/10 transition-colors"
+                    className="flex items-center justify-between p-3 bg-white/5 rounded-lg cursor-pointer hover:bg-[#00C805]/10 transition-colors"
                   >
                     <div className="flex items-center gap-3">
                       <CryptoIcon symbol={result.symbol} />
@@ -351,7 +351,7 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <span className="text-white font-medium">{selectedAsset.symbol}</span>
-                    <span className="text-[10px] bg-purple-500/30 text-purple-300 px-1.5 py-0.5 rounded">CRYPTO</span>
+                    <span className="text-[10px] bg-[#00C805]/30 text-[#00C805] px-1.5 py-0.5 rounded">CRYPTO</span>
                   </div>
                   <p className="text-xs text-white/40">{selectedAsset.name}</p>
                 </div>
@@ -371,7 +371,7 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
                       onClick={() => setAlertType(key)}
                       className={`flex items-center gap-2 p-3 rounded-lg border transition-colors text-sm ${
                         alertType === key 
-                          ? 'bg-purple-500/20 border-purple-500 text-white' 
+                          ? 'bg-[#00C805]/20 border-[#00C805] text-white' 
                           : 'bg-white/5 border-white/10 text-white/60 hover:border-white/20'
                       }`}
                     >
@@ -409,7 +409,7 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
                     onClick={() => setNotificationMethod('telegram')}
                     className={`flex-1 flex items-center justify-center gap-2 p-2.5 rounded-lg border transition-colors text-sm ${
                       notificationMethod === 'telegram'
-                        ? 'bg-purple-500/20 border-purple-500 text-white'
+                        ? 'bg-[#00C805]/20 border-[#00C805] text-white'
                         : 'bg-white/5 border-white/10 text-white/60'
                     }`}
                   >
@@ -420,7 +420,7 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
                     onClick={() => setNotificationMethod('sms')}
                     className={`flex-1 flex items-center justify-center gap-2 p-2.5 rounded-lg border transition-colors text-sm ${
                       notificationMethod === 'sms'
-                        ? 'bg-purple-500/20 border-purple-500 text-white'
+                        ? 'bg-[#00C805]/20 border-[#00C805] text-white'
                         : 'bg-white/5 border-white/10 text-white/60'
                     }`}
                   >
@@ -456,7 +456,7 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
                 <button
                   onClick={handleCreate}
                   disabled={creating || !targetValue}
-                  className="flex-1 py-2.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 py-2.5 rounded-lg bg-white text-black hover:bg-gray-200 text-white font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bell className="w-4 h-4" />}
                   Create Alert
@@ -522,11 +522,11 @@ export const AppLayout = ({
         {/* Logo */}
         <div className="p-4 border-b border-white/5">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-white text-black flex items-center justify-center">
               <Bell className="w-4 h-4 text-white" />
             </div>
             <span className="text-white font-semibold text-sm">
-              CRYPTO<span className="text-purple-400">BAGTRACKER</span>
+              CRYPTO<span className="text-[#00C805]">BAGTRACKER</span>
             </span>
           </div>
         </div>
@@ -537,7 +537,7 @@ export const AppLayout = ({
             onClick={() => setActiveTab('alerts')}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
               activeTab === 'alerts' 
-                ? 'bg-purple-500/20 text-purple-400' 
+                ? 'bg-[#00C805]/20 text-[#00C805]' 
                 : 'text-white/60 hover:text-white hover:bg-white/5'
             }`}
           >
@@ -548,7 +548,7 @@ export const AppLayout = ({
             onClick={() => setActiveTab('beta')}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
               activeTab === 'beta' 
-                ? 'bg-purple-500/20 text-purple-400' 
+                ? 'bg-[#00C805]/20 text-[#00C805]' 
                 : 'text-white/60 hover:text-white hover:bg-white/5'
             }`}
           >
@@ -584,12 +584,12 @@ export const AppLayout = ({
         {/* Upgrade Card - only if not subscribed */}
         {!isTrialing && !isActive && (
           <div className="p-3">
-            <div className="bg-gradient-to-br from-purple-900/50 to-purple-800/30 rounded-xl p-4 border border-purple-500/20">
+            <div className="bg-gradient-to-br from-[#0C0C0E] to-[#0C0C0E] rounded-xl p-4 border border-[#00C805]/20">
               <h4 className="text-white font-medium text-sm mb-1">Unlock Full Access</h4>
               <p className="text-white/50 text-xs mb-3">Get unlimited alerts with a 7-day free trial.</p>
               <button 
                 onClick={handleSubscribe}
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white text-sm py-2 rounded-lg transition-colors"
+                className="w-full bg-white text-black hover:bg-gray-200 text-white text-sm py-2 rounded-lg transition-colors"
               >
                 Start Free Trial
               </button>
@@ -600,16 +600,16 @@ export const AppLayout = ({
         {/* User Profile */}
         <div className="p-3 border-t border-white/5">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-white text-sm font-medium">
+            <div className="w-8 h-8 rounded-full bg-white text-black flex items-center justify-center text-white text-sm font-medium">
               {user?.email?.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-white text-sm truncate">{user?.email}</p>
               {isTrialing && (
-                <p className="text-purple-400 text-xs">Free Trial · {daysRemaining}d left</p>
+                <p className="text-[#00C805] text-xs">Free Trial · {daysRemaining}d left</p>
               )}
               {isActive && (
-                <p className="text-green-400 text-xs">Premium</p>
+                <p className="text-[#00C805] text-xs">Premium</p>
               )}
               {!isTrialing && !isActive && (
                 <p className="text-white/40 text-xs">Free</p>
@@ -622,7 +622,7 @@ export const AppLayout = ({
           {isTrialing && (
             <div className="mt-2 h-1 bg-white/10 rounded-full overflow-hidden">
               <div 
-                className="h-full bg-purple-500 rounded-full" 
+                className="h-full bg-[#00C805] rounded-full" 
                 style={{ width: `${((7 - (daysRemaining || 0)) / 7) * 100}%` }}
               />
             </div>
@@ -635,7 +635,7 @@ export const AppLayout = ({
         {/* Header */}
         <header className="h-14 border-b border-white/5 flex items-center justify-between px-6 shrink-0">
           <h1 className="text-white">
-            Welcome back, <span className="text-purple-400">{user?.email}</span>
+            Welcome back, <span className="text-[#00C805]">{user?.email}</span>
           </h1>
         </header>
 
@@ -757,7 +757,7 @@ export const AlertsContent = ({ getAuthHeader }) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+        <Loader2 className="w-8 h-8 animate-spin text-[#00C805]" />
       </div>
     );
   }
@@ -766,21 +766,21 @@ export const AlertsContent = ({ getAuthHeader }) => {
     <div className="p-6">
       {/* Trial Banner */}
       {subscription?.status === 'trialing' && (
-        <div className="bg-[#1a1a2e] border border-purple-500/20 rounded-xl p-4 mb-6 flex items-center justify-between">
+        <div className="bg-[#1a1a2e] border border-[#00C805]/20 rounded-xl p-4 mb-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Clock className="w-5 h-5 text-purple-400" />
+            <Clock className="w-5 h-5 text-[#00C805]" />
             <div>
               <p className="text-white font-medium">Free Trial</p>
               <p className="text-white/50 text-sm">{daysRemaining} days remaining in your trial</p>
             </div>
           </div>
-          <span className="bg-purple-500/20 text-purple-400 px-3 py-1 rounded-lg text-sm">Trial Active</span>
+          <span className="bg-[#00C805]/20 text-[#00C805] px-3 py-1 rounded-lg text-sm">Trial Active</span>
         </div>
       )}
 
       {/* Messages */}
       {error && (
-        <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3 text-red-400 text-sm flex items-center gap-2 mb-4">
+        <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3 text-[#FF3B30] text-sm flex items-center gap-2 mb-4">
           <AlertCircle className="w-4 h-4 shrink-0" />
           {error}
           <button onClick={() => setError('')} className="ml-auto">
@@ -790,7 +790,7 @@ export const AlertsContent = ({ getAuthHeader }) => {
       )}
       
       {success && (
-        <div className="bg-green-500/10 border border-green-500/20 rounded-lg px-4 py-3 text-green-400 text-sm flex items-center gap-2 mb-4">
+        <div className="bg-green-500/10 border border-green-500/20 rounded-lg px-4 py-3 text-[#00C805] text-sm flex items-center gap-2 mb-4">
           <CheckCircle className="w-4 h-4 shrink-0" />
           {success}
         </div>
@@ -800,7 +800,7 @@ export const AlertsContent = ({ getAuthHeader }) => {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-white font-semibold flex items-center gap-2">
-            <Bell className="w-5 h-5 text-purple-400" />
+            <Bell className="w-5 h-5 text-[#00C805]" />
             Your Alerts
           </h2>
           <p className="text-white/40 text-sm">{alerts.length} alerts configured</p>
@@ -808,7 +808,7 @@ export const AlertsContent = ({ getAuthHeader }) => {
         {canCreateAlerts && (
           <button
             onClick={() => setShowCreateModal(true)}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
+            className="bg-white text-black hover:bg-gray-200 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
           >
             <Plus className="w-4 h-4" />
             New Alert
@@ -825,7 +825,7 @@ export const AlertsContent = ({ getAuthHeader }) => {
           {canCreateAlerts && (
             <button 
               onClick={() => setShowCreateModal(true)}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm"
+              className="bg-white text-black hover:bg-gray-200 text-white px-4 py-2 rounded-lg text-sm"
             >
               Create Alert
             </button>
@@ -842,10 +842,10 @@ export const AlertsContent = ({ getAuthHeader }) => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <span className="text-white font-semibold">{alert.asset_symbol}</span>
-                      <span className="text-[10px] bg-purple-500/30 text-purple-300 px-1.5 py-0.5 rounded">CRYPTO</span>
+                      <span className="text-[10px] bg-[#00C805]/30 text-[#00C805] px-1.5 py-0.5 rounded">CRYPTO</span>
                       <span className={`text-[10px] px-1.5 py-0.5 rounded ${
                         alert.status === 'active' 
-                          ? 'bg-green-500/30 text-green-400' 
+                          ? 'bg-green-500/30 text-[#00C805]' 
                           : 'bg-white/10 text-white/40'
                       }`}>
                         {alert.status.toUpperCase()}
@@ -853,7 +853,7 @@ export const AlertsContent = ({ getAuthHeader }) => {
                     </div>
                     <p className="text-white/60 text-sm">
                       {typeInfo.label}: {alert.alert_type.includes('percent') ? `${alert.target_value}%` : formatPrice(alert.target_value)}
-                      <span className="text-purple-400 ml-3">
+                      <span className="text-[#00C805] ml-3">
                         Current: {formatPrice(alert.current_price)}
                       </span>
                     </p>
@@ -868,7 +868,7 @@ export const AlertsContent = ({ getAuthHeader }) => {
                     </button>
                     <button 
                       onClick={() => deleteAlert(alert.alert_id)}
-                      className="p-2 text-white/40 hover:text-red-400"
+                      className="p-2 text-white/40 hover:text-[#FF3B30]"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -884,10 +884,10 @@ export const AlertsContent = ({ getAuthHeader }) => {
       {canCreateAlerts && (
         <div className="bg-[#1a1a2e] border border-white/10 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-3">
-            <MessageCircle className="w-5 h-5 text-purple-400" />
+            <MessageCircle className="w-5 h-5 text-[#00C805]" />
             <h3 className="text-white font-medium">Telegram Notifications</h3>
             {telegramStatus?.connected && (
-              <span className="text-[10px] bg-green-500/30 text-green-400 px-1.5 py-0.5 rounded ml-2">CONNECTED</span>
+              <span className="text-[10px] bg-green-500/30 text-[#00C805] px-1.5 py-0.5 rounded ml-2">CONNECTED</span>
             )}
           </div>
           
@@ -895,10 +895,10 @@ export const AlertsContent = ({ getAuthHeader }) => {
             <div className="flex items-center justify-between">
               <p className="text-white/50 text-sm">Alerts will be sent to your Telegram</p>
               <div className="flex gap-2">
-                <button onClick={testTelegram} className="text-purple-400 hover:text-purple-300 text-sm">
+                <button onClick={testTelegram} className="text-[#00C805] hover:text-[#00C805] text-sm">
                   Send Test
                 </button>
-                <button onClick={disconnectTelegram} className="text-red-400 hover:text-red-300 text-sm">
+                <button onClick={disconnectTelegram} className="text-[#FF3B30] hover:text-[#FF3B30] text-sm">
                   Disconnect
                 </button>
               </div>
@@ -909,7 +909,7 @@ export const AlertsContent = ({ getAuthHeader }) => {
                 Get instant alerts on Telegram - unlimited, no rate limits.
               </p>
               <p className="text-white/70 text-sm mb-1">
-                1. Start chat with <a href="https://t.me/cryptobagtrackerbot" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:underline">@cryptobagtrackerbot</a>
+                1. Start chat with <a href="https://t.me/cryptobagtrackerbot" target="_blank" rel="noopener noreferrer" className="text-[#00C805] hover:underline">@cryptobagtrackerbot</a>
               </p>
               <p className="text-white/50 text-sm mb-3">
                 2. Send <code className="bg-white/10 px-1.5 py-0.5 rounded">/start</code> to get your Chat ID
@@ -924,7 +924,7 @@ export const AlertsContent = ({ getAuthHeader }) => {
                 <button
                   onClick={connectTelegram}
                   disabled={connectingTelegram || !telegramChatId.trim()}
-                  className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                  className="bg-white text-black hover:bg-gray-200 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm transition-colors"
                 >
                   {connectingTelegram ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Connect'}
                 </button>

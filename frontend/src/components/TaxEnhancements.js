@@ -95,25 +95,25 @@ export const ScheduleDExport = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md bg-slate-800 border-slate-700">
+      <DialogContent className="sm:max-w-md bg-[#0C0C0E] border-[#1F1F22]">
         <DialogHeader>
           <DialogTitle className="text-white flex items-center gap-2">
-            <FileText className="w-5 h-5 text-green-400" />
+            <FileText className="w-5 h-5 text-[#00C805]" />
             Export Schedule D
           </DialogTitle>
-          <DialogDescription className="text-gray-400">
+          <DialogDescription className="text-[#8A8A93]">
             Generate IRS Schedule D summary for a specific tax year
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300">Tax Year</label>
+            <label className="text-sm font-medium text-white">Tax Year</label>
             <Select value={taxYear.toString()} onValueChange={(v) => setTaxYear(parseInt(v))}>
-              <SelectTrigger className="bg-slate-900 border-slate-600 text-white">
+              <SelectTrigger className="bg-[#050505] border-[#1F1F22] text-white">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-slate-800 border-slate-600">
+              <SelectContent className="bg-[#0C0C0E] border-[#1F1F22]">
                 {supportedYears.map(year => (
                   <SelectItem key={year} value={year.toString()} className="text-white">
                     {year}
@@ -124,12 +124,12 @@ export const ScheduleDExport = ({
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300">Format</label>
+            <label className="text-sm font-medium text-white">Format</label>
             <Select value={format} onValueChange={setFormat}>
-              <SelectTrigger className="bg-slate-900 border-slate-600 text-white">
+              <SelectTrigger className="bg-[#050505] border-[#1F1F22] text-white">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-slate-800 border-slate-600">
+              <SelectContent className="bg-[#0C0C0E] border-[#1F1F22]">
                 <SelectItem value="text" className="text-white">
                   Text Summary (.txt)
                 </SelectItem>
@@ -149,7 +149,7 @@ export const ScheduleDExport = ({
           </Alert>
 
           {error && (
-            <Alert className="bg-red-900/20 border-red-700 text-red-300">
+            <Alert className="bg-red-900/20 border-red-700 text-[#FF3B30]">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>{error}</AlertDescription>
             </Alert>
@@ -160,7 +160,7 @@ export const ScheduleDExport = ({
           <Button
             onClick={handleExport}
             disabled={loading}
-            className="flex-1 bg-green-600 hover:bg-green-700"
+            className="flex-1 bg-[#00C805] hover:bg-[#00C805]/80"
           >
             {loading ? (
               <>
@@ -177,7 +177,7 @@ export const ScheduleDExport = ({
           <Button
             onClick={onClose}
             variant="outline"
-            className="border-slate-600"
+            className="border-[#1F1F22]"
             disabled={loading}
           >
             Cancel
@@ -286,31 +286,31 @@ export const BatchCategorizationModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl bg-slate-800 border-slate-700 max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl bg-[#0C0C0E] border-[#1F1F22] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-white flex items-center gap-2">
-            <Wand2 className="w-5 h-5 text-purple-400" />
+            <Wand2 className="w-5 h-5 text-[#00C805]" />
             Batch Categorization
           </DialogTitle>
-          <DialogDescription className="text-gray-400">
+          <DialogDescription className="text-[#8A8A93]">
             Create rules to automatically categorize multiple transactions at once
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           {/* Auto-categorize button */}
-          <div className="bg-slate-900/50 rounded-lg p-4">
+          <div className="bg-[#050505]/50 rounded-lg p-4">
             <h4 className="text-sm font-semibold text-white mb-2">Quick Action</h4>
             <Button
               onClick={handleAutoCategories}
               disabled={loading}
               variant="outline"
-              className="w-full border-purple-600 text-purple-300 hover:bg-purple-900/30"
+              className="w-full border-[#00C805] text-[#00C805] hover:bg-[#0C0C0E]/30"
             >
               <Wand2 className="mr-2 h-4 w-4" />
               Auto-Categorize All Transactions
             </Button>
-            <p className="text-xs text-gray-500 mt-2">
+            <p className="text-xs text-[#4A4A52] mt-2">
               Uses smart detection to categorize transactions based on patterns
             </p>
           </div>
@@ -323,23 +323,23 @@ export const BatchCategorizationModal = ({
                 onClick={addRule}
                 size="sm"
                 variant="outline"
-                className="border-slate-600 text-gray-300"
+                className="border-[#1F1F22] text-white"
               >
                 + Add Rule
               </Button>
             </div>
 
             {rules.map((rule, index) => (
-              <div key={index} className="bg-slate-900/30 rounded-lg p-3 border border-slate-700">
+              <div key={index} className="bg-[#050505]/30 rounded-lg p-3 border border-[#1F1F22]">
                 <div className="grid grid-cols-3 gap-2">
                   <Select 
                     value={rule.type} 
                     onValueChange={(v) => updateRule(index, 'type', v)}
                   >
-                    <SelectTrigger className="bg-slate-800 border-slate-600 text-white text-sm">
+                    <SelectTrigger className="bg-[#0C0C0E] border-[#1F1F22] text-white text-sm">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-slate-800 border-slate-600">
+                    <SelectContent className="bg-[#0C0C0E] border-[#1F1F22]">
                       {ruleTypes.map(t => (
                         <SelectItem key={t.value} value={t.value} className="text-white">
                           {t.label}
@@ -353,10 +353,10 @@ export const BatchCategorizationModal = ({
                       value={rule.value} 
                       onValueChange={(v) => updateRule(index, 'value', v)}
                     >
-                      <SelectTrigger className="bg-slate-800 border-slate-600 text-white text-sm">
+                      <SelectTrigger className="bg-[#0C0C0E] border-[#1F1F22] text-white text-sm">
                         <SelectValue placeholder="Select..." />
                       </SelectTrigger>
-                      <SelectContent className="bg-slate-800 border-slate-600">
+                      <SelectContent className="bg-[#0C0C0E] border-[#1F1F22]">
                         <SelectItem value="received" className="text-white">Received</SelectItem>
                         <SelectItem value="sent" className="text-white">Sent</SelectItem>
                       </SelectContent>
@@ -366,7 +366,7 @@ export const BatchCategorizationModal = ({
                       value={rule.value}
                       onChange={(e) => updateRule(index, 'value', e.target.value)}
                       placeholder={rule.type === 'address' ? '0x...' : 'Value'}
-                      className="bg-slate-800 border-slate-600 text-white text-sm"
+                      className="bg-[#0C0C0E] border-[#1F1F22] text-white text-sm"
                     />
                   )}
 
@@ -375,10 +375,10 @@ export const BatchCategorizationModal = ({
                       value={rule.category} 
                       onValueChange={(v) => updateRule(index, 'category', v)}
                     >
-                      <SelectTrigger className="bg-slate-800 border-slate-600 text-white text-sm flex-1">
+                      <SelectTrigger className="bg-[#0C0C0E] border-[#1F1F22] text-white text-sm flex-1">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-slate-800 border-slate-600">
+                      <SelectContent className="bg-[#0C0C0E] border-[#1F1F22]">
                         {categories.map(c => (
                           <SelectItem key={c.value} value={c.value} className="text-white">
                             {c.label}
@@ -392,7 +392,7 @@ export const BatchCategorizationModal = ({
                         onClick={() => removeRule(index)}
                         size="sm"
                         variant="ghost"
-                        className="text-red-400 hover:text-red-300 px-2"
+                        className="text-[#FF3B30] hover:text-[#FF3B30] px-2"
                       >
                         ×
                       </Button>
@@ -404,14 +404,14 @@ export const BatchCategorizationModal = ({
           </div>
 
           {error && (
-            <Alert className="bg-red-900/20 border-red-700 text-red-300">
+            <Alert className="bg-red-900/20 border-red-700 text-[#FF3B30]">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
 
           {result && (
-            <Alert className="bg-green-900/20 border-green-700 text-green-300">
+            <Alert className="bg-green-900/20 border-green-700 text-[#00C805]">
               <Check className="h-4 w-4" />
               <AlertDescription>
                 Successfully categorized {result.count} transactions!
@@ -424,7 +424,7 @@ export const BatchCategorizationModal = ({
           <Button
             onClick={handleApplyRules}
             disabled={loading || rules.length === 0}
-            className="flex-1 bg-purple-600 hover:bg-purple-700"
+            className="flex-1 bg-white text-black hover:bg-gray-200"
           >
             {loading ? (
               <>
@@ -441,7 +441,7 @@ export const BatchCategorizationModal = ({
           <Button
             onClick={onClose}
             variant="outline"
-            className="border-slate-600"
+            className="border-[#1F1F22]"
             disabled={loading}
           >
             Close

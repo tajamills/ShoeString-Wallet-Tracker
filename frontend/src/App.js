@@ -306,8 +306,8 @@ function App() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
-        <Loader2 className="w-12 h-12 text-purple-400 animate-spin" />
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+        <Loader2 className="w-12 h-12 text-[#00C805] animate-spin" />
       </div>
     );
   }
@@ -732,13 +732,13 @@ function App() {
             </div>
         <div className="max-w-3xl mx-auto mb-4 md:mb-6">
           {user ? (
-            <Card className="bg-slate-800/50 border-slate-700" data-testid="user-info-bar">
+            <Card className="bg-[#0C0C0E]/50 border-[#1F1F22]" data-testid="user-info-bar">
               <CardContent className="py-3 md:py-4">
                 <div className="flex flex-col space-y-3">
                   {/* User Info Row */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 md:gap-4 min-w-0">
-                      <User className="w-4 h-4 md:w-5 md:h-5 text-purple-400 flex-shrink-0" />
+                      <User className="w-4 h-4 md:w-5 md:h-5 text-[#00C805] flex-shrink-0" />
                       <div className="min-w-0">
                         <p className="text-white font-medium text-sm md:text-base truncate">{user.email}</p>
                         <div className="flex flex-wrap items-center gap-1 md:gap-2 mt-1">
@@ -746,20 +746,20 @@ function App() {
                             {user.subscription_tier !== 'free' && <Crown className="w-3 h-3 mr-1" />}
                             {user.subscription_tier === 'free' ? 'FREE' : 'UNLIMITED'}
                           </Badge>
-                          <span className="text-xs md:text-sm text-gray-400">
+                          <span className="text-xs md:text-sm text-[#8A8A93]">
                             {user.subscription_tier === 'free' 
                               ? `${user.analysis_count || 0}/1` 
                               : 'Unlimited'}
                           </span>
                           {user.subscription_details?.current_period_end && (
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-[#4A4A52]">
                               (renews {new Date(user.subscription_details.current_period_end * 1000).toLocaleDateString()})
                             </span>
                           )}
                           {user.subscription_tier !== 'free' && (
                             <button
                               onClick={() => setShowDowngradeModal(true)}
-                              className="text-xs text-gray-500 hover:text-gray-400 underline"
+                              className="text-xs text-[#4A4A52] hover:text-[#8A8A93] underline"
                             >
                               manage
                             </button>
@@ -771,7 +771,7 @@ function App() {
                     <Button 
                       variant="outline" 
                       onClick={logout}
-                      className="border-slate-600 text-gray-300 hover:bg-slate-700 h-8 px-2 md:px-4 flex-shrink-0"
+                      className="border-[#1F1F22] text-white hover:bg-[#161618] h-8 px-2 md:px-4 flex-shrink-0"
                       data-testid="logout-button"
                     >
                       <LogOut className="w-4 h-4 md:mr-2" />
@@ -794,7 +794,7 @@ function App() {
                     {user.subscription_tier !== 'free' && (
                       <Button 
                         onClick={() => setShowAddDataModal(true)}
-                        className="bg-purple-600 hover:bg-purple-700 text-white h-8 text-xs md:text-sm font-medium"
+                        className="bg-white text-black hover:bg-gray-200 text-white h-8 text-xs md:text-sm font-medium"
                         data-testid="add-data-button"
                       >
                         <Plus className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
@@ -824,13 +824,13 @@ function App() {
               </CardContent>
             </Card>
           ) : (
-            <Card className="bg-slate-800/50 border-slate-700" data-testid="login-prompt">
+            <Card className="bg-[#0C0C0E]/50 border-[#1F1F22]" data-testid="login-prompt">
               <CardContent className="py-3 md:py-4">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-                  <p className="text-gray-300 text-sm md:text-base text-center sm:text-left">Login to start analyzing wallets</p>
+                  <p className="text-white text-sm md:text-base text-center sm:text-left">Login to start analyzing wallets</p>
                   <Button 
                     onClick={() => setShowAuthModal(true)}
-                    className="bg-purple-600 hover:bg-purple-700 w-full sm:w-auto"
+                    className="bg-white text-black hover:bg-gray-200 w-full sm:w-auto"
                     data-testid="login-button"
                   >
                     Login / Sign Up
@@ -846,7 +846,7 @@ function App() {
           <div className="max-w-3xl mx-auto mb-4">
             <Button
               onClick={() => setShowSavedWallets(!showSavedWallets)}
-              className="bg-slate-700 hover:bg-slate-600 text-white border border-slate-500"
+              className="bg-[#161618] hover:bg-[#1F1F22] text-white border border-[#1F1F22]"
             >
               <Wallet className="w-4 h-4 mr-2" />
               {showSavedWallets ? 'Hide' : 'Show'} Saved Wallets
@@ -857,7 +857,7 @@ function App() {
         {/* Saved Wallets Section */}
         {showSavedWallets && user && (
           <div className="max-w-3xl mx-auto mb-8">
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-[#0C0C0E]/50 border-[#1F1F22]">
               <CardContent className="pt-6">
                 <SavedWallets 
                   getAuthHeader={getAuthHeader}
@@ -875,10 +875,10 @@ function App() {
         )}
 
         {/* Input Section - MOVED ABOVE Tax Dashboard */}
-        <Card className="max-w-3xl mx-auto mb-8 bg-slate-800/50 border-slate-700" data-testid="wallet-input-card">
+        <Card className="max-w-3xl mx-auto mb-8 bg-[#0C0C0E]/50 border-[#1F1F22]" data-testid="wallet-input-card">
           <CardHeader>
             <CardTitle className="text-white">Analyze Wallet</CardTitle>
-            <CardDescription className="text-gray-400">
+            <CardDescription className="text-[#8A8A93]">
               Multi-chain wallet analysis: 12+ blockchains including ETH, BTC, SOL, ALGO, AVAX, DOGE
             </CardDescription>
             <span className="hidden" aria-hidden="true" data-v="8888">8888</span>
@@ -887,10 +887,10 @@ function App() {
             <div className="space-y-4">
               {/* Chain Selector */}
               <div>
-                <label className="text-sm text-gray-400 block mb-2">
+                <label className="text-sm text-[#8A8A93] block mb-2">
                   Blockchain Network
                   {user?.subscription_tier === 'free' && (
-                    <span className="ml-2 text-xs text-purple-400">(Upgrade for multi-chain)</span>
+                    <span className="ml-2 text-xs text-[#00C805]">(Upgrade for multi-chain)</span>
                   )}
                 </label>
                 <select
@@ -904,7 +904,7 @@ function App() {
                     setSelectedChain(e.target.value);
                     setError('');
                   }}
-                  className="w-full bg-slate-900 border border-slate-600 text-white rounded-md px-3 py-2"
+                  className="w-full bg-[#050505] border border-[#1F1F22] text-white rounded-md px-3 py-2"
                   disabled={!user}
                 >
                   {/* Primary chains - always visible */}
@@ -957,7 +957,7 @@ function App() {
                         setError('');
                       }
                     }}
-                    className="bg-slate-700 border-slate-600 text-white placeholder:text-gray-500"
+                    className="bg-[#161618] border-[#1F1F22] text-white placeholder:text-[#4A4A52]"
                     disabled={loading}
                   />
                   {walletAddress && detectChainFromAddress(walletAddress) && (
@@ -966,7 +966,7 @@ function App() {
                     </p>
                   )}
                   {selectedChain === 'bitcoin' && user?.subscription_tier === 'pro' && (
-                    <p className="text-xs text-gray-400 mt-1">
+                    <p className="text-xs text-[#8A8A93] mt-1">
                       💡 Pro tip: Enter your Ledger xPub to analyze your entire wallet
                     </p>
                   )}
@@ -976,7 +976,7 @@ function App() {
                     data-testid="analyze-button"
                     onClick={() => analyzeWallet()}
                     disabled={loading || analyzingAll || !user}
-                    className="bg-purple-600 hover:bg-purple-700 flex-1 sm:flex-none"
+                    className="bg-white text-black hover:bg-gray-200 flex-1 sm:flex-none"
                   >
                     {loading ? (
                       <>
@@ -1015,31 +1015,31 @@ function App() {
               {/* Date Range Filter */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm text-gray-400 block mb-2">Start Date (Optional)</label>
+                  <label className="text-sm text-[#8A8A93] block mb-2">Start Date (Optional)</label>
                   <Input
                     data-testid="start-date-input"
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="bg-slate-700 border-slate-600 text-white"
+                    className="bg-[#161618] border-[#1F1F22] text-white"
                     disabled={loading}
                   />
                 </div>
                 <div>
-                  <label className="text-sm text-gray-400 block mb-2">End Date (Optional)</label>
+                  <label className="text-sm text-[#8A8A93] block mb-2">End Date (Optional)</label>
                   <Input
                     data-testid="end-date-input"
                     type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="bg-slate-700 border-slate-600 text-white"
+                    className="bg-[#161618] border-[#1F1F22] text-white"
                     disabled={loading}
                   />
                 </div>
               </div>
               
               {(startDate || endDate) && (
-                <div className="text-sm text-gray-400">
+                <div className="text-sm text-[#8A8A93]">
                   Filtering transactions {startDate && `from ${startDate}`} {endDate && `to ${endDate}`}
                 </div>
               )}
@@ -1072,33 +1072,33 @@ function App() {
                 Multi-Chain Portfolio Analysis
                 <Badge className="bg-yellow-600 ml-2">Pro Feature</Badge>
               </CardTitle>
-              <CardDescription className="text-gray-400">
+              <CardDescription className="text-[#8A8A93]">
                 Analyzed {multiChainResults.address} across {multiChainResults.chains_analyzed} blockchains
               </CardDescription>
             </CardHeader>
             <CardContent>
               {/* Aggregated Totals */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div className="bg-slate-900/50 rounded-lg p-4">
-                  <div className="text-sm text-gray-400 mb-1">Total Transactions</div>
+                <div className="bg-[#050505]/50 rounded-lg p-4">
+                  <div className="text-sm text-[#8A8A93] mb-1">Total Transactions</div>
                   <div className="text-3xl font-bold text-white">
                     {multiChainResults.aggregated.total_transactions.toLocaleString()}
                   </div>
-                  <div className="text-xs text-gray-500 mt-1">Across all chains</div>
+                  <div className="text-xs text-[#4A4A52] mt-1">Across all chains</div>
                 </div>
-                <div className="bg-slate-900/50 rounded-lg p-4">
-                  <div className="text-sm text-gray-400 mb-1">Total Gas Fees</div>
+                <div className="bg-[#050505]/50 rounded-lg p-4">
+                  <div className="text-sm text-[#8A8A93] mb-1">Total Gas Fees</div>
                   <div className="text-3xl font-bold text-orange-400">
                     {formatNumber(multiChainResults.aggregated.total_gas_fees)}
                   </div>
-                  <div className="text-xs text-gray-500 mt-1">Combined across chains</div>
+                  <div className="text-xs text-[#4A4A52] mt-1">Combined across chains</div>
                 </div>
-                <div className="bg-slate-900/50 rounded-lg p-4">
-                  <div className="text-sm text-gray-400 mb-1">Chains Analyzed</div>
+                <div className="bg-[#050505]/50 rounded-lg p-4">
+                  <div className="text-sm text-[#8A8A93] mb-1">Chains Analyzed</div>
                   <div className="text-3xl font-bold text-green-400">
                     {multiChainResults.chains_analyzed}/{multiChainResults.total_chains}
                   </div>
-                  <div className="text-xs text-gray-500 mt-1">Successfully analyzed</div>
+                  <div className="text-xs text-[#4A4A52] mt-1">Successfully analyzed</div>
                 </div>
               </div>
 
@@ -1106,7 +1106,7 @@ function App() {
               <div className="space-y-3">
                 <h3 className="text-lg font-semibold text-white mb-3">Chain Breakdown</h3>
                 {multiChainResults.results.map((result) => (
-                  <div key={result.chain} className="bg-slate-900/30 rounded-lg p-4 border border-slate-700">
+                  <div key={result.chain} className="bg-[#050505]/30 rounded-lg p-4 border border-[#1F1F22]">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <span className="text-2xl">{getChainIcon(result.chain)}</span>
@@ -1116,21 +1116,21 @@ function App() {
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                       <div>
-                        <div className="text-gray-400">Sent</div>
+                        <div className="text-[#8A8A93]">Sent</div>
                         <div className="text-white font-semibold">{formatNumber(result.totalSent)}</div>
                       </div>
                       <div>
-                        <div className="text-gray-400">Received</div>
+                        <div className="text-[#8A8A93]">Received</div>
                         <div className="text-white font-semibold">{formatNumber(result.totalReceived)}</div>
                       </div>
                       <div>
-                        <div className="text-gray-400">Net Balance</div>
+                        <div className="text-[#8A8A93]">Net Balance</div>
                         <div className={`font-semibold ${result.netBalance >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                           {result.netBalance >= 0 ? '+' : ''}{formatNumber(result.netBalance)}
                         </div>
                       </div>
                       <div>
-                        <div className="text-gray-400">Transactions</div>
+                        <div className="text-[#8A8A93]">Transactions</div>
                         <div className="text-white font-semibold">{result.transactionCount}</div>
                       </div>
                     </div>
@@ -1155,10 +1155,10 @@ function App() {
           <div className="max-w-7xl mx-auto space-y-6" data-testid="analysis-results">
             {/* Chain Badge */}
             <div className="flex items-center gap-2">
-              <Badge className="bg-purple-900/50 text-purple-300 border-purple-700">
+              <Badge className="bg-[#00C805]/10 text-[#00C805] border-[#00C805]/30">
                 {getChainIcon(analysis.chain || selectedChain)} {(analysis.chain || selectedChain).toUpperCase()}
               </Badge>
-              <span className="text-gray-400 text-sm">Analyzing {getChainSymbol(analysis.chain || selectedChain)} wallet</span>
+              <span className="text-[#8A8A93] text-sm">Analyzing {getChainSymbol(analysis.chain || selectedChain)} wallet</span>
             </div>
 
             {/* Exchange Deposit Address Warning */}
@@ -1197,12 +1197,12 @@ function App() {
               <Card className="bg-gradient-to-r from-green-900/30 to-emerald-800/30 border-green-700">
                 <CardContent className="pt-4 md:pt-6">
                   <div className="text-center">
-                    <p className="text-gray-400 text-xs md:text-sm mb-1 md:mb-2">Portfolio Value</p>
+                    <p className="text-[#8A8A93] text-xs md:text-sm mb-1 md:mb-2">Portfolio Value</p>
                     <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold text-white mb-1 md:mb-2">
                       {formatUSD(analysis.total_value_usd)}
                     </h2>
                     {analysis.current_price_usd && (
-                      <p className="text-gray-400 text-xs md:text-sm">
+                      <p className="text-[#8A8A93] text-xs md:text-sm">
                         {formatNumber(analysis.netEth)} {getChainSymbol(analysis.chain || selectedChain)} 
                         <span className="mx-1 md:mx-2">•</span>
                         1 {getChainSymbol(analysis.chain || selectedChain)} = {formatUSD(analysis.current_price_usd)}
@@ -1303,7 +1303,7 @@ function App() {
                       {formatUSD(analysis.total_value_usd)}
                     </p>
                   )}
-                  <p className="text-gray-400 text-xs mt-1">
+                  <p className="text-[#8A8A93] text-xs mt-1">
                     In wallet now
                   </p>
                 </CardContent>
@@ -1311,18 +1311,18 @@ function App() {
             </div>
 
             {/* Wallet Address Info */}
-            <Card className="bg-slate-800/50 border-slate-700" data-testid="wallet-info-card">
+            <Card className="bg-[#0C0C0E]/50 border-[#1F1F22]" data-testid="wallet-info-card">
               <CardHeader>
                 <CardTitle className="text-white">Wallet Information</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-400">Address:</span>
+                    <span className="text-[#8A8A93]">Address:</span>
                     <span className="text-white font-mono text-sm">{analysis.address}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-400">Total Transactions:</span>
+                    <span className="text-[#8A8A93]">Total Transactions:</span>
                     <span className="text-white">
                       {analysis.incomingTransactionCount + analysis.outgoingTransactionCount}
                     </span>
@@ -1333,7 +1333,7 @@ function App() {
 
             {/* ERC-20 Tokens */}
             {(Object.keys(analysis.tokensSent || {}).length > 0 || Object.keys(analysis.tokensReceived || {}).length > 0) && (
-              <Card className="bg-slate-800/50 border-slate-700" data-testid="tokens-card">
+              <Card className="bg-[#0C0C0E]/50 border-[#1F1F22]" data-testid="tokens-card">
                 <CardHeader>
                   <CardTitle className="text-white">ERC-20 Token Activity</CardTitle>
                 </CardHeader>
@@ -1377,79 +1377,79 @@ function App() {
                   <CardTitle className="text-white flex items-center gap-2">
                     <Activity className="w-5 h-5 text-indigo-400" />
                     Advanced Analytics
-                    <Badge className="bg-purple-600 ml-2">Premium</Badge>
+                    <Badge className="bg-white text-black ml-2">Premium</Badge>
                   </CardTitle>
-                  <CardDescription className="text-gray-400">
+                  <CardDescription className="text-[#8A8A93]">
                     Deeper insights into your wallet activity
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {/* Average Transaction Value */}
-                    <div className="bg-slate-900/50 rounded-lg p-4">
-                      <div className="text-sm text-gray-400 mb-1">Avg Transaction Value</div>
+                    <div className="bg-[#050505]/50 rounded-lg p-4">
+                      <div className="text-sm text-[#8A8A93] mb-1">Avg Transaction Value</div>
                       <div className="text-2xl font-bold text-white">
                         {formatNumber(
                           (analysis.totalEthReceived + analysis.totalEthSent) / 
                           Math.max(1, (analysis.incomingTransactionCount + analysis.outgoingTransactionCount))
                         )} {getChainSymbol(analysis.chain || selectedChain)}
                       </div>
-                      <div className="text-xs text-gray-500 mt-1">Per transaction</div>
+                      <div className="text-xs text-[#4A4A52] mt-1">Per transaction</div>
                     </div>
 
                     {/* Transaction Activity Ratio */}
-                    <div className="bg-slate-900/50 rounded-lg p-4">
-                      <div className="text-sm text-gray-400 mb-1">Activity Ratio</div>
+                    <div className="bg-[#050505]/50 rounded-lg p-4">
+                      <div className="text-sm text-[#8A8A93] mb-1">Activity Ratio</div>
                       <div className="text-2xl font-bold text-white">
                         {analysis.outgoingTransactionCount > 0
                           ? (analysis.incomingTransactionCount / analysis.outgoingTransactionCount).toFixed(2)
                           : analysis.incomingTransactionCount.toFixed(2)
                         }:1
                       </div>
-                      <div className="text-xs text-gray-500 mt-1">Incoming : Outgoing</div>
+                      <div className="text-xs text-[#4A4A52] mt-1">Incoming : Outgoing</div>
                     </div>
 
                     {/* Unique Assets */}
-                    <div className="bg-slate-900/50 rounded-lg p-4">
-                      <div className="text-sm text-gray-400 mb-1">Unique Assets</div>
+                    <div className="bg-[#050505]/50 rounded-lg p-4">
+                      <div className="text-sm text-[#8A8A93] mb-1">Unique Assets</div>
                       <div className="text-2xl font-bold text-white">
                         {1 + new Set([
                           ...Object.keys(analysis.tokensReceived || {}),
                           ...Object.keys(analysis.tokensSent || {})
                         ]).size}
                       </div>
-                      <div className="text-xs text-gray-500 mt-1">Native + Tokens</div>
+                      <div className="text-xs text-[#4A4A52] mt-1">Native + Tokens</div>
                     </div>
 
                     {/* Gas Efficiency (EVM chains only) */}
                     {(analysis.chain === 'ethereum' || analysis.chain === 'arbitrum' || analysis.chain === 'polygon' || analysis.chain === 'bsc') && analysis.totalGasFees > 0 && (
-                      <div className="bg-slate-900/50 rounded-lg p-4">
-                        <div className="text-sm text-gray-400 mb-1">Avg Gas per TX</div>
+                      <div className="bg-[#050505]/50 rounded-lg p-4">
+                        <div className="text-sm text-[#8A8A93] mb-1">Avg Gas per TX</div>
                         <div className="text-2xl font-bold text-white">
                           {formatNumber(analysis.totalGasFees / Math.max(1, analysis.outgoingTransactionCount))} {getChainSymbol(analysis.chain || selectedChain)}
                         </div>
-                        <div className="text-xs text-gray-500 mt-1">Average gas cost</div>
+                        <div className="text-xs text-[#4A4A52] mt-1">Average gas cost</div>
                       </div>
                     )}
 
                     {/* Net Flow */}
-                    <div className="bg-slate-900/50 rounded-lg p-4">
-                      <div className="text-sm text-gray-400 mb-1">Net Flow</div>
+                    <div className="bg-[#050505]/50 rounded-lg p-4">
+                      <div className="text-sm text-[#8A8A93] mb-1">Net Flow</div>
                       <div className={`text-2xl font-bold ${analysis.netEth >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                         {analysis.netEth >= 0 ? '+' : ''}{formatNumber(analysis.netEth)} {getChainSymbol(analysis.chain || selectedChain)}
                       </div>
-                      <div className="text-xs text-gray-500 mt-1">
+                      <div className="text-xs text-[#4A4A52] mt-1">
                         {analysis.netEth >= 0 ? 'Net accumulation' : 'Net spending'}
                       </div>
                     </div>
 
                     {/* Total Volume */}
-                    <div className="bg-slate-900/50 rounded-lg p-4">
-                      <div className="text-sm text-gray-400 mb-1">Total Volume</div>
+                    <div className="bg-[#050505]/50 rounded-lg p-4">
+                      <div className="text-sm text-[#8A8A93] mb-1">Total Volume</div>
                       <div className="text-2xl font-bold text-white">
                         {formatNumber(analysis.totalEthReceived + analysis.totalEthSent)} {getChainSymbol(analysis.chain || selectedChain)}
                       </div>
-                      <div className="text-xs text-gray-500 mt-1">Combined flow</div>
+                      <div className="text-xs text-[#4A4A52] mt-1">Combined flow</div>
                     </div>
                   </div>
                 </CardContent>
@@ -1485,12 +1485,12 @@ function App() {
 
             {/* Recent Transactions */}
             {analysis.recentTransactions && analysis.recentTransactions.length > 0 && (
-              <Card className="bg-slate-800/50 border-slate-700" data-testid="transactions-table">
+              <Card className="bg-[#0C0C0E]/50 border-[#1F1F22]" data-testid="transactions-table">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>
                       <CardTitle className="text-white">Recent Transactions</CardTitle>
-                      <CardDescription className="text-gray-400">
+                      <CardDescription className="text-[#8A8A93]">
                         Showing up to 20 most recent transactions
                       </CardDescription>
                     </div>
@@ -1498,7 +1498,7 @@ function App() {
                       <Button
                         onClick={() => setShowExportModal(true)}
                         variant="outline"
-                        className="border-slate-600 text-gray-300"
+                        className="border-[#1F1F22] text-white"
                       >
                         <Download className="w-4 h-4 mr-2" />
                         Export CSV
@@ -1510,19 +1510,19 @@ function App() {
                   <div className="overflow-x-auto -mx-2 md:mx-0">
                     <table className="w-full min-w-[600px]">
                       <thead>
-                        <tr className="border-b border-slate-700">
-                          <th className="text-left py-2 md:py-3 px-2 md:px-4 text-gray-400 font-medium text-xs md:text-sm">Type</th>
-                          <th className="text-left py-2 md:py-3 px-2 md:px-4 text-gray-400 font-medium text-xs md:text-sm">Hash</th>
-                          <th className="text-left py-2 md:py-3 px-2 md:px-4 text-gray-400 font-medium text-xs md:text-sm hidden sm:table-cell">Asset</th>
-                          <th className="text-right py-2 md:py-3 px-2 md:px-4 text-gray-400 font-medium text-xs md:text-sm">Amount</th>
-                          <th className="text-right py-2 md:py-3 px-2 md:px-4 text-gray-400 font-medium text-xs md:text-sm hidden md:table-cell">USD</th>
-                          <th className="text-right py-2 md:py-3 px-2 md:px-4 text-gray-400 font-medium text-xs md:text-sm hidden lg:table-cell">Balance</th>
-                          <th className="text-left py-2 md:py-3 px-2 md:px-4 text-gray-400 font-medium text-xs md:text-sm hidden sm:table-cell">To/From</th>
+                        <tr className="border-b border-[#1F1F22]">
+                          <th className="text-left py-2 md:py-3 px-2 md:px-4 text-[#8A8A93] font-medium text-xs md:text-sm">Type</th>
+                          <th className="text-left py-2 md:py-3 px-2 md:px-4 text-[#8A8A93] font-medium text-xs md:text-sm">Hash</th>
+                          <th className="text-left py-2 md:py-3 px-2 md:px-4 text-[#8A8A93] font-medium text-xs md:text-sm hidden sm:table-cell">Asset</th>
+                          <th className="text-right py-2 md:py-3 px-2 md:px-4 text-[#8A8A93] font-medium text-xs md:text-sm">Amount</th>
+                          <th className="text-right py-2 md:py-3 px-2 md:px-4 text-[#8A8A93] font-medium text-xs md:text-sm hidden md:table-cell">USD</th>
+                          <th className="text-right py-2 md:py-3 px-2 md:px-4 text-[#8A8A93] font-medium text-xs md:text-sm hidden lg:table-cell">Balance</th>
+                          <th className="text-left py-2 md:py-3 px-2 md:px-4 text-[#8A8A93] font-medium text-xs md:text-sm hidden sm:table-cell">To/From</th>
                         </tr>
                       </thead>
                       <tbody>
                         {analysis.recentTransactions.map((tx, idx) => (
-                          <tr key={idx} className="border-b border-slate-700/50 hover:bg-slate-700/30">
+                          <tr key={idx} className="border-b border-[#1F1F22]/50 hover:bg-[#161618]/30">
                             <td className="py-2 md:py-3 px-2 md:px-4">
                               <Badge
                                 variant="outline"
@@ -1551,12 +1551,12 @@ function App() {
                                   }
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-purple-400 hover:text-purple-300 font-mono text-xs md:text-sm"
+                                  className="text-[#00C805] hover:text-[#00C805] font-mono text-xs md:text-sm"
                                 >
                                   {formatAddress(tx.hash)}
                                 </a>
                               ) : (
-                                <span className="text-gray-500 text-xs">N/A</span>
+                                <span className="text-[#4A4A52] text-xs">N/A</span>
                               )}
                             </td>
                             <td className="py-2 md:py-3 px-2 md:px-4 hidden sm:table-cell">
@@ -1567,16 +1567,16 @@ function App() {
                             </td>
                             <td className="py-2 md:py-3 px-2 md:px-4 text-right hidden md:table-cell">
                               {tx.value_usd !== undefined ? (
-                                <span className="text-gray-300 font-semibold text-xs md:text-sm">{formatUSD(tx.value_usd)}</span>
+                                <span className="text-white font-semibold text-xs md:text-sm">{formatUSD(tx.value_usd)}</span>
                               ) : (
-                                <span className="text-gray-500 text-xs">-</span>
+                                <span className="text-[#4A4A52] text-xs">-</span>
                               )}
                             </td>
                             <td className="py-2 md:py-3 px-2 md:px-4 text-right hidden lg:table-cell">
                               {tx.running_balance !== undefined ? (
                                 <span className="text-blue-300 font-semibold font-mono text-xs md:text-sm">{formatNumber(tx.running_balance)}</span>
                               ) : (
-                                <span className="text-gray-500 text-xs">-</span>
+                                <span className="text-[#4A4A52] text-xs">-</span>
                               )}
                             </td>
                             <td className="py-2 md:py-3 px-2 md:px-4 hidden sm:table-cell">
@@ -1591,7 +1591,7 @@ function App() {
                                     {tx.from_label}
                                   </Badge>
                                 )}
-                                <span className="text-gray-400 font-mono text-xs">
+                                <span className="text-[#8A8A93] font-mono text-xs">
                                   {tx.type === 'sent' ? formatAddress(tx.to) : formatAddress(tx.from)}
                                 </span>
                               </div>
@@ -1709,9 +1709,9 @@ function App() {
       {/* Footer */}
       <footer className="w-full py-4 mt-8 border-t border-gray-800 bg-gray-900/50">
         <div className="container mx-auto px-4 text-center">
-          <p className="text-gray-500 text-sm">
+          <p className="text-[#4A4A52] text-sm">
             © {new Date().getFullYear()} Crypto Bag Tracker. Made by{' '}
-            <span className="text-gray-400 font-medium">Acoretek Services LLC</span>
+            <span className="text-[#8A8A93] font-medium">Acoretek Services LLC</span>
           </p>
         </div>
       </footer>

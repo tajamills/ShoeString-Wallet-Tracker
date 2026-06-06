@@ -14,13 +14,13 @@ export const UserInfoBar = ({
 }) => {
   if (!user) {
     return (
-      <Card className="bg-slate-800/50 border-slate-700" data-testid="login-prompt">
+      <Card className="bg-[#0C0C0E]/50 border-[#1F1F22]" data-testid="login-prompt">
         <CardContent className="py-4">
           <div className="flex items-center justify-between">
-            <p className="text-gray-300">Login to start analyzing wallets</p>
+            <p className="text-white">Login to start analyzing wallets</p>
             <Button
               onClick={onLogin}
-              className="bg-purple-600 hover:bg-purple-700"
+              className="bg-white text-black hover:bg-gray-200"
               data-testid="login-button"
             >
               Login / Sign Up
@@ -32,11 +32,11 @@ export const UserInfoBar = ({
   }
 
   return (
-    <Card className="bg-slate-800/50 border-slate-700" data-testid="user-info-bar">
+    <Card className="bg-[#0C0C0E]/50 border-[#1F1F22]" data-testid="user-info-bar">
       <CardContent className="py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <User className="w-5 h-5 text-purple-400" />
+            <User className="w-5 h-5 text-[#00C805]" />
             <div>
               <p className="text-white font-medium">{user.email}</p>
               <div className="flex items-center gap-2 mt-1">
@@ -52,7 +52,7 @@ export const UserInfoBar = ({
                   )}
                   {user.subscription_tier === 'free' ? 'FREE' : 'UNLIMITED'}
                 </Badge>
-                <span className="text-sm text-gray-400">
+                <span className="text-sm text-[#8A8A93]">
                   {user.subscription_tier === 'free'
                     ? `${user.analysis_count || 0}/1 free analysis`
                     : 'Unlimited analyses'}
@@ -60,7 +60,7 @@ export const UserInfoBar = ({
                 {user.subscription_tier !== 'free' && onDowngrade && (
                   <button
                     onClick={onDowngrade}
-                    className="text-xs text-gray-500 hover:text-gray-400 underline ml-2"
+                    className="text-xs text-[#4A4A52] hover:text-[#8A8A93] underline ml-2"
                   >
                     manage
                   </button>
@@ -82,7 +82,7 @@ export const UserInfoBar = ({
             <Button
               variant="outline"
               onClick={onOpenAffiliate}
-              className="border-purple-600 text-purple-300 hover:bg-purple-900/30"
+              className="border-[#1F1F22] text-[#00C805] hover:bg-[#161618]"
               data-testid="affiliate-button"
             >
               <Users className="w-4 h-4 mr-2" />
@@ -91,7 +91,7 @@ export const UserInfoBar = ({
             <Button
               variant="outline"
               onClick={onLogout}
-              className="border-slate-600 text-gray-300 hover:bg-slate-700"
+              className="border-[#1F1F22] text-white hover:bg-[#161618]"
               data-testid="logout-button"
             >
               <LogOut className="w-4 h-4 mr-2" />

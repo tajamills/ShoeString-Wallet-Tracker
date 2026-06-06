@@ -248,7 +248,7 @@ export const UnknownTransactionClassifier = ({ onClassificationComplete }) => {
 
   const confidenceBadgeColor = (level) => {
     switch (level) {
-      case 'auto_apply': return 'bg-green-600';
+      case 'auto_apply': return 'bg-[#00C805]';
       case 'suggest': return 'bg-yellow-600';
       case 'unresolved': return 'bg-gray-600';
       default: return 'bg-gray-600';
@@ -279,7 +279,7 @@ export const UnknownTransactionClassifier = ({ onClassificationComplete }) => {
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <CardTitle className="text-white flex items-center gap-2">
-              <Target className="w-5 h-5 text-purple-400" />
+              <Target className="w-5 h-5 text-[#00C805]" />
               Unknown Transaction Classifier
             </CardTitle>
             <Button
@@ -287,7 +287,7 @@ export const UnknownTransactionClassifier = ({ onClassificationComplete }) => {
               size="sm"
               onClick={fetchAnalysis}
               disabled={analyzing}
-              className="border-gray-600 text-gray-300 hover:bg-gray-700"
+              className="border-gray-600 text-white hover:bg-gray-700"
               data-testid="refresh-analysis-btn"
             >
               {analyzing ? (
@@ -303,26 +303,26 @@ export const UnknownTransactionClassifier = ({ onClassificationComplete }) => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
             <div className="bg-gray-900/50 rounded-lg p-3 text-center">
               <div className="text-2xl font-bold text-white">{unknownCount}</div>
-              <div className="text-xs text-gray-400">Unknown Transactions</div>
+              <div className="text-xs text-[#8A8A93]">Unknown Transactions</div>
             </div>
             <div className="bg-gray-900/50 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold text-green-400">{autoApplyCount}</div>
-              <div className="text-xs text-gray-400">Auto-Classifiable (&gt;95%)</div>
+              <div className="text-2xl font-bold text-[#00C805]">{autoApplyCount}</div>
+              <div className="text-xs text-[#8A8A93]">Auto-Classifiable (&gt;95%)</div>
             </div>
             <div className="bg-gray-900/50 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold text-yellow-400">{suggestCount}</div>
-              <div className="text-xs text-gray-400">Suggested (70-95%)</div>
+              <div className="text-2xl font-bold text-[#FFB800]">{suggestCount}</div>
+              <div className="text-xs text-[#8A8A93]">Suggested (70-95%)</div>
             </div>
             <div className="bg-gray-900/50 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold text-gray-400">{unresolvedCount}</div>
-              <div className="text-xs text-gray-400">Unresolved (&lt;70%)</div>
+              <div className="text-2xl font-bold text-[#8A8A93]">{unresolvedCount}</div>
+              <div className="text-xs text-[#8A8A93]">Unresolved (&lt;70%)</div>
             </div>
           </div>
 
           {/* Progress Bar */}
           {unknownCount > 0 && (
             <div className="space-y-2">
-              <div className="flex justify-between text-sm text-gray-400">
+              <div className="flex justify-between text-sm text-[#8A8A93]">
                 <span>Classification Coverage</span>
                 <span>{Math.round(((autoApplyCount + suggestCount) / unknownCount) * 100)}%</span>
               </div>
@@ -338,18 +338,18 @@ export const UnknownTransactionClassifier = ({ onClassificationComplete }) => {
             <div className="mt-4 p-3 bg-green-900/20 border border-green-700 rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-green-400 font-medium flex items-center gap-2">
+                  <div className="text-[#00C805] font-medium flex items-center gap-2">
                     <Zap className="w-4 h-4" />
                     {autoApplyCount} transactions ready for auto-classification
                   </div>
-                  <p className="text-sm text-gray-400 mt-1">
+                  <p className="text-sm text-[#8A8A93] mt-1">
                     These have &gt;95% confidence and can be safely auto-classified
                   </p>
                 </div>
                 <Button
                   onClick={() => handleAutoClassify(false)}
                   disabled={loading}
-                  className="bg-green-600 hover:bg-green-700 text-white"
+                  className="bg-[#00C805] hover:bg-[#00C805]/80 text-white"
                   data-testid="auto-classify-btn"
                 >
                   {loading ? (
@@ -367,7 +367,7 @@ export const UnknownTransactionClassifier = ({ onClassificationComplete }) => {
 
       {/* Error Display */}
       {error && (
-        <div className="bg-red-900/20 border border-red-700 rounded-lg p-4 text-red-400" data-testid="error-message">
+        <div className="bg-red-900/20 border border-red-700 rounded-lg p-4 text-[#FF3B30]" data-testid="error-message">
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-4 h-4" />
             <span>{error}</span>
@@ -383,8 +383,8 @@ export const UnknownTransactionClassifier = ({ onClassificationComplete }) => {
             onClick={() => setActiveTab(tab)}
             className={`px-4 py-2 text-sm font-medium capitalize transition-colors ${
               activeTab === tab
-                ? 'text-purple-400 border-b-2 border-purple-400'
-                : 'text-gray-400 hover:text-gray-200'
+                ? 'text-[#00C805] border-b-2 border-[#00C805]'
+                : 'text-[#8A8A93] hover:text-gray-200'
             }`}
             data-testid={`tab-${tab}`}
           >
@@ -398,11 +398,11 @@ export const UnknownTransactionClassifier = ({ onClassificationComplete }) => {
         <div className="space-y-4">
           {/* Confidence Filter */}
           <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-gray-400" />
+            <Filter className="w-4 h-4 text-[#8A8A93]" />
             <select
               value={selectedConfidence}
               onChange={(e) => setSelectedConfidence(e.target.value)}
-              className="bg-gray-800 border border-gray-700 text-gray-300 rounded-md px-3 py-1 text-sm"
+              className="bg-gray-800 border border-gray-700 text-white rounded-md px-3 py-1 text-sm"
               data-testid="confidence-filter"
             >
               <option value="all">All Confidence Levels</option>
@@ -423,19 +423,19 @@ export const UnknownTransactionClassifier = ({ onClassificationComplete }) => {
                         <Badge className={confidenceBadgeColor(suggestion.confidence_level)}>
                           {Math.round(suggestion.confidence * 100)}% confidence
                         </Badge>
-                        <span className="text-gray-400 text-sm">
+                        <span className="text-[#8A8A93] text-sm">
                           {suggestion.amount} {suggestion.asset}
                         </span>
                       </div>
                       <div className="text-white">
-                        <span className="text-gray-400">Current:</span> {classificationTypeLabel(suggestion.current_type)}
-                        <span className="mx-2 text-gray-500">→</span>
-                        <span className="text-purple-400 font-medium">
+                        <span className="text-[#8A8A93]">Current:</span> {classificationTypeLabel(suggestion.current_type)}
+                        <span className="mx-2 text-[#4A4A52]">→</span>
+                        <span className="text-[#00C805] font-medium">
                           {classificationTypeLabel(suggestion.suggested_type)}
                         </span>
                       </div>
                       {suggestion.reasoning && suggestion.reasoning.length > 0 && (
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-[#4A4A52] mt-1">
                           {suggestion.reasoning[0]}
                         </p>
                       )}
@@ -445,7 +445,7 @@ export const UnknownTransactionClassifier = ({ onClassificationComplete }) => {
                         size="sm"
                         variant="ghost"
                         onClick={() => handleDecision(suggestion.tx_id, true)}
-                        className="text-green-400 hover:bg-green-900/30"
+                        className="text-[#00C805] hover:bg-green-900/30"
                         data-testid={`accept-${suggestion.tx_id}`}
                       >
                         <Check className="w-4 h-4" />
@@ -454,7 +454,7 @@ export const UnknownTransactionClassifier = ({ onClassificationComplete }) => {
                         size="sm"
                         variant="ghost"
                         onClick={() => handleDecision(suggestion.tx_id, false)}
-                        className="text-red-400 hover:bg-red-900/30"
+                        className="text-[#FF3B30] hover:bg-red-900/30"
                         data-testid={`reject-${suggestion.tx_id}`}
                       >
                         <X className="w-4 h-4" />
@@ -466,13 +466,13 @@ export const UnknownTransactionClassifier = ({ onClassificationComplete }) => {
             ))}
             
             {getSuggestions().length === 0 && (
-              <div className="text-center text-gray-500 py-8">
+              <div className="text-center text-[#4A4A52] py-8">
                 No suggestions in this category
               </div>
             )}
             
             {getSuggestions().length > 50 && (
-              <div className="text-center text-gray-400 py-4">
+              <div className="text-center text-[#8A8A93] py-4">
                 Showing first 50 of {getSuggestions().length} suggestions
               </div>
             )}
@@ -483,7 +483,7 @@ export const UnknownTransactionClassifier = ({ onClassificationComplete }) => {
       {activeTab === 'patterns' && (
         <div className="space-y-4">
           {patterns.length === 0 ? (
-            <div className="text-center text-gray-500 py-8">
+            <div className="text-center text-[#4A4A52] py-8">
               No patterns detected. Run analysis to detect patterns.
             </div>
           ) : (
@@ -496,35 +496,35 @@ export const UnknownTransactionClassifier = ({ onClassificationComplete }) => {
                   >
                     <div>
                       <div className="flex items-center gap-2">
-                        <Badge className={pattern.confidence >= 0.9 ? 'bg-green-600' : 'bg-yellow-600'}>
+                        <Badge className={pattern.confidence >= 0.9 ? 'bg-[#00C805]' : 'bg-yellow-600'}>
                           {Math.round(pattern.confidence * 100)}%
                         </Badge>
                         <span className="text-white font-medium capitalize">
                           {pattern.pattern_type?.replace('_', ' ')}
                         </span>
-                        <span className="text-gray-400 text-sm">
+                        <span className="text-[#8A8A93] text-sm">
                           ({pattern.match_count} transactions)
                         </span>
                       </div>
-                      <p className="text-sm text-gray-400 mt-1 truncate max-w-md">
+                      <p className="text-sm text-[#8A8A93] mt-1 truncate max-w-md">
                         {pattern.pattern_value?.substring(0, 30)}...
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge className="bg-purple-600">
+                      <Badge className="bg-white text-black">
                         {classificationTypeLabel(pattern.suggested_classification)}
                       </Badge>
                       {expandedPattern === pattern.pattern_id ? (
-                        <ChevronUp className="w-4 h-4 text-gray-400" />
+                        <ChevronUp className="w-4 h-4 text-[#8A8A93]" />
                       ) : (
-                        <ChevronDown className="w-4 h-4 text-gray-400" />
+                        <ChevronDown className="w-4 h-4 text-[#8A8A93]" />
                       )}
                     </div>
                   </div>
                   
                   {expandedPattern === pattern.pattern_id && (
                     <div className="mt-4 pt-4 border-t border-gray-700">
-                      <p className="text-sm text-gray-400 mb-3">{pattern.reasoning}</p>
+                      <p className="text-sm text-[#8A8A93] mb-3">{pattern.reasoning}</p>
                       <div className="flex gap-2">
                         <Button
                           size="sm"
@@ -534,7 +534,7 @@ export const UnknownTransactionClassifier = ({ onClassificationComplete }) => {
                             false
                           )}
                           disabled={loading}
-                          className="bg-purple-600 hover:bg-purple-700"
+                          className="bg-white text-black hover:bg-gray-200"
                           data-testid={`classify-pattern-${pattern.pattern_id}`}
                         >
                           {loading ? (
@@ -559,7 +559,7 @@ export const UnknownTransactionClassifier = ({ onClassificationComplete }) => {
           <Card className="bg-gray-800 border-gray-700">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-green-400" />
+                <TrendingUp className="w-5 h-5 text-[#00C805]" />
                 Classification Performance (30 days)
               </CardTitle>
             </CardHeader>
@@ -570,29 +570,29 @@ export const UnknownTransactionClassifier = ({ onClassificationComplete }) => {
                     <div className="text-3xl font-bold text-white">
                       {metrics.current_unknown}
                     </div>
-                    <div className="text-sm text-gray-400">Current Unknown</div>
+                    <div className="text-sm text-[#8A8A93]">Current Unknown</div>
                   </div>
                   <div className="bg-gray-900/50 rounded-lg p-4 text-center">
-                    <div className="text-3xl font-bold text-green-400">
+                    <div className="text-3xl font-bold text-[#00C805]">
                       {Math.round((metrics.suggestion_accuracy || 0) * 100)}%
                     </div>
-                    <div className="text-sm text-gray-400">Accuracy Rate</div>
+                    <div className="text-sm text-[#8A8A93]">Accuracy Rate</div>
                   </div>
                   <div className="bg-gray-900/50 rounded-lg p-4 text-center">
-                    <div className="text-3xl font-bold text-purple-400">
+                    <div className="text-3xl font-bold text-[#00C805]">
                       {metrics.accepted || 0}
                     </div>
-                    <div className="text-sm text-gray-400">Accepted</div>
+                    <div className="text-sm text-[#8A8A93]">Accepted</div>
                   </div>
                   <div className="bg-gray-900/50 rounded-lg p-4 text-center">
-                    <div className="text-3xl font-bold text-red-400">
+                    <div className="text-3xl font-bold text-[#FF3B30]">
                       {metrics.rejected || 0}
                     </div>
-                    <div className="text-sm text-gray-400">Rejected</div>
+                    <div className="text-sm text-[#8A8A93]">Rejected</div>
                   </div>
                 </div>
               ) : (
-                <div className="text-center text-gray-500 py-8">
+                <div className="text-center text-[#4A4A52] py-8">
                   Loading metrics...
                 </div>
               )}
@@ -604,7 +604,7 @@ export const UnknownTransactionClassifier = ({ onClassificationComplete }) => {
       {activeTab === 'batches' && (
         <div className="space-y-4">
           {batches.length === 0 ? (
-            <div className="text-center text-gray-500 py-8">
+            <div className="text-center text-[#4A4A52] py-8">
               No classification batches yet
             </div>
           ) : (
@@ -617,11 +617,11 @@ export const UnknownTransactionClassifier = ({ onClassificationComplete }) => {
                         <span className="text-white font-medium">
                           Batch: {batch.batch_id?.substring(0, 8)}...
                         </span>
-                        <Badge className={batch.rolled_back ? 'bg-gray-600' : 'bg-green-600'}>
+                        <Badge className={batch.rolled_back ? 'bg-gray-600' : 'bg-[#00C805]'}>
                           {batch.rolled_back ? 'Rolled Back' : 'Applied'}
                         </Badge>
                       </div>
-                      <p className="text-sm text-gray-400 mt-1">
+                      <p className="text-sm text-[#8A8A93] mt-1">
                         {batch.count} transactions classified on {new Date(batch.created_at).toLocaleDateString()}
                       </p>
                     </div>
@@ -631,7 +631,7 @@ export const UnknownTransactionClassifier = ({ onClassificationComplete }) => {
                         variant="outline"
                         onClick={() => handleRollback(batch.batch_id)}
                         disabled={loading}
-                        className="border-red-700 text-red-400 hover:bg-red-900/30"
+                        className="border-red-700 text-[#FF3B30] hover:bg-red-900/30"
                         data-testid={`rollback-${batch.batch_id}`}
                       >
                         <Undo2 className="w-4 h-4 mr-2" />

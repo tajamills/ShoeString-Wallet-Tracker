@@ -62,19 +62,19 @@ export const AuthModal = ({ isOpen, onClose }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md bg-slate-800 border-slate-700" data-testid="auth-modal">
+      <DialogContent className="sm:max-w-md bg-[#0C0C0E] border-[#1F1F22]" data-testid="auth-modal">
         <DialogHeader>
-          <DialogTitle className="text-white text-2xl">
+          <DialogTitle className="text-white text-2xl font-semibold">
             {getTitle()}
           </DialogTitle>
-          <DialogDescription className="text-gray-400">
+          <DialogDescription className="text-[#8A8A93]">
             {getDescription()}
           </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-gray-300">Email</Label>
+            <Label htmlFor="email" className="text-[#8A8A93] text-xs font-semibold tracking-[0.1em] uppercase">Email</Label>
             <Input
               id="email"
               type="email"
@@ -82,14 +82,14 @@ export const AuthModal = ({ isOpen, onClose }) => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="bg-slate-700 border-slate-600 text-white"
+              className="bg-[#161618] border-[#1F1F22] text-white rounded-none"
               data-testid="email-input"
             />
           </div>
           
           {mode !== 'forgot' && (
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-gray-300">Password</Label>
+              <Label htmlFor="password" className="text-[#8A8A93] text-xs font-semibold tracking-[0.1em] uppercase">Password</Label>
               <Input
                 id="password"
                 type="password"
@@ -98,23 +98,23 @@ export const AuthModal = ({ isOpen, onClose }) => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="bg-slate-700 border-slate-600 text-white"
+                className="bg-[#161618] border-[#1F1F22] text-white rounded-none"
                 data-testid="password-input"
               />
               {mode === 'register' && (
-                <p className="text-xs text-gray-400">Minimum 6 characters</p>
+                <p className="text-xs text-[#8A8A93]">Minimum 6 characters</p>
               )}
             </div>
           )}
 
           {error && (
-            <Alert className="bg-red-900/20 border-red-900 text-red-300" data-testid="auth-error">
+            <Alert className="bg-[#FF3B30]/10 border-[#FF3B30]/30 text-[#FF3B30]" data-testid="auth-error">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
 
           {successMessage && (
-            <Alert className="bg-green-900/20 border-green-900 text-green-300" data-testid="auth-success">
+            <Alert className="bg-[#00C805]/10 border-[#00C805]/30 text-[#00C805]" data-testid="auth-success">
               <CheckCircle className="h-4 w-4 inline mr-2" />
               <AlertDescription className="inline">{successMessage}</AlertDescription>
             </Alert>
@@ -122,7 +122,7 @@ export const AuthModal = ({ isOpen, onClose }) => {
 
           <Button
             type="submit"
-            className="w-full bg-purple-600 hover:bg-purple-700"
+            className="w-full bg-white text-black hover:bg-gray-200 rounded-none font-semibold"
             disabled={loading || !!successMessage}
             data-testid="auth-submit-button"
           >
@@ -141,7 +141,7 @@ export const AuthModal = ({ isOpen, onClose }) => {
               <button
                 type="button"
                 onClick={() => { setMode('forgot'); resetForm(); }}
-                className="text-gray-400 hover:text-gray-300 block w-full"
+                className="text-[#8A8A93] hover:text-white block w-full"
                 data-testid="forgot-password-link"
               >
                 Forgot your password?
@@ -152,7 +152,7 @@ export const AuthModal = ({ isOpen, onClose }) => {
               <button
                 type="button"
                 onClick={() => { setMode('login'); resetForm(); }}
-                className="text-purple-400 hover:text-purple-300"
+                className="text-[#00C805] hover:text-[#00C805]"
               >
                 Back to login
               </button>
@@ -163,7 +163,7 @@ export const AuthModal = ({ isOpen, onClose }) => {
                   setMode(mode === 'login' ? 'register' : 'login');
                   resetForm();
                 }}
-                className="text-purple-400 hover:text-purple-300"
+                className="text-[#00C805] hover:text-[#00C805]"
               >
                 {mode === 'login' ? "Don't have an account? Sign up" : 'Already have an account? Login'}
               </button>

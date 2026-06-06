@@ -527,7 +527,7 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-700 w-[95vw] md:w-auto mx-2 md:mx-auto">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto bg-[#050505] border-[#1F1F22] w-[95vw] md:w-auto mx-2 md:mx-auto">
         <DialogHeader>
           <DialogTitle className="text-lg md:text-2xl text-white flex items-center gap-2">
             <Link2 className="w-5 h-5 md:w-6 md:h-6 text-blue-400" />
@@ -536,17 +536,17 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
               Unlimited
             </Badge>
           </DialogTitle>
-          <DialogDescription className="text-gray-400 text-sm">
+          <DialogDescription className="text-[#8A8A93] text-sm">
             Trace asset origins - exchanges, DEXs, or dormant wallets.
           </DialogDescription>
         </DialogHeader>
 
         {/* Mode Toggle - Analyze vs Linkage Manager */}
-        <div className="flex justify-center gap-2 border-b border-slate-700 pb-3 mb-2">
+        <div className="flex justify-center gap-2 border-b border-[#1F1F22] pb-3 mb-2">
           <Button
             variant={!showLinkageManager ? "default" : "outline"}
             onClick={() => setShowLinkageManager(false)}
-            className={`text-xs sm:text-sm ${!showLinkageManager ? 'bg-blue-600' : 'border-slate-600'}`}
+            className={`text-xs sm:text-sm ${!showLinkageManager ? 'bg-white text-black' : 'border-[#1F1F22]'}`}
           >
             <Search className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
             Trace Origins
@@ -554,7 +554,7 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
           <Button
             variant={showLinkageManager ? "default" : "outline"}
             onClick={() => setShowLinkageManager(true)}
-            className={`text-xs sm:text-sm ${showLinkageManager ? 'bg-purple-600' : 'border-slate-600'}`}
+            className={`text-xs sm:text-sm ${showLinkageManager ? 'bg-white text-black' : 'border-[#1F1F22]'}`}
           >
             <Link2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
             Wallet Linkage
@@ -571,7 +571,7 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
               {/* Option 1: Connect via API Key (User's own credentials) */}
               <Card 
-                className="bg-slate-800/50 border-slate-700 hover:border-blue-500 cursor-pointer transition-all"
+                className="bg-[#0C0C0E]/50 border-[#1F1F22] hover:border-blue-500 cursor-pointer transition-all"
                 onClick={() => setInputMethod('coinbase_api')}
               >
                 <CardContent className="pt-4 md:pt-6">
@@ -581,40 +581,40 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
                     </div>
                     <div>
                       <h3 className="text-base md:text-lg font-semibold text-white">Your Coinbase API Key</h3>
-                      <p className="text-xs md:text-sm text-gray-400 mt-1 md:mt-2">
+                      <p className="text-xs md:text-sm text-[#8A8A93] mt-1 md:mt-2">
                         Enter YOUR OWN API credentials
                       </p>
                     </div>
-                    <div className="flex items-center gap-1 md:gap-2 text-green-400 text-xs">
+                    <div className="flex items-center gap-1 md:gap-2 text-[#00C805] text-xs">
                       <Shield className="w-3 h-3 md:w-4 md:h-4" />
                       <span>Your data stays yours</span>
                     </div>
-                    <Badge className="bg-blue-600 text-xs">Recommended</Badge>
+                    <Badge className="bg-white text-black text-xs">Recommended</Badge>
                   </div>
                 </CardContent>
               </Card>
 
               {/* Option 2: Manual Entry */}
               <Card 
-                className="bg-slate-800/50 border-slate-700 hover:border-purple-500 cursor-pointer transition-all"
+                className="bg-[#0C0C0E]/50 border-[#1F1F22] hover:border-[#00C805] cursor-pointer transition-all"
                 onClick={() => setInputMethod('manual')}
               >
                 <CardContent className="pt-4 md:pt-6">
                   <div className="flex flex-col items-center text-center space-y-3 md:space-y-4">
-                    <div className="w-12 h-12 md:w-16 md:h-16 bg-purple-900/50 rounded-full flex items-center justify-center">
-                      <Search className="w-6 h-6 md:w-8 md:h-8 text-purple-400" />
+                    <div className="w-12 h-12 md:w-16 md:h-16 bg-[#0C0C0E]/50 rounded-full flex items-center justify-center">
+                      <Search className="w-6 h-6 md:w-8 md:h-8 text-[#00C805]" />
                     </div>
                     <div>
                       <h3 className="text-base md:text-lg font-semibold text-white">Manual Entry</h3>
-                      <p className="text-xs md:text-sm text-gray-400 mt-1 md:mt-2">
+                      <p className="text-xs md:text-sm text-[#8A8A93] mt-1 md:mt-2">
                         Enter wallet addresses one by one
                       </p>
                     </div>
-                    <div className="flex items-center gap-1 md:gap-2 text-gray-400 text-xs">
+                    <div className="flex items-center gap-1 md:gap-2 text-[#8A8A93] text-xs">
                       <CheckCircle2 className="w-3 h-3 md:w-4 md:h-4" />
                       <span>No credentials needed</span>
                     </div>
-                    <Badge variant="outline" className="border-gray-600 text-gray-400 text-xs">Alternative</Badge>
+                    <Badge variant="outline" className="border-gray-600 text-[#8A8A93] text-xs">Alternative</Badge>
                   </div>
                 </CardContent>
               </Card>
@@ -623,7 +623,7 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
 
           {/* Coinbase API Key Connection */}
           {!result && inputMethod === 'coinbase_api' && (
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-[#0C0C0E]/50 border-[#1F1F22]">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-white text-lg flex items-center gap-2">
@@ -634,7 +634,7 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
                     variant="ghost"
                     size="sm"
                     onClick={() => setInputMethod('select')}
-                    className="text-gray-400 hover:text-white"
+                    className="text-[#8A8A93] hover:text-white"
                   >
                     <ArrowRight className="w-4 h-4 mr-1 rotate-180" />
                     Back
@@ -644,8 +644,8 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
               <CardContent className="space-y-4">
                 {/* Security Notice */}
                 <Alert className="bg-green-900/20 border-green-700">
-                  <Shield className="w-4 h-4 text-green-400" />
-                  <AlertDescription className="text-green-300 text-sm">
+                  <Shield className="w-4 h-4 text-[#00C805]" />
+                  <AlertDescription className="text-[#00C805] text-sm">
                     <strong>Your credentials, your data.</strong> Your API keys are encrypted and only used to read YOUR account.
                     We cannot move, send, or withdraw any funds.
                   </AlertDescription>
@@ -654,10 +654,10 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
                 {!apiKeyConnected ? (
                   <div className="space-y-4">
                     <div>
-                      <label className="text-sm text-gray-400 mb-2 block">
+                      <label className="text-sm text-[#8A8A93] mb-2 block">
                         How to get your Coinbase API Key:
                       </label>
-                      <ol className="text-xs text-gray-500 list-decimal list-inside space-y-1 mb-4">
+                      <ol className="text-xs text-[#4A4A52] list-decimal list-inside space-y-1 mb-4">
                         <li>Go to <a href="https://www.coinbase.com/settings/api" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Coinbase API Settings</a></li>
                         <li>Click "New API Key"</li>
                         <li>Select only <strong>READ permissions</strong> (view accounts, transactions)</li>
@@ -667,23 +667,23 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
 
                     <div className="space-y-3">
                       <div>
-                        <label className="text-sm text-gray-400 mb-1 block">API Key</label>
+                        <label className="text-sm text-[#8A8A93] mb-1 block">API Key</label>
                         <Input
                           type="text"
                           placeholder="Enter your Coinbase API Key"
                           value={coinbaseApiKey}
                           onChange={(e) => setCoinbaseApiKey(e.target.value)}
-                          className="bg-slate-700 border-slate-600 text-white"
+                          className="bg-[#161618] border-[#1F1F22] text-white"
                         />
                       </div>
                       <div>
-                        <label className="text-sm text-gray-400 mb-1 block">API Secret</label>
+                        <label className="text-sm text-[#8A8A93] mb-1 block">API Secret</label>
                         <Input
                           type="password"
                           placeholder="Enter your Coinbase API Secret"
                           value={coinbaseApiSecret}
                           onChange={(e) => setCoinbaseApiSecret(e.target.value)}
-                          className="bg-slate-700 border-slate-600 text-white"
+                          className="bg-[#161618] border-[#1F1F22] text-white"
                         />
                       </div>
                     </div>
@@ -691,7 +691,7 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
                     <Button
                       onClick={connectCoinbaseApiKey}
                       disabled={loading || !coinbaseApiKey || !coinbaseApiSecret}
-                      className="w-full bg-blue-600 hover:bg-blue-700"
+                      className="w-full bg-white text-black hover:bg-gray-200"
                     >
                       {loading ? (
                         <>
@@ -710,14 +710,14 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
                   <div className="space-y-4">
                     <div className="flex items-center justify-between p-3 bg-green-900/20 rounded-lg border border-green-700">
                       <div className="flex items-center gap-2">
-                        <CheckCircle2 className="w-5 h-5 text-green-400" />
-                        <span className="text-green-300">Your Coinbase is connected</span>
+                        <CheckCircle2 className="w-5 h-5 text-[#00C805]" />
+                        <span className="text-[#00C805]">Your Coinbase is connected</span>
                       </div>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={disconnectApiKey}
-                        className="border-red-600 text-red-400 hover:bg-red-900/30"
+                        className="border-red-600 text-[#FF3B30] hover:bg-red-900/30"
                       >
                         Disconnect
                       </Button>
@@ -725,9 +725,9 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
 
                     {/* Debug info section */}
                     {debugInfo && (
-                      <div className="p-3 bg-slate-700/50 rounded-lg text-xs">
-                        <p className="text-gray-400 mb-1">Debug Info:</p>
-                        <pre className="text-gray-300 whitespace-pre-wrap">{JSON.stringify(debugInfo, null, 2)}</pre>
+                      <div className="p-3 bg-[#161618]/50 rounded-lg text-xs">
+                        <p className="text-[#8A8A93] mb-1">Debug Info:</p>
+                        <pre className="text-white whitespace-pre-wrap">{JSON.stringify(debugInfo, null, 2)}</pre>
                       </div>
                     )}
 
@@ -751,7 +751,7 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
                             setLoading(false);
                           }}
                           disabled={loading}
-                          className="w-full bg-purple-600 hover:bg-purple-700"
+                          className="w-full bg-white text-black hover:bg-gray-200"
                         >
                           {loading ? (
                             <>
@@ -765,7 +765,7 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
                             </>
                           )}
                         </Button>
-                        <p className="text-xs text-gray-500 text-center">
+                        <p className="text-xs text-[#4A4A52] text-center">
                           If no addresses appear, check that you have generated deposit addresses in Coinbase.
                         </p>
 
@@ -774,7 +774,7 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
                           <Button
                             onClick={syncCoinbaseTransactions}
                             disabled={loading}
-                            className="w-full bg-green-600 hover:bg-green-700"
+                            className="w-full bg-[#00C805] hover:bg-[#00C805]/80"
                             data-testid="sync-coinbase-btn"
                           >
                             {loading ? (
@@ -789,15 +789,15 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
                               </>
                             )}
                           </Button>
-                          <p className="text-xs text-gray-500 text-center mt-1">
+                          <p className="text-xs text-[#4A4A52] text-center mt-1">
                             Fetches all buys, sells, and trades from your Coinbase account for tax calculations.
                           </p>
                           {syncStatus && (
                             <Alert className="mt-2 bg-green-900/30 border-green-700">
-                              <AlertDescription className="text-green-300 text-sm">
+                              <AlertDescription className="text-[#00C805] text-sm">
                                 {syncStatus.message}
                                 {syncStatus.assets && Object.keys(syncStatus.assets).length > 0 && (
-                                  <span className="block mt-1 text-xs text-gray-400">
+                                  <span className="block mt-1 text-xs text-[#8A8A93]">
                                     Assets: {Object.entries(syncStatus.assets).map(([a, c]) => `${a} (${c})`).join(', ')}
                                   </span>
                                 )}
@@ -808,7 +808,7 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        <p className="text-sm text-gray-400">Select an address to analyze:</p>
+                        <p className="text-sm text-[#8A8A93]">Select an address to analyze:</p>
                         <div className="max-h-48 overflow-y-auto space-y-2">
                           {(coinbaseAddresses.wallet_addresses || coinbaseAddresses.addresses || []).map((addr, idx) => (
                             <div
@@ -820,17 +820,17 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
                               }}
                               className={`p-3 rounded-lg border cursor-pointer transition-all ${
                                 selectedCoinbaseAddress === addr.address
-                                  ? 'bg-purple-900/30 border-purple-500'
-                                  : 'bg-slate-700/50 border-slate-600 hover:border-slate-500'
+                                  ? 'bg-[#0C0C0E]/30 border-[#00C805]'
+                                  : 'bg-[#161618]/50 border-[#1F1F22] hover:border-[#1F1F22]'
                               }`}
                             >
                               <div className="flex items-center justify-between">
                                 <div>
                                   <span className="text-white font-mono text-sm">{formatAddress(addr.address)}</span>
-                                  <Badge className="ml-2 bg-slate-600 text-xs">{addr.asset}</Badge>
+                                  <Badge className="ml-2 bg-[#1F1F22] text-xs">{addr.asset}</Badge>
                                 </div>
                                 {addr.network && (
-                                  <Badge variant="outline" className="text-gray-400 text-xs">{addr.network}</Badge>
+                                  <Badge variant="outline" className="text-[#8A8A93] text-xs">{addr.network}</Badge>
                                 )}
                               </div>
                             </div>
@@ -841,7 +841,7 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
                           <Button
                             onClick={analyzeChainOfCustody}
                             disabled={loading}
-                            className="w-full bg-purple-600 hover:bg-purple-700"
+                            className="w-full bg-white text-black hover:bg-gray-200"
                           >
                             {loading ? (
                               <>
@@ -866,7 +866,7 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
 
           {/* Legacy Coinbase OAuth Flow - Hidden for now */}
           {!result && inputMethod === 'coinbase_oauth' && (
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-[#0C0C0E]/50 border-[#1F1F22]">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-white text-lg flex items-center gap-2">
@@ -877,7 +877,7 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
                     variant="ghost"
                     size="sm"
                     onClick={() => setInputMethod('select')}
-                    className="text-gray-400 hover:text-white"
+                    className="text-[#8A8A93] hover:text-white"
                   >
                     <ArrowRight className="w-4 h-4 mr-1 rotate-180" />
                     Back
@@ -887,8 +887,8 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
               <CardContent className="space-y-4">
                 {/* Security Notice */}
                 <Alert className="bg-green-900/20 border-green-700">
-                  <Shield className="w-4 h-4 text-green-400" />
-                  <AlertDescription className="text-green-300">
+                  <Shield className="w-4 h-4 text-[#00C805]" />
+                  <AlertDescription className="text-[#00C805]">
                     <strong>Security:</strong> This app only requests READ-ONLY access. 
                     It cannot send, withdraw, or move any of your funds. 
                     You can revoke access anytime from your Coinbase settings.
@@ -900,7 +900,7 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
                     <Button
                       onClick={connectCoinbase}
                       disabled={loading}
-                      className="bg-blue-600 hover:bg-blue-700"
+                      className="bg-white text-black hover:bg-gray-200"
                     >
                       {loading ? (
                         <>
@@ -919,14 +919,14 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
                   <div className="space-y-4">
                     <div className="flex items-center justify-between p-3 bg-green-900/20 rounded-lg border border-green-700">
                       <div className="flex items-center gap-2">
-                        <CheckCircle2 className="w-5 h-5 text-green-400" />
-                        <span className="text-green-300">Coinbase Connected</span>
+                        <CheckCircle2 className="w-5 h-5 text-[#00C805]" />
+                        <span className="text-[#00C805]">Coinbase Connected</span>
                       </div>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={disconnectCoinbase}
-                        className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                        className="text-[#FF3B30] hover:text-[#FF3B30] hover:bg-red-900/20"
                       >
                         <X className="w-4 h-4 mr-1" />
                         Disconnect
@@ -937,7 +937,7 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
                       <Button
                         onClick={fetchCoinbaseAddresses}
                         disabled={loading}
-                        className="w-full bg-blue-600 hover:bg-blue-700"
+                        className="w-full bg-white text-black hover:bg-gray-200"
                       >
                         {loading ? (
                           <>
@@ -955,29 +955,29 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
                       <div className="space-y-4">
                         {/* Summary of fetched addresses */}
                         <div className="grid grid-cols-3 gap-3">
-                          <div className="bg-slate-900 p-3 rounded-lg text-center">
+                          <div className="bg-[#050505] p-3 rounded-lg text-center">
                             <div className="text-2xl font-bold text-white">
                               {coinbaseAddresses.wallet_addresses?.length || 0}
                             </div>
-                            <div className="text-xs text-gray-400">Your Addresses</div>
+                            <div className="text-xs text-[#8A8A93]">Your Addresses</div>
                           </div>
-                          <div className="bg-slate-900 p-3 rounded-lg text-center">
-                            <div className="text-2xl font-bold text-green-400">
+                          <div className="bg-[#050505] p-3 rounded-lg text-center">
+                            <div className="text-2xl font-bold text-[#00C805]">
                               {coinbaseAddresses.send_destinations?.length || 0}
                             </div>
-                            <div className="text-xs text-gray-400">Send Destinations</div>
+                            <div className="text-xs text-[#8A8A93]">Send Destinations</div>
                           </div>
-                          <div className="bg-slate-900 p-3 rounded-lg text-center">
+                          <div className="bg-[#050505] p-3 rounded-lg text-center">
                             <div className="text-2xl font-bold text-blue-400">
                               {coinbaseAddresses.receive_sources?.length || 0}
                             </div>
-                            <div className="text-xs text-gray-400">Receive Sources</div>
+                            <div className="text-xs text-[#8A8A93]">Receive Sources</div>
                           </div>
                         </div>
 
                         {/* Address selector */}
                         <div>
-                          <label className="text-sm text-gray-400 block mb-2">
+                          <label className="text-sm text-[#8A8A93] block mb-2">
                             Select Address to Analyze
                           </label>
                           <select
@@ -986,7 +986,7 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
                               setSelectedCoinbaseAddress(e.target.value);
                               setAddress(e.target.value);
                             }}
-                            className="w-full bg-slate-900 border border-slate-600 text-white rounded-md px-3 py-2"
+                            className="w-full bg-[#050505] border border-[#1F1F22] text-white rounded-md px-3 py-2"
                           >
                             <option value="">-- Select an address --</option>
                             <optgroup label="Your Wallet Addresses">
@@ -1016,11 +1016,11 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
                         {/* Chain selector and Analyze button */}
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <label className="text-sm text-gray-400 block mb-2">Blockchain</label>
+                            <label className="text-sm text-[#8A8A93] block mb-2">Blockchain</label>
                             <select
                               value={chain}
                               onChange={(e) => setChain(e.target.value)}
-                              className="w-full bg-slate-900 border border-slate-600 text-white rounded-md px-3 py-2"
+                              className="w-full bg-[#050505] border border-[#1F1F22] text-white rounded-md px-3 py-2"
                               disabled={loading}
                             >
                               {supportedChains.map(c => (
@@ -1034,7 +1034,7 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
                             <Button
                               onClick={analyzeChainOfCustody}
                               disabled={loading || !selectedCoinbaseAddress}
-                              className="w-full bg-blue-600 hover:bg-blue-700"
+                              className="w-full bg-white text-black hover:bg-gray-200"
                             >
                               {loading ? (
                                 <>
@@ -1060,18 +1060,18 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
 
           {/* Manual Entry Section */}
           {!result && inputMethod === 'manual' && (
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-[#0C0C0E]/50 border-[#1F1F22]">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-white text-lg flex items-center gap-2">
-                    <Search className="w-5 h-5 text-purple-400" />
+                    <Search className="w-5 h-5 text-[#00C805]" />
                     Manual Address Entry
                   </CardTitle>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => setInputMethod('select')}
-                    className="text-gray-400 hover:text-white"
+                    className="text-[#8A8A93] hover:text-white"
                   >
                     <ArrowRight className="w-4 h-4 mr-1 rotate-180" />
                     Back
@@ -1081,11 +1081,11 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
               <CardContent className="space-y-4">
                 {/* Chain Selector */}
                 <div>
-                  <label className="text-sm text-gray-400 block mb-2">Blockchain</label>
+                  <label className="text-sm text-[#8A8A93] block mb-2">Blockchain</label>
                   <select
                     value={chain}
                     onChange={(e) => setChain(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-600 text-white rounded-md px-3 py-2"
+                    className="w-full bg-[#050505] border border-[#1F1F22] text-white rounded-md px-3 py-2"
                     disabled={loading}
                   >
                     {supportedChains.map(c => (
@@ -1098,9 +1098,9 @@ export const ChainOfCustodyModal = ({ isOpen, onClose, getAuthHeader, userTier }
 
                 {/* Bulk Address Input */}
                 <div>
-                  <label className="text-sm text-gray-400 block mb-2">
+                  <label className="text-sm text-[#8A8A93] block mb-2">
                     Wallet Addresses 
-                    <span className="text-xs text-gray-500 ml-2">(auto-detects chain, one per line or comma-separated)</span>
+                    <span className="text-xs text-[#4A4A52] ml-2">(auto-detects chain, one per line or comma-separated)</span>
                   </label>
                   <textarea
                     placeholder="Enter addresses - one per line or comma-separated:
@@ -1121,15 +1121,15 @@ bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
                         }
                       }
                     }}
-                    className="w-full h-32 bg-slate-900 border border-slate-600 text-white rounded-md px-3 py-2 font-mono text-sm resize-none"
+                    className="w-full h-32 bg-[#050505] border border-[#1F1F22] text-white rounded-md px-3 py-2 font-mono text-sm resize-none"
                     disabled={loading}
                   />
                   <div className="flex justify-between items-center mt-1">
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-[#4A4A52]">
                       {address ? `${address.split(/[\n,]/).filter(a => a.trim()).length} address(es) entered` : 'Enter one or multiple addresses'}
                     </p>
                     {address && detectChainFromAddress(address.split(/[\n,]/)[0]?.trim()) && (
-                      <p className="text-xs text-green-400">
+                      <p className="text-xs text-[#00C805]">
                         Detected: {detectChainFromAddress(address.split(/[\n,]/)[0]?.trim())?.toUpperCase()}
                       </p>
                     )}
@@ -1140,7 +1140,7 @@ bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
                 <Button
                   onClick={analyzeChainOfCustody}
                   disabled={loading || !address.trim()}
-                  className="w-full bg-blue-600 hover:bg-blue-700"
+                  className="w-full bg-white text-black hover:bg-gray-200"
                 >
                   {loading ? (
                     <>
@@ -1168,9 +1168,9 @@ bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
                 {showAdvanced && (
                   <div className="grid grid-cols-2 gap-4 pt-2">
                     <div>
-                      <label className="text-sm text-gray-400 block mb-2">
+                      <label className="text-sm text-[#8A8A93] block mb-2">
                         Max Trace Depth
-                        <span className="text-xs text-gray-500 ml-1">(0 = unlimited)</span>
+                        <span className="text-xs text-[#4A4A52] ml-1">(0 = unlimited)</span>
                       </label>
                       <Input
                         type="number"
@@ -1178,12 +1178,12 @@ bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
                         max="50"
                         value={maxDepth}
                         onChange={(e) => setMaxDepth(parseInt(e.target.value) || 0)}
-                        className="bg-slate-900 border-slate-600 text-white"
+                        className="bg-[#050505] border-[#1F1F22] text-white"
                         disabled={loading}
                       />
                     </div>
                     <div>
-                      <label className="text-sm text-gray-400 block mb-2">
+                      <label className="text-sm text-[#8A8A93] block mb-2">
                         Dormancy Threshold (days)
                       </label>
                       <Input
@@ -1192,7 +1192,7 @@ bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
                         max="3650"
                         value={dormancyDays}
                         onChange={(e) => setDormancyDays(parseInt(e.target.value) || 365)}
-                        className="bg-slate-900 border-slate-600 text-white"
+                        className="bg-[#050505] border-[#1F1F22] text-white"
                         disabled={loading}
                       />
                     </div>
@@ -1204,7 +1204,7 @@ bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
 
           {/* Error Display */}
           {error && (
-            <Alert className="bg-red-900/20 border-red-700 text-red-300">
+            <Alert className="bg-red-900/20 border-red-700 text-[#FF3B30]">
               <AlertTriangle className="w-4 h-4" />
               <AlertDescription>{error}</AlertDescription>
             </Alert>
@@ -1223,32 +1223,32 @@ bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
                     setAddress('');
                     setSelectedCoinbaseAddress('');
                   }}
-                  className="border-slate-600 text-gray-300"
+                  className="border-[#1F1F22] text-white"
                 >
                   <ArrowRight className="w-4 h-4 mr-2 rotate-180" />
                   New Analysis
                 </Button>
-                <span className="text-sm text-gray-400">
+                <span className="text-sm text-[#8A8A93]">
                   Analyzed: {result.analyzed_address?.slice(0, 10)}...{result.analyzed_address?.slice(-6)}
                 </span>
               </div>
 
               {/* Summary Cards */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
-                <Card className="bg-slate-800/50 border-slate-700">
+                <Card className="bg-[#0C0C0E]/50 border-[#1F1F22]">
                   <CardContent className="pt-3 md:pt-4">
                     <div className="text-xl md:text-2xl font-bold text-white">
                       {result.summary.total_links_traced}
                     </div>
-                    <div className="text-xs md:text-sm text-gray-400">Links</div>
+                    <div className="text-xs md:text-sm text-[#8A8A93]">Links</div>
                   </CardContent>
                 </Card>
                 <Card className="bg-green-900/30 border-green-700">
                   <CardContent className="pt-3 md:pt-4">
-                    <div className="text-xl md:text-2xl font-bold text-green-400">
+                    <div className="text-xl md:text-2xl font-bold text-[#00C805]">
                       {result.summary.exchange_origins}
                     </div>
-                    <div className="text-xs md:text-sm text-gray-400">Exchanges</div>
+                    <div className="text-xs md:text-sm text-[#8A8A93]">Exchanges</div>
                   </CardContent>
                 </Card>
                 <Card className="bg-blue-900/30 border-blue-700">
@@ -1256,7 +1256,7 @@ bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
                     <div className="text-xl md:text-2xl font-bold text-blue-400">
                       {result.summary.dex_origins}
                     </div>
-                    <div className="text-xs md:text-sm text-gray-400">DEX</div>
+                    <div className="text-xs md:text-sm text-[#8A8A93]">DEX</div>
                   </CardContent>
                 </Card>
                 <Card className="bg-orange-900/30 border-orange-700">
@@ -1264,14 +1264,14 @@ bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
                     <div className="text-xl md:text-2xl font-bold text-orange-400">
                       {result.summary.dormant_origins}
                     </div>
-                    <div className="text-xs md:text-sm text-gray-400">Dormant</div>
+                    <div className="text-xs md:text-sm text-[#8A8A93]">Dormant</div>
                   </CardContent>
                 </Card>
               </div>
 
               {/* View Toggle and Export - TABLE ONLY */}
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                <div className="text-sm text-gray-400">
+                <div className="text-sm text-[#8A8A93]">
                   Showing custody chain data
                 </div>
                 <div className="flex gap-2">
@@ -1279,7 +1279,7 @@ bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
                     onClick={exportResults}
                     variant="outline"
                     size="sm"
-                    className="border-slate-600 text-gray-300 text-xs"
+                    className="border-[#1F1F22] text-white text-xs"
                   >
                     <Download className="w-3 h-3 md:w-4 md:h-4 mr-1" />
                     CSV
@@ -1288,7 +1288,7 @@ bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
                     onClick={exportPDF}
                     variant="outline"
                     size="sm"
-                    className="border-red-600 text-red-300 hover:bg-red-900/30 text-xs"
+                    className="border-red-600 text-[#FF3B30] hover:bg-red-900/30 text-xs"
                     disabled={loading}
                   >
                     {loading ? (
@@ -1303,10 +1303,10 @@ bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
 
               {/* Table View - Exchange Endpoints */}
               {result.exchange_endpoints && result.exchange_endpoints.length > 0 && (
-                <Card className="bg-slate-800/50 border-slate-700">
+                <Card className="bg-[#0C0C0E]/50 border-[#1F1F22]">
                   <CardHeader>
                     <CardTitle className="text-white flex items-center gap-2">
-                      <Building2 className="w-5 h-5 text-green-400" />
+                      <Building2 className="w-5 h-5 text-[#00C805]" />
                       Exchange Origins
                     </CardTitle>
                   </CardHeader>
@@ -1314,29 +1314,29 @@ bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
                     <div className="overflow-x-auto">
                       <table className="w-full">
                         <thead>
-                          <tr className="border-b border-slate-700">
-                            <th className="text-left py-2 px-3 text-gray-400 font-medium">Exchange</th>
-                            <th className="text-left py-2 px-3 text-gray-400 font-medium">Value</th>
-                            <th className="text-left py-2 px-3 text-gray-400 font-medium">Date</th>
-                            <th className="text-left py-2 px-3 text-gray-400 font-medium">Depth</th>
-                            <th className="text-left py-2 px-3 text-gray-400 font-medium">TX</th>
+                          <tr className="border-b border-[#1F1F22]">
+                            <th className="text-left py-2 px-3 text-[#8A8A93] font-medium">Exchange</th>
+                            <th className="text-left py-2 px-3 text-[#8A8A93] font-medium">Value</th>
+                            <th className="text-left py-2 px-3 text-[#8A8A93] font-medium">Date</th>
+                            <th className="text-left py-2 px-3 text-[#8A8A93] font-medium">Depth</th>
+                            <th className="text-left py-2 px-3 text-[#8A8A93] font-medium">TX</th>
                           </tr>
                         </thead>
                         <tbody>
                           {result.exchange_endpoints.map((ep, idx) => (
-                            <tr key={idx} className="border-b border-slate-700/50">
+                            <tr key={idx} className="border-b border-[#1F1F22]/50">
                               <td className="py-2 px-3">
-                                <Badge className="bg-green-900/50 text-green-300">
+                                <Badge className="bg-green-900/50 text-[#00C805]">
                                   {ep.exchange}
                                 </Badge>
                               </td>
                               <td className="py-2 px-3 text-white font-mono">
                                 {ep.value?.toFixed(6)}
                               </td>
-                              <td className="py-2 px-3 text-gray-300">
+                              <td className="py-2 px-3 text-white">
                                 {ep.timestamp ? new Date(ep.timestamp).toLocaleDateString() : '-'}
                               </td>
-                              <td className="py-2 px-3 text-gray-400">
+                              <td className="py-2 px-3 text-[#8A8A93]">
                                 {ep.depth} hops
                               </td>
                               <td className="py-2 px-3">
@@ -1361,7 +1361,7 @@ bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
 
               {/* DEX Endpoints - Table View */}
               {result.dex_endpoints && result.dex_endpoints.length > 0 && (
-                <Card className="bg-slate-800/50 border-slate-700">
+                <Card className="bg-[#0C0C0E]/50 border-[#1F1F22]">
                   <CardHeader>
                     <CardTitle className="text-white flex items-center gap-2">
                       <RefreshCw className="w-5 h-5 text-blue-400" />
@@ -1372,17 +1372,17 @@ bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
                     <div className="overflow-x-auto">
                       <table className="w-full">
                         <thead>
-                          <tr className="border-b border-slate-700">
-                            <th className="text-left py-2 px-3 text-gray-400 font-medium">DEX</th>
-                            <th className="text-left py-2 px-3 text-gray-400 font-medium">Value</th>
-                            <th className="text-left py-2 px-3 text-gray-400 font-medium">Date</th>
-                            <th className="text-left py-2 px-3 text-gray-400 font-medium">Depth</th>
-                            <th className="text-left py-2 px-3 text-gray-400 font-medium">TX</th>
+                          <tr className="border-b border-[#1F1F22]">
+                            <th className="text-left py-2 px-3 text-[#8A8A93] font-medium">DEX</th>
+                            <th className="text-left py-2 px-3 text-[#8A8A93] font-medium">Value</th>
+                            <th className="text-left py-2 px-3 text-[#8A8A93] font-medium">Date</th>
+                            <th className="text-left py-2 px-3 text-[#8A8A93] font-medium">Depth</th>
+                            <th className="text-left py-2 px-3 text-[#8A8A93] font-medium">TX</th>
                           </tr>
                         </thead>
                         <tbody>
                           {result.dex_endpoints.map((ep, idx) => (
-                            <tr key={idx} className="border-b border-slate-700/50">
+                            <tr key={idx} className="border-b border-[#1F1F22]/50">
                               <td className="py-2 px-3">
                                 <Badge className="bg-blue-900/50 text-blue-300">
                                   {ep.dex}
@@ -1391,10 +1391,10 @@ bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
                               <td className="py-2 px-3 text-white font-mono">
                                 {ep.value?.toFixed(6)}
                               </td>
-                              <td className="py-2 px-3 text-gray-300">
+                              <td className="py-2 px-3 text-white">
                                 {ep.timestamp ? new Date(ep.timestamp).toLocaleDateString() : '-'}
                               </td>
-                              <td className="py-2 px-3 text-gray-400">
+                              <td className="py-2 px-3 text-[#8A8A93]">
                                 {ep.depth} hops
                               </td>
                               <td className="py-2 px-3">
@@ -1419,12 +1419,12 @@ bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
 
               {/* Full Chain Table - Always Show */}
               {result.custody_chain && result.custody_chain.length > 0 && (
-                <Card className="bg-slate-800/50 border-slate-700">
+                <Card className="bg-[#0C0C0E]/50 border-[#1F1F22]">
                   <CardHeader>
                     <CardTitle className="text-white flex items-center gap-2">
-                      <Layers className="w-5 h-5 text-purple-400" />
+                      <Layers className="w-5 h-5 text-[#00C805]" />
                       Full Custody Chain
-                      <span className="text-sm font-normal text-gray-400 ml-2">
+                      <span className="text-sm font-normal text-[#8A8A93] ml-2">
                         (showing first {Math.min(result.custody_chain.length, 100)} links)
                       </span>
                     </CardTitle>
@@ -1432,26 +1432,26 @@ bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
                   <CardContent>
                     <div className="overflow-x-auto max-h-96">
                       <table className="w-full">
-                        <thead className="sticky top-0 bg-slate-800">
-                          <tr className="border-b border-slate-700">
-                            <th className="text-left py-2 px-3 text-gray-400 font-medium">From</th>
-                            <th className="text-left py-2 px-3 text-gray-400 font-medium"></th>
-                            <th className="text-left py-2 px-3 text-gray-400 font-medium">To</th>
-                            <th className="text-left py-2 px-3 text-gray-400 font-medium">Value</th>
-                            <th className="text-left py-2 px-3 text-gray-400 font-medium">Type</th>
-                            <th className="text-left py-2 px-3 text-gray-400 font-medium">Depth</th>
+                        <thead className="sticky top-0 bg-[#0C0C0E]">
+                          <tr className="border-b border-[#1F1F22]">
+                            <th className="text-left py-2 px-3 text-[#8A8A93] font-medium">From</th>
+                            <th className="text-left py-2 px-3 text-[#8A8A93] font-medium"></th>
+                            <th className="text-left py-2 px-3 text-[#8A8A93] font-medium">To</th>
+                            <th className="text-left py-2 px-3 text-[#8A8A93] font-medium">Value</th>
+                            <th className="text-left py-2 px-3 text-[#8A8A93] font-medium">Type</th>
+                            <th className="text-left py-2 px-3 text-[#8A8A93] font-medium">Depth</th>
                           </tr>
                         </thead>
                         <tbody>
                           {result.custody_chain.map((link, idx) => (
-                            <tr key={idx} className="border-b border-slate-700/50 hover:bg-slate-700/30">
-                              <td className="py-2 px-3 font-mono text-sm text-gray-300">
+                            <tr key={idx} className="border-b border-[#1F1F22]/50 hover:bg-[#161618]/30">
+                              <td className="py-2 px-3 font-mono text-sm text-white">
                                 {formatAddress(link.from)}
                               </td>
                               <td className="py-2 px-3">
-                                <ArrowRight className="w-4 h-4 text-gray-500" />
+                                <ArrowRight className="w-4 h-4 text-[#4A4A52]" />
                               </td>
-                              <td className="py-2 px-3 font-mono text-sm text-gray-300">
+                              <td className="py-2 px-3 font-mono text-sm text-white">
                                 {formatAddress(link.to)}
                               </td>
                               <td className="py-2 px-3 text-white font-mono text-sm">
@@ -1459,15 +1459,15 @@ bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
                               </td>
                               <td className="py-2 px-3">
                                 <Badge className={
-                                  link.origin_type === 'exchange' ? 'bg-green-900/50 text-green-300' :
+                                  link.origin_type === 'exchange' ? 'bg-green-900/50 text-[#00C805]' :
                                   link.origin_type === 'dex_swap' ? 'bg-blue-900/50 text-blue-300' :
                                   link.origin_type === 'dormant' ? 'bg-orange-900/50 text-orange-300' :
-                                  'bg-slate-700 text-gray-300'
+                                  'bg-[#161618] text-white'
                                 }>
                                   {link.origin_type}
                                 </Badge>
                               </td>
-                              <td className="py-2 px-3 text-gray-400 text-sm">
+                              <td className="py-2 px-3 text-[#8A8A93] text-sm">
                                 {link.depth}
                               </td>
                             </tr>
@@ -1480,7 +1480,7 @@ bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
               )}
 
               {/* Analysis Info */}
-              <div className="text-xs text-gray-500 text-center">
+              <div className="text-xs text-[#4A4A52] text-center">
                 Analysis completed at {new Date(result.analysis_timestamp).toLocaleString()} | 
                 {result.summary.unique_addresses_visited} unique addresses visited
               </div>

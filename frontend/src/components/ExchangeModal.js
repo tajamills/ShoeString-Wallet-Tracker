@@ -197,26 +197,26 @@ export const ExchangeModal = ({ isOpen, onClose, getAuthHeader }) => {
     });
   };
 
-  const getExchangeLogo = (id) => ExchangeLogos[id] || <FileText className="w-8 h-8 text-gray-400" />;
+  const getExchangeLogo = (id) => ExchangeLogos[id] || <FileText className="w-8 h-8 text-[#8A8A93]" />;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-4xl bg-slate-800 border-slate-700 max-h-[90vh] overflow-y-auto" data-testid="exchange-modal">
+      <DialogContent className="sm:max-w-4xl bg-[#0C0C0E] border-[#1F1F22] max-h-[90vh] overflow-y-auto" data-testid="exchange-modal">
         <DialogHeader>
           <DialogTitle className="text-white text-2xl flex items-center gap-2">
             {activeTab === 'import' ? (
               <>
-                <Upload className="w-6 h-6 text-purple-400" />
+                <Upload className="w-6 h-6 text-[#00C805]" />
                 Exchange Data
               </>
             ) : (
               <>
-                <Calculator className="w-6 h-6 text-green-400" />
+                <Calculator className="w-6 h-6 text-[#00C805]" />
                 Tax Calculator
               </>
             )}
           </DialogTitle>
-          <DialogDescription className="text-gray-400">
+          <DialogDescription className="text-[#8A8A93]">
             {activeTab === 'import' 
               ? 'Upload CSV exports from your exchanges - no API keys needed!'
               : 'Calculate cost basis and capital gains from your imported data'
@@ -225,13 +225,13 @@ export const ExchangeModal = ({ isOpen, onClose, getAuthHeader }) => {
         </DialogHeader>
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-slate-700 mb-4">
+        <div className="flex border-b border-[#1F1F22] mb-4">
           <button
             onClick={() => setActiveTab('import')}
             className={`px-4 py-2 font-medium transition-colors ${
               activeTab === 'import'
-                ? 'text-purple-400 border-b-2 border-purple-400'
-                : 'text-gray-400 hover:text-white'
+                ? 'text-[#00C805] border-b-2 border-[#00C805]'
+                : 'text-[#8A8A93] hover:text-white'
             }`}
             data-testid="tab-import"
           >
@@ -242,8 +242,8 @@ export const ExchangeModal = ({ isOpen, onClose, getAuthHeader }) => {
             onClick={() => setActiveTab('tax')}
             className={`px-4 py-2 font-medium transition-colors ${
               activeTab === 'tax'
-                ? 'text-green-400 border-b-2 border-green-400'
-                : 'text-gray-400 hover:text-white'
+                ? 'text-[#00C805] border-b-2 border-green-400'
+                : 'text-[#8A8A93] hover:text-white'
             }`}
             data-testid="tab-tax"
           >
@@ -252,7 +252,7 @@ export const ExchangeModal = ({ isOpen, onClose, getAuthHeader }) => {
           </button>
           <button
             onClick={() => setShowTransactionEditor(true)}
-            className="px-4 py-2 font-medium text-gray-400 hover:text-orange-400 transition-colors"
+            className="px-4 py-2 font-medium text-[#8A8A93] hover:text-orange-400 transition-colors"
             data-testid="tab-adjust"
           >
             <Edit2 className="w-4 h-4 inline mr-2" />
@@ -282,27 +282,27 @@ export const ExchangeModal = ({ isOpen, onClose, getAuthHeader }) => {
         {/* Import Tab */}
         {activeTab === 'import' && (loading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-purple-400" />
+            <Loader2 className="w-8 h-8 animate-spin text-[#00C805]" />
           </div>
         ) : (
           <div className="space-y-6">
             {/* Messages */}
             {error && (
-              <Alert className="bg-red-900/20 border-red-700 text-red-300">
+              <Alert className="bg-red-900/20 border-red-700 text-[#FF3B30]">
                 <AlertCircle className="w-4 h-4" />
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
             
             {success && (
-              <Alert className="bg-green-900/20 border-green-700 text-green-300">
+              <Alert className="bg-green-900/20 border-green-700 text-[#00C805]">
                 <Check className="w-4 h-4" />
                 <AlertDescription>{success}</AlertDescription>
               </Alert>
             )}
 
             {/* Upload Section */}
-            <Card className="bg-slate-900/50 border-slate-700 border-dashed border-2">
+            <Card className="bg-[#050505]/50 border-[#1F1F22] border-dashed border-2">
               <CardContent className="pt-6">
                 <div className="text-center">
                   <input
@@ -316,7 +316,7 @@ export const ExchangeModal = ({ isOpen, onClose, getAuthHeader }) => {
                   <Button
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploading}
-                    className="bg-purple-600 hover:bg-purple-700 px-8 py-6 text-lg"
+                    className="bg-white text-black hover:bg-gray-200 px-8 py-6 text-lg"
                     data-testid="upload-csv-button"
                   >
                     {uploading ? (
@@ -331,7 +331,7 @@ export const ExchangeModal = ({ isOpen, onClose, getAuthHeader }) => {
                       </>
                     )}
                   </Button>
-                  <p className="text-gray-400 text-sm mt-3">
+                  <p className="text-[#8A8A93] text-sm mt-3">
                     We auto-detect the exchange from your CSV columns
                   </p>
                 </div>
@@ -345,7 +345,7 @@ export const ExchangeModal = ({ isOpen, onClose, getAuthHeader }) => {
                 {supportedExchanges.map((exchange) => (
                   <Card 
                     key={exchange.id} 
-                    className="bg-slate-900/30 border-slate-700 hover:border-purple-600/50 transition-colors cursor-pointer"
+                    className="bg-[#050505]/30 border-[#1F1F22] hover:border-[#00C805]/50 transition-colors cursor-pointer"
                     onClick={() => fetchInstructions(exchange.id)}
                   >
                     <CardContent className="p-4">
@@ -353,7 +353,7 @@ export const ExchangeModal = ({ isOpen, onClose, getAuthHeader }) => {
                         {getExchangeLogo(exchange.id)}
                         <div className="flex-1">
                           <div className="text-white font-medium">{exchange.name}</div>
-                          <div className="text-xs text-gray-500 flex items-center gap-1">
+                          <div className="text-xs text-[#4A4A52] flex items-center gap-1">
                             <HelpCircle className="w-3 h-3" />
                             How to export
                             {showInstructions === exchange.id ? (
@@ -367,16 +367,16 @@ export const ExchangeModal = ({ isOpen, onClose, getAuthHeader }) => {
                       
                       {/* Expanded Instructions */}
                       {showInstructions === exchange.id && instructions && (
-                        <div className="mt-3 pt-3 border-t border-slate-700">
-                          <ol className="text-xs text-gray-400 space-y-1">
+                        <div className="mt-3 pt-3 border-t border-[#1F1F22]">
+                          <ol className="text-xs text-[#8A8A93] space-y-1">
                             {instructions.steps.map((step, i) => (
                               <li key={i}>{step}</li>
                             ))}
                           </ol>
                           {instructions.accepted_columns && instructions.accepted_columns.length > 0 && (
-                            <div className="mt-2 pt-2 border-t border-slate-600">
-                              <p className="text-xs text-purple-400 font-medium mb-1">Accepted CSV Formats:</p>
-                              <ul className="text-xs text-gray-500 space-y-0.5">
+                            <div className="mt-2 pt-2 border-t border-[#1F1F22]">
+                              <p className="text-xs text-[#00C805] font-medium mb-1">Accepted CSV Formats:</p>
+                              <ul className="text-xs text-[#4A4A52] space-y-0.5">
                                 {instructions.accepted_columns.map((col, i) => (
                                   <li key={i} className="truncate">• {col}</li>
                                 ))}
@@ -384,7 +384,7 @@ export const ExchangeModal = ({ isOpen, onClose, getAuthHeader }) => {
                             </div>
                           )}
                           {instructions.notes && (
-                            <p className="text-xs text-yellow-400/70 mt-2 italic">
+                            <p className="text-xs text-[#FFB800]/70 mt-2 italic">
                               Note: {instructions.notes}
                             </p>
                           )}
@@ -398,7 +398,7 @@ export const ExchangeModal = ({ isOpen, onClose, getAuthHeader }) => {
 
             {/* Transaction Summary */}
             {transactionSummary && transactionSummary.total_transactions > 0 && (
-              <Card className="bg-slate-900/50 border-slate-700">
+              <Card className="bg-[#050505]/50 border-[#1F1F22]">
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-white">Imported Transactions</CardTitle>
@@ -406,7 +406,7 @@ export const ExchangeModal = ({ isOpen, onClose, getAuthHeader }) => {
                       onClick={() => handleDeleteTransactions()}
                       size="sm"
                       variant="outline"
-                      className="border-red-700 text-red-400 hover:bg-red-900/30"
+                      className="border-red-700 text-[#FF3B30] hover:bg-red-900/30"
                       data-testid="delete-all-transactions"
                     >
                       <Trash2 className="w-4 h-4 mr-1" />
@@ -420,25 +420,25 @@ export const ExchangeModal = ({ isOpen, onClose, getAuthHeader }) => {
                       <div className="text-2xl font-bold text-white">
                         {transactionSummary.total_transactions}
                       </div>
-                      <div className="text-sm text-gray-400">Total</div>
+                      <div className="text-sm text-[#8A8A93]">Total</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-green-400">
+                      <div className="text-2xl font-bold text-[#00C805]">
                         {transactionSummary.by_type?.buy || 0}
                       </div>
-                      <div className="text-sm text-gray-400">Buys</div>
+                      <div className="text-sm text-[#8A8A93]">Buys</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-red-400">
+                      <div className="text-2xl font-bold text-[#FF3B30]">
                         {transactionSummary.by_type?.sell || 0}
                       </div>
-                      <div className="text-sm text-gray-400">Sells</div>
+                      <div className="text-sm text-[#8A8A93]">Sells</div>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-blue-400">
                         {Object.keys(transactionSummary.by_exchange || {}).length}
                       </div>
-                      <div className="text-sm text-gray-400">Exchanges</div>
+                      <div className="text-sm text-[#8A8A93]">Exchanges</div>
                     </div>
                   </div>
                   
@@ -446,7 +446,7 @@ export const ExchangeModal = ({ isOpen, onClose, getAuthHeader }) => {
                   {Object.keys(transactionSummary.by_exchange || {}).length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-4">
                       {Object.entries(transactionSummary.by_exchange).map(([exc, count]) => (
-                        <Badge key={exc} className="bg-slate-700 text-gray-300">
+                        <Badge key={exc} className="bg-[#161618] text-white">
                           {exc}: {count}
                         </Badge>
                       ))}
@@ -457,12 +457,12 @@ export const ExchangeModal = ({ isOpen, onClose, getAuthHeader }) => {
                   {Object.keys(transactionSummary.by_asset || {}).length > 0 && (
                     <div className="flex flex-wrap gap-2">
                       {Object.entries(transactionSummary.by_asset).slice(0, 10).map(([asset, count]) => (
-                        <Badge key={asset} variant="outline" className="text-purple-300 border-purple-700">
+                        <Badge key={asset} variant="outline" className="text-[#00C805] border-[#1F1F22]">
                           {asset}: {count}
                         </Badge>
                       ))}
                       {Object.keys(transactionSummary.by_asset).length > 10 && (
-                        <Badge variant="outline" className="text-gray-400 border-gray-600">
+                        <Badge variant="outline" className="text-[#8A8A93] border-gray-600">
                           +{Object.keys(transactionSummary.by_asset).length - 10} more
                         </Badge>
                       )}
@@ -474,7 +474,7 @@ export const ExchangeModal = ({ isOpen, onClose, getAuthHeader }) => {
 
             {/* Recent Transactions */}
             {transactions.length > 0 && (
-              <Card className="bg-slate-900/50 border-slate-700">
+              <Card className="bg-[#050505]/50 border-[#1F1F22]">
                 <CardHeader>
                   <CardTitle className="text-white text-lg">Recent Imports</CardTitle>
                 </CardHeader>
@@ -483,26 +483,26 @@ export const ExchangeModal = ({ isOpen, onClose, getAuthHeader }) => {
                     {transactions.slice(0, 10).map((tx, idx) => (
                       <div 
                         key={idx}
-                        className="flex items-center justify-between py-2 border-b border-slate-700 last:border-0"
+                        className="flex items-center justify-between py-2 border-b border-[#1F1F22] last:border-0"
                       >
                         <div className="flex items-center gap-3">
                           {tx.tx_type === 'buy' || tx.tx_type === 'receive' || tx.tx_type === 'deposit' ? (
-                            <ArrowDownLeft className="w-4 h-4 text-green-400" />
+                            <ArrowDownLeft className="w-4 h-4 text-[#00C805]" />
                           ) : (
-                            <ArrowUpRight className="w-4 h-4 text-red-400" />
+                            <ArrowUpRight className="w-4 h-4 text-[#FF3B30]" />
                           )}
                           <div>
                             <span className="text-white font-medium">
                               {tx.amount?.toFixed(6)} {tx.asset}
                             </span>
-                            <span className="text-gray-400 text-sm ml-2">
+                            <span className="text-[#8A8A93] text-sm ml-2">
                               ({tx.tx_type})
                             </span>
                           </div>
                         </div>
                         <div className="text-right">
-                          <Badge className="bg-slate-700 text-xs">{tx.exchange}</Badge>
-                          <div className="text-xs text-gray-500 mt-1">
+                          <Badge className="bg-[#161618] text-xs">{tx.exchange}</Badge>
+                          <div className="text-xs text-[#4A4A52] mt-1">
                             {formatDate(tx.timestamp)}
                           </div>
                         </div>

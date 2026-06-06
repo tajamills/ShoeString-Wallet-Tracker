@@ -176,13 +176,13 @@ export const ExportModal = ({ isOpen, onClose, analysis, selectedChain, getAuthH
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md bg-slate-800 border-slate-700">
+      <DialogContent className="sm:max-w-md bg-[#0C0C0E] border-[#1F1F22]">
         <DialogHeader>
           <DialogTitle className="text-white flex items-center gap-2">
-            <FileSpreadsheet className="w-5 h-5 text-green-400" />
+            <FileSpreadsheet className="w-5 h-5 text-[#00C805]" />
             Export Transactions
           </DialogTitle>
-          <DialogDescription className="text-gray-400">
+          <DialogDescription className="text-[#8A8A93]">
             Choose your export option
           </DialogDescription>
         </DialogHeader>
@@ -190,19 +190,19 @@ export const ExportModal = ({ isOpen, onClose, analysis, selectedChain, getAuthH
         {loading ? (
           <div className="space-y-4">
             <div className="text-center">
-              <Loader2 className="w-12 h-12 text-purple-400 animate-spin mx-auto mb-4" />
+              <Loader2 className="w-12 h-12 text-[#00C805] animate-spin mx-auto mb-4" />
               <p className="text-white font-semibold">Exporting All Transactions...</p>
               {exportProgress && (
                 <div className="mt-4 space-y-2">
-                  <p className="text-gray-400 text-sm">
+                  <p className="text-[#8A8A93] text-sm">
                     Page {exportProgress.current} of {exportProgress.total}
                   </p>
-                  <p className="text-gray-400 text-sm">
+                  <p className="text-[#8A8A93] text-sm">
                     {exportProgress.transactions} transactions collected
                   </p>
-                  <div className="w-full bg-slate-700 rounded-full h-2">
+                  <div className="w-full bg-[#161618] rounded-full h-2">
                     <div 
-                      className="bg-purple-600 h-2 rounded-full transition-all duration-300"
+                      className="bg-white text-black h-2 rounded-full transition-all duration-300"
                       style={{ width: `${(exportProgress.current / exportProgress.total) * 100}%` }}
                     />
                   </div>
@@ -223,7 +223,7 @@ export const ExportModal = ({ isOpen, onClose, analysis, selectedChain, getAuthH
             <div className="grid grid-cols-1 gap-3">
               <Button
                 onClick={exportCurrentPage}
-                className="w-full bg-green-600 hover:bg-green-700 h-12"
+                className="w-full bg-[#00C805] hover:bg-[#00C805]/80 h-12"
               >
                 <Download className="mr-2 h-4 w-4" />
                 Export Recent ({analysis.recentTransactions?.length || 20} txns)
@@ -231,7 +231,7 @@ export const ExportModal = ({ isOpen, onClose, analysis, selectedChain, getAuthH
 
               <Button
                 onClick={exportAllTransactions}
-                className="w-full bg-purple-600 hover:bg-purple-700 h-12"
+                className="w-full bg-white text-black hover:bg-gray-200 h-12"
               >
                 <FileSpreadsheet className="mr-2 h-4 w-4" />
                 Export All Transactions
@@ -239,7 +239,7 @@ export const ExportModal = ({ isOpen, onClose, analysis, selectedChain, getAuthH
             </div>
 
             {error && (
-              <Alert className="bg-red-900/20 border-red-700 text-red-300">
+              <Alert className="bg-red-900/20 border-red-700 text-[#FF3B30]">
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
@@ -247,7 +247,7 @@ export const ExportModal = ({ isOpen, onClose, analysis, selectedChain, getAuthH
             <Button
               onClick={onClose}
               variant="outline"
-              className="w-full border-slate-600"
+              className="w-full border-[#1F1F22]"
             >
               Cancel
             </Button>
