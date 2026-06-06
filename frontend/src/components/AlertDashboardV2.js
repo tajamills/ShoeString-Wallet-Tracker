@@ -762,23 +762,47 @@ export const AlertDashboard = ({ getAuthHeader, user, onLogout, portfolioContent
                     </div>
                   ) : (
                     <>
-                      <p className="text-[#8A8A93] text-sm mb-3">
+                      <p className="text-[#8A8A93] text-sm mb-4">
                         Get instant alerts on Telegram — unlimited, no rate limits.
                       </p>
-                      <div className="bg-[#161618] border border-[#1F1F22] p-3 mb-3 font-mono text-sm">
-                        <p className="text-white mb-1">
-                          <span className="text-[#8A8A93]">1.</span> Message <a href="https://t.me/cryptobagtrackerbot" target="_blank" rel="noopener noreferrer" className="text-white underline hover:text-[#8A8A93]">@cryptobagtrackerbot</a>
-                        </p>
-                        <p className="text-[#8A8A93]">
-                          <span className="text-[#8A8A93]">2.</span> Send /start to get your Chat ID
-                        </p>
+                      
+                      {/* Step by step instructions */}
+                      <div className="bg-[#161618] border border-[#1F1F22] p-4 mb-4">
+                        <p className="text-xs font-semibold tracking-[0.1em] uppercase text-[#8A8A93] mb-3">HOW TO CONNECT</p>
+                        
+                        <div className="space-y-3 font-mono text-sm">
+                          <div className="flex gap-3">
+                            <span className="text-[#00C805] font-bold">1.</span>
+                            <div>
+                              <p className="text-white">Open Telegram and search for <a href="https://t.me/cryptobagtrackerbot" target="_blank" rel="noopener noreferrer" className="text-[#00C805] underline hover:text-[#00C805]/80">@cryptobagtrackerbot</a></p>
+                              <p className="text-[#8A8A93] text-xs mt-1">Or click the link to open directly</p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex gap-3">
+                            <span className="text-[#00C805] font-bold">2.</span>
+                            <div>
+                              <p className="text-white">Click "Start" or send <span className="bg-[#0C0C0E] px-1.5 py-0.5 text-[#00C805]">/start</span></p>
+                              <p className="text-[#8A8A93] text-xs mt-1">The bot will reply with your Chat ID</p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex gap-3">
+                            <span className="text-[#00C805] font-bold">3.</span>
+                            <div>
+                              <p className="text-white">Copy the number the bot sends you</p>
+                              <p className="text-[#8A8A93] text-xs mt-1">It looks like: <span className="text-white">123456789</span> (a 9-10 digit number)</p>
+                            </div>
+                          </div>
+                        </div>
                       </div>
+                      
                       <div className="flex gap-2">
                         <Input
                           value={telegramChatId}
                           onChange={(e) => setTelegramChatId(e.target.value)}
-                          placeholder="Enter Chat ID"
-                          className="bg-[#161618] border-[#1F1F22] text-white max-w-xs font-mono rounded-none"
+                          placeholder="Paste your Chat ID here (e.g. 123456789)"
+                          className="bg-[#161618] border-[#1F1F22] text-white flex-1 font-mono rounded-none"
                         />
                         <button
                           onClick={connectTelegram}
