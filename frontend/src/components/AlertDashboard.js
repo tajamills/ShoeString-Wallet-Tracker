@@ -79,8 +79,6 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
   const [currentPrice, setCurrentPrice] = useState(null);
   const [alertType, setAlertType] = useState('price_above');
   const [targetValue, setTargetValue] = useState('');
-  const [notificationMethod, setNotificationMethod] = useState('email');
-  const [phoneNumber, setPhoneNumber] = useState('');
   const [note, setNote] = useState('');
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
@@ -146,12 +144,6 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
       setError('Please fill in all required fields');
       return;
     }
-    
-    // Require phone for SMS
-    if ((notificationMethod === 'sms' || notificationMethod === 'both') && !phoneNumber) {
-      setError('Phone number is required for SMS notifications');
-      return;
-    }
 
     setCreating(true);
     setError('');
@@ -162,8 +154,7 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
         asset_type: selectedAsset.type,
         alert_type: alertType,
         target_value: parseFloat(targetValue),
-        notification_method: notificationMethod,
-        phone_number: phoneNumber || null,
+        notification_method: 'telegram',
         note: note || null
       }, { headers: getAuthHeader() });
 
@@ -195,8 +186,6 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
     setCurrentPrice(null);
     setAlertType('price_above');
     setTargetValue('');
-    setNotificationMethod('email');
-    setPhoneNumber('');
     setNote('');
     setError('');
     onClose();
@@ -343,41 +332,6 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
                 )}
               </div>
 
-              {/* Notification Method */}
-              <div>
-                <label className="text-sm text-gray-300 mb-2 block">Notify via</label>
-                <div className="flex gap-2">
-                  {['email', 'sms', 'both'].map((method) => (
-                    <Button
-                      key={method}
-                      variant={notificationMethod === method ? 'default' : 'outline'}
-                      onClick={() => setNotificationMethod(method)}
-                      className={notificationMethod === method ? 'bg-purple-600' : 'border-slate-600'}
-                      size="sm"
-                      data-testid={`notify-${method}`}
-                    >
-                      {method === 'both' ? 'Email + SMS' : method.toUpperCase()}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Phone Number - show when SMS selected */}
-              {(notificationMethod === 'sms' || notificationMethod === 'both') && (
-                <div>
-                  <label className="text-sm text-gray-300 mb-2 block">Phone Number</label>
-                  <Input
-                    type="tel"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    placeholder="+1 (555) 123-4567"
-                    className="bg-slate-700 border-slate-600 text-white"
-                    data-testid="alert-phone-input"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Include country code (e.g., +1 for US)</p>
-                </div>
-              )}
-
               {/* Note */}
               <div>
                 <label className="text-sm text-gray-300 mb-2 block">Note (optional)</label>
@@ -387,6 +341,14 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
                   placeholder="e.g., Buy signal"
                   className="bg-slate-700 border-slate-600 text-white"
                 />
+              </div>
+
+              {/* Telegram Reminder */}
+              <div className="bg-blue-900/30 border border-blue-700/50 rounded-lg p-3">
+                <p className="text-blue-300 text-sm flex items-center gap-2">
+                  <MessageCircle className="w-4 h-4" />
+                  Alerts sent via Telegram. Connect your Telegram below.
+                </p>
               </div>
 
               {/* Actions */}
@@ -417,7 +379,7 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
 };
 
 // Subscription Banner Component
-const SubscriptionBanner = ({ subscription, onStartTrial, onSubscribe, loading }) => {
+const SubscriptionBanner = ({ subscription, onSubscribe, loading }) => {
   const status = subscription?.status || 'none';
   const daysRemaining = subscription?.days_remaining;
 
@@ -447,15 +409,7 @@ const SubscriptionBanner = ({ subscription, onStartTrial, onSubscribe, loading }
               <strong>Free Trial</strong> - {daysRemaining} day{daysRemaining !== 1 ? 's' : ''} remaining
             </span>
           </div>
-          <Button 
-            onClick={onSubscribe} 
-            size="sm" 
-            className="bg-purple-600 hover:bg-purple-700"
-            data-testid="subscribe-btn"
-          >
-            <CreditCard className="w-4 h-4 mr-1" />
-            Subscribe $18.88/mo
-          </Button>
+          <Badge className="bg-purple-600">Trial Active</Badge>
         </CardContent>
       </Card>
     );
@@ -470,10 +424,11 @@ const SubscriptionBanner = ({ subscription, onStartTrial, onSubscribe, loading }
           <p className="text-gray-400 text-sm mb-3">Subscribe to continue creating and monitoring alerts</p>
           <Button 
             onClick={onSubscribe} 
+            disabled={loading}
             className="bg-purple-600 hover:bg-purple-700"
             data-testid="subscribe-expired-btn"
           >
-            <CreditCard className="w-4 h-4 mr-2" />
+            {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CreditCard className="w-4 h-4 mr-2" />}
             Subscribe - $18.88/month
           </Button>
         </CardContent>
@@ -481,36 +436,26 @@ const SubscriptionBanner = ({ subscription, onStartTrial, onSubscribe, loading }
     );
   }
 
-  // No subscription - show trial offer
+  // No subscription - go directly to Stripe (which has 7-day trial built in)
   return (
     <Card className="bg-gradient-to-r from-purple-900/50 to-indigo-900/50 border-purple-700/50 mb-6">
       <CardContent className="py-6 px-4 text-center">
         <Sparkles className="w-10 h-10 text-yellow-400 mx-auto mb-3" />
-        <h3 className="text-xl font-bold text-white mb-2">Start Your Free Trial</h3>
+        <h3 className="text-xl font-bold text-white mb-2">Get Price Alerts</h3>
         <p className="text-gray-300 text-sm mb-4 max-w-md mx-auto">
-          Get 7 days of unlimited price alerts - no credit card required. 
-          Set up alerts for any crypto and get notified via email or SMS.
+          Unlimited price alerts with instant Telegram notifications.
+          7-day free trial included.
         </p>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Button 
-            onClick={onStartTrial} 
-            disabled={loading}
-            className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-black font-semibold"
-            data-testid="start-trial-btn"
-          >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Zap className="w-4 h-4 mr-2" />}
-            Start Free Trial
-          </Button>
-          <Button 
-            onClick={onSubscribe}
-            variant="outline"
-            className="border-purple-500 text-purple-300 hover:bg-purple-900/50"
-            data-testid="subscribe-direct-btn"
-          >
-            <CreditCard className="w-4 h-4 mr-2" />
-            Subscribe $18.88/mo
-          </Button>
-        </div>
+        <Button 
+          onClick={onSubscribe}
+          disabled={loading}
+          className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-black font-semibold"
+          data-testid="subscribe-btn"
+        >
+          {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Zap className="w-4 h-4 mr-2" />}
+          Start Free Trial
+        </Button>
+        <p className="text-gray-500 text-xs mt-2">7-day free trial, then $18.88/month</p>
       </CardContent>
     </Card>
   );
@@ -702,7 +647,6 @@ export const AlertDashboard = ({ getAuthHeader }) => {
       {/* Subscription Banner */}
       <SubscriptionBanner 
         subscription={subscription}
-        onStartTrial={handleStartTrial}
         onSubscribe={handleSubscribe}
         loading={actionLoading}
       />

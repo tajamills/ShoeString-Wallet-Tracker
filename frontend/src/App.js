@@ -380,7 +380,7 @@ function App() {
                   <Bell className="w-16 h-16 mx-auto text-purple-400 mb-4" />
                   <h2 className="text-2xl font-bold text-white mb-2">Get Price Alerts</h2>
                   <p className="text-gray-400 mb-6 max-w-md mx-auto">
-                    Never miss a price move. Set alerts for crypto prices and get notified via email or SMS.
+                    Never miss a price move. Set alerts for crypto prices and get notified via Telegram.
                   </p>
                   <div className="space-y-3">
                     <Button 
@@ -391,7 +391,7 @@ function App() {
                       Login / Sign Up to Start
                     </Button>
                     <p className="text-sm text-gray-500">
-                      Start with a 7-day free trial • No credit card required
+                      7-day free trial included
                     </p>
                   </div>
                 </CardContent>
