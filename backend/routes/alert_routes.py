@@ -20,6 +20,7 @@ from models.alert_models import (
     STRIPE_ALERT_PRODUCT_ID
 )
 from services.alert_service import alert_service
+from services.telegram_service import get_bot_info, send_telegram_message
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -714,3 +715,116 @@ async def get_alert_stats(
     except Exception as e:
         logger.error(f"Error getting alert stats: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+
+# ============== TELEGRAM INTEGRATION ==============
+
+TELEGRAM_BOT_USERNAME = "CryptoBagTrackerBot"  # Update this with your bot's username
+
+@router.get("/telegram/bot-info")
+async def get_telegram_bot_info():
+    """Get Telegram bot information"""
+    bot_info = await get_bot_info()
+    if "error" in bot_info:
+        raise HTTPException(status_code=500, detail=bot_info["error"])
+    
+    return {
+        "bot_username": bot_info.get("username"),
+        "bot_name": bot_info.get("first_name"),
+        "connect_url": f"https://t.me/{bot_info.get('username')}?start=connect"
+    }
+
+
+@router.post("/telegram/connect")
+async def connect_telegram(
+    chat_id: str,
+    user: dict = Depends(get_current_user)
+):
+    """Save user's Telegram chat ID for notifications"""
+    user_id = user["id"]
+    
+    # Verify chat_id by sending a test message
+    success = await send_telegram_message(
+        chat_id,
+        "✅ <b>Connected!</b>\n\nYou'll now receive price alerts here.\n\n<i>Crypto Bag Tracker</i>"
+    )
+    
+    if not success:
+        raise HTTPException(
+            status_code=400,
+            detail="Could not send message to this chat ID. Make sure you've started a chat with the bot first."
+        )
+    
+    # Save chat_id to user profile
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"telegram_chat_id": chat_id, "telegram_connected_at": datetime.now(timezone.utc)}}
+    )
+    
+    logger.info(f"User {user_id} connected Telegram chat {chat_id}")
+    
+    return {
+        "success": True,
+        "message": "Telegram connected! You'll receive alerts here."
+    }
+
+
+@router.delete("/telegram/disconnect")
+async def disconnect_telegram(user: dict = Depends(get_current_user)):
+    """Disconnect Telegram notifications"""
+    user_id = user["id"]
+    
+    await db.users.update_one(
+        {"id": user_id},
+        {"$unset": {"telegram_chat_id": "", "telegram_connected_at": ""}}
+    )
+    
+    return {"success": True, "message": "Telegram disconnected"}
+
+
+@router.get("/telegram/status")
+async def get_telegram_status(user: dict = Depends(get_current_user)):
+    """Check if user has Telegram connected"""
+    user_id = user["id"]
+    
+    user_doc = await db.users.find_one(
+        {"id": user_id},
+        {"_id": 0, "telegram_chat_id": 1, "telegram_connected_at": 1}
+    )
+    
+    if user_doc and user_doc.get("telegram_chat_id"):
+        return {
+            "connected": True,
+            "chat_id": user_doc["telegram_chat_id"],
+            "connected_at": user_doc.get("telegram_connected_at")
+        }
+    
+    return {"connected": False}
+
+
+@router.post("/telegram/test")
+async def test_telegram_alert(user: dict = Depends(get_current_user)):
+    """Send a test alert to user's Telegram"""
+    user_id = user["id"]
+    
+    user_doc = await db.users.find_one({"id": user_id}, {"_id": 0, "telegram_chat_id": 1})
+    
+    if not user_doc or not user_doc.get("telegram_chat_id"):
+        raise HTTPException(status_code=400, detail="Telegram not connected")
+    
+    from services.telegram_service import send_alert_telegram
+    
+    success = await send_alert_telegram(
+        chat_id=user_doc["telegram_chat_id"],
+        asset_symbol="BTC",
+        alert_type="price_above",
+        target_value=100000,
+        current_price=101500,
+        note="This is a test alert"
+    )
+    
+    if success:
+        return {"success": True, "message": "Test alert sent!"}
+    else:
+        raise HTTPException(status_code=500, detail="Failed to send test alert")
