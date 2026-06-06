@@ -47,6 +47,13 @@ Build a cryptocurrency wallet analyzer with a **PIVOT to Price Alerts** as the p
 
 ## Completed Features
 
+### June 6, 2026 - Sidebar Dashboard UI
+- [x] Professional sidebar dashboard layout (AlertDashboardV2.js)
+- [x] Sidebar persists across both Price Alerts and Bag Tracker views
+- [x] Sidebar navigation with active state highlighting
+- [x] User profile section with subscription status and trial progress bar
+- [x] Telegram notifications UI with connect/disconnect/test
+
 ### June 6, 2026 - Price Alerts Pivot
 - [x] Tab navigation (Price Alerts vs Bag Tracker Beta)
 - [x] Alert subscription model with 7-day free trial
@@ -54,10 +61,13 @@ Build a cryptocurrency wallet analyzer with a **PIVOT to Price Alerts** as the p
 - [x] Start trial endpoint (/api/alerts/start-trial)
 - [x] Stripe checkout integration (/api/alerts/create-checkout)
 - [x] AlertDashboard.js frontend component
-- [x] Price fetching with CoinGecko + Coinbase/KuCoin fallback
+- [x] Price fetching with CoinGecko + Coinbase fallback
 - [x] Asset search functionality
 - [x] Alert type selection (price_above, price_below, percent_change_up, percent_change_down)
-- [x] Notification service structure (SendGrid + Twilio - keys not configured)
+- [x] Telegram Bot notifications (@cryptobagtrackerbot)
+- [x] Zapier Webhook for SMS notifications
+- [x] Background price polling (alert_monitor.py) with 1-hour cooldown
+- [x] Live price ticker (LivePricesTicker.js)
 
 ### Previous - Tax Tracker Features (Now in Bag Tracker Beta tab)
 - [x] Multi-chain wallet analysis (ETH, BTC, POLY, ARB, BSC, SOL)
