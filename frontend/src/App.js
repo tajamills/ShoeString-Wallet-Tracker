@@ -1,4 +1,4 @@
-// Crypto Bag Tracker v2.1 - Mobile Responsive Update - Mar 10, 2026
+// Crypto Bag Tracker v2.2 - Price Alerts + Bag Tracker Beta - Jun 6, 2026
 import { useState, useEffect } from 'react';
 import '@/App.css';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Wallet, TrendingUp, TrendingDown, DollarSign, Activity, LogOut, User, Crown, Download, Calculator, Tag, Users, Link2, HelpCircle, AlertTriangle, Key, Plus } from 'lucide-react';
+import { Loader2, Wallet, TrendingUp, TrendingDown, DollarSign, Activity, LogOut, User, Crown, Download, Calculator, Tag, Users, Link2, HelpCircle, AlertTriangle, Key, Plus, Bell, FileText } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAnalysis } from '@/hooks/useAnalysis';
@@ -28,6 +28,7 @@ import { SupportModal } from '@/components/SupportModal';
 import { ExchangeConnectionModal } from '@/components/ExchangeConnectionModal';
 import { TaxSummaryDashboard } from '@/components/TaxSummaryDashboard';
 import { AddDataModal } from '@/components/AddDataModal';
+import { AlertDashboard } from '@/components/AlertDashboard';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -127,6 +128,9 @@ function App() {
   const [exportingForm8949, setExportingForm8949] = useState(false);
   const [showExchangeConnectionModal, setShowExchangeConnectionModal] = useState(false);
   const [showAddDataModal, setShowAddDataModal] = useState(false);
+  
+  // Main navigation state - "alerts" is primary, "beta" for tax tracker
+  const [activeTab, setActiveTab] = useState('alerts');
 
   // Show terms modal if user is logged in but hasn't accepted terms
   useEffect(() => {
@@ -211,15 +215,6 @@ function App() {
 
     // Use the hook's analyze function
     await doAnalyzeWallet(address, chain, startDate, endDate);
-  };
-
-  const loadHistory = async () => {
-    try {
-      const response = await axios.get(`${API}/wallet/history?limit=5`);
-      setHistory(response.data);
-    } catch (err) {
-      console.error('Failed to load history:', err);
-    }
   };
 
   const formatAddress = (addr) => {
@@ -326,33 +321,40 @@ function App() {
             <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold text-white">Crypto Bag Tracker</h1>
           </div>
           <p className="text-gray-300 text-sm md:text-lg px-2">
-            Track your crypto transactions across multiple blockchains.
+            Price alerts for crypto. Never miss a move.
           </p>
         </div>
 
-        {/* Beta Testing Banner */}
-        <div className="max-w-3xl mx-auto mb-6">
-          <div className="bg-gradient-to-r from-purple-900/80 to-indigo-900/80 border border-purple-500/50 rounded-lg p-4 text-center">
-            <div className="flex items-center justify-center gap-2 mb-3">
-              <span className="bg-purple-500 text-white text-xs font-bold px-2 py-1 rounded-full animate-pulse">BETA</span>
-              <h2 className="text-white font-semibold text-lg">Beta Testing Program</h2>
-              <span className="text-purple-300 text-xs">(March - April 2026)</span>
+        {/* Main Tab Navigation */}
+        <div className="max-w-4xl mx-auto mb-6">
+          <div className="flex justify-center">
+            <div className="inline-flex bg-slate-800/70 rounded-xl p-1 border border-slate-700">
+              <button
+                onClick={() => setActiveTab('alerts')}
+                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
+                  activeTab === 'alerts'
+                    ? 'bg-purple-600 text-white shadow-lg'
+                    : 'text-gray-400 hover:text-white hover:bg-slate-700/50'
+                }`}
+                data-testid="tab-alerts"
+              >
+                <Bell className="w-5 h-5" />
+                <span>Price Alerts</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('beta')}
+                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
+                  activeTab === 'beta'
+                    ? 'bg-purple-600 text-white shadow-lg'
+                    : 'text-gray-400 hover:text-white hover:bg-slate-700/50'
+                }`}
+                data-testid="tab-beta"
+              >
+                <FileText className="w-5 h-5" />
+                <span>Bag Tracker</span>
+                <Badge className="bg-amber-600 text-white text-xs ml-1">Beta</Badge>
+              </button>
             </div>
-            <div className="space-y-2 mb-3">
-              <div className="bg-green-900/50 border border-green-500/50 rounded-md px-4 py-2 inline-block">
-                <p className="text-green-300 text-sm font-medium">
-                  🎉 Sign up now and get <span className="text-white font-bold">45 days FREE</span> — no code needed!
-                </p>
-              </div>
-              <div className="bg-yellow-900/50 border border-yellow-500/50 rounded-md px-4 py-2 inline-block">
-                <p className="text-yellow-300 text-sm font-medium">
-                  ⭐ First 50 customers: Use code <span className="bg-yellow-700 text-white px-2 py-0.5 rounded font-bold mx-1">Beta26</span> for <span className="text-white font-bold">50% off FOREVER</span>
-                </p>
-              </div>
-            </div>
-            <p className="text-purple-200 text-sm">
-              Your feedback helps us improve. Report bugs or suggestions using the Help button.
-            </p>
           </div>
         </div>
 
@@ -368,7 +370,87 @@ function App() {
           </div>
         )}
 
-        {/* User Info Bar */}
+        {/* ALERTS TAB CONTENT */}
+        {activeTab === 'alerts' && (
+          <div className="max-w-4xl mx-auto">
+            {/* Login Prompt for non-authenticated users */}
+            {!user ? (
+              <Card className="bg-slate-800/50 border-slate-700 mb-6" data-testid="login-prompt-alerts">
+                <CardContent className="py-8 text-center">
+                  <Bell className="w-16 h-16 mx-auto text-purple-400 mb-4" />
+                  <h2 className="text-2xl font-bold text-white mb-2">Get Price Alerts</h2>
+                  <p className="text-gray-400 mb-6 max-w-md mx-auto">
+                    Never miss a price move. Set alerts for crypto prices and get notified via email or SMS.
+                  </p>
+                  <div className="space-y-3">
+                    <Button 
+                      onClick={() => setShowAuthModal(true)}
+                      className="bg-purple-600 hover:bg-purple-700 px-8"
+                      data-testid="login-button-alerts"
+                    >
+                      Login / Sign Up to Start
+                    </Button>
+                    <p className="text-sm text-gray-500">
+                      Start with a 7-day free trial • No credit card required
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <>
+                {/* User Header for Alerts */}
+                <Card className="bg-slate-800/50 border-slate-700 mb-6">
+                  <CardContent className="py-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <User className="w-5 h-5 text-purple-400" />
+                        <span className="text-white font-medium">{user.email}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          onClick={() => setShowSupportModal(true)}
+                          variant="ghost"
+                          size="sm"
+                          className="text-gray-400 hover:text-white"
+                        >
+                          <HelpCircle className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          onClick={logout}
+                          size="sm"
+                          className="border-slate-600 text-gray-300"
+                          data-testid="logout-button"
+                        >
+                          <LogOut className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                {/* Alert Dashboard Component */}
+                <AlertDashboard getAuthHeader={getAuthHeader} />
+              </>
+            )}
+          </div>
+        )}
+
+        {/* BAG TRACKER BETA TAB CONTENT */}
+        {activeTab === 'beta' && (
+          <>
+            {/* Beta Testing Banner */}
+            <div className="max-w-3xl mx-auto mb-6">
+              <div className="bg-gradient-to-r from-amber-900/50 to-orange-900/50 border border-amber-500/50 rounded-lg p-4 text-center">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <span className="bg-amber-500 text-white text-xs font-bold px-2 py-1 rounded-full">BETA</span>
+                  <h2 className="text-white font-semibold text-lg">Bag Tracker Beta</h2>
+                </div>
+                <p className="text-amber-200 text-sm">
+                  Free for beta testers! Track wallet transactions & generate tax reports.
+                </p>
+              </div>
+            </div>
         <div className="max-w-3xl mx-auto mb-4 md:mb-6">
           {user ? (
             <Card className="bg-slate-800/50 border-slate-700" data-testid="user-info-bar">
@@ -1244,6 +1326,10 @@ function App() {
               </Card>
             )}
           </div>
+        )}
+        
+          {/* Close Beta Tab */}
+          </>
         )}
 
         {/* Auth Modal */}

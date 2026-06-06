@@ -1,0 +1,71 @@
+{
+  "summary": "Tested Price Alerts pivot (Crypto Bag Tracker v2.2). Backend: 13/14 pytest passed (1 failure due to external CoinGecko 429 rate-limit). Frontend: all tab navigation, login, subscription banner, alert list, and Bag Tracker Beta flows verified working end-to-end with the provided test user.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "GET /api/alerts/price/crypto/{symbol}",
+        "issue": "Returns 404 'Could not fetch price for BTC' when CoinGecko free-tier rate limit (HTTP 429) is hit. Direct curl to api.coingecko.com/api/v3/simple/price confirmed 429 'You've exceeded the Rate Limit'. The endpoint has no fallback provider and no cached-fallback on 429. Alert creation still succeeds but stores current_price=0."
+      },
+      {
+        "endpoint": "GET /api/alerts (price refresh on list)",
+        "issue": "Same CoinGecko dependency - listing alerts calls get_price per alert; under rate-limit current_price/change_24h silently stay stale (no error surfaced to client)."
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_alert_routes.py",
+    "/app/test_reports/pytest/alerts_results.xml"
+  ],
+  "action_items": [
+    "Add a fallback price provider (or use existing price_service.py / price_cache.py) when CoinGecko returns 429. Free-tier CoinGecko throttles aggressively in the preview env and will likely affect production trial users.",
+    "Get-alerts list endpoint should not silently drop price refresh failures; either return last_known_price with a stale-flag or log a warning per asset.",
+    "Stripe checkout flow (create-checkout) is implemented but not exercised end-to-end; recommend a smoke test once STRIPE_API_KEY is set in env.",
+    "SendGrid + Twilio notification keys are not configured (per task note); notification dispatch is therefore skipped silently. Consider surfacing a banner in the dashboard if user picked 'sms' or 'both' but SMS isn't configured server-side."
+  ],
+  "critical_code_review_comments": [
+    "alert_routes.py is 711 lines and mixes route handlers, subscription/trial logic, Stripe checkout, Stripe webhooks, and asset search - split into alert_crud.py + alert_subscription.py + alert_webhooks.py for maintainability.",
+    "alert_routes.get_alerts iterates alerts and awaits alert_service.get_price sequentially -> N HTTP calls per request, exacerbating CoinGecko 429s. Batch via /simple/price?ids=a,b,c (single request) or asyncio.gather with a limited semaphore.",
+    "STRIPE_ALERT_PRICE_ID / PRODUCT_ID are hard-coded in models/alert_models.py - move to env vars to avoid leaking IDs in git and to allow per-env overrides.",
+    "Webhook signature verification is optional (falls back to unsigned JSON if STRIPE_WEBHOOK_SECRET unset). Acceptable for dev but must be enforced in production.",
+    "AlertService.crypto_id_map is a static dict; unknown symbols fall back to symbol.lower() which yields 404 from CoinGecko silently. Consider an /api/coins/list lookup at startup or warn user during alert creation."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_alert_routes.py"
+  ],
+  "success_rate": {
+    "backend": "93% (13/14 pytest tests; 1 external rate-limit failure)",
+    "frontend": "100% (all listed flows verified)"
+  },
+  "test_credentials": {
+    "email": "mobiletest@test.com",
+    "password": "test123456",
+    "note": "/app/memory/test_credentials.md does NOT exist - flag for main agent to add."
+  },
+  "seed_data_creation": "Created and deleted one TEST_alert_pytest ETH price_above alert during pytest CRUD flow. Pre-existing BTC alert ($100,000 price_above) is left untouched.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Price Alerts pivot is verified working end-to-end against mobiletest@test.com (trial 6 days remaining, 1 BTC alert in DB). Backend pytest at /app/backend/tests/test_alert_routes.py is the regression suite for /api/alerts/*. Known external dependency: CoinGecko free tier (no API key) is rate-limited - flaky price endpoint tests are expected unless backend adds caching/fallback. Stripe + SendGrid + Twilio keys are unset, so checkout and notification dispatch were not exercised.",
+  "features_verified": {
+    "Tab navigation Price Alerts <-> Bag Tracker Beta": "PASS",
+    "Unauthenticated alerts tab shows 'Get Price Alerts' card + 7-day free trial copy": "PASS",
+    "Login via auth modal with test creds": "PASS",
+    "Subscription banner 'Free Trial - 6 days remaining' + 'Subscribe $18.88/mo' button": "PASS",
+    "Existing BTC alert renders with CRYPTO badge, ACTIVE status, pause/delete actions": "PASS",
+    "Bag Tracker Beta tab shows beta banner + user info bar + wallet analyze card when authed": "PASS",
+    "GET /api/alerts returns subscription + alerts list": "PASS",
+    "POST /api/alerts (ETH price_above $99,999) creates + persists": "PASS",
+    "POST /api/alerts/{id}/toggle flips active<->paused": "PASS",
+    "DELETE /api/alerts/{id} removes alert, follow-up GET returns 404": "PASS",
+    "GET /api/alerts/subscription returns status/tier/trial_used/days_remaining/can_create_alerts": "PASS",
+    "GET /api/alerts/tiers returns unlimited tier @ $18.88/mo": "PASS",
+    "Auth gating on /api/alerts, /api/alerts/subscription, POST /api/alerts": "PASS (all 401/403)",
+    "Validation: invalid asset_type returns 422; invalid price asset_type returns 400": "PASS",
+    "GET /api/alerts/price/crypto/BTC": "FAIL (CoinGecko 429 - external rate limit)"
+  }
+}

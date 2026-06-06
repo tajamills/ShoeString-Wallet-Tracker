@@ -375,6 +375,7 @@ from routes.affiliates import router as affiliates_router
 from routes.exchanges import router as exchanges_router
 from routes.custody import router as custody_router
 from routes.support import router as support_router
+from routes.alert_routes import router as alert_router
 
 # Import new modular custody routes
 from routes.custody_core_routes import router as custody_core_router
@@ -393,6 +394,7 @@ api_router.include_router(affiliates_router)
 api_router.include_router(exchanges_router)
 api_router.include_router(custody_router)  # Legacy routes for backwards compatibility
 api_router.include_router(support_router)
+api_router.include_router(alert_router, prefix="/alerts", tags=["Alerts"])
 
 # Include new modular custody routes (these will be preferred for new code)
 api_router.include_router(custody_core_router)
