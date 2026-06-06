@@ -357,7 +357,7 @@ async def get_asset_price(
     symbol: str,
     user: dict = Depends(get_current_user)
 ):
-    """Get current price for an asset"""
+    """Get current price for an asset (authenticated)"""
     if asset_type not in ["crypto", "stock"]:
         raise HTTPException(status_code=400, detail="Invalid asset type. Use 'crypto' or 'stock'")
     
@@ -371,6 +371,19 @@ async def get_asset_price(
     except Exception as e:
         logger.error(f"Error fetching price: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/public/price/{symbol}")
+async def get_public_price(symbol: str):
+    """Get current price for a crypto asset (public, no auth required)"""
+    try:
+        price_data = await alert_service.get_price(symbol.upper(), "crypto")
+        if not price_data:
+            return {"symbol": symbol.upper(), "price": None, "change_24h": None}
+        return price_data
+    except Exception as e:
+        logger.error(f"Error fetching public price: {e}")
+        return {"symbol": symbol.upper(), "price": None, "change_24h": None}
 
 
 @router.post("")

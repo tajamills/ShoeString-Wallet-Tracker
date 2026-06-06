@@ -29,6 +29,7 @@ import { ExchangeConnectionModal } from '@/components/ExchangeConnectionModal';
 import { TaxSummaryDashboard } from '@/components/TaxSummaryDashboard';
 import { AddDataModal } from '@/components/AddDataModal';
 import { AlertDashboard } from '@/components/AlertDashboard';
+import { LivePricesTicker } from '@/components/LivePricesTicker';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -312,47 +313,49 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="min-h-screen bg-[#0a0a0f]">
+      {/* Live Prices Ticker */}
+      <LivePricesTicker />
+      
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="text-center mb-6 md:mb-8">
-          <div className="flex items-center justify-center gap-2 md:gap-3 mb-3 md:mb-4">
-            <Wallet className="w-8 h-8 md:w-12 md:h-12 text-purple-400" />
-            <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold text-white">Crypto Bag Tracker</h1>
-          </div>
-          <p className="text-gray-300 text-sm md:text-lg px-2">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight mb-2">
+            Crypto Bag Tracker
+          </h1>
+          <p className="text-white/50 text-sm md:text-base">
             Price alerts for crypto. Never miss a move.
           </p>
         </div>
 
         {/* Main Tab Navigation */}
-        <div className="max-w-4xl mx-auto mb-6">
+        <div className="max-w-4xl mx-auto mb-8">
           <div className="flex justify-center">
-            <div className="inline-flex bg-slate-800/70 rounded-xl p-1 border border-slate-700">
+            <div className="inline-flex bg-white/5 rounded-lg p-1 border border-white/10">
               <button
                 onClick={() => setActiveTab('alerts')}
-                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-md text-sm font-medium transition-all ${
                   activeTab === 'alerts'
-                    ? 'bg-purple-600 text-white shadow-lg'
-                    : 'text-gray-400 hover:text-white hover:bg-slate-700/50'
+                    ? 'bg-white text-black'
+                    : 'text-white/60 hover:text-white'
                 }`}
                 data-testid="tab-alerts"
               >
-                <Bell className="w-5 h-5" />
-                <span>Price Alerts</span>
+                <Bell className="w-4 h-4" />
+                <span>Alerts</span>
               </button>
               <button
                 onClick={() => setActiveTab('beta')}
-                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-md text-sm font-medium transition-all ${
                   activeTab === 'beta'
-                    ? 'bg-purple-600 text-white shadow-lg'
-                    : 'text-gray-400 hover:text-white hover:bg-slate-700/50'
+                    ? 'bg-white text-black'
+                    : 'text-white/60 hover:text-white'
                 }`}
                 data-testid="tab-beta"
               >
-                <FileText className="w-5 h-5" />
-                <span>Bag Tracker</span>
-                <Badge className="bg-amber-600 text-white text-xs ml-1">Beta</Badge>
+                <FileText className="w-4 h-4" />
+                <span>Portfolio</span>
+                <span className="text-[10px] bg-amber-500 text-black px-1.5 py-0.5 rounded font-semibold ml-1">BETA</span>
               </button>
             </div>
           </div>
@@ -361,12 +364,10 @@ function App() {
         {/* Payment Success Alert */}
         {paymentSuccess && (
           <div className="max-w-3xl mx-auto mb-6">
-            <Alert className="bg-green-900/20 border-green-700 text-green-300">
-              <AlertDescription className="flex items-center">
-                <Crown className="w-4 h-4 mr-2" />
-                Payment successful! Your subscription has been upgraded.
-              </AlertDescription>
-            </Alert>
+            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-4 py-3 text-emerald-400 text-sm flex items-center">
+              <Crown className="w-4 h-4 mr-2" />
+              Payment successful. Your subscription is now active.
+            </div>
           </div>
         )}
 
@@ -375,59 +376,53 @@ function App() {
           <div className="max-w-4xl mx-auto">
             {/* Login Prompt for non-authenticated users */}
             {!user ? (
-              <Card className="bg-slate-800/50 border-slate-700 mb-6" data-testid="login-prompt-alerts">
-                <CardContent className="py-8 text-center">
-                  <Bell className="w-16 h-16 mx-auto text-purple-400 mb-4" />
-                  <h2 className="text-2xl font-bold text-white mb-2">Get Price Alerts</h2>
-                  <p className="text-gray-400 mb-6 max-w-md mx-auto">
-                    Never miss a price move. Set alerts for crypto prices and get notified via Telegram.
-                  </p>
-                  <div className="space-y-3">
-                    <Button 
-                      onClick={() => setShowAuthModal(true)}
-                      className="bg-purple-600 hover:bg-purple-700 px-8"
-                      data-testid="login-button-alerts"
-                    >
-                      Login / Sign Up to Start
-                    </Button>
-                    <p className="text-sm text-gray-500">
-                      7-day free trial included
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+              <div className="bg-white/5 border border-white/10 rounded-xl p-8 text-center" data-testid="login-prompt-alerts">
+                <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-4">
+                  <Bell className="w-6 h-6 text-white/80" />
+                </div>
+                <h2 className="text-xl font-semibold text-white mb-2">Price Alerts</h2>
+                <p className="text-white/50 mb-6 max-w-sm mx-auto text-sm">
+                  Get notified when crypto hits your target price. Delivered via Telegram.
+                </p>
+                <button 
+                  onClick={() => setShowAuthModal(true)}
+                  className="bg-white text-black font-medium px-6 py-2.5 rounded-lg hover:bg-white/90 transition-colors"
+                  data-testid="login-button-alerts"
+                >
+                  Get Started
+                </button>
+                <p className="text-white/30 text-xs mt-4">
+                  7-day free trial included
+                </p>
+              </div>
             ) : (
               <>
                 {/* User Header for Alerts */}
-                <Card className="bg-slate-800/50 border-slate-700 mb-6">
-                  <CardContent className="py-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <User className="w-5 h-5 text-purple-400" />
-                        <span className="text-white font-medium">{user.email}</span>
+                <div className="bg-white/5 border border-white/10 rounded-lg px-4 py-3 mb-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+                        <User className="w-4 h-4 text-white/60" />
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Button 
-                          onClick={() => setShowSupportModal(true)}
-                          variant="ghost"
-                          size="sm"
-                          className="text-gray-400 hover:text-white"
-                        >
-                          <HelpCircle className="w-4 h-4" />
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          onClick={logout}
-                          size="sm"
-                          className="border-slate-600 text-gray-300"
-                          data-testid="logout-button"
-                        >
-                          <LogOut className="w-4 h-4" />
-                        </Button>
-                      </div>
+                      <span className="text-white/80 text-sm">{user.email}</span>
                     </div>
-                  </CardContent>
-                </Card>
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => setShowSupportModal(true)}
+                        className="p-2 text-white/40 hover:text-white/80 transition-colors"
+                      >
+                        <HelpCircle className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={logout}
+                        className="p-2 text-white/40 hover:text-white/80 transition-colors"
+                        data-testid="logout-button"
+                      >
+                        <LogOut className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
                 
                 {/* Alert Dashboard Component */}
                 <AlertDashboard getAuthHeader={getAuthHeader} />
@@ -439,16 +434,12 @@ function App() {
         {/* BAG TRACKER BETA TAB CONTENT */}
         {activeTab === 'beta' && (
           <>
-            {/* Beta Testing Banner */}
+            {/* Beta Notice */}
             <div className="max-w-3xl mx-auto mb-6">
-              <div className="bg-gradient-to-r from-amber-900/50 to-orange-900/50 border border-amber-500/50 rounded-lg p-4 text-center">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <span className="bg-amber-500 text-white text-xs font-bold px-2 py-1 rounded-full">BETA</span>
-                  <h2 className="text-white font-semibold text-lg">Bag Tracker Beta</h2>
-                </div>
-                <p className="text-amber-200 text-sm">
-                  Free for beta testers! Track wallet transactions & generate tax reports.
-                </p>
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg px-4 py-3 text-center">
+                <span className="text-amber-400 text-sm">
+                  <span className="font-semibold">Portfolio Tracker</span> — Free during beta. Track transactions & generate tax reports.
+                </span>
               </div>
             </div>
         <div className="max-w-3xl mx-auto mb-4 md:mb-6">

@@ -440,79 +440,70 @@ const SubscriptionBanner = ({ subscription, onSubscribe, loading }) => {
 
   if (status === 'active') {
     return (
-      <Card className="bg-gradient-to-r from-green-900/50 to-emerald-900/50 border-green-700/50 mb-6">
-        <CardContent className="py-3 px-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <CheckCircle className="w-5 h-5 text-green-400" />
-            <span className="text-white">
-              <strong>Unlimited Plan</strong> - Create unlimited alerts
-            </span>
-          </div>
-          <Badge className="bg-green-600">Active</Badge>
-        </CardContent>
-      </Card>
+      <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-4 py-3 mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <CheckCircle className="w-4 h-4 text-emerald-400" />
+          <span className="text-white/80 text-sm">
+            <span className="font-medium">Unlimited Plan</span> — Create unlimited alerts
+          </span>
+        </div>
+        <span className="text-emerald-400 text-xs font-medium">Active</span>
+      </div>
     );
   }
 
   if (status === 'trialing') {
     return (
-      <Card className="bg-gradient-to-r from-purple-900/50 to-indigo-900/50 border-purple-700/50 mb-6">
-        <CardContent className="py-3 px-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Clock className="w-5 h-5 text-purple-400" />
-            <span className="text-white">
-              <strong>Free Trial</strong> - {daysRemaining} day{daysRemaining !== 1 ? 's' : ''} remaining
-            </span>
-          </div>
-          <Badge className="bg-purple-600">Trial Active</Badge>
-        </CardContent>
-      </Card>
+      <div className="bg-white/5 border border-white/10 rounded-lg px-4 py-3 mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Clock className="w-4 h-4 text-white/60" />
+          <span className="text-white/80 text-sm">
+            <span className="font-medium">Free Trial</span> — {daysRemaining} day{daysRemaining !== 1 ? 's' : ''} remaining
+          </span>
+        </div>
+        <span className="text-white/40 text-xs">Trial Active</span>
+      </div>
     );
   }
 
   if (status === 'expired') {
     return (
-      <Card className="bg-gradient-to-r from-red-900/50 to-orange-900/50 border-red-700/50 mb-6">
-        <CardContent className="py-4 px-4 text-center">
-          <AlertCircle className="w-8 h-8 text-red-400 mx-auto mb-2" />
-          <h3 className="text-white font-semibold mb-1">Trial Expired</h3>
-          <p className="text-gray-400 text-sm mb-3">Subscribe to continue creating and monitoring alerts</p>
-          <Button 
-            onClick={onSubscribe} 
-            disabled={loading}
-            className="bg-purple-600 hover:bg-purple-700"
-            data-testid="subscribe-expired-btn"
-          >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CreditCard className="w-4 h-4 mr-2" />}
-            Subscribe - $18.88/month
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-6 mb-6 text-center">
+        <AlertCircle className="w-8 h-8 text-red-400 mx-auto mb-3" />
+        <h3 className="text-white font-medium mb-1">Trial Expired</h3>
+        <p className="text-white/50 text-sm mb-4">Subscribe to continue using alerts</p>
+        <button 
+          onClick={onSubscribe} 
+          disabled={loading}
+          className="bg-white text-black font-medium px-5 py-2 rounded-lg hover:bg-white/90 transition-colors text-sm"
+          data-testid="subscribe-expired-btn"
+        >
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Subscribe — $18.88/mo'}
+        </button>
+      </div>
     );
   }
 
-  // No subscription - go directly to Stripe (which has 7-day trial built in)
+  // No subscription
   return (
-    <Card className="bg-gradient-to-r from-purple-900/50 to-indigo-900/50 border-purple-700/50 mb-6">
-      <CardContent className="py-6 px-4 text-center">
-        <Sparkles className="w-10 h-10 text-yellow-400 mx-auto mb-3" />
-        <h3 className="text-xl font-bold text-white mb-2">Get Price Alerts</h3>
-        <p className="text-gray-300 text-sm mb-4 max-w-md mx-auto">
-          Unlimited price alerts with instant Telegram notifications.
-          7-day free trial included.
-        </p>
-        <Button 
-          onClick={onSubscribe}
-          disabled={loading}
-          className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-black font-semibold"
-          data-testid="subscribe-btn"
-        >
-          {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Zap className="w-4 h-4 mr-2" />}
-          Start Free Trial
-        </Button>
-        <p className="text-gray-500 text-xs mt-2">7-day free trial, then $18.88/month</p>
-      </CardContent>
-    </Card>
+    <div className="bg-white/5 border border-white/10 rounded-xl p-8 mb-6 text-center">
+      <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-4">
+        <Zap className="w-6 h-6 text-amber-400" />
+      </div>
+      <h3 className="text-lg font-semibold text-white mb-2">Start Free Trial</h3>
+      <p className="text-white/50 text-sm mb-6 max-w-sm mx-auto">
+        Unlimited price alerts with instant Telegram notifications.
+      </p>
+      <button 
+        onClick={onSubscribe}
+        disabled={loading}
+        className="bg-white text-black font-medium px-6 py-2.5 rounded-lg hover:bg-white/90 transition-colors"
+        data-testid="subscribe-btn"
+      >
+        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Start Free Trial'}
+      </button>
+      <p className="text-white/30 text-xs mt-3">7 days free, then $18.88/month</p>
+    </div>
   );
 };
 
@@ -692,7 +683,7 @@ export const AlertDashboard = ({ getAuthHeader }) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+        <Loader2 className="w-6 h-6 animate-spin text-white/40" />
       </div>
     );
   }
@@ -709,119 +700,119 @@ export const AlertDashboard = ({ getAuthHeader }) => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <Bell className="w-5 h-5 text-purple-400" />
-            Your Alerts
-          </h2>
-          <p className="text-gray-400 text-sm mt-1">
+          <h2 className="text-lg font-semibold text-white">Your Alerts</h2>
+          <p className="text-white/40 text-sm">
             {alerts.length} alert{alerts.length !== 1 ? 's' : ''} configured
           </p>
         </div>
         {canCreateAlerts && (
-          <Button
+          <button
             onClick={() => setShowCreateModal(true)}
-            className="bg-purple-600 hover:bg-purple-700"
+            className="bg-white text-black font-medium px-4 py-2 rounded-lg hover:bg-white/90 transition-colors text-sm flex items-center gap-2"
             data-testid="new-alert-btn"
           >
-            <Plus className="w-4 h-4 mr-2" />
+            <Plus className="w-4 h-4" />
             New Alert
-          </Button>
+          </button>
         )}
       </div>
 
       {/* Alerts */}
       {error && (
-        <Alert className="bg-red-900/20 border-red-700">
-          <AlertCircle className="w-4 h-4 text-red-400" />
-          <AlertDescription className="text-red-300">{error}</AlertDescription>
-        </Alert>
+        <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3 text-red-400 text-sm flex items-center gap-2">
+          <AlertCircle className="w-4 h-4" />
+          {error}
+        </div>
       )}
       
       {success && (
-        <Alert className="bg-green-900/20 border-green-700">
-          <CheckCircle className="w-4 h-4 text-green-400" />
-          <AlertDescription className="text-green-300">{success}</AlertDescription>
-        </Alert>
+        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-4 py-3 text-emerald-400 text-sm flex items-center gap-2">
+          <CheckCircle className="w-4 h-4" />
+          {success}
+        </div>
       )}
 
       {alerts.length === 0 ? (
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardContent className="py-12 text-center">
-            <Bell className="w-16 h-16 mx-auto text-gray-600 mb-4" />
-            <h3 className="text-xl font-medium text-white mb-2">No alerts yet</h3>
-            <p className="text-gray-400 mb-4">
-              {canCreateAlerts 
-                ? 'Create your first price alert to get notified when prices hit your targets.'
-                : 'Start your free trial to create price alerts.'}
-            </p>
-            {canCreateAlerts && (
-              <Button 
-                onClick={() => setShowCreateModal(true)} 
+        <div className="bg-white/5 border border-white/10 rounded-xl py-12 text-center">
+          <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
+            <Bell className="w-6 h-6 text-white/30" />
+          </div>
+          <h3 className="text-white font-medium mb-2">No alerts yet</h3>
+          <p className="text-white/40 text-sm mb-4 max-w-sm mx-auto">
+            {canCreateAlerts 
+              ? 'Create your first alert to get notified when prices hit your targets.'
+              : 'Start your free trial to create price alerts.'}
+          </p>
+          {canCreateAlerts && (
+            <button 
+              onClick={() => setShowCreateModal(true)} 
                 className="bg-purple-600 hover:bg-purple-700"
                 data-testid="create-first-alert-btn"
               >
-                <Plus className="w-4 h-4 mr-2" />
+                <Plus className="w-4 h-4 mr-1" />
                 Create Alert
-              </Button>
+              </button>
             )}
-          </CardContent>
-        </Card>
+          </div>
       ) : (
-        <div className="grid gap-3">
+        <div className="space-y-3">
           {alerts.map((alert) => {
             const typeInfo = ALERT_TYPE_LABELS[alert.alert_type] || {};
             const TypeIcon = typeInfo.icon || Bell;
+            const isUp = alert.alert_type.includes('above') || alert.alert_type.includes('up');
             
             return (
-              <Card key={alert.alert_id} className="bg-slate-800/50 border-slate-700" data-testid={`alert-card-${alert.alert_id}`}>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className={`p-2 rounded-lg ${alert.status === 'active' ? 'bg-purple-600/20' : 'bg-gray-600/20'}`}>
-                        <TypeIcon className={`w-6 h-6 ${alert.status === 'active' ? typeInfo.color : 'text-gray-400'}`} />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-white font-medium text-lg">{alert.asset_symbol}</span>
-                          <AssetBadge type={alert.asset_type} />
-                          <StatusBadge status={alert.status} />
-                        </div>
-                        <p className="text-sm text-gray-400 mt-1">
-                          {typeInfo.label}: {alert.alert_type.includes('percent') ? `${alert.target_value}%` : formatPrice(alert.target_value)}
-                          {alert.current_price && (
-                            <span className="ml-2">
-                              (Current: {formatPrice(alert.current_price)})
-                            </span>
-                          )}
-                        </p>
-                        {alert.note && (
-                          <p className="text-xs text-gray-500 mt-1">Note: {alert.note}</p>
-                        )}
-                      </div>
+              <div key={alert.alert_id} className="bg-white/5 border border-white/10 rounded-lg p-4" data-testid={`alert-card-${alert.alert_id}`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                      alert.status === 'active' 
+                        ? isUp ? 'bg-emerald-500/20' : 'bg-red-500/20'
+                        : 'bg-white/5'
+                    }`}>
+                      <TypeIcon className={`w-5 h-5 ${
+                        alert.status === 'active'
+                          ? isUp ? 'text-emerald-400' : 'text-red-400'
+                          : 'text-white/30'
+                      }`} />
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => toggleAlert(alert.alert_id)}
-                        className="text-gray-400 hover:text-white"
-                        data-testid={`toggle-alert-${alert.alert_id}`}
-                      >
-                        {alert.status === 'active' ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => deleteAlert(alert.alert_id)}
-                        className="text-gray-400 hover:text-red-400"
-                        data-testid={`delete-alert-${alert.alert_id}`}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-white font-medium">{alert.asset_symbol}</span>
+                        <span className={`text-xs px-1.5 py-0.5 rounded ${
+                          alert.status === 'active' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-white/40'
+                        }`}>
+                          {alert.status}
+                        </span>
+                      </div>
+                      <p className="text-sm text-white/50 mt-0.5">
+                        {typeInfo.label}: {alert.alert_type.includes('percent') ? `${alert.target_value}%` : formatPrice(alert.target_value)}
+                        {alert.current_price > 0 && (
+                          <span className="text-white/30 ml-2">
+                            Now: {formatPrice(alert.current_price)}
+                          </span>
+                        )}
+                      </p>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => toggleAlert(alert.alert_id)}
+                      className="p-2 text-white/40 hover:text-white transition-colors"
+                      data-testid={`toggle-alert-${alert.alert_id}`}
+                    >
+                      {alert.status === 'active' ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                    </button>
+                    <button
+                      onClick={() => deleteAlert(alert.alert_id)}
+                      className="p-2 text-white/40 hover:text-red-400 transition-colors"
+                      data-testid={`delete-alert-${alert.alert_id}`}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
             );
           })}
         </div>
@@ -829,85 +820,78 @@ export const AlertDashboard = ({ getAuthHeader }) => {
 
       {/* Telegram Connect Section */}
       {canCreateAlerts && (
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3 mb-3">
-              <MessageCircle className="w-5 h-5 text-blue-400" />
-              <h3 className="text-white font-medium">Telegram Notifications</h3>
-              {telegramStatus?.connected && (
-                <Badge className="bg-green-600">Connected</Badge>
-              )}
+        <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <MessageCircle className="w-4 h-4 text-blue-400" />
+              <span className="text-white/80 text-sm font-medium">Telegram</span>
             </div>
-            
-            {telegramStatus?.connected ? (
-              <div className="flex items-center justify-between">
-                <p className="text-gray-400 text-sm">
-                  Alerts will be sent to your Telegram
-                </p>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={testTelegram}
-                    className="border-slate-600 text-gray-300"
-                  >
-                    <Send className="w-4 h-4 mr-1" />
-                    Test
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={disconnectTelegram}
-                    className="border-red-600 text-red-400 hover:bg-red-900/20"
-                  >
-                    Disconnect
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <p className="text-gray-400 text-sm">
-                  Get instant alerts on Telegram - unlimited, no rate limits.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <a
-                    href="https://t.me/cryptobagtrackerbot"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm"
-                  >
-                    <span>1. Start chat with @cryptobagtrackerbot</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                </div>
-                <p className="text-gray-500 text-xs">
-                  2. Send /start to the bot, it will reply with your Chat ID
-                </p>
-                <div className="flex gap-2">
-                  <Input
-                    value={telegramChatId}
-                    onChange={(e) => setTelegramChatId(e.target.value)}
-                    placeholder="Enter your Chat ID"
-                    className="bg-slate-700 border-slate-600 text-white max-w-xs"
-                    data-testid="telegram-chat-id-input"
-                  />
-                  <Button
-                    onClick={connectTelegram}
-                    disabled={connectingTelegram || !telegramChatId.trim()}
-                    className="bg-blue-600 hover:bg-blue-700"
-                    data-testid="connect-telegram-btn"
-                  >
-                    {connectingTelegram ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      'Connect'
-                    )}
-                  </Button>
-                </div>
-              </div>
+            {telegramStatus?.connected && (
+              <span className="text-emerald-400 text-xs">Connected</span>
             )}
-          </CardContent>
-        </Card>
+          </div>
+          
+          {telegramStatus?.connected ? (
+            <div className="flex items-center justify-between">
+              <p className="text-white/40 text-sm">Alerts sent to your Telegram</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={testTelegram}
+                  className="text-white/60 hover:text-white text-sm px-3 py-1.5 rounded border border-white/10 hover:border-white/20 transition-colors"
+                >
+                  Test
+                </button>
+                <button
+                  onClick={disconnectTelegram}
+                  className="text-red-400/80 hover:text-red-400 text-sm px-3 py-1.5 rounded border border-red-500/20 hover:border-red-500/30 transition-colors"
+                >
+                  Disconnect
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-white/40 text-sm">
+                Connect Telegram for instant alerts
+              </p>
+              <div className="space-y-2">
+                <a
+                  href="https://t.me/cryptobagtrackerbot"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 text-sm"
+                >
+                  1. Message @cryptobagtrackerbot
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+                <p className="text-white/30 text-xs">
+                  2. Send /start to get your Chat ID
+                </p>
+              </div>
+              <div className="flex gap-2 mt-3">
+                <Input
+                  value={telegramChatId}
+                  onChange={(e) => setTelegramChatId(e.target.value)}
+                  placeholder="Paste Chat ID"
+                  className="bg-white/5 border-white/10 text-white max-w-[200px] text-sm"
+                  data-testid="telegram-chat-id-input"
+                />
+                <button
+                  onClick={connectTelegram}
+                  disabled={connectingTelegram || !telegramChatId.trim()}
+                  className="bg-blue-500 hover:bg-blue-600 disabled:bg-blue-500/50 text-white text-sm px-4 py-2 rounded-lg transition-colors"
+                  data-testid="connect-telegram-btn"
+                >
+                  {connectingTelegram ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    'Connect'
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
       {/* Create Alert Modal */}
