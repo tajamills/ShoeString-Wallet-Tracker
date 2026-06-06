@@ -70,7 +70,7 @@ class AlertService:
         }
     
     async def get_crypto_price(self, symbol: str) -> Optional[Dict[str, Any]]:
-        """Get current price for a cryptocurrency"""
+        """Get current price for a cryptocurrency with fallback to Binance"""
         symbol = symbol.upper()
         
         # Check cache first
@@ -83,6 +83,7 @@ class AlertService:
         # Get CoinGecko ID
         coin_id = self.crypto_id_map.get(symbol, symbol.lower())
         
+        # Try CoinGecko first
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
                 response = await client.get(
@@ -116,9 +117,104 @@ class AlertService:
                         }
                         
                         return result
+                
+                # If CoinGecko rate limited (429), try Binance fallback
+                if response.status_code == 429:
+                    logger.warning(f"CoinGecko rate limited for {symbol}, trying Binance fallback")
+                    return await self._get_binance_price(symbol, cache_key)
                         
         except Exception as e:
             logger.error(f"Error fetching crypto price for {symbol}: {e}")
+            # Try Binance fallback on any error
+            return await self._get_binance_price(symbol, cache_key)
+        
+        # If CoinGecko didn't have the coin, try Binance
+        return await self._get_binance_price(symbol, cache_key)
+    
+    async def _get_binance_price(self, symbol: str, cache_key: str) -> Optional[Dict[str, Any]]:
+        """Fallback price source using multiple APIs"""
+        # Try Coinbase first (more accessible globally)
+        result = await self._get_coinbase_price(symbol)
+        if result:
+            self.price_cache[cache_key] = {
+                "data": result,
+                "timestamp": datetime.now(timezone.utc)
+            }
+            return result
+        
+        # Try KuCoin as second fallback
+        result = await self._get_kucoin_price(symbol)
+        if result:
+            self.price_cache[cache_key] = {
+                "data": result,
+                "timestamp": datetime.now(timezone.utc)
+            }
+            return result
+        
+        # Return cached data if available (even if stale)
+        if cache_key in self.price_cache:
+            cached = self.price_cache[cache_key]
+            cached["data"]["stale"] = True
+            return cached["data"]
+        
+        return None
+    
+    async def _get_coinbase_price(self, symbol: str) -> Optional[Dict[str, Any]]:
+        """Get price from Coinbase API"""
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                # Coinbase spot price endpoint
+                response = await client.get(
+                    f"https://api.coinbase.com/v2/prices/{symbol}-USD/spot"
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    price = float(data.get("data", {}).get("amount", 0))
+                    
+                    if price > 0:
+                        return {
+                            "symbol": symbol,
+                            "price": price,
+                            "change_24h": 0,  # Coinbase spot doesn't include 24h change
+                            "volume_24h": 0,
+                            "market_cap": 0,
+                            "source": "coinbase",
+                            "timestamp": datetime.now(timezone.utc).isoformat()
+                        }
+                        
+        except Exception as e:
+            logger.error(f"Coinbase fallback failed for {symbol}: {e}")
+        
+        return None
+    
+    async def _get_kucoin_price(self, symbol: str) -> Optional[Dict[str, Any]]:
+        """Get price from KuCoin API"""
+        try:
+            pair = f"{symbol}-USDT"
+            
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(
+                    f"https://api.kucoin.com/api/v1/market/stats",
+                    params={"symbol": pair}
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    if data.get("code") == "200000":
+                        stats = data.get("data", {})
+                        return {
+                            "symbol": symbol,
+                            "price": float(stats.get("last", 0)),
+                            "change_24h": float(stats.get("changeRate", 0)) * 100,
+                            "volume_24h": float(stats.get("volValue", 0)),
+                            "market_cap": 0,
+                            "source": "kucoin",
+                            "timestamp": datetime.now(timezone.utc).isoformat()
+                        }
+                        
+        except Exception as e:
+            logger.error(f"KuCoin fallback failed for {symbol}: {e}")
         
         return None
     
