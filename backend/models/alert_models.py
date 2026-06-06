@@ -44,6 +44,7 @@ class CreateAlertRequest(BaseModel):
     alert_type: AlertType = Field(..., description="Type of alert trigger")
     target_value: float = Field(..., description="Target price or percentage")
     notification_method: NotificationMethod = Field(default=NotificationMethod.EMAIL)
+    phone_number: Optional[str] = Field(None, description="Phone number for SMS notifications (E.164 format)")
     note: Optional[str] = Field(None, description="Optional note for the alert")
 
 

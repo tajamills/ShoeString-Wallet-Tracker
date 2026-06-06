@@ -416,15 +416,21 @@ async def create_alert(
         alert_id = str(uuid.uuid4())
         now = datetime.now(timezone.utc).isoformat()
         
+        # Get user email for notifications
+        user_doc = await db.users.find_one({"id": user_id}, {"_id": 0, "email": 1})
+        user_email = user_doc.get("email") if user_doc else None
+        
         alert_doc = {
             "alert_id": alert_id,
             "user_id": user_id,
+            "user_email": user_email,
             "asset_symbol": request.asset_symbol.upper(),
             "asset_type": request.asset_type.value,
             "alert_type": request.alert_type.value,
             "target_value": request.target_value,
             "current_price": current_price,
             "notification_method": request.notification_method.value,
+            "phone_number": request.phone_number,
             "status": AlertStatus.ACTIVE.value,
             "note": request.note,
             "created_at": now,

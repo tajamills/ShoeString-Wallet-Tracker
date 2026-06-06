@@ -77,6 +77,7 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
   const [alertType, setAlertType] = useState('price_above');
   const [targetValue, setTargetValue] = useState('');
   const [notificationMethod, setNotificationMethod] = useState('email');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [note, setNote] = useState('');
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
@@ -142,6 +143,12 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
       setError('Please fill in all required fields');
       return;
     }
+    
+    // Require phone for SMS
+    if ((notificationMethod === 'sms' || notificationMethod === 'both') && !phoneNumber) {
+      setError('Phone number is required for SMS notifications');
+      return;
+    }
 
     setCreating(true);
     setError('');
@@ -153,6 +160,7 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
         alert_type: alertType,
         target_value: parseFloat(targetValue),
         notification_method: notificationMethod,
+        phone_number: phoneNumber || null,
         note: note || null
       }, { headers: getAuthHeader() });
 
@@ -185,6 +193,7 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
     setAlertType('price_above');
     setTargetValue('');
     setNotificationMethod('email');
+    setPhoneNumber('');
     setNote('');
     setError('');
     onClose();
@@ -349,6 +358,22 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
                   ))}
                 </div>
               </div>
+
+              {/* Phone Number - show when SMS selected */}
+              {(notificationMethod === 'sms' || notificationMethod === 'both') && (
+                <div>
+                  <label className="text-sm text-gray-300 mb-2 block">Phone Number</label>
+                  <Input
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    placeholder="+1 (555) 123-4567"
+                    className="bg-slate-700 border-slate-600 text-white"
+                    data-testid="alert-phone-input"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Include country code (e.g., +1 for US)</p>
+                </div>
+              )}
 
               {/* Note */}
               <div>
