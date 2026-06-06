@@ -24,7 +24,10 @@ import {
   Zap,
   Clock,
   CreditCard,
-  Sparkles
+  Sparkles,
+  MessageCircle,
+  Send,
+  ExternalLink
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -522,17 +525,24 @@ export const AlertDashboard = ({ getAuthHeader }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  
+  // Telegram state
+  const [telegramStatus, setTelegramStatus] = useState(null);
+  const [telegramChatId, setTelegramChatId] = useState('');
+  const [connectingTelegram, setConnectingTelegram] = useState(false);
 
   // Fetch alerts and subscription status
   const fetchData = useCallback(async () => {
     try {
-      const [alertsRes, subRes] = await Promise.all([
+      const [alertsRes, subRes, tgRes] = await Promise.all([
         axios.get(`${API}/alerts`, { headers: getAuthHeader() }),
-        axios.get(`${API}/alerts/subscription`, { headers: getAuthHeader() })
+        axios.get(`${API}/alerts/subscription`, { headers: getAuthHeader() }),
+        axios.get(`${API}/alerts/telegram/status`, { headers: getAuthHeader() }).catch(() => ({ data: { connected: false } }))
       ]);
       
       setAlerts(alertsRes.data.alerts || []);
       setSubscription(subRes.data);
+      setTelegramStatus(tgRes.data);
     } catch (err) {
       console.error('Error fetching data:', err);
       setError('Failed to load alerts');
@@ -619,6 +629,61 @@ export const AlertDashboard = ({ getAuthHeader }) => {
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
       setError('Failed to delete alert');
+    }
+  };
+
+  // Connect Telegram
+  const connectTelegram = async () => {
+    if (!telegramChatId.trim()) {
+      setError('Please enter your Telegram Chat ID');
+      return;
+    }
+    
+    setConnectingTelegram(true);
+    setError('');
+    
+    try {
+      const response = await axios.post(
+        `${API}/alerts/telegram/connect?chat_id=${telegramChatId.trim()}`,
+        {},
+        { headers: getAuthHeader() }
+      );
+      
+      setSuccess(response.data.message);
+      setTelegramChatId('');
+      fetchData();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to connect Telegram');
+    } finally {
+      setConnectingTelegram(false);
+    }
+  };
+
+  // Disconnect Telegram
+  const disconnectTelegram = async () => {
+    try {
+      await axios.delete(`${API}/alerts/telegram/disconnect`, {
+        headers: getAuthHeader()
+      });
+      setSuccess('Telegram disconnected');
+      fetchData();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError('Failed to disconnect Telegram');
+    }
+  };
+
+  // Test Telegram
+  const testTelegram = async () => {
+    try {
+      await axios.post(`${API}/alerts/telegram/test`, {}, {
+        headers: getAuthHeader()
+      });
+      setSuccess('Test alert sent to Telegram!');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to send test');
     }
   };
 
@@ -761,6 +826,89 @@ export const AlertDashboard = ({ getAuthHeader }) => {
             );
           })}
         </div>
+      )}
+
+      {/* Telegram Connect Section */}
+      {canCreateAlerts && (
+        <Card className="bg-slate-800/50 border-slate-700">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <MessageCircle className="w-5 h-5 text-blue-400" />
+              <h3 className="text-white font-medium">Telegram Notifications</h3>
+              {telegramStatus?.connected && (
+                <Badge className="bg-green-600">Connected</Badge>
+              )}
+            </div>
+            
+            {telegramStatus?.connected ? (
+              <div className="flex items-center justify-between">
+                <p className="text-gray-400 text-sm">
+                  Alerts will be sent to your Telegram
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={testTelegram}
+                    className="border-slate-600 text-gray-300"
+                  >
+                    <Send className="w-4 h-4 mr-1" />
+                    Test
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={disconnectTelegram}
+                    className="border-red-600 text-red-400 hover:bg-red-900/20"
+                  >
+                    Disconnect
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-gray-400 text-sm">
+                  Get instant alerts on Telegram - unlimited, no rate limits.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <a
+                    href="https://t.me/cryptobagtrackerbot"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm"
+                  >
+                    <span>1. Start chat with @cryptobagtrackerbot</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+                <p className="text-gray-500 text-xs">
+                  2. Send /start to the bot, it will reply with your Chat ID
+                </p>
+                <div className="flex gap-2">
+                  <Input
+                    value={telegramChatId}
+                    onChange={(e) => setTelegramChatId(e.target.value)}
+                    placeholder="Enter your Chat ID"
+                    className="bg-slate-700 border-slate-600 text-white max-w-xs"
+                    data-testid="telegram-chat-id-input"
+                  />
+                  <Button
+                    onClick={connectTelegram}
+                    disabled={connectingTelegram || !telegramChatId.trim()}
+                    className="bg-blue-600 hover:bg-blue-700"
+                    data-testid="connect-telegram-btn"
+                  >
+                    {connectingTelegram ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      'Connect'
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {/* Create Alert Modal */}

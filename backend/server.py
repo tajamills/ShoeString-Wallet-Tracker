@@ -818,6 +818,24 @@ if static_dir.exists():
     app.mount("/downloads", StaticFiles(directory=str(static_dir)), name="downloads")
 
 
+# Alert monitor instance
+alert_monitor_instance = None
+
+@app.on_event("startup")
+async def startup_event():
+    """Start background services"""
+    global alert_monitor_instance
+    from services.alert_monitor import AlertMonitor
+    from services.alert_service import alert_service
+    
+    alert_monitor_instance = AlertMonitor(db, alert_service)
+    await alert_monitor_instance.start()
+    logger.info("Alert monitor started on startup")
+
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
+    global alert_monitor_instance
+    if alert_monitor_instance:
+        await alert_monitor_instance.stop()
     client.close()

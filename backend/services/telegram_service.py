@@ -40,6 +40,51 @@ async def send_telegram_message(chat_id: str, message: str) -> bool:
         return False
 
 
+async def handle_telegram_update(update: dict) -> bool:
+    """Handle incoming Telegram updates (messages from users)"""
+    try:
+        message = update.get("message", {})
+        chat_id = message.get("chat", {}).get("id")
+        text = message.get("text", "")
+        user = message.get("from", {})
+        first_name = user.get("first_name", "there")
+        
+        if not chat_id:
+            return False
+        
+        # Handle /start command
+        if text.startswith("/start"):
+            welcome_message = f"""
+👋 <b>Welcome, {first_name}!</b>
+
+Your Chat ID is: <code>{chat_id}</code>
+
+📋 <b>To connect alerts:</b>
+1. Copy your Chat ID above
+2. Go to Crypto Bag Tracker
+3. Paste it in the Telegram connect field
+
+You'll receive price alerts here instantly!
+
+<i>Crypto Bag Tracker</i>
+"""
+            await send_telegram_message(str(chat_id), welcome_message.strip())
+            return True
+        
+        # Handle unknown messages
+        help_message = f"""
+Your Chat ID is: <code>{chat_id}</code>
+
+Use this ID to connect in the Crypto Bag Tracker app.
+"""
+        await send_telegram_message(str(chat_id), help_message.strip())
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error handling Telegram update: {e}")
+        return False
+
+
 async def send_alert_telegram(
     chat_id: str,
     asset_symbol: str,

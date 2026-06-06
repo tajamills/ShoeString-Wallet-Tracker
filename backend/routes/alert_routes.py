@@ -720,7 +720,20 @@ async def get_alert_stats(
 
 # ============== TELEGRAM INTEGRATION ==============
 
-TELEGRAM_BOT_USERNAME = "CryptoBagTrackerBot"  # Update this with your bot's username
+TELEGRAM_BOT_USERNAME = "cryptobagtrackerbot"
+
+@router.post("/telegram/webhook")
+async def telegram_webhook(request: Request):
+    """Handle incoming Telegram updates"""
+    try:
+        update = await request.json()
+        from services.telegram_service import handle_telegram_update
+        await handle_telegram_update(update)
+        return {"ok": True}
+    except Exception as e:
+        logger.error(f"Telegram webhook error: {e}")
+        return {"ok": False}
+
 
 @router.get("/telegram/bot-info")
 async def get_telegram_bot_info():
