@@ -542,8 +542,8 @@ export const AlertDashboard = ({ getAuthHeader, user, onLogout, onSwitchToPortfo
           </button>
         </nav>
 
-        {/* Upgrade Card */}
-        {subscription?.status !== 'active' && (
+        {/* Upgrade Card - only show if NOT trialing and NOT active */}
+        {subscription?.status !== 'active' && subscription?.status !== 'trialing' && (
           <div className="p-3">
             <div className="bg-gradient-to-br from-purple-900/50 to-purple-800/30 rounded-xl p-4 border border-purple-500/20">
               <h4 className="text-white font-medium text-sm mb-1">Unlock Full Access</h4>
