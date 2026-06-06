@@ -2,25 +2,27 @@
 
 ## Overview
 Crypto Bag Tracker is a dual-feature cryptocurrency platform:
-1. **Price Alerts** (Primary) - Set price alerts for crypto and get notified via email/SMS
+1. **Price Alerts** (Primary) - Set price alerts for crypto and get notified via Telegram/SMS
 2. **Bag Tracker Beta** (Secondary) - Track wallet transactions across multiple blockchains and generate tax reports
 
 ## Original Problem Statement
 Build a cryptocurrency wallet analyzer with a **PIVOT to Price Alerts** as the primary feature:
-- Price alerts for crypto (stocks coming later)
+- Price alerts for crypto (stocks coming later - P1 priority)
 - Alert triggers: Price thresholds AND percentage changes
-- Notifications: Email + SMS
+- Notifications: Telegram (unlimited, primary) + SMS (via Zapier webhook) - **NO EMAIL**
 - Pricing: Single tier $18.88/month unlimited alerts with 7-day free trial
 - Keep existing tax tracker as "Bag Tracker Beta" tab (free for beta testers)
+- Alerts persist and keep triggering until deleted (with 1-hour cooldown)
 
 ## Tech Stack
 - **Frontend**: React with Tailwind CSS, shadcn/ui components
 - **Backend**: FastAPI (Python)
 - **Database**: MongoDB
-- **Price APIs**: CoinGecko (primary), Coinbase (fallback), KuCoin (secondary fallback)
-- **Payments**: Stripe ($18.88/month with 7-day trial)
-- **Notifications**: SendGrid (email), Twilio (SMS) - API keys required
+- **Price APIs**: CoinGecko (primary), Coinbase (fallback)
+- **Payments**: Stripe Live ($18.88/month with 7-day trial)
+- **Notifications**: Telegram Bot (unlimited), Zapier Webhook (SMS) - **NO EMAIL**
 - **Authentication**: Custom JWT-based auth
+- **Background Tasks**: alert_monitor.py for price polling
 
 ## Subscription Model (Alerts)
 | Feature | Free Trial (7 days) | Unlimited ($18.88/mo) |
