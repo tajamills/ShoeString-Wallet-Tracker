@@ -386,6 +386,52 @@ async def get_public_price(symbol: str):
         return {"symbol": symbol.upper(), "price": None, "change_24h": None}
 
 
+@router.get("/public/supported-coins")
+async def get_supported_coins_public():
+    """Get list of all supported cryptocurrencies (public endpoint)"""
+    try:
+        supported = []
+        iso20022_coins = {"XRP", "XLM", "ALGO", "XDC", "IOTA", "HBAR", "QNT", "ADA", "XTZ"}
+        
+        crypto_map = {
+            "XRP": ("Ripple", True), "XLM": ("Stellar", True), "ALGO": ("Algorand", True),
+            "XDC": ("XDC Network", True), "IOTA": ("IOTA", True), "HBAR": ("Hedera", True),
+            "QNT": ("Quant", True), "ADA": ("Cardano", True), "XTZ": ("Tezos", True),
+            "BTC": ("Bitcoin", False), "ETH": ("Ethereum", False), "BNB": ("BNB", False),
+            "SOL": ("Solana", False), "DOGE": ("Dogecoin", False), "TRX": ("Tron", False),
+            "TON": ("Toncoin", False), "DOT": ("Polkadot", False), "MATIC": ("Polygon", False),
+            "LINK": ("Chainlink", False), "AVAX": ("Avalanche", False), "SHIB": ("Shiba Inu", False),
+            "LTC": ("Litecoin", False), "BCH": ("Bitcoin Cash", False), "UNI": ("Uniswap", False),
+            "ATOM": ("Cosmos", False), "NEAR": ("NEAR Protocol", False), "APT": ("Aptos", False),
+            "FIL": ("Filecoin", False), "ICP": ("Internet Computer", False), "VET": ("VeChain", False),
+            "INJ": ("Injective", False), "OP": ("Optimism", False), "ARB": ("Arbitrum", False),
+            "SUI": ("Sui", False), "SEI": ("Sei", False), "TIA": ("Celestia", False),
+            "FTM": ("Fantom", False), "AAVE": ("Aave", False), "MKR": ("Maker", False),
+            "GRT": ("The Graph", False), "THETA": ("Theta", False), "RENDER": ("Render", False),
+            "SAND": ("The Sandbox", False), "MANA": ("Decentraland", False), "AXS": ("Axie Infinity", False),
+            "PEPE": ("Pepe", False), "WIF": ("dogwifhat", False), "BONK": ("Bonk", False),
+            "FLOKI": ("Floki", False), "ORDI": ("Ordinals", False),
+        }
+        
+        for symbol, (name, is_iso) in crypto_map.items():
+            supported.append({
+                "symbol": symbol,
+                "name": name,
+                "is_iso20022": is_iso
+            })
+        
+        supported.sort(key=lambda x: (not x["is_iso20022"], x["symbol"]))
+        
+        return {
+            "total": len(supported),
+            "iso20022_count": len(iso20022_coins),
+            "coins": supported
+        }
+    except Exception as e:
+        logger.error(f"Error fetching supported coins: {e}")
+        return {"total": 0, "coins": []}
+
+
 @router.post("")
 async def create_alert(
     request: CreateAlertRequest,
@@ -854,3 +900,130 @@ async def test_telegram_alert(user: dict = Depends(get_current_user)):
         return {"success": True, "message": "Test alert sent!"}
     else:
         raise HTTPException(status_code=500, detail="Failed to send test alert")
+
+
+
+# ============== COIN REQUEST ENDPOINTS ==============
+
+@router.post("/coin-request")
+async def submit_coin_request(
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
+    """Submit a request for a new cryptocurrency to be added"""
+    try:
+        data = await request.json()
+        symbol = data.get("symbol", "").upper().strip()
+        name = data.get("name", "").strip()
+        reason = data.get("reason", "").strip()
+        
+        if not symbol:
+            raise HTTPException(status_code=400, detail="Symbol is required")
+        
+        # Store the request in the database
+        coin_request = {
+            "user_id": current_user["user_id"],
+            "user_email": current_user.get("email", ""),
+            "symbol": symbol,
+            "name": name,
+            "reason": reason,
+            "status": "pending",
+            "created_at": datetime.now(timezone.utc),
+            "votes": 1
+        }
+        
+        # Check if this coin was already requested
+        existing = await db.coin_requests.find_one({"symbol": symbol})
+        if existing:
+            # Increment vote count
+            await db.coin_requests.update_one(
+                {"symbol": symbol},
+                {
+                    "$inc": {"votes": 1},
+                    "$addToSet": {"voters": current_user["user_id"]}
+                }
+            )
+            return {"success": True, "message": f"Vote added for {symbol}! Total votes: {existing.get('votes', 0) + 1}"}
+        
+        coin_request["voters"] = [current_user["user_id"]]
+        await db.coin_requests.insert_one(coin_request)
+        
+        return {"success": True, "message": f"Request submitted for {symbol}. We'll review it soon!"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error submitting coin request: {e}")
+        raise HTTPException(status_code=500, detail="Failed to submit request")
+
+
+@router.get("/coin-requests")
+async def get_coin_requests(current_user: dict = Depends(get_current_user)):
+    """Get list of requested coins (top by votes)"""
+    try:
+        requests = await db.coin_requests.find(
+            {"status": "pending"}
+        ).sort("votes", -1).limit(20).to_list(length=20)
+        
+        return {
+            "requests": [
+                {
+                    "symbol": r["symbol"],
+                    "name": r.get("name", ""),
+                    "votes": r.get("votes", 0),
+                    "status": r.get("status", "pending")
+                }
+                for r in requests
+            ]
+        }
+    except Exception as e:
+        logger.error(f"Error fetching coin requests: {e}")
+        return {"requests": []}
+
+
+@router.get("/supported-coins")
+async def get_supported_coins():
+    """Get list of all supported cryptocurrencies (public endpoint)"""
+    try:
+        # Get the crypto ID map from alert service
+        supported = []
+        iso20022_coins = {"XRP", "XLM", "ALGO", "XDC", "IOTA", "HBAR", "QNT", "ADA", "XTZ"}
+        
+        crypto_map = {
+            "XRP": ("Ripple", True), "XLM": ("Stellar", True), "ALGO": ("Algorand", True),
+            "XDC": ("XDC Network", True), "IOTA": ("IOTA", True), "HBAR": ("Hedera", True),
+            "QNT": ("Quant", True), "ADA": ("Cardano", True), "XTZ": ("Tezos", True),
+            "BTC": ("Bitcoin", False), "ETH": ("Ethereum", False), "BNB": ("BNB", False),
+            "SOL": ("Solana", False), "DOGE": ("Dogecoin", False), "TRX": ("Tron", False),
+            "TON": ("Toncoin", False), "DOT": ("Polkadot", False), "MATIC": ("Polygon", False),
+            "LINK": ("Chainlink", False), "AVAX": ("Avalanche", False), "SHIB": ("Shiba Inu", False),
+            "LTC": ("Litecoin", False), "BCH": ("Bitcoin Cash", False), "UNI": ("Uniswap", False),
+            "ATOM": ("Cosmos", False), "NEAR": ("NEAR Protocol", False), "APT": ("Aptos", False),
+            "FIL": ("Filecoin", False), "ICP": ("Internet Computer", False), "VET": ("VeChain", False),
+            "INJ": ("Injective", False), "OP": ("Optimism", False), "ARB": ("Arbitrum", False),
+            "SUI": ("Sui", False), "SEI": ("Sei", False), "TIA": ("Celestia", False),
+            "FTM": ("Fantom", False), "AAVE": ("Aave", False), "MKR": ("Maker", False),
+            "GRT": ("The Graph", False), "THETA": ("Theta", False), "RENDER": ("Render", False),
+            "SAND": ("The Sandbox", False), "MANA": ("Decentraland", False), "AXS": ("Axie Infinity", False),
+            "PEPE": ("Pepe", False), "WIF": ("dogwifhat", False), "BONK": ("Bonk", False),
+            "FLOKI": ("Floki", False), "ORDI": ("Ordinals", False),
+        }
+        
+        for symbol, (name, is_iso) in crypto_map.items():
+            supported.append({
+                "symbol": symbol,
+                "name": name,
+                "is_iso20022": is_iso
+            })
+        
+        # Sort: ISO 20022 first, then alphabetically
+        supported.sort(key=lambda x: (not x["is_iso20022"], x["symbol"]))
+        
+        return {
+            "total": len(supported),
+            "iso20022_count": len(iso20022_coins),
+            "coins": supported
+        }
+    except Exception as e:
+        logger.error(f"Error fetching supported coins: {e}")
+        return {"total": 0, "coins": []}

@@ -22,7 +22,10 @@ import {
   MagnifyingGlass,
   CurrencyDollar,
   Percent,
-  Folder
+  Folder,
+  PaperPlaneTilt,
+  ListBullets,
+  Certificate
 } from '@phosphor-icons/react';
 import { Input } from '@/components/ui/input';
 import axios from 'axios';
@@ -373,6 +376,245 @@ const CreateAlertModal = ({ isOpen, onClose, onCreated, getAuthHeader }) => {
   );
 };
 
+// Request Coin Modal Component
+const RequestCoinModal = ({ isOpen, onClose, getAuthHeader, onSuccess }) => {
+  const [symbol, setSymbol] = useState('');
+  const [name, setName] = useState('');
+  const [reason, setReason] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [supportedCoins, setSupportedCoins] = useState([]);
+  const [coinRequests, setCoinRequests] = useState([]);
+  const [activeTab, setActiveTab] = useState('request'); // 'request', 'supported', 'requested'
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchSupportedCoins();
+      fetchCoinRequests();
+    }
+  }, [isOpen]);
+
+  const fetchSupportedCoins = async () => {
+    try {
+      const response = await axios.get(`${API}/alerts/public/supported-coins`);
+      setSupportedCoins(response.data.coins || []);
+    } catch (err) {
+      console.error('Error fetching supported coins:', err);
+    }
+  };
+
+  const fetchCoinRequests = async () => {
+    try {
+      const response = await axios.get(`${API}/alerts/coin-requests`, { headers: getAuthHeader() });
+      setCoinRequests(response.data.requests || []);
+    } catch (err) {
+      console.error('Error fetching coin requests:', err);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!symbol.trim()) {
+      setError('Symbol is required');
+      return;
+    }
+    setSubmitting(true);
+    setError('');
+    try {
+      const response = await axios.post(`${API}/alerts/coin-request`, {
+        symbol: symbol.trim(),
+        name: name.trim(),
+        reason: reason.trim()
+      }, { headers: getAuthHeader() });
+      onSuccess(response.data.message);
+      handleClose();
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to submit request');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleClose = () => {
+    setSymbol('');
+    setName('');
+    setReason('');
+    setError('');
+    setActiveTab('request');
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  const iso20022Coins = supportedCoins.filter(c => c.is_iso20022);
+  const otherCoins = supportedCoins.filter(c => !c.is_iso20022);
+
+  return (
+    <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-[#0A0A0C] border border-[#1F1F22] w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="flex items-center justify-between p-4 border-b border-[#1F1F22]">
+          <h2 className="text-white font-semibold tracking-tight">COIN LIBRARY</h2>
+          <button onClick={handleClose} className="text-[#8A8A93] hover:text-white transition-colors">
+            <X size={20} weight="bold" />
+          </button>
+        </div>
+        
+        {/* Tabs */}
+        <div className="flex border-b border-[#1F1F22]">
+          <button
+            onClick={() => setActiveTab('supported')}
+            className={`flex-1 px-4 py-3 text-sm font-mono transition-colors ${
+              activeTab === 'supported' ? 'bg-[#161618] text-white border-b-2 border-[#00C805]' : 'text-[#8A8A93] hover:text-white'
+            }`}
+          >
+            <ListBullets size={16} className="inline mr-2" />
+            SUPPORTED ({supportedCoins.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('request')}
+            className={`flex-1 px-4 py-3 text-sm font-mono transition-colors ${
+              activeTab === 'request' ? 'bg-[#161618] text-white border-b-2 border-[#00C805]' : 'text-[#8A8A93] hover:text-white'
+            }`}
+          >
+            <PaperPlaneTilt size={16} className="inline mr-2" />
+            REQUEST
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4">
+          {activeTab === 'supported' && (
+            <>
+              {/* ISO 20022 Section */}
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <Certificate size={18} className="text-[#00C805]" weight="fill" />
+                  <h3 className="text-white font-semibold text-sm">ISO 20022 COMPLIANT</h3>
+                  <span className="text-[10px] border border-[#00C805]/30 text-[#00C805] px-1.5 py-0.5 font-mono">
+                    {iso20022Coins.length} COINS
+                  </span>
+                </div>
+                <p className="text-[#8A8A93] text-xs mb-3">
+                  These cryptocurrencies are compliant with ISO 20022 financial messaging standard.
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {iso20022Coins.map(coin => (
+                    <div key={coin.symbol} className="bg-[#0C0C0E] border border-[#00C805]/30 p-2 text-center">
+                      <span className="text-white font-mono text-sm">{coin.symbol}</span>
+                      <p className="text-[#8A8A93] text-[10px] truncate">{coin.name}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Other Supported Coins */}
+              <div>
+                <h3 className="text-white font-semibold text-sm mb-3">ALL SUPPORTED COINS</h3>
+                <div className="grid grid-cols-4 gap-1 max-h-64 overflow-y-auto">
+                  {otherCoins.map(coin => (
+                    <div key={coin.symbol} className="bg-[#0C0C0E] border border-[#1F1F22] px-2 py-1.5 text-center">
+                      <span className="text-white font-mono text-xs">{coin.symbol}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
+          {activeTab === 'request' && (
+            <>
+              {/* Existing Requests */}
+              {coinRequests.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-white font-semibold text-sm mb-3">COMMUNITY REQUESTS</h3>
+                  <p className="text-[#8A8A93] text-xs mb-3">Vote for coins you'd like to see added:</p>
+                  <div className="space-y-2 max-h-32 overflow-y-auto">
+                    {coinRequests.map((req, idx) => (
+                      <div key={idx} className="bg-[#0C0C0E] border border-[#1F1F22] p-2 flex items-center justify-between">
+                        <div>
+                          <span className="text-white font-mono text-sm">{req.symbol}</span>
+                          {req.name && <span className="text-[#8A8A93] text-xs ml-2">{req.name}</span>}
+                        </div>
+                        <span className="text-[#00C805] font-mono text-xs">{req.votes} votes</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Request Form */}
+              <div>
+                <h3 className="text-white font-semibold text-sm mb-3">REQUEST A NEW COIN</h3>
+                <p className="text-[#8A8A93] text-xs mb-4">
+                  Can't find a coin? Submit a request and we'll add it.
+                </p>
+
+                {error && (
+                  <div className="bg-[#FF3B30]/10 border border-[#FF3B30]/30 px-3 py-2 text-[#FF3B30] text-sm flex items-center gap-2 mb-4">
+                    <Warning size={16} weight="fill" />
+                    {error}
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-xs font-semibold tracking-[0.1em] uppercase text-[#8A8A93] mb-2 block">
+                      SYMBOL *
+                    </label>
+                    <Input
+                      value={symbol}
+                      onChange={(e) => setSymbol(e.target.value.toUpperCase())}
+                      placeholder="e.g. KASPA"
+                      className="bg-[#0C0C0E] border-[#1F1F22] text-white font-mono rounded-none"
+                      maxLength={10}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="text-xs font-semibold tracking-[0.1em] uppercase text-[#8A8A93] mb-2 block">
+                      FULL NAME
+                    </label>
+                    <Input
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="e.g. Kaspa"
+                      className="bg-[#0C0C0E] border-[#1F1F22] text-white rounded-none"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="text-xs font-semibold tracking-[0.1em] uppercase text-[#8A8A93] mb-2 block">
+                      WHY ADD THIS COIN?
+                    </label>
+                    <textarea
+                      value={reason}
+                      onChange={(e) => setReason(e.target.value)}
+                      placeholder="Optional: Tell us why you need this coin..."
+                      className="w-full bg-[#0C0C0E] border border-[#1F1F22] text-white p-3 text-sm resize-none h-20"
+                      maxLength={200}
+                    />
+                  </div>
+
+                  <button
+                    onClick={handleSubmit}
+                    disabled={submitting || !symbol.trim()}
+                    className="w-full bg-white text-black py-2.5 font-semibold hover:bg-gray-200 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {submitting ? (
+                      <CircleNotch size={16} className="animate-spin" />
+                    ) : (
+                      <PaperPlaneTilt size={16} weight="fill" />
+                    )}
+                    SUBMIT REQUEST
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Main Dashboard Component - Professional Design
 export const AlertDashboard = ({ getAuthHeader, user, onLogout, portfolioContent, initialView = 'alerts' }) => {
   const [alerts, setAlerts] = useState([]);
@@ -380,6 +622,7 @@ export const AlertDashboard = ({ getAuthHeader, user, onLogout, portfolioContent
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showCoinLibrary, setShowCoinLibrary] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [activeNav, setActiveNav] = useState(initialView);
@@ -644,16 +887,26 @@ export const AlertDashboard = ({ getAuthHeader, user, onLogout, portfolioContent
                   <h2 className="text-white font-semibold text-lg tracking-tight">YOUR ALERTS</h2>
                   <p className="text-[#8A8A93] text-xs font-mono">{alerts.length} CONFIGURED</p>
                 </div>
-                {canCreateAlerts && (
+                <div className="flex items-center gap-2">
                   <button
-                    onClick={() => setShowCreateModal(true)}
-                    className="bg-white text-black px-4 py-2 text-sm font-semibold flex items-center gap-2 hover:bg-gray-200 transition-colors"
-                    data-testid="new-alert-btn"
+                    onClick={() => setShowCoinLibrary(true)}
+                    className="border border-[#1F1F22] text-[#8A8A93] px-3 py-2 text-sm font-mono flex items-center gap-2 hover:bg-[#161618] hover:text-white transition-colors"
+                    data-testid="coin-library-btn"
                   >
-                    <Plus size={16} weight="bold" />
-                    NEW ALERT
+                    <ListBullets size={16} />
+                    COINS
                   </button>
-                )}
+                  {canCreateAlerts && (
+                    <button
+                      onClick={() => setShowCreateModal(true)}
+                      className="bg-white text-black px-4 py-2 text-sm font-semibold flex items-center gap-2 hover:bg-gray-200 transition-colors"
+                      data-testid="new-alert-btn"
+                    >
+                      <Plus size={16} weight="bold" />
+                      NEW ALERT
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Alerts List */}
@@ -837,6 +1090,16 @@ export const AlertDashboard = ({ getAuthHeader, user, onLogout, portfolioContent
         onClose={() => setShowCreateModal(false)}
         onCreated={handleAlertCreated}
         getAuthHeader={getAuthHeader}
+      />
+
+      <RequestCoinModal
+        isOpen={showCoinLibrary}
+        onClose={() => setShowCoinLibrary(false)}
+        getAuthHeader={getAuthHeader}
+        onSuccess={(msg) => {
+          setSuccess(msg);
+          setTimeout(() => setSuccess(''), 5000);
+        }}
       />
     </div>
   );
