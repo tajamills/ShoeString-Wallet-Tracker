@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Wallet, TrendingUp, TrendingDown, DollarSign, Activity, LogOut, User, Crown, Download, Calculator, Tag, Users, Link2, HelpCircle, AlertTriangle, Key, Plus, Bell, FileText } from 'lucide-react';
+import { Loader2, Wallet, TrendingUp, TrendingDown, DollarSign, Activity, LogOut, User, Crown, Download, Calculator, Tag, Users, Link2, HelpCircle, AlertTriangle, Key, Plus, Bell, FileText, Fuel } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAnalysis } from '@/hooks/useAnalysis';
@@ -1192,122 +1192,79 @@ function App() {
               </Alert>
             )}
 
-            {/* Portfolio Value Header */}
-            {analysis.total_value_usd !== undefined && (
-              <Card className="bg-gradient-to-r from-green-900/30 to-emerald-800/30 border-green-700">
-                <CardContent className="pt-4 md:pt-6">
-                  <div className="text-center">
-                    <p className="text-[#8A8A93] text-xs md:text-sm mb-1 md:mb-2">Portfolio Value</p>
-                    <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold text-white mb-1 md:mb-2">
-                      {formatUSD(analysis.total_value_usd)}
-                    </h2>
-                    {analysis.current_price_usd && (
-                      <p className="text-[#8A8A93] text-xs md:text-sm">
-                        {formatNumber(analysis.netEth)} {getChainSymbol(analysis.chain || selectedChain)} 
-                        <span className="mx-1 md:mx-2">•</span>
-                        1 {getChainSymbol(analysis.chain || selectedChain)} = {formatUSD(analysis.current_price_usd)}
-                      </p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Lifetime Statistics */}
+            {/* Portfolio Statistics - Fixed to show meaningful data */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-              <Card className="bg-gradient-to-br from-green-900/30 to-green-800/20 border-green-700" data-testid="received-card">
+              {/* Current Balance - PRIMARY */}
+              <Card className="bg-[#0C0C0E] border-[#00C805]/30 col-span-2" data-testid="balance-card">
                 <CardHeader className="pb-2 md:pb-3">
-                  <CardTitle className="text-xs md:text-sm font-medium text-green-300 flex items-center gap-1 md:gap-2">
-                    <TrendingUp className="w-3 h-3 md:w-4 md:h-4" />
-                    <span className="hidden sm:inline">Total Flow In (All Time)</span>
-                    <span className="sm:hidden">Flow In</span>
+                  <CardTitle className="text-xs md:text-sm font-semibold text-[#00C805] flex items-center gap-1 md:gap-2 tracking-wider">
+                    <Wallet className="w-3 h-3 md:w-4 md:h-4" />
+                    CURRENT HOLDINGS
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-lg md:text-3xl font-bold text-white">
-                    {formatNumber(analysis.totalEthReceived)} <span className="text-xs md:text-base">{getChainSymbol(analysis.chain || selectedChain)}</span>
-                  </div>
-                  {analysis.total_received_usd !== undefined && (
-                    <p className="text-sm md:text-xl font-semibold text-green-300 mt-1">
-                      {formatUSD(analysis.total_received_usd)}
+                  <p className="text-2xl md:text-4xl font-bold text-white font-mono tabular-nums" data-testid="balance-value">
+                    {formatNumber(analysis.currentBalance || analysis.netEth)} <span className="text-lg md:text-2xl text-[#8A8A93]">{getChainSymbol(analysis.chain || selectedChain)}</span>
+                  </p>
+                  {analysis.total_value_usd !== undefined && (
+                    <p className="text-xl md:text-2xl font-semibold mt-2 text-[#00C805] font-mono tabular-nums">
+                      {formatUSD(analysis.total_value_usd)}
                     </p>
                   )}
-                  <p className="text-xs text-green-300 mt-1">
-                    {analysis.incomingTransactionCount} txns
-                  </p>
+                  {analysis.current_price_usd && (
+                    <p className="text-[#8A8A93] text-xs mt-2 font-mono">
+                      1 {getChainSymbol(analysis.chain || selectedChain)} = {formatUSD(analysis.current_price_usd)}
+                    </p>
+                  )}
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-br from-red-900/30 to-red-800/20 border-red-700" data-testid="sent-card">
+              {/* Transaction Activity */}
+              <Card className="bg-[#0C0C0E] border-[#1F1F22]" data-testid="activity-card">
                 <CardHeader className="pb-2 md:pb-3">
-                  <CardTitle className="text-xs md:text-sm font-medium text-red-300 flex items-center gap-1 md:gap-2">
-                    <TrendingDown className="w-3 h-3 md:w-4 md:h-4" />
-                    <span className="hidden sm:inline">Total Flow Out (All Time)</span>
-                    <span className="sm:hidden">Flow Out</span>
+                  <CardTitle className="text-xs md:text-sm font-semibold text-[#8A8A93] flex items-center gap-1 md:gap-2 tracking-wider">
+                    <Activity className="w-3 h-3 md:w-4 md:h-4" />
+                    ACTIVITY
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-lg md:text-3xl font-bold text-white">
-                    {formatNumber(analysis.totalEthSent)} <span className="text-xs md:text-base">{getChainSymbol(analysis.chain || selectedChain)}</span>
-                  </div>
-                  {analysis.total_sent_usd !== undefined && (
-                    <p className="text-sm md:text-xl font-semibold text-red-300 mt-1">
-                      {formatUSD(analysis.total_sent_usd)}
-                    </p>
-                  )}
-                  <p className="text-xs text-red-300 mt-1">
-                    {analysis.outgoingTransactionCount} txns
+                  <p className="text-lg md:text-2xl font-bold text-white font-mono tabular-nums">
+                    {analysis.incomingTransactionCount + analysis.outgoingTransactionCount}
                   </p>
+                  <p className="text-[#8A8A93] text-xs mt-1">
+                    Total Transactions
+                  </p>
+                  <div className="flex gap-3 mt-2 text-xs font-mono">
+                    <span className="text-[#00C805]">↓ {analysis.incomingTransactionCount} in</span>
+                    <span className="text-[#FF3B30]">↑ {analysis.outgoingTransactionCount} out</span>
+                  </div>
                 </CardContent>
               </Card>
 
+              {/* Gas Fees - Only for EVM chains */}
               {(analysis.totalGasFees > 0 || selectedChain === 'ethereum' || selectedChain === 'arbitrum') && (
-                <Card className="bg-gradient-to-br from-orange-900/30 to-orange-800/20 border-orange-700" data-testid="gas-fees-card">
+                <Card className="bg-[#0C0C0E] border-[#1F1F22]" data-testid="gas-fees-card">
                   <CardHeader className="pb-2 md:pb-3">
-                    <CardTitle className="text-xs md:text-sm font-medium text-orange-300 flex items-center gap-1 md:gap-2">
-                      <Activity className="w-3 h-3 md:w-4 md:h-4" />
-                      <span className="hidden sm:inline">Gas Fees (All Time)</span>
-                      <span className="sm:hidden">Gas Fees</span>
+                    <CardTitle className="text-xs md:text-sm font-semibold text-[#FFB800] flex items-center gap-1 md:gap-2 tracking-wider">
+                      <Fuel className="w-3 h-3 md:w-4 md:h-4" />
+                      GAS SPENT
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-lg md:text-3xl font-bold text-white">
-                      {formatNumber(analysis.totalGasFees)} <span className="text-xs md:text-base">{getChainSymbol(analysis.chain || selectedChain)}</span>
-                    </div>
+                    <p className="text-lg md:text-2xl font-bold text-white font-mono tabular-nums">
+                      {formatNumber(analysis.totalGasFees)} <span className="text-sm text-[#8A8A93]">{getChainSymbol(analysis.chain || selectedChain)}</span>
+                    </p>
                     {analysis.total_gas_fees_usd !== undefined && (
-                      <p className="text-sm md:text-xl font-semibold text-orange-300 mt-1">
+                      <p className="text-sm font-semibold text-[#FFB800] mt-1 font-mono tabular-nums">
                         {formatUSD(analysis.total_gas_fees_usd)}
                       </p>
                     )}
-                    <p className="text-xs text-orange-300 mt-1">
-                      Network fees
+                    <p className="text-[#8A8A93] text-xs mt-1">
+                      Network fees paid
                     </p>
                   </CardContent>
                 </Card>
               )}
-
-              <Card className="bg-gradient-to-br from-blue-900/30 to-indigo-800/20 border-blue-700" data-testid="balance-card">
-                <CardHeader className="pb-2 md:pb-3">
-                  <CardTitle className="text-xs md:text-sm font-medium text-blue-300 flex items-center gap-1 md:gap-2">
-                    <Wallet className="w-3 h-3 md:w-4 md:h-4" />
-                    <span className="hidden sm:inline">Current Balance</span>
-                    <span className="sm:hidden">Balance</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-lg md:text-2xl font-bold text-blue-400" data-testid="balance-value">
-                    {formatNumber(analysis.currentBalance || analysis.netEth)} <span className="text-xs md:text-base">{getChainSymbol(analysis.chain || selectedChain)}</span>
-                  </p>
-                  {analysis.total_value_usd !== undefined && (
-                    <p className="text-sm md:text-lg font-semibold mt-1 text-blue-300">
-                      {formatUSD(analysis.total_value_usd)}
-                    </p>
-                  )}
-                  <p className="text-[#8A8A93] text-xs mt-1">
-                    In wallet now
-                  </p>
-                </CardContent>
-              </Card>
             </div>
 
             {/* Wallet Address Info */}
@@ -1331,40 +1288,25 @@ function App() {
               </CardContent>
             </Card>
 
-            {/* ERC-20 Tokens */}
+            {/* ERC-20 Token Activity - NOTE: Shows transaction history, not current balances */}
             {(Object.keys(analysis.tokensSent || {}).length > 0 || Object.keys(analysis.tokensReceived || {}).length > 0) && (
-              <Card className="bg-[#0C0C0E]/50 border-[#1F1F22]" data-testid="tokens-card">
+              <Card className="bg-[#0C0C0E] border-[#1F1F22]" data-testid="tokens-card">
                 <CardHeader>
-                  <CardTitle className="text-white">ERC-20 Token Activity</CardTitle>
+                  <CardTitle className="text-white text-sm font-semibold tracking-wider">TOKEN ACTIVITY</CardTitle>
+                  <CardDescription className="text-[#8A8A93] text-xs">
+                    Tokens detected in transaction history. Note: This shows tokens involved in transactions, not current holdings.
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {Object.keys(analysis.tokensReceived || {}).length > 0 && (
-                      <div>
-                        <h3 className="text-green-300 font-semibold mb-3">Tokens Received</h3>
-                        <div className="space-y-2">
-                          {Object.entries(analysis.tokensReceived).map(([token, amount]) => (
-                            <div key={token} className="flex items-center justify-between bg-green-900/10 p-2 rounded">
-                              <Badge variant="outline" className="text-green-300 border-green-700">{token}</Badge>
-                              <span className="text-white font-mono text-sm">{formatNumber(amount)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {Object.keys(analysis.tokensSent || {}).length > 0 && (
-                      <div>
-                        <h3 className="text-red-300 font-semibold mb-3">Tokens Sent</h3>
-                        <div className="space-y-2">
-                          {Object.entries(analysis.tokensSent).map(([token, amount]) => (
-                            <div key={token} className="flex items-center justify-between bg-red-900/10 p-2 rounded">
-                              <Badge variant="outline" className="text-red-300 border-red-700">{token}</Badge>
-                              <span className="text-white font-mono text-sm">{formatNumber(amount)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                  <div className="flex flex-wrap gap-2">
+                    {[...new Set([
+                      ...Object.keys(analysis.tokensReceived || {}),
+                      ...Object.keys(analysis.tokensSent || {})
+                    ])].map((token) => (
+                      <span key={token} className="bg-[#161618] border border-[#1F1F22] text-white px-2 py-1 text-xs font-mono">
+                        {token}
+                      </span>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
@@ -1372,53 +1314,46 @@ function App() {
 
             {/* Advanced Analytics - Premium/Pro Feature */}
             {user?.subscription_tier !== 'free' && (
-              <Card className="bg-gradient-to-br from-indigo-900/30 to-indigo-800/20 border-indigo-700">
+              <Card className="bg-[#0C0C0E] border-[#1F1F22]">
                 <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <Activity className="w-5 h-5 text-indigo-400" />
-                    Advanced Analytics
-                    <Badge className="bg-white text-black ml-2">Premium</Badge>
+                  <CardTitle className="text-white flex items-center gap-2 text-sm font-semibold tracking-wider">
+                    <Activity className="w-4 h-4 text-[#00C805]" />
+                    WALLET ANALYTICS
+                    <span className="text-[10px] border border-[#00C805]/30 text-[#00C805] px-1.5 py-0.5 font-mono">PREMIUM</span>
                   </CardTitle>
-                  <CardDescription className="text-[#8A8A93]">
-                    Deeper insights into your wallet activity
-                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* Average Transaction Value */}
-                    <div className="bg-[#050505]/50 rounded-lg p-4">
-                      <div className="text-sm text-[#8A8A93] mb-1">Avg Transaction Value</div>
-                      <div className="text-2xl font-bold text-white">
-                        {formatNumber(
-                          (analysis.totalEthReceived + analysis.totalEthSent) / 
-                          Math.max(1, (analysis.incomingTransactionCount + analysis.outgoingTransactionCount))
-                        )} {getChainSymbol(analysis.chain || selectedChain)}
+                    {/* Transaction Count */}
+                    <div className="bg-[#161618] border border-[#1F1F22] p-4">
+                      <div className="text-xs text-[#8A8A93] mb-1 font-mono tracking-wider">TOTAL TRANSACTIONS</div>
+                      <div className="text-2xl font-bold text-white font-mono tabular-nums">
+                        {analysis.incomingTransactionCount + analysis.outgoingTransactionCount}
                       </div>
-                      <div className="text-xs text-[#4A4A52] mt-1">Per transaction</div>
                     </div>
 
-                    {/* Transaction Activity Ratio */}
-                    <div className="bg-[#050505]/50 rounded-lg p-4">
-                      <div className="text-sm text-[#8A8A93] mb-1">Activity Ratio</div>
-                      <div className="text-2xl font-bold text-white">
+                    {/* Activity Ratio */}
+                    <div className="bg-[#161618] border border-[#1F1F22] p-4">
+                      <div className="text-xs text-[#8A8A93] mb-1 font-mono tracking-wider">ACTIVITY RATIO</div>
+                      <div className="text-2xl font-bold text-white font-mono tabular-nums">
                         {analysis.outgoingTransactionCount > 0
                           ? (analysis.incomingTransactionCount / analysis.outgoingTransactionCount).toFixed(2)
                           : analysis.incomingTransactionCount.toFixed(2)
                         }:1
                       </div>
-                      <div className="text-xs text-[#4A4A52] mt-1">Incoming : Outgoing</div>
+                      <div className="text-xs text-[#4A4A52] mt-1">In : Out</div>
                     </div>
 
                     {/* Unique Assets */}
-                    <div className="bg-[#050505]/50 rounded-lg p-4">
-                      <div className="text-sm text-[#8A8A93] mb-1">Unique Assets</div>
-                      <div className="text-2xl font-bold text-white">
+                    <div className="bg-[#161618] border border-[#1F1F22] p-4">
+                      <div className="text-xs text-[#8A8A93] mb-1 font-mono tracking-wider">UNIQUE TOKENS</div>
+                      <div className="text-2xl font-bold text-white font-mono tabular-nums">
                         {1 + new Set([
                           ...Object.keys(analysis.tokensReceived || {}),
                           ...Object.keys(analysis.tokensSent || {})
                         ]).size}
                       </div>
-                      <div className="text-xs text-[#4A4A52] mt-1">Native + Tokens</div>
+                      <div className="text-xs text-[#4A4A52] mt-1">Native + ERC-20</div>
                     </div>
 
                     {/* Gas Efficiency (EVM chains only) */}
@@ -1443,13 +1378,15 @@ function App() {
                       </div>
                     </div>
 
-                    {/* Total Volume */}
-                    <div className="bg-[#050505]/50 rounded-lg p-4">
-                      <div className="text-sm text-[#8A8A93] mb-1">Total Volume</div>
-                      <div className="text-2xl font-bold text-white">
-                        {formatNumber(analysis.totalEthReceived + analysis.totalEthSent)} {getChainSymbol(analysis.chain || selectedChain)}
+                    {/* First Transaction */}
+                    <div className="bg-[#161618] border border-[#1F1F22] p-4">
+                      <div className="text-xs text-[#8A8A93] mb-1 font-mono tracking-wider">WALLET AGE</div>
+                      <div className="text-lg font-bold text-white font-mono">
+                        {analysis.transactions && analysis.transactions.length > 0 
+                          ? `${Math.floor((Date.now() - new Date(analysis.transactions[analysis.transactions.length - 1]?.timestamp || 0).getTime()) / (1000 * 60 * 60 * 24))} days`
+                          : 'Unknown'}
                       </div>
-                      <div className="text-xs text-[#4A4A52] mt-1">Combined flow</div>
+                      <div className="text-xs text-[#4A4A52] mt-1">Since first tx</div>
                     </div>
                   </div>
                 </CardContent>
