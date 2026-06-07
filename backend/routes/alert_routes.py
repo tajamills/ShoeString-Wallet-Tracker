@@ -388,32 +388,94 @@ async def get_public_price(symbol: str):
 
 @router.get("/public/supported-coins")
 async def get_supported_coins_public():
-    """Get list of all supported cryptocurrencies (public endpoint)"""
+    """Get list of all supported cryptocurrencies (public endpoint) - Top 200+"""
     try:
         supported = []
         iso20022_coins = {"XRP", "XLM", "ALGO", "XDC", "IOTA", "HBAR", "QNT", "ADA", "XTZ"}
         
+        # Full list of 200+ supported cryptocurrencies
         crypto_map = {
-            "XRP": ("Ripple", True), "XLM": ("Stellar", True), "ALGO": ("Algorand", True),
-            "XDC": ("XDC Network", True), "IOTA": ("IOTA", True), "HBAR": ("Hedera", True),
-            "QNT": ("Quant", True), "ADA": ("Cardano", True), "XTZ": ("Tezos", True),
-            "BTC": ("Bitcoin", False), "ETH": ("Ethereum", False), "BNB": ("BNB", False),
-            "SOL": ("Solana", False), "DOGE": ("Dogecoin", False), "TRX": ("Tron", False),
-            "TON": ("Toncoin", False), "DOT": ("Polkadot", False), "MATIC": ("Polygon", False),
-            "LINK": ("Chainlink", False), "AVAX": ("Avalanche", False), "SHIB": ("Shiba Inu", False),
-            "LTC": ("Litecoin", False), "BCH": ("Bitcoin Cash", False), "UNI": ("Uniswap", False),
-            "ATOM": ("Cosmos", False), "NEAR": ("NEAR Protocol", False), "APT": ("Aptos", False),
-            "FIL": ("Filecoin", False), "ICP": ("Internet Computer", False), "VET": ("VeChain", False),
-            "INJ": ("Injective", False), "OP": ("Optimism", False), "ARB": ("Arbitrum", False),
-            "SUI": ("Sui", False), "SEI": ("Sei", False), "TIA": ("Celestia", False),
-            "FTM": ("Fantom", False), "AAVE": ("Aave", False), "MKR": ("Maker", False),
-            "GRT": ("The Graph", False), "THETA": ("Theta", False), "RENDER": ("Render", False),
-            "SAND": ("The Sandbox", False), "MANA": ("Decentraland", False), "AXS": ("Axie Infinity", False),
-            "PEPE": ("Pepe", False), "WIF": ("dogwifhat", False), "BONK": ("Bonk", False),
-            "FLOKI": ("Floki", False), "ORDI": ("Ordinals", False),
+            # === ISO 20022 COMPLIANT (9 coins) ===
+            "XRP": "Ripple", "XLM": "Stellar", "ALGO": "Algorand",
+            "XDC": "XDC Network", "IOTA": "IOTA", "HBAR": "Hedera",
+            "QNT": "Quant", "ADA": "Cardano", "XTZ": "Tezos",
+            
+            # === TOP 50 BY MARKET CAP ===
+            "BTC": "Bitcoin", "ETH": "Ethereum", "BNB": "BNB",
+            "SOL": "Solana", "DOGE": "Dogecoin", "TRX": "Tron",
+            "TON": "Toncoin", "DOT": "Polkadot", "MATIC": "Polygon",
+            "LINK": "Chainlink", "AVAX": "Avalanche", "SHIB": "Shiba Inu",
+            "LTC": "Litecoin", "BCH": "Bitcoin Cash", "UNI": "Uniswap",
+            "ATOM": "Cosmos", "NEAR": "NEAR Protocol", "APT": "Aptos",
+            "FIL": "Filecoin", "ICP": "Internet Computer", "VET": "VeChain",
+            "INJ": "Injective", "OP": "Optimism", "ARB": "Arbitrum",
+            "SUI": "Sui", "SEI": "Sei", "TIA": "Celestia",
+            "FTM": "Fantom", "AAVE": "Aave", "MKR": "Maker",
+            "GRT": "The Graph", "THETA": "Theta", "RENDER": "Render",
+            "ETC": "Ethereum Classic", "LEO": "LEO Token", "OKB": "OKB",
+            "DAI": "Dai", "CRO": "Cronos", "RUNE": "THORChain",
+            "STX": "Stacks", "IMX": "Immutable", "KAS": "Kaspa",
+            
+            # === 51-100 ===
+            "SAND": "The Sandbox", "MANA": "Decentraland", "AXS": "Axie Infinity",
+            "PEPE": "Pepe", "WIF": "dogwifhat", "BONK": "Bonk",
+            "FLOKI": "Floki", "ORDI": "Ordinals", "FLOW": "Flow",
+            "EGLD": "MultiversX", "XMR": "Monero", "NEO": "Neo",
+            "EOS": "EOS", "KAVA": "Kava", "MINA": "Mina Protocol",
+            "SNX": "Synthetix", "CAKE": "PancakeSwap", "CFX": "Conflux",
+            "KLAY": "Klaytn", "FXS": "Frax Share", "RPL": "Rocket Pool",
+            "LDO": "Lido DAO", "CRV": "Curve DAO", "GMX": "GMX",
+            "BLUR": "Blur", "APE": "ApeCoin", "DYDX": "dYdX",
+            "1INCH": "1inch", "ENS": "ENS", "COMP": "Compound",
+            "SUSHI": "SushiSwap", "YFI": "yearn.finance", "BAL": "Balancer",
+            "ZRX": "0x Protocol", "LRC": "Loopring", "ENJ": "Enjin Coin",
+            "CHZ": "Chiliz", "GALA": "Gala", "ANKR": "Ankr",
+            
+            # === 101-150 ===
+            "AUDIO": "Audius", "MASK": "Mask Network", "OCEAN": "Ocean Protocol",
+            "FET": "Fetch.ai", "AGIX": "SingularityNET", "WLD": "Worldcoin",
+            "PYTH": "Pyth Network", "JUP": "Jupiter", "JTO": "Jito",
+            "SATS": "SATS", "STG": "Stargate Finance", "PENDLE": "Pendle",
+            "STRK": "Starknet", "ZK": "zkSync", "W": "Wormhole",
+            "ETHFI": "Ether.fi", "ENA": "Ethena", "ONDO": "Ondo Finance",
+            "BSV": "Bitcoin SV", "BTT": "BitTorrent", "WBTC": "Wrapped Bitcoin",
+            "STETH": "Lido Staked ETH", "LUNC": "Terra Classic", "LUNA": "Terra",
+            "FLR": "Flare", "CSPR": "Casper", "ROSE": "Oasis Network",
+            "ZIL": "Zilliqa", "ONE": "Harmony", "QTUM": "Qtum",
+            "ICX": "ICON", "ZEC": "Zcash", "DASH": "Dash",
+            "DCR": "Decred", "SC": "Siacoin", "RVN": "Ravencoin",
+            
+            # === 151-200 ===
+            "ZEN": "Horizen", "BTG": "Bitcoin Gold", "DGB": "DigiByte",
+            "WAVES": "Waves", "ONT": "Ontology", "IOST": "IOST",
+            "HOT": "Holo", "RSR": "Reserve Rights", "CELO": "Celo",
+            "SKL": "SKALE", "CTSI": "Cartesi", "NKN": "NKN",
+            "AR": "Arweave", "HNT": "Helium", "IOTX": "IoTeX",
+            "KDA": "Kadena", "FLUX": "Flux", "TFUEL": "Theta Fuel",
+            "GLM": "Golem", "STORJ": "Storj", "BAT": "Basic Attention Token",
+            "BAND": "Band Protocol", "REN": "Ren", "KNC": "Kyber Network",
+            "OGN": "Origin Protocol", "CELR": "Celer Network", "ALICE": "My Neighbor Alice",
+            "TLM": "Alien Worlds", "ILV": "Illuvium", "GODS": "Gods Unchained",
+            "MAGIC": "MAGIC", "YGG": "Yield Guild Games", "GMT": "STEPN",
+            "C98": "Coin98", "SFP": "SafePal", "TWT": "Trust Wallet Token",
+            "BICO": "Biconomy", "API3": "API3", "ACH": "Alchemy Pay",
+            "JASMY": "JasmyCoin", "GTC": "Gitcoin", "OSMO": "Osmosis",
+            "SCRT": "Secret", "JUNO": "Juno", "AKT": "Akash Network",
+            "METIS": "Metis", "GLMR": "Moonbeam", "MOVR": "Moonriver",
+            "ASTR": "Astar", "TRAC": "OriginTrail", "PEOPLE": "ConstitutionDAO",
+            "ID": "SPACE ID", "LSK": "Lisk", "WAXP": "WAX",
+            "XNO": "Nano", "HIVE": "Hive", "HT": "Huobi Token",
+            "GT": "Gate Token", "KCS": "KuCoin Token", "BGB": "Bitget Token",
+            "WOO": "WOO Network", "NEXO": "Nexo",
+            
+            # === STABLECOINS ===
+            "USDC": "USD Coin", "USDT": "Tether", "BUSD": "Binance USD",
+            "TUSD": "TrueUSD", "FRAX": "Frax", "LUSD": "Liquity USD",
+            "USDP": "Pax Dollar",
         }
         
-        for symbol, (name, is_iso) in crypto_map.items():
+        for symbol, name in crypto_map.items():
+            is_iso = symbol in iso20022_coins
             supported.append({
                 "symbol": symbol,
                 "name": name,
