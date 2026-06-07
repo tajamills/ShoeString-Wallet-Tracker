@@ -20,9 +20,65 @@ Build a cryptocurrency wallet analyzer with a **PIVOT to Price Alerts** as the p
 - **Database**: MongoDB
 - **Price APIs**: CoinGecko (primary), Coinbase (fallback)
 - **Payments**: Stripe Live ($18.88/month with 7-day trial)
-- **Notifications**: Telegram Bot (unlimited), Zapier Webhook (SMS) - **NO EMAIL**
+- **Notifications**: Telegram Bot (unlimited), Zapier Webhook (SMS) - **NO EMAIL for alerts**
 - **Authentication**: Custom JWT-based auth
 - **Background Tasks**: alert_monitor.py for price polling
+
+## Completed Features
+
+### June 7, 2026 - Coin Library & Request Feature
+- [x] "COINS" button in dashboard header opens Coin Library modal
+- [x] SUPPORTED tab showing 50+ cryptocurrencies
+- [x] ISO 20022 Compliant section with 9 coins (XRP, XLM, ALGO, XDC, IOTA, HBAR, QNT, ADA, XTZ)
+- [x] REQUEST tab for users to submit new coin requests
+- [x] Email notifications to admin for coin requests (info@cryptobagtracker.io, tmills142009@gmail.com)
+- [x] Expanded crypto_id_map to 100+ coins including top 200
+
+### June 6, 2026 - Professional Dashboard Redesign
+- [x] Bloomberg Terminal / Robinhood Pro aesthetic
+- [x] Obsidian black (#050505) + Terminal green (#00C805) + Signal red (#FF3B30)
+- [x] Sharp square edges (no rounded corners)
+- [x] Monospace fonts for financial data (tabular-nums)
+- [x] Token badges with 2-letter codes (BT, ET) instead of colorful circles
+- [x] Phosphor icons + react-fast-marquee libraries
+- [x] Removed ALL purple/violet colors site-wide
+- [x] Updated favicon to professional chart icon with "CT"
+
+### June 6, 2026 - Sidebar Dashboard UI
+- [x] Professional sidebar dashboard layout (AlertDashboardV2.js)
+- [x] Sidebar persists across Price Alerts and Bag Tracker views
+- [x] Sidebar navigation with active state highlighting
+- [x] User profile section with subscription status and trial progress bar
+- [x] Telegram notifications UI with improved step-by-step instructions
+
+### June 6, 2026 - Price Alerts Core
+- [x] Tab navigation (Price Alerts vs Bag Tracker Beta)
+- [x] Alert subscription model with 7-day free trial
+- [x] Backend CRUD for alerts (/api/alerts/*)
+- [x] Start trial endpoint (/api/alerts/start-trial)
+- [x] Stripe checkout integration (/api/alerts/create-checkout)
+- [x] Price fetching with CoinGecko + Coinbase fallback
+- [x] Asset search functionality
+- [x] Alert type selection (price_above, price_below, percent_change_up, percent_change_down)
+- [x] Telegram Bot notifications (@cryptobagtrackerbot)
+- [x] Zapier Webhook for SMS notifications
+- [x] Background price polling (alert_monitor.py) with 1-hour cooldown
+- [x] Live price ticker (LivePricesTicker.js)
+
+## Upcoming Tasks (P1)
+- [ ] Stock Price Alerts - Integrate Alpha Vantage API for stock pricing
+- [ ] Stripe Webhook Validation - Verify production webhook for subscription renewals
+
+## Backlog / Future Features
+- [ ] Admin panel to manage/approve coin requests
+- [ ] Auto-add coins with high request counts
+- [ ] Community voting system for coin requests
+- [ ] TaxSummaryDashboard internal styling polish
+- [ ] Alert history/triggered alerts log
+- [ ] Dashboard analytics
+
+## Test Credentials
+See `/app/memory/test_credentials.md`
 
 ## Subscription Model (Alerts)
 | Feature | Free Trial (7 days) | Unlimited ($18.88/mo) |

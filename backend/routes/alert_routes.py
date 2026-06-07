@@ -937,19 +937,20 @@ async def submit_coin_request(
         </div>
         """
         
-        # Send to admin email (you can change this to your email)
-        admin_email = os.environ.get("ADMIN_EMAIL", "admin@cryptobagtracker.com")
+        # Send to admin emails (comma-separated in env)
+        admin_emails_str = os.environ.get("ADMIN_EMAIL", "admin@cryptobagtracker.com")
+        admin_emails = [e.strip() for e in admin_emails_str.split(",") if e.strip()]
         
-        try:
-            await send_email(
-                to_email=admin_email,
-                subject=f"[CryptoBagTracker] New Coin Request: {symbol}",
-                html_content=html_content
-            )
-            logger.info(f"Coin request email sent for {symbol} from {user_email}")
-        except Exception as email_err:
-            logger.error(f"Failed to send coin request email: {email_err}")
-            # Still return success to user - we can check logs
+        for admin_email in admin_emails:
+            try:
+                await send_email(
+                    to_email=admin_email,
+                    subject=f"[CryptoBagTracker] New Coin Request: {symbol}",
+                    html_content=html_content
+                )
+                logger.info(f"Coin request email sent for {symbol} to {admin_email}")
+            except Exception as email_err:
+                logger.error(f"Failed to send coin request email to {admin_email}: {email_err}")
         
         return {"success": True, "message": f"Request submitted for {symbol}. We'll review it and add it soon!"}
         
