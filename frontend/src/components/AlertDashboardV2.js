@@ -384,13 +384,11 @@ const RequestCoinModal = ({ isOpen, onClose, getAuthHeader, onSuccess }) => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [supportedCoins, setSupportedCoins] = useState([]);
-  const [coinRequests, setCoinRequests] = useState([]);
-  const [activeTab, setActiveTab] = useState('request'); // 'request', 'supported', 'requested'
+  const [activeTab, setActiveTab] = useState('supported'); // 'request', 'supported'
 
   useEffect(() => {
     if (isOpen) {
       fetchSupportedCoins();
-      fetchCoinRequests();
     }
   }, [isOpen]);
 
@@ -400,15 +398,6 @@ const RequestCoinModal = ({ isOpen, onClose, getAuthHeader, onSuccess }) => {
       setSupportedCoins(response.data.coins || []);
     } catch (err) {
       console.error('Error fetching supported coins:', err);
-    }
-  };
-
-  const fetchCoinRequests = async () => {
-    try {
-      const response = await axios.get(`${API}/alerts/coin-requests`, { headers: getAuthHeader() });
-      setCoinRequests(response.data.requests || []);
-    } catch (err) {
-      console.error('Error fetching coin requests:', err);
     }
   };
 
@@ -439,7 +428,7 @@ const RequestCoinModal = ({ isOpen, onClose, getAuthHeader, onSuccess }) => {
     setName('');
     setReason('');
     setError('');
-    setActiveTab('request');
+    setActiveTab('supported');
     onClose();
   };
 
@@ -521,30 +510,11 @@ const RequestCoinModal = ({ isOpen, onClose, getAuthHeader, onSuccess }) => {
 
           {activeTab === 'request' && (
             <>
-              {/* Existing Requests */}
-              {coinRequests.length > 0 && (
-                <div className="mb-6">
-                  <h3 className="text-white font-semibold text-sm mb-3">COMMUNITY REQUESTS</h3>
-                  <p className="text-[#8A8A93] text-xs mb-3">Vote for coins you'd like to see added:</p>
-                  <div className="space-y-2 max-h-32 overflow-y-auto">
-                    {coinRequests.map((req, idx) => (
-                      <div key={idx} className="bg-[#0C0C0E] border border-[#1F1F22] p-2 flex items-center justify-between">
-                        <div>
-                          <span className="text-white font-mono text-sm">{req.symbol}</span>
-                          {req.name && <span className="text-[#8A8A93] text-xs ml-2">{req.name}</span>}
-                        </div>
-                        <span className="text-[#00C805] font-mono text-xs">{req.votes} votes</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {/* Request Form */}
               <div>
                 <h3 className="text-white font-semibold text-sm mb-3">REQUEST A NEW COIN</h3>
                 <p className="text-[#8A8A93] text-xs mb-4">
-                  Can't find a coin? Submit a request and we'll add it.
+                  Can't find a coin? Submit a request and we'll review it and add it to the platform.
                 </p>
 
                 {error && (
