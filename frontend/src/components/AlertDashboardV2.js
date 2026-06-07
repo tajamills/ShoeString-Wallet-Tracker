@@ -699,7 +699,8 @@ export const AlertDashboard = ({ getAuthHeader, user, onLogout, portfolioContent
   };
 
   const canCreateAlerts = subscription?.status === 'trialing' || subscription?.status === 'active';
-  const daysRemaining = subscription?.days_remaining;
+  const daysRemaining = subscription?.days_remaining ?? 0;
+  const trialProgress = daysRemaining > 0 ? Math.min(100, Math.max(0, ((7 - daysRemaining) / 7) * 100)) : 100;
 
   if (loading) {
     return (
@@ -782,8 +783,11 @@ export const AlertDashboard = ({ getAuthHeader, user, onLogout, portfolioContent
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-white text-sm truncate">{user?.email}</p>
-              {subscription?.status === 'trialing' && (
+              {subscription?.status === 'trialing' && daysRemaining > 0 && (
                 <p className="text-[#00C805] text-xs font-mono">TRIAL · {daysRemaining}D LEFT</p>
+              )}
+              {subscription?.status === 'trialing' && daysRemaining === 0 && (
+                <p className="text-[#FFB800] text-xs font-mono">TRIAL ENDING TODAY</p>
               )}
               {subscription?.status === 'active' && (
                 <p className="text-[#00C805] text-xs font-mono">PREMIUM</p>
@@ -793,11 +797,11 @@ export const AlertDashboard = ({ getAuthHeader, user, onLogout, portfolioContent
               <SignOut size={18} />
             </button>
           </div>
-          {subscription?.status === 'trialing' && (
+          {subscription?.status === 'trialing' && daysRemaining > 0 && (
             <div className="mt-2 h-1 bg-[#1F1F22] overflow-hidden">
               <div 
-                className="h-full bg-[#00C805]" 
-                style={{ width: `${((7 - daysRemaining) / 7) * 100}%` }}
+                className="h-full bg-[#00C805] transition-all duration-500" 
+                style={{ width: `${trialProgress}%` }}
               />
             </div>
           )}
@@ -823,16 +827,34 @@ export const AlertDashboard = ({ getAuthHeader, user, onLogout, portfolioContent
           {activeNav === 'alerts' ? (
             <>
               {/* Trial Banner */}
-              {subscription?.status === 'trialing' && (
+              {subscription?.status === 'trialing' && daysRemaining > 0 && (
                 <div className="bg-[#0C0C0E] border border-[#1F1F22] p-4 mb-6 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Clock size={20} className="text-[#8A8A93]" />
                     <div>
                       <p className="text-white font-medium text-sm">FREE TRIAL</p>
-                      <p className="text-[#8A8A93] text-xs font-mono">{daysRemaining} DAYS REMAINING</p>
+                      <p className="text-[#8A8A93] text-xs font-mono">{daysRemaining} {daysRemaining === 1 ? 'DAY' : 'DAYS'} REMAINING</p>
                     </div>
                   </div>
                   <span className="border border-[#00C805]/30 text-[#00C805] px-3 py-1 text-xs font-mono">ACTIVE</span>
+                </div>
+              )}
+              
+              {subscription?.status === 'trialing' && daysRemaining === 0 && (
+                <div className="bg-[#0C0C0E] border border-[#FFB800]/30 p-4 mb-6 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Clock size={20} className="text-[#FFB800]" />
+                    <div>
+                      <p className="text-white font-medium text-sm">TRIAL ENDING TODAY</p>
+                      <p className="text-[#8A8A93] text-xs font-mono">Subscribe to continue using alerts</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={handleSubscribe}
+                    className="bg-white text-black px-3 py-1 text-xs font-semibold hover:bg-gray-200"
+                  >
+                    UPGRADE
+                  </button>
                 </div>
               )}
 
