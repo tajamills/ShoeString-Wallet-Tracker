@@ -787,7 +787,7 @@ export const AlertDashboard = ({ getAuthHeader, user, onLogout, portfolioContent
                 <p className="text-[#00C805] text-xs font-mono">TRIAL · {daysRemaining}D LEFT</p>
               )}
               {subscription?.status === 'trialing' && daysRemaining === 0 && (
-                <p className="text-[#FFB800] text-xs font-mono">TRIAL ENDING TODAY</p>
+                <p className="text-[#FFB800] text-xs font-mono">BILLING STARTS TODAY</p>
               )}
               {subscription?.status === 'active' && (
                 <p className="text-[#00C805] text-xs font-mono">PREMIUM</p>
@@ -846,15 +846,10 @@ export const AlertDashboard = ({ getAuthHeader, user, onLogout, portfolioContent
                     <Clock size={20} className="text-[#FFB800]" />
                     <div>
                       <p className="text-white font-medium text-sm">TRIAL ENDING TODAY</p>
-                      <p className="text-[#8A8A93] text-xs font-mono">Subscribe to continue using alerts</p>
+                      <p className="text-[#8A8A93] text-xs font-mono">Your subscription begins automatically</p>
                     </div>
                   </div>
-                  <button 
-                    onClick={handleSubscribe}
-                    className="bg-white text-black px-3 py-1 text-xs font-semibold hover:bg-gray-200"
-                  >
-                    UPGRADE
-                  </button>
+                  <span className="border border-[#FFB800]/30 text-[#FFB800] px-3 py-1 text-xs font-mono">AUTO-RENEW</span>
                 </div>
               )}
 
