@@ -36,6 +36,17 @@ export const usePayment = (user, getAuthHeader, fetchUserProfile) => {
         setPaymentSuccess(true);
         setPaymentError('');
         await fetchUserProfile();
+        
+        // Google Ads conversion tracking
+        if (typeof window.gtag === 'function') {
+          window.gtag('event', 'conversion', {
+            'send_to': 'AW-18133757900/9gFsCOewzagcEMzf7MZD',
+            'value': 18.88,
+            'currency': 'USD',
+            'transaction_id': sessionId
+          });
+        }
+        
         // Remove session_id from URL
         window.history.replaceState({}, document.title, window.location.pathname);
         return;
