@@ -26,6 +26,17 @@ Build a cryptocurrency wallet analyzer with a **PIVOT to Price Alerts** as the p
 
 ## Completed Features
 
+### June 13, 2026 - Mobile Responsiveness Fix
+- [x] Fixed broken syntax in AlertDashboardV2.js (missing closing div tag)
+- [x] Mobile header (375px) with CRYPTOBAGTRACKER logo, ALERTS/BAG tabs, logout button
+- [x] Sidebar hidden on mobile (lg:hidden), visible on desktop (hidden lg:flex)
+- [x] Alert cards display on mobile instead of table (md:hidden for cards, hidden md:block for table)
+- [x] Full-width action buttons (COINS, NEW ALERT) on mobile
+- [x] Create Alert modal works correctly on mobile viewport
+- [x] Responsive footer that stacks on mobile
+- [x] Tablet (768px) uses mobile header with desktop table layout
+- [x] Desktop (1920px) retains full sidebar with navigation
+
 ### June 7, 2026 - Coin Library & Request Feature
 - [x] "COINS" button in dashboard header opens Coin Library modal
 - [x] SUPPORTED tab showing 50+ cryptocurrencies
@@ -68,6 +79,12 @@ Build a cryptocurrency wallet analyzer with a **PIVOT to Price Alerts** as the p
 ## Upcoming Tasks (P1)
 - [ ] Stock Price Alerts - Integrate Alpha Vantage API for stock pricing
 - [ ] Stripe Webhook Validation - Verify production webhook for subscription renewals
+
+## Recently Completed (June 2026)
+- [x] Mobile Responsiveness - Fully responsive at 375px, 768px, 1920px viewports
+- [x] Coin Library & Request Feature - 195 coins including ISO 20022 compliant
+- [x] Professional Bloomberg Terminal design - Black/green theme
+- [x] Sidebar Dashboard UI with trial progress bar
 
 ## Backlog / Future Features
 
