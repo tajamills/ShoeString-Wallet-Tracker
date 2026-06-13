@@ -711,107 +711,137 @@ export const AlertDashboard = ({ getAuthHeader, user, onLogout, portfolioContent
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] flex">
-      {/* Sidebar - Professional Dark */}
-      <div className="w-64 bg-[#0C0C0E] border-r border-[#1F1F22] flex flex-col">
-        {/* Logo */}
-        <div className="p-4 border-b border-[#1F1F22]">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-white flex items-center justify-center">
-              <ChartLineUp size={18} weight="bold" className="text-black" />
-            </div>
-            <span className="text-white font-semibold tracking-tight text-sm">
-              CRYPTOBAG<span className="text-[#8A8A93]">TRACKER</span>
-            </span>
+    <div className="min-h-screen bg-[#050505]">
+      {/* Mobile Header - Only visible on small screens */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-[#0C0C0E] border-b border-[#1F1F22] px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 bg-white flex items-center justify-center">
+            <ChartLineUp size={14} weight="bold" className="text-black" />
           </div>
+          <span className="text-white font-semibold text-xs">
+            CRYPTOBAG<span className="text-[#8A8A93]">TRACKER</span>
+          </span>
         </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 p-2">
-          <div className="text-xs font-semibold tracking-[0.2em] uppercase text-[#4A4A52] px-3 py-2">
-            MENU
-          </div>
+        <div className="flex items-center gap-2">
           <button
             onClick={() => setActiveNav('alerts')}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors ${
-              activeNav === 'alerts' 
-                ? 'bg-white text-black font-medium' 
-                : 'text-[#8A8A93] hover:text-white hover:bg-[#161618]'
-            }`}
-            data-testid="nav-alerts"
+            className={`px-3 py-1.5 text-xs font-mono ${activeNav === 'alerts' ? 'bg-white text-black' : 'text-[#8A8A93]'}`}
           >
-            <Bell size={18} weight={activeNav === 'alerts' ? 'fill' : 'regular'} />
-            Price Alerts
+            ALERTS
           </button>
           <button
             onClick={() => setActiveNav('portfolio')}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors ${
-              activeNav === 'portfolio' 
-                ? 'bg-white text-black font-medium' 
-                : 'text-[#8A8A93] hover:text-white hover:bg-[#161618]'
-            }`}
-            data-testid="nav-portfolio"
+            className={`px-3 py-1.5 text-xs font-mono ${activeNav === 'portfolio' ? 'bg-white text-black' : 'text-[#8A8A93]'}`}
           >
-            <Folder size={18} weight={activeNav === 'portfolio' ? 'fill' : 'regular'} />
-            Bag Tracker
-            <span className="text-[10px] border border-[#00C805]/30 text-[#00C805] px-1.5 py-0.5 ml-auto font-mono">BETA</span>
+            BAG
           </button>
-        </nav>
-
-        {/* Upgrade Card */}
-        {subscription?.status !== 'active' && subscription?.status !== 'trialing' && (
-          <div className="p-3">
-            <div className="bg-[#161618] border border-[#1F1F22] p-4">
-              <h4 className="text-white font-semibold text-sm mb-1">UNLOCK ACCESS</h4>
-              <p className="text-[#8A8A93] text-xs mb-3">Upgrade for unlimited alerts</p>
-              <button 
-                onClick={handleSubscribe}
-                disabled={actionLoading}
-                className="w-full bg-white text-black text-sm py-2 font-semibold hover:bg-gray-200 transition-colors"
-              >
-                UPGRADE NOW
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* User Profile */}
-        <div className="p-3 border-t border-[#1F1F22]">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-[#161618] border border-[#1F1F22] flex items-center justify-center text-white text-xs font-mono">
-              {user?.email?.charAt(0).toUpperCase()}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-white text-sm truncate">{user?.email}</p>
-              {subscription?.status === 'trialing' && daysRemaining > 0 && (
-                <p className="text-[#00C805] text-xs font-mono">TRIAL · {daysRemaining}D LEFT</p>
-              )}
-              {subscription?.status === 'trialing' && daysRemaining === 0 && (
-                <p className="text-[#FFB800] text-xs font-mono">BILLING STARTS TODAY</p>
-              )}
-              {subscription?.status === 'active' && (
-                <p className="text-[#00C805] text-xs font-mono">PREMIUM</p>
-              )}
-            </div>
-            <button onClick={onLogout} className="text-[#8A8A93] hover:text-white transition-colors" data-testid="logout-btn">
-              <SignOut size={18} />
-            </button>
-          </div>
-          {subscription?.status === 'trialing' && daysRemaining > 0 && (
-            <div className="mt-2 h-1 bg-[#1F1F22] overflow-hidden">
-              <div 
-                className="h-full bg-[#00C805] transition-all duration-500" 
-                style={{ width: `${trialProgress}%` }}
-              />
-            </div>
-          )}
+          <button onClick={onLogout} className="p-1.5 text-[#8A8A93]">
+            <SignOut size={18} />
+          </button>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <header className="h-14 border-b border-[#1F1F22] flex items-center justify-between px-6 bg-[#0C0C0E]">
+      <div className="flex">
+        {/* Sidebar - Hidden on mobile, visible on lg+ */}
+        <div className="hidden lg:flex w-64 bg-[#0C0C0E] border-r border-[#1F1F22] flex-col fixed h-screen">
+          {/* Logo */}
+          <div className="p-4 border-b border-[#1F1F22]">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-white flex items-center justify-center">
+                <ChartLineUp size={18} weight="bold" className="text-black" />
+              </div>
+              <span className="text-white font-semibold tracking-tight text-sm">
+                CRYPTOBAG<span className="text-[#8A8A93]">TRACKER</span>
+              </span>
+            </div>
+          </div>
+
+          {/* Navigation */}
+          <nav className="flex-1 p-2">
+            <div className="text-xs font-semibold tracking-[0.2em] uppercase text-[#4A4A52] px-3 py-2">
+              MENU
+            </div>
+            <button
+              onClick={() => setActiveNav('alerts')}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors ${
+                activeNav === 'alerts' 
+                  ? 'bg-white text-black font-medium' 
+                  : 'text-[#8A8A93] hover:text-white hover:bg-[#161618]'
+              }`}
+              data-testid="nav-alerts"
+            >
+              <Bell size={18} weight={activeNav === 'alerts' ? 'fill' : 'regular'} />
+              Price Alerts
+            </button>
+            <button
+              onClick={() => setActiveNav('portfolio')}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors ${
+                activeNav === 'portfolio' 
+                  ? 'bg-white text-black font-medium' 
+                  : 'text-[#8A8A93] hover:text-white hover:bg-[#161618]'
+              }`}
+              data-testid="nav-portfolio"
+            >
+              <Folder size={18} weight={activeNav === 'portfolio' ? 'fill' : 'regular'} />
+              Bag Tracker
+              <span className="text-[10px] border border-[#00C805]/30 text-[#00C805] px-1.5 py-0.5 ml-auto font-mono">BETA</span>
+            </button>
+          </nav>
+
+          {/* Upgrade Card */}
+          {subscription?.status !== 'active' && subscription?.status !== 'trialing' && (
+            <div className="p-3">
+              <div className="bg-[#161618] border border-[#1F1F22] p-4">
+                <h4 className="text-white font-semibold text-sm mb-1">UNLOCK ACCESS</h4>
+                <p className="text-[#8A8A93] text-xs mb-3">Upgrade for unlimited alerts</p>
+                <button 
+                  onClick={handleSubscribe}
+                  disabled={actionLoading}
+                  className="w-full bg-white text-black text-sm py-2 font-semibold hover:bg-gray-200 transition-colors"
+                >
+                  UPGRADE NOW
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* User Profile */}
+          <div className="p-3 border-t border-[#1F1F22]">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-[#161618] border border-[#1F1F22] flex items-center justify-center text-white text-xs font-mono">
+                {user?.email?.charAt(0).toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-white text-sm truncate">{user?.email}</p>
+                {subscription?.status === 'trialing' && daysRemaining > 0 && (
+                  <p className="text-[#00C805] text-xs font-mono">TRIAL · {daysRemaining}D LEFT</p>
+                )}
+                {subscription?.status === 'trialing' && daysRemaining === 0 && (
+                  <p className="text-[#FFB800] text-xs font-mono">BILLING STARTS TODAY</p>
+                )}
+                {subscription?.status === 'active' && (
+                  <p className="text-[#00C805] text-xs font-mono">PREMIUM</p>
+                )}
+              </div>
+              <button onClick={onLogout} className="text-[#8A8A93] hover:text-white transition-colors" data-testid="logout-btn">
+                <SignOut size={18} />
+              </button>
+            </div>
+            {subscription?.status === 'trialing' && daysRemaining > 0 && (
+              <div className="mt-2 h-1 bg-[#1F1F22] overflow-hidden">
+                <div 
+                  className="h-full bg-[#00C805] transition-all duration-500" 
+                  style={{ width: `${trialProgress}%` }}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 lg:ml-64 flex flex-col min-h-screen pt-14 lg:pt-0">
+        {/* Header - Hidden on mobile (info shown in mobile header) */}
+        <header className="hidden lg:flex h-14 border-b border-[#1F1F22] items-center justify-between px-6 bg-[#0C0C0E]">
           <h1 className="text-white text-sm">
             Welcome back, <span className="text-[#8A8A93] font-mono">{user?.email}</span>
           </h1>
@@ -823,7 +853,7 @@ export const AlertDashboard = ({ getAuthHeader, user, onLogout, portfolioContent
         </header>
 
         {/* Content */}
-        <main className="flex-1 p-6 overflow-y-auto">
+        <main className="flex-1 p-4 sm:p-6 overflow-y-auto">
           {activeNav === 'alerts' ? (
             <>
               {/* Trial Banner */}
@@ -869,15 +899,17 @@ export const AlertDashboard = ({ getAuthHeader, user, onLogout, portfolioContent
               )}
 
               {/* Alerts Header */}
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h2 className="text-white font-semibold text-lg tracking-tight">YOUR ALERTS</h2>
-                  <p className="text-[#8A8A93] text-xs font-mono">{alerts.length} CONFIGURED</p>
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h2 className="text-white font-semibold text-lg tracking-tight">YOUR ALERTS</h2>
+                    <p className="text-[#8A8A93] text-xs font-mono">{alerts.length} CONFIGURED</p>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setShowCoinLibrary(true)}
-                    className="border border-[#1F1F22] text-[#8A8A93] px-3 py-2 text-sm font-mono flex items-center gap-2 hover:bg-[#161618] hover:text-white transition-colors"
+                    className="flex-1 sm:flex-none border border-[#1F1F22] text-[#8A8A93] px-3 py-2.5 text-xs sm:text-sm font-mono flex items-center justify-center gap-2 hover:bg-[#161618] hover:text-white transition-colors"
                     data-testid="coin-library-btn"
                   >
                     <ListBullets size={16} />
@@ -886,7 +918,7 @@ export const AlertDashboard = ({ getAuthHeader, user, onLogout, portfolioContent
                   {canCreateAlerts && (
                     <button
                       onClick={() => setShowCreateModal(true)}
-                      className="bg-white text-black px-4 py-2 text-sm font-semibold flex items-center gap-2 hover:bg-gray-200 transition-colors"
+                      className="flex-1 sm:flex-none bg-white text-black px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 hover:bg-gray-200 transition-colors"
                       data-testid="new-alert-btn"
                     >
                       <Plus size={16} weight="bold" />
@@ -912,69 +944,139 @@ export const AlertDashboard = ({ getAuthHeader, user, onLogout, portfolioContent
                   )}
                 </div>
               ) : (
-                <div className="border border-[#1F1F22]">
-                  {/* Table Header */}
-                  <div className="grid grid-cols-12 gap-4 px-4 py-2 bg-[#0C0C0E] border-b border-[#1F1F22] text-xs font-semibold tracking-[0.1em] uppercase text-[#8A8A93]">
-                    <div className="col-span-3">ASSET</div>
-                    <div className="col-span-2">CONDITION</div>
-                    <div className="col-span-2 text-right">TARGET</div>
-                    <div className="col-span-2 text-right">CURRENT</div>
-                    <div className="col-span-1 text-center">STATUS</div>
-                    <div className="col-span-2 text-right">ACTIONS</div>
-                  </div>
-                  
-                  {/* Table Rows */}
-                  {alerts.map((alert) => {
-                    const typeInfo = ALERT_TYPE_LABELS[alert.alert_type] || {};
-                    return (
-                      <div key={alert.alert_id} className="grid grid-cols-12 gap-4 px-4 py-3 border-b border-[#1F1F22] hover:bg-[#0C0C0E] transition-colors items-center">
-                        <div className="col-span-3 flex items-center gap-3">
-                          <TokenBadge symbol={alert.asset_symbol} />
-                          <div>
-                            <span className="text-white font-mono text-sm">{alert.asset_symbol}</span>
-                            <span className="text-[10px] border border-[#1F1F22] text-[#8A8A93] px-1.5 py-0.5 ml-2 font-mono">CRYPTO</span>
+                <>
+                  {/* Desktop Table - Hidden on mobile */}
+                  <div className="hidden md:block border border-[#1F1F22] overflow-x-auto">
+                    {/* Table Header */}
+                    <div className="grid grid-cols-12 gap-4 px-4 py-2 bg-[#0C0C0E] border-b border-[#1F1F22] text-xs font-semibold tracking-[0.1em] uppercase text-[#8A8A93] min-w-[700px]">
+                      <div className="col-span-3">ASSET</div>
+                      <div className="col-span-2">CONDITION</div>
+                      <div className="col-span-2 text-right">TARGET</div>
+                      <div className="col-span-2 text-right">CURRENT</div>
+                      <div className="col-span-1 text-center">STATUS</div>
+                      <div className="col-span-2 text-right">ACTIONS</div>
+                    </div>
+                    
+                    {/* Table Rows */}
+                    {alerts.map((alert) => {
+                      const typeInfo = ALERT_TYPE_LABELS[alert.alert_type] || {};
+                      return (
+                        <div key={alert.alert_id} className="grid grid-cols-12 gap-4 px-4 py-3 border-b border-[#1F1F22] hover:bg-[#0C0C0E] transition-colors items-center min-w-[700px]">
+                          <div className="col-span-3 flex items-center gap-3">
+                            <TokenBadge symbol={alert.asset_symbol} />
+                            <div>
+                              <span className="text-white font-mono text-sm">{alert.asset_symbol}</span>
+                              <span className="text-[10px] border border-[#1F1F22] text-[#8A8A93] px-1.5 py-0.5 ml-2 font-mono">CRYPTO</span>
+                            </div>
+                          </div>
+                          <div className="col-span-2">
+                            <span className={`font-mono text-sm ${typeInfo.color || 'text-white'}`}>
+                              {typeInfo.label}
+                            </span>
+                          </div>
+                          <div className="col-span-2 text-right font-mono text-white tabular-nums">
+                            {alert.alert_type.includes('percent') ? `${alert.target_value}%` : formatPrice(alert.target_value)}
+                          </div>
+                          <div className="col-span-2 text-right font-mono text-[#8A8A93] tabular-nums">
+                            {formatPrice(alert.current_price)}
+                          </div>
+                          <div className="col-span-1 text-center">
+                            <span className={`text-[10px] px-2 py-0.5 font-mono border ${
+                              alert.status === 'active' 
+                                ? 'border-[#00C805]/30 text-[#00C805] bg-[#00C805]/10' 
+                                : 'border-[#1F1F22] text-[#8A8A93]'
+                            }`}>
+                              {alert.status.toUpperCase()}
+                            </span>
+                          </div>
+                          <div className="col-span-2 flex items-center justify-end gap-1">
+                            <button 
+                              onClick={() => toggleAlert(alert.alert_id)}
+                              className="p-2 text-[#8A8A93] hover:text-white transition-colors"
+                              data-testid={`toggle-alert-${alert.alert_id}`}
+                            >
+                              {alert.status === 'active' ? <Pause size={16} /> : <Play size={16} weight="fill" />}
+                            </button>
+                            <button 
+                              onClick={() => deleteAlert(alert.alert_id)}
+                              className="p-2 text-[#8A8A93] hover:text-[#FF3B30] transition-colors"
+                              data-testid={`delete-alert-${alert.alert_id}`}
+                            >
+                              <Trash size={16} />
+                            </button>
                           </div>
                         </div>
-                        <div className="col-span-2">
-                          <span className={`font-mono text-sm ${typeInfo.color || 'text-white'}`}>
-                            {typeInfo.label}
-                          </span>
+                      );
+                    })}
+                  </div>
+
+                  {/* Mobile Cards - Visible only on mobile */}
+                  <div className="md:hidden space-y-3">
+                    {alerts.map((alert) => {
+                      const typeInfo = ALERT_TYPE_LABELS[alert.alert_type] || {};
+                      return (
+                        <div key={alert.alert_id} className="bg-[#0C0C0E] border border-[#1F1F22] p-4">
+                          {/* Card Header */}
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-3">
+                              <TokenBadge symbol={alert.asset_symbol} />
+                              <div>
+                                <span className="text-white font-mono text-sm">{alert.asset_symbol}</span>
+                                <span className={`text-[10px] px-2 py-0.5 font-mono border ml-2 ${
+                                  alert.status === 'active' 
+                                    ? 'border-[#00C805]/30 text-[#00C805] bg-[#00C805]/10' 
+                                    : 'border-[#1F1F22] text-[#8A8A93]'
+                                }`}>
+                                  {alert.status.toUpperCase()}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button 
+                                onClick={() => toggleAlert(alert.alert_id)}
+                                className="p-2 text-[#8A8A93] hover:text-white transition-colors"
+                                data-testid={`toggle-alert-mobile-${alert.alert_id}`}
+                              >
+                                {alert.status === 'active' ? <Pause size={18} /> : <Play size={18} weight="fill" />}
+                              </button>
+                              <button 
+                                onClick={() => deleteAlert(alert.alert_id)}
+                                className="p-2 text-[#8A8A93] hover:text-[#FF3B30] transition-colors"
+                                data-testid={`delete-alert-mobile-${alert.alert_id}`}
+                              >
+                                <Trash size={18} />
+                              </button>
+                            </div>
+                          </div>
+                          
+                          {/* Card Body */}
+                          <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                              <p className="text-[#8A8A93] text-xs mb-1">CONDITION</p>
+                              <span className={`font-mono ${typeInfo.color || 'text-white'}`}>
+                                {typeInfo.label}
+                              </span>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-[#8A8A93] text-xs mb-1">TARGET</p>
+                              <span className="font-mono text-white tabular-nums">
+                                {alert.alert_type.includes('percent') ? `${alert.target_value}%` : formatPrice(alert.target_value)}
+                              </span>
+                            </div>
+                            <div className="col-span-2 pt-2 border-t border-[#1F1F22]">
+                              <div className="flex justify-between items-center">
+                                <span className="text-[#8A8A93] text-xs">CURRENT PRICE</span>
+                                <span className="font-mono text-[#8A8A93] tabular-nums">
+                                  {formatPrice(alert.current_price)}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                        <div className="col-span-2 text-right font-mono text-white tabular-nums">
-                          {alert.alert_type.includes('percent') ? `${alert.target_value}%` : formatPrice(alert.target_value)}
-                        </div>
-                        <div className="col-span-2 text-right font-mono text-[#8A8A93] tabular-nums">
-                          {formatPrice(alert.current_price)}
-                        </div>
-                        <div className="col-span-1 text-center">
-                          <span className={`text-[10px] px-2 py-0.5 font-mono border ${
-                            alert.status === 'active' 
-                              ? 'border-[#00C805]/30 text-[#00C805] bg-[#00C805]/10' 
-                              : 'border-[#1F1F22] text-[#8A8A93]'
-                          }`}>
-                            {alert.status.toUpperCase()}
-                          </span>
-                        </div>
-                        <div className="col-span-2 flex items-center justify-end gap-1">
-                          <button 
-                            onClick={() => toggleAlert(alert.alert_id)}
-                            className="p-2 text-[#8A8A93] hover:text-white transition-colors"
-                            data-testid={`toggle-alert-${alert.alert_id}`}
-                          >
-                            {alert.status === 'active' ? <Pause size={16} /> : <Play size={16} weight="fill" />}
-                          </button>
-                          <button 
-                            onClick={() => deleteAlert(alert.alert_id)}
-                            className="p-2 text-[#8A8A93] hover:text-[#FF3B30] transition-colors"
-                            data-testid={`delete-alert-${alert.alert_id}`}
-                          >
-                            <Trash size={16} />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                </>
               )}
 
               {/* Telegram Section */}
@@ -1066,10 +1168,12 @@ export const AlertDashboard = ({ getAuthHeader, user, onLogout, portfolioContent
         </main>
 
         {/* Footer */}
-        <footer className="h-10 border-t border-[#1F1F22] flex items-center justify-between px-6 text-[#4A4A52] text-xs font-mono bg-[#0C0C0E]">
+        <footer className="h-auto sm:h-10 border-t border-[#1F1F22] flex flex-col sm:flex-row items-center justify-between px-4 sm:px-6 py-2 sm:py-0 text-[#4A4A52] text-xs font-mono bg-[#0C0C0E] gap-1 sm:gap-0">
           <span>© 2026 CRYPTOBAGTRACKER</span>
-          <span>TRACK YOUR BAGS. KNOW YOUR WORTH.</span>
+          <span className="hidden sm:inline">TRACK YOUR BAGS. KNOW YOUR WORTH.</span>
         </footer>
+      </div>
+
       </div>
 
       <CreateAlertModal
