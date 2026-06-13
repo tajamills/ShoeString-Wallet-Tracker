@@ -143,6 +143,38 @@ class AlertMonitor:
             logger.warning(f"User {user_id} not found for alert {alert_id}")
             return
         
+        # Build notification message
+        alert_type_labels = {
+            "price_above": "above",
+            "price_below": "below",
+            "percent_change_up": "up",
+            "percent_change_down": "down"
+        }
+        condition = alert_type_labels.get(alert["alert_type"], alert["alert_type"])
+        
+        if "percent" in alert["alert_type"]:
+            target_str = f"{alert['target_value']}%"
+        else:
+            target_str = f"${alert['target_value']:,.2f}"
+        
+        title = f"{alert['asset_symbol']} Alert Triggered!"
+        body = f"{alert['asset_symbol']} is {condition} {target_str}. Current: ${current_price:,.2f}"
+        
+        # Send Push notification
+        try:
+            from routes.push_routes import send_push_to_user
+            push_sent = await send_push_to_user(
+                db=self.db,
+                user_id=user_id,
+                title=title,
+                body=body,
+                data={"alert_id": alert_id, "symbol": alert["asset_symbol"]}
+            )
+            if push_sent > 0:
+                logger.info(f"Push notification sent to {push_sent} device(s) for alert {alert_id}")
+        except Exception as e:
+            logger.error(f"Failed to send push notification: {e}")
+        
         # Send Telegram notification if connected
         telegram_chat_id = user.get("telegram_chat_id")
         if telegram_chat_id:
