@@ -25,10 +25,12 @@ import {
   Folder,
   PaperPlaneTilt,
   ListBullets,
-  Certificate
+  Certificate,
+  DeviceMobile
 } from '@phosphor-icons/react';
 import { Input } from '@/components/ui/input';
 import axios from 'axios';
+import { usePushNotifications } from '../hooks/usePushNotifications';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -581,6 +583,134 @@ const RequestCoinModal = ({ isOpen, onClose, getAuthHeader, onSuccess }) => {
           )}
         </div>
       </div>
+    </div>
+  );
+};
+
+// Push Notification Section Component
+const PushNotificationSection = ({ getAuthHeader }) => {
+  const {
+    isSupported,
+    isSubscribed,
+    permission,
+    loading,
+    error,
+    subscribe,
+    unsubscribe,
+    sendTest
+  } = usePushNotifications(getAuthHeader);
+
+  const [testLoading, setTestLoading] = useState(false);
+  const [testSuccess, setTestSuccess] = useState(false);
+  const [testError, setTestError] = useState('');
+
+  const handleToggle = async () => {
+    if (isSubscribed) {
+      await unsubscribe();
+    } else {
+      await subscribe();
+    }
+  };
+
+  const handleTest = async () => {
+    setTestLoading(true);
+    setTestError('');
+    setTestSuccess(false);
+    try {
+      await sendTest();
+      setTestSuccess(true);
+      setTimeout(() => setTestSuccess(false), 3000);
+    } catch (err) {
+      setTestError(err.response?.data?.detail || 'Failed to send test notification');
+      setTimeout(() => setTestError(''), 5000);
+    } finally {
+      setTestLoading(false);
+    }
+  };
+
+  if (!isSupported) {
+    return null; // Don't show if not supported
+  }
+
+  return (
+    <div className="bg-[#0C0C0E] border border-[#1F1F22] p-4 mt-4">
+      <div className="flex items-center gap-2 mb-3">
+        <DeviceMobile size={20} className="text-white" weight="fill" />
+        <h3 className="text-white font-semibold text-sm">PUSH NOTIFICATIONS</h3>
+        {isSubscribed && (
+          <span className="text-[10px] border border-[#00C805]/30 text-[#00C805] px-1.5 py-0.5 ml-2 font-mono">ENABLED</span>
+        )}
+      </div>
+
+      {error && (
+        <div className="bg-[#FF3B30]/10 border border-[#FF3B30]/30 px-3 py-2 text-[#FF3B30] text-xs mb-3 flex items-center gap-2">
+          <Warning size={14} weight="fill" />
+          {error}
+        </div>
+      )}
+
+      {testSuccess && (
+        <div className="bg-[#00C805]/10 border border-[#00C805]/30 px-3 py-2 text-[#00C805] text-xs mb-3 flex items-center gap-2">
+          <CheckCircle size={14} weight="fill" />
+          Test notification sent! Check your device.
+        </div>
+      )}
+
+      {testError && (
+        <div className="bg-[#FF3B30]/10 border border-[#FF3B30]/30 px-3 py-2 text-[#FF3B30] text-xs mb-3 flex items-center gap-2">
+          <Warning size={14} weight="fill" />
+          {testError}
+        </div>
+      )}
+
+      {isSubscribed ? (
+        <div className="flex items-center justify-between">
+          <p className="text-[#8A8A93] text-sm">Alerts will appear on this device</p>
+          <div className="flex gap-2">
+            <button 
+              onClick={handleTest}
+              disabled={testLoading}
+              className="text-white hover:text-[#8A8A93] text-sm font-mono transition-colors disabled:opacity-50"
+            >
+              {testLoading ? <CircleNotch size={14} className="animate-spin" /> : 'TEST'}
+            </button>
+            <button 
+              onClick={handleToggle}
+              disabled={loading}
+              className="text-[#FF3B30] hover:text-[#FF3B30]/80 text-sm font-mono transition-colors disabled:opacity-50"
+            >
+              {loading ? <CircleNotch size={14} className="animate-spin" /> : 'DISABLE'}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <p className="text-[#8A8A93] text-sm mb-4">
+            Get instant price alerts directly on your device — works on mobile and desktop browsers.
+          </p>
+
+          {permission === 'denied' ? (
+            <div className="bg-[#161618] border border-[#1F1F22] p-3 text-center">
+              <p className="text-[#8A8A93] text-sm">
+                Notifications are blocked. Enable them in your browser settings.
+              </p>
+            </div>
+          ) : (
+            <button
+              onClick={handleToggle}
+              disabled={loading}
+              className="w-full bg-white text-black py-2.5 font-semibold hover:bg-gray-200 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <CircleNotch size={16} className="animate-spin" />
+              ) : (
+                <Bell size={16} weight="fill" />
+              )}
+              ENABLE PUSH NOTIFICATIONS
+            </button>
+          )}
+        </>
+      )}
     </div>
   );
 };
@@ -1158,6 +1288,9 @@ export const AlertDashboard = ({ getAuthHeader, user, onLogout, portfolioContent
                   )}
                 </div>
               )}
+
+              {/* Push Notifications Section */}
+              {canCreateAlerts && <PushNotificationSection getAuthHeader={getAuthHeader} />}
             </>
           ) : (
             /* Portfolio/Bag Tracker Content */

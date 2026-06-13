@@ -26,7 +26,13 @@ Build a cryptocurrency wallet analyzer with a **PIVOT to Price Alerts** as the p
 
 ## Completed Features
 
-### June 13, 2026 - Mobile Responsiveness Fix
+### June 13, 2026 - Push Notifications & Mobile Responsiveness
+- [x] **Push Notifications**: Browser push notifications for price alerts
+  - Service Worker for background notifications (`/app/frontend/public/sw.js`)
+  - VAPID authentication with generated keys
+  - Backend API for subscription management (`/api/push/*`)
+  - React hook `usePushNotifications` for frontend integration
+  - Works on mobile and desktop browsers (Chrome, Firefox, Edge, Safari)
 - [x] Fixed broken syntax in AlertDashboardV2.js (missing closing div tag)
 - [x] Mobile header (375px) with CRYPTOBAGTRACKER logo, ALERTS/BAG tabs, logout button
 - [x] Sidebar hidden on mobile (lg:hidden), visible on desktop (hidden lg:flex)
