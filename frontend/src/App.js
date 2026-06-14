@@ -781,7 +781,8 @@ function App() {
                   
                   {/* Action Buttons Row - Simplified for MVP */}
                   <div className="flex flex-wrap gap-2">
-                    {user.subscription_tier === 'free' && (
+                    {/* Upgrade button hidden during beta */}
+                    {/* {user.subscription_tier === 'free' && (
                       <Button 
                         onClick={() => setShowUpgradeModal(true)}
                         className="bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 h-8 text-xs md:text-sm"
@@ -790,7 +791,7 @@ function App() {
                         <Crown className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                         Upgrade
                       </Button>
-                    )}
+                    )} */}
                     {user.subscription_tier !== 'free' && (
                       <Button 
                         onClick={() => setShowAddDataModal(true)}
