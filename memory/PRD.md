@@ -107,11 +107,8 @@ Build a cryptocurrency wallet analyzer with a **PIVOT to Price Alerts** as the p
 
 ### Price Alerts Enhancements
 - [ ] Stock Price Alerts - Integrate Alpha Vantage API for stock pricing
-- [ ] Stripe Webhook Validation - Verify production webhook for subscription renewals
 - [ ] Alert history/triggered alerts log
-- [ ] Admin panel to manage/approve coin requests
-- [ ] Auto-add coins with high request counts
-- [ ] Community voting system for coin requests
+- [ ] Coin request form - Simple text box for users to enter coin details, sends email to admin
 
 ### UI/UX Polish
 - [ ] TaxSummaryDashboard internal styling polish
