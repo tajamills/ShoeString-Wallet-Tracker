@@ -94,16 +94,28 @@ Build a cryptocurrency wallet analyzer with a **PIVOT to Price Alerts** as the p
 
 ## Backlog / Future Features
 
-### Bag Tracker - CoinTracker Parity (P0 - Critical for Beta)
-- [ ] **Cost Basis / Lot Tracking** - Track each coin lot with acquisition date & cost (FIFO/LIFO/HIFO)
-- [ ] **Wallet Recognition** - Let users link multiple wallets; transfers between own wallets ≠ taxable event
-- [ ] **Transaction Classification** - Properly categorize: Buy, Sell, Transfer, Trade, Income (staking/airdrops)
-- [ ] **Current Token Holdings** - Show actual ERC-20/token balances, not just "tokens touched"
+### Bag Tracker - CoinTracker Parity (P0 - Backend COMPLETE)
+- [x] **Cost Basis / Lot Tracking** - Track each coin lot with acquisition date & cost (FIFO/LIFO/HIFO)
+- [x] **Wallet Recognition** - Let users link multiple wallets; transfers between own wallets ≠ taxable event
+- [x] **Transaction Classification** - Properly categorize: Buy, Sell, Transfer, Trade, Income (staking/airdrops)
+- [x] **Current Token Holdings** - Show actual ERC-20/token balances
+- [x] **Multi-Wallet Aggregation** - View all wallets as one unified portfolio
+- [ ] **Frontend UI** - Build UI to display linked wallets, holdings, cost basis, gains/losses
 - [ ] **Portfolio SMS Notifications** - Alert when portfolio value changes ±X% (via Zapier)
-- [ ] **Transaction Flow Visualization** - Show where funds came from / went to (counterparty labeling)
+- [ ] **Transaction Flow Visualization** - Show where funds came from / went to
 - [ ] **Known Address Database** - Auto-identify exchanges, DeFi protocols, CEXs
-- [ ] **Multi-Wallet Aggregation** - View all wallets as one unified portfolio
-- [ ] **Real-Time Portfolio Value** - Live updating dashboard with current prices
+
+**New API Endpoints:**
+- `POST /api/portfolio/wallets/link` - Link a wallet
+- `GET /api/portfolio/wallets` - Get linked wallets
+- `DELETE /api/portfolio/wallets/{id}` - Unlink wallet
+- `POST /api/portfolio/sync` - Sync wallet transactions
+- `GET /api/portfolio/holdings` - Get token holdings
+- `GET /api/portfolio/summary` - Portfolio summary with gains
+- `GET /api/portfolio/transactions` - Get classified transactions
+- `POST /api/portfolio/transactions/classify` - Manually classify tx
+- `GET /api/portfolio/tax-lots` - Get cost basis lots
+- `POST /api/portfolio/tax-lots` - Add manual lot
 
 ### Price Alerts Enhancements
 - [ ] Stock Price Alerts - Integrate Alpha Vantage API for stock pricing
