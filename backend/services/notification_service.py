@@ -87,7 +87,7 @@ class NotificationService:
             # Metadata
             "triggered_at": datetime.now(timezone.utc).isoformat(),
             "app_name": "Crypto Bag Tracker",
-            "app_url": "https://proceeds-validator.preview.emergentagent.com",
+            "app_url": os.environ.get("FRONTEND_URL", "https://cryptobagtracker.io"),
             
             # Pre-formatted message for easy use in Zapier
             "email_subject": f"🔔 Price Alert: {asset_symbol} - {alert_type_display}",

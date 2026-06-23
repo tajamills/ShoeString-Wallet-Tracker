@@ -177,7 +177,7 @@ async def create_checkout_session(user: dict = Depends(get_current_user)):
         trial_days = FREE_TRIAL_DAYS if not subscription.get("trial_used") else 0
         
         # Create Stripe checkout session
-        frontend_url = os.environ.get("FRONTEND_URL", "https://proceeds-validator.preview.emergentagent.com")
+        frontend_url = os.environ.get("FRONTEND_URL", "https://cryptobagtracker.io")
         
         session_params = {
             "mode": "subscription",
