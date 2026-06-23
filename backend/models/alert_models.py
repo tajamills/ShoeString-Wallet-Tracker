@@ -102,4 +102,4 @@ ALERT_TIERS = {
 
 # Stripe product/price IDs
 STRIPE_ALERT_PRODUCT_ID = "prod_UecNCOQUgkIyrk"
-STRIPE_ALERT_PRICE_ID = "price_1TfJ8WAXuTzNcQX7GPkmVilU"
+STRIPE_ALERT_PRICE_ID = "price_1TlXLVAXuTzNcQX7KQncGvdj"
