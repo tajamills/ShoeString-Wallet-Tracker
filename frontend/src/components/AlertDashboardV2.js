@@ -750,6 +750,20 @@ export const AlertDashboard = ({ getAuthHeader, user, onLogout, portfolioContent
 
   useEffect(() => {
     fetchData();
+    
+    // Handle payment redirect
+    const urlParams = new URLSearchParams(window.location.search);
+    const alertPayment = urlParams.get('alert_payment');
+    
+    if (alertPayment === 'canceled') {
+      setError('Payment was canceled. You can try again when ready.');
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (alertPayment === 'success') {
+      setSuccess('Payment successful! Your subscription is now active.');
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
   }, [fetchData]);
 
   const handleSubscribe = async () => {
