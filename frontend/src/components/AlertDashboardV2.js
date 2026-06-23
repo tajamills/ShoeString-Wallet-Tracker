@@ -751,15 +751,14 @@ export const AlertDashboard = ({ getAuthHeader, user, onLogout, portfolioContent
   useEffect(() => {
     fetchData();
     
+    // Reset loading state when component mounts (user returned from Stripe)
+    setActionLoading(false);
+    
     // Handle payment redirect
     const urlParams = new URLSearchParams(window.location.search);
-    const alertPayment = urlParams.get('alert_payment');
+    const sessionId = urlParams.get('session_id');
     
-    if (alertPayment === 'canceled') {
-      setError('Payment was canceled. You can try again when ready.');
-      // Clean up URL
-      window.history.replaceState({}, document.title, window.location.pathname);
-    } else if (alertPayment === 'success') {
+    if (sessionId) {
       setSuccess('Payment successful! Your subscription is now active.');
       // Clean up URL
       window.history.replaceState({}, document.title, window.location.pathname);
