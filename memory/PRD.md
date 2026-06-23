@@ -87,6 +87,12 @@ Build a cryptocurrency wallet analyzer with a **PIVOT to Price Alerts** as the p
 - [ ] Stripe Webhook Validation - Verify production webhook for subscription renewals
 
 ## Recently Completed (June 2026)
+- [x] **Exit Strategy Calculator** - NEW feature for planning crypto exits with tax calculations
+  - Tax profile configuration (capital gains rate presets)
+  - Multi-tier exit planning (sell X% at price Y)
+  - Automatic calculations: gross revenue, capital gains, tax owed, net take-home
+  - Visual bar chart breakdown by tier (Recharts)
+  - ROI display (before/after tax)
 - [x] Mobile Responsiveness - Fully responsive at 375px, 768px, 1920px viewports
 - [x] Coin Library & Request Feature - 195 coins including ISO 20022 compliant
 - [x] Professional Bloomberg Terminal design - Black/green theme

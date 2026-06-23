@@ -26,11 +26,13 @@ import {
   PaperPlaneTilt,
   ListBullets,
   Certificate,
-  DeviceMobile
+  DeviceMobile,
+  Calculator
 } from '@phosphor-icons/react';
 import { Input } from '@/components/ui/input';
 import axios from 'axios';
 import { usePushNotifications } from '../hooks/usePushNotifications';
+import ExitStrategyDashboard from './ExitStrategyDashboard';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -952,6 +954,19 @@ export const AlertDashboard = ({ getAuthHeader, user, onLogout, portfolioContent
               Bag Tracker
               <span className="text-[10px] border border-[#00C805]/30 text-[#00C805] px-1.5 py-0.5 ml-auto font-mono">BETA</span>
             </button>
+            <button
+              onClick={() => setActiveNav('exit-strategy')}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors ${
+                activeNav === 'exit-strategy' 
+                  ? 'bg-white text-black font-medium' 
+                  : 'text-[#8A8A93] hover:text-white hover:bg-[#161618]'
+              }`}
+              data-testid="nav-exit-strategy"
+            >
+              <Calculator size={18} weight={activeNav === 'exit-strategy' ? 'fill' : 'regular'} />
+              Exit Strategy
+              <span className="text-[10px] border border-[#00C805]/30 text-[#00C805] px-1.5 py-0.5 ml-auto font-mono">NEW</span>
+            </button>
           </nav>
 
           {/* Upgrade Card */}
@@ -1328,6 +1343,9 @@ export const AlertDashboard = ({ getAuthHeader, user, onLogout, portfolioContent
               {/* Push Notifications Section */}
               {canCreateAlerts && <PushNotificationSection getAuthHeader={getAuthHeader} />}
             </>
+          ) : activeNav === 'exit-strategy' ? (
+            /* Exit Strategy Calculator */
+            <ExitStrategyDashboard />
           ) : (
             /* Portfolio/Bag Tracker Content */
             <div data-testid="portfolio-content">

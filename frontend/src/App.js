@@ -30,6 +30,7 @@ import { TaxSummaryDashboard } from '@/components/TaxSummaryDashboard';
 import { AddDataModal } from '@/components/AddDataModal';
 import { AlertDashboard } from '@/components/AlertDashboardV2';
 import { LivePricesTicker } from '@/components/LivePricesTicker';
+import ExitStrategyDashboard from '@/components/ExitStrategyDashboard';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
