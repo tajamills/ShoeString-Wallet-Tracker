@@ -27,7 +27,7 @@ export const TermsModal = ({ isOpen, onAccept }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={() => {}}>
-      <DialogContent className="sm:max-w-4xl bg-[#0C0C0E] border-[#1F1F22] max-h-[95vh] overflow-hidden" hideCloseButton>
+      <DialogContent className="sm:max-w-4xl bg-[#0C0C0E] border-[#1F1F22] max-h-[90vh] overflow-y-auto" hideCloseButton>
         <DialogHeader>
           <DialogTitle className="text-white text-2xl flex items-center gap-2">
             <FileText className="w-6 h-6 text-blue-400" />
@@ -43,7 +43,7 @@ export const TermsModal = ({ isOpen, onAccept }) => {
         </Alert>
 
         <ScrollArea 
-          className="h-[50vh] pr-4 border border-[#1F1F22] rounded-lg"
+          className="h-[40vh] sm:h-[50vh] pr-4 border border-[#1F1F22] rounded-lg"
           onScrollCapture={handleScroll}
           ref={scrollRef}
         >
@@ -281,18 +281,21 @@ export const TermsModal = ({ isOpen, onAccept }) => {
         </ScrollArea>
 
         <div className="space-y-4 pt-4">
-          <button 
-            type="button"
-            onClick={() => setAgreed(!agreed)}
-            className="flex items-start space-x-3 p-4 bg-[#050505]/50 rounded-lg border border-[#1F1F22] w-full text-left"
-          >
-            <div className={`mt-1 w-5 h-5 min-w-[20px] border-2 rounded flex items-center justify-center ${agreed ? 'bg-white border-white' : 'border-[#1F1F22]'}`}>
-              {agreed && <span className="text-black text-sm font-bold">✓</span>}
-            </div>
-            <span className="text-sm text-white leading-relaxed">
+          <div className="flex items-start space-x-3 p-4 bg-[#050505]/50 rounded-lg border border-[#1F1F22]">
+            <Checkbox 
+              id="terms-agreement" 
+              checked={agreed}
+              onCheckedChange={setAgreed}
+              className="mt-1 border-[#1F1F22] data-[state=checked]:bg-white text-black"
+              data-testid="terms-checkbox"
+            />
+            <label 
+              htmlFor="terms-agreement" 
+              className="text-sm text-white cursor-pointer leading-relaxed"
+            >
               I have read and agree to the <span className="text-blue-400 font-semibold">Terms of Service</span>, <span className="text-blue-400 font-semibold">Privacy Policy</span>, and <span className="text-blue-400 font-semibold">Disclaimer</span>, and I understand that Crypto Bag Tracker provides informational blockchain analytics only, on a best-effort basis, with <span className="text-[#FFB800] font-semibold">no guarantee of accuracy or completeness</span>.
-            </span>
-          </button>
+            </label>
+          </div>
 
           <Button
             onClick={handleAccept}
