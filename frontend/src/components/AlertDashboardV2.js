@@ -1345,7 +1345,7 @@ export const AlertDashboard = ({ getAuthHeader, user, onLogout, portfolioContent
             </>
           ) : activeNav === 'exit-strategy' ? (
             /* Exit Strategy Calculator */
-            <ExitStrategyDashboard />
+            <ExitStrategyDashboard getAuthHeader={getAuthHeader} />
           ) : (
             /* Portfolio/Bag Tracker Content */
             <div data-testid="portfolio-content">
