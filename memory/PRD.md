@@ -10,7 +10,7 @@ Build a cryptocurrency wallet analyzer with a **PIVOT to Price Alerts** as the p
 - Price alerts for crypto (stocks coming later - P1 priority)
 - Alert triggers: Price thresholds AND percentage changes
 - Notifications: Telegram (unlimited, primary) + SMS (via Zapier webhook) - **NO EMAIL**
-- Pricing: Single tier $18.88/month unlimited alerts with 7-day free trial
+- Pricing: Single tier $8.88/month unlimited alerts with 7-day free trial
 - Keep existing tax tracker as "Bag Tracker Beta" tab (free for beta testers)
 - Alerts persist and keep triggering until deleted (with 1-hour cooldown)
 
@@ -19,7 +19,7 @@ Build a cryptocurrency wallet analyzer with a **PIVOT to Price Alerts** as the p
 - **Backend**: FastAPI (Python)
 - **Database**: MongoDB
 - **Price APIs**: CoinGecko (primary), Coinbase (fallback)
-- **Payments**: Stripe Live ($18.88/month with 7-day trial)
+- **Payments**: Stripe Live ($8.88/month with 7-day trial)
 - **Notifications**: Telegram Bot (unlimited), Zapier Webhook (SMS) - **NO EMAIL for alerts**
 - **Authentication**: Custom JWT-based auth
 - **Background Tasks**: alert_monitor.py for price polling
@@ -87,7 +87,18 @@ Build a cryptocurrency wallet analyzer with a **PIVOT to Price Alerts** as the p
 - [ ] Stripe Webhook Validation - Verify production webhook for subscription renewals
 
 ## Recently Completed (June 2026)
-- [x] **Exit Strategy Calculator** - NEW feature for planning crypto exits with tax calculations
+- [x] **Entry/Exit Strategy Planner** - NEW feature with auto-alert generation (June 23, 2026)
+  - Tab renamed from "Exit Strategy" to "Strategy Planner" with NEW badge
+  - Entry Targets: Buy when price drops (creates price_below alerts automatically)
+  - Exit Targets: Sell when price rises (creates price_above alerts automatically)
+  - Multi-asset support: Plan strategies for different crypto assets (BTC, ETH, etc.)
+  - Tax profile configuration (capital gains rate presets: 0%, 15%, 20%, 25%, 30%, 37%)
+  - Auto-alert creation: Saving a strategy automatically creates/updates/deletes price alerts
+  - Cascade delete: Deleting a strategy now also removes associated alerts
+  - Visual breakdown: Gross revenue, capital gains, tax owed, net take-home per tier
+  - Recharts bar chart for exit tier visualization
+  - ROI calculations before/after tax
+- [x] **Exit Strategy Calculator** - Base feature for planning crypto exits with tax calculations
   - Tax profile configuration (capital gains rate presets)
   - Multi-tier exit planning (sell X% at price Y)
   - Automatic calculations: gross revenue, capital gains, tax owed, net take-home
@@ -136,7 +147,7 @@ Build a cryptocurrency wallet analyzer with a **PIVOT to Price Alerts** as the p
 See `/app/memory/test_credentials.md`
 
 ## Subscription Model (Alerts)
-| Feature | Free Trial (7 days) | Unlimited ($18.88/mo) |
+| Feature | Free Trial (7 days) | Unlimited ($8.88/mo) |
 |---------|---------------------|----------------------|
 | Duration | 7 days | Ongoing |
 | Max Alerts | Unlimited | Unlimited |
@@ -213,6 +224,14 @@ See `/app/memory/test_credentials.md`
 - `GET /api/alerts/tiers` - Get pricing tiers
 - `GET /api/alerts/price/{type}/{symbol}` - Get current price
 - `GET /api/alerts/search` - Search for assets
+
+### Entry/Exit Strategy System
+- `GET /api/exit-strategy/strategies` - List user's strategies
+- `POST /api/exit-strategy/strategies` - Create strategy with auto-alert generation
+- `PUT /api/exit-strategy/strategies/{id}` - Update strategy (auto-manages alerts)
+- `DELETE /api/exit-strategy/strategies/{id}` - Delete strategy with cascade-delete of alerts
+- `POST /api/exit-strategy/strategies/{id}/create-alerts` - Manual alert creation (legacy)
+- `POST /api/exit-strategy/strategies/{id}/tiers/{tier_id}/mark-executed` - Mark tier as executed
 
 ### Stripe Integration
 - Product ID: prod_UecNCOQUgkIyrk

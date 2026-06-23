@@ -24,23 +24,48 @@ const ExitStrategyDashboard = ({ getAuthHeader }) => {
   const [newAssetSymbol, setNewAssetSymbol] = useState('');
   const [showNewAssetForm, setShowNewAssetForm] = useState(false);
 
-  const fetchStrategies = useCallback(async () => {
+  const fetchStrategies = useCallback(async (preserveSelection = false) => {
     if (!getAuthHeader) return;
     try {
       setLoading(true);
       const response = await axios.get(`${API}/exit-strategy/strategies`, { headers: getAuthHeader() });
-      setStrategies(response.data.strategies || []);
-      if (response.data.strategies?.length > 0 && !selectedAsset) {
-        const first = response.data.strategies[0];
-        setSelectedAsset(first.asset_symbol);
-        setCurrentStrategy(first);
+      const newStrategies = response.data.strategies || [];
+      setStrategies(newStrategies);
+      
+      // Only auto-select first item if no selection exists and not preserving
+      if (newStrategies.length > 0 && !preserveSelection) {
+        setSelectedAsset(prev => {
+          // If there's already a selection, keep it if the strategy still exists
+          if (prev) {
+            const existingStrategy = newStrategies.find(s => s.asset_symbol === prev);
+            if (existingStrategy) {
+              setCurrentStrategy(existingStrategy);
+              return prev;
+            }
+          }
+          // Otherwise select the first one
+          const first = newStrategies[0];
+          setCurrentStrategy(first);
+          return first.asset_symbol;
+        });
+      } else if (preserveSelection && newStrategies.length > 0) {
+        // Update currentStrategy with fresh data from server
+        setSelectedAsset(prev => {
+          if (prev) {
+            const updatedStrategy = newStrategies.find(s => s.asset_symbol === prev);
+            if (updatedStrategy) {
+              setCurrentStrategy(updatedStrategy);
+            }
+          }
+          return prev;
+        });
       }
     } catch (err) {
       console.error('Error fetching strategies:', err);
     } finally {
       setLoading(false);
     }
-  }, [getAuthHeader, selectedAsset]);
+  }, [getAuthHeader]);
 
   useEffect(() => { fetchStrategies(); }, [fetchStrategies]);
 
@@ -72,7 +97,8 @@ const ExitStrategyDashboard = ({ getAuthHeader }) => {
         setSuccess(`Strategy created with ${response.data.alerts_created || 0} alerts!`);
       }
       
-      await fetchStrategies();
+      // Preserve the current asset selection when refetching
+      await fetchStrategies(true);
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to save strategy');

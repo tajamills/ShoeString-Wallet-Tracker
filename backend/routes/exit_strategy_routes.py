@@ -294,7 +294,7 @@ async def update_exit_strategy(
         
         update_data["tiers"] = tiers
     
-    result = await db.exit_strategies.update_one(
+    await db.exit_strategies.update_one(
         {"user_id": user["id"], "strategy_id": strategy_id},
         {"$set": update_data}
     )
@@ -309,17 +309,34 @@ async def update_exit_strategy(
 
 @router.delete("/strategies/{strategy_id}")
 async def delete_exit_strategy(strategy_id: str, user: dict = Depends(get_current_user)):
-    """Delete an exit strategy"""
+    """Delete an exit strategy and its associated alerts"""
     
-    result = await db.exit_strategies.delete_one({
+    # First get the strategy to find associated alerts
+    strategy = await db.exit_strategies.find_one({
         "user_id": user["id"],
         "strategy_id": strategy_id
     })
     
-    if result.deleted_count == 0:
+    if not strategy:
         raise HTTPException(status_code=404, detail="Strategy not found")
     
-    return {"success": True, "message": "Strategy deleted"}
+    # Delete all alerts associated with this strategy's tiers
+    alert_ids = [tier.get("alert_id") for tier in strategy.get("tiers", []) if tier.get("alert_id")]
+    alerts_deleted = 0
+    if alert_ids:
+        delete_result = await db.alerts.delete_many({"alert_id": {"$in": alert_ids}})
+        alerts_deleted = delete_result.deleted_count
+    
+    # Also delete any alerts linked by exit_strategy_id
+    await db.alerts.delete_many({"exit_strategy_id": strategy_id})
+    
+    # Delete the strategy
+    await db.exit_strategies.delete_one({
+        "user_id": user["id"],
+        "strategy_id": strategy_id
+    })
+    
+    return {"success": True, "message": f"Strategy deleted with {alerts_deleted} associated alert(s)"}
 
 
 @router.post("/strategies/{strategy_id}/create-alerts")
