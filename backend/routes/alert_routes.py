@@ -186,8 +186,8 @@ async def create_checkout_session(user: dict = Depends(get_current_user)):
                 "price": STRIPE_ALERT_PRICE_ID,
                 "quantity": 1
             }],
-            "success_url": f"{frontend_url}?alert_payment=success&session_id={{CHECKOUT_SESSION_ID}}",
-            "cancel_url": f"{frontend_url}?alert_payment=canceled",
+            "success_url": f"{frontend_url}?session_id={{CHECKOUT_SESSION_ID}}",
+            "cancel_url": frontend_url,
             "customer_email": user_email,
             "client_reference_id": user_id,
             "metadata": {
