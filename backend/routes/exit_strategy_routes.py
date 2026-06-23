@@ -27,7 +27,8 @@ db = client[db_name]
 class ExitTier(BaseModel):
     tier_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
-    sell_percentage: float  # 0-100
+    tier_type: str = "exit"  # "entry" or "exit"
+    sell_percentage: float = 0  # For exit: % to sell. For entry: % of target position to buy
     target_price: float
     alert_created: bool = False
     alert_id: Optional[str] = None
@@ -102,7 +103,7 @@ async def create_exit_strategy(
     request: CreateExitStrategyRequest,
     user: dict = Depends(get_current_user)
 ):
-    """Create a new exit strategy for an asset"""
+    """Create a new exit strategy for an asset - auto-creates alerts"""
     
     # Check if strategy already exists for this asset
     existing = await db.exit_strategies.find_one({
@@ -116,14 +117,53 @@ async def create_exit_strategy(
             detail=f"Exit strategy for {request.asset_symbol} already exists. Update it instead."
         )
     
-    # Create tiers with IDs
+    # Create tiers with IDs and auto-create alerts
     tiers = []
+    alerts_created = 0
+    
     for i, tier_data in enumerate(request.tiers):
-        tiers.append(ExitTier(
-            name=tier_data.get("name", f"Tier {i+1}"),
-            sell_percentage=tier_data.get("sell_percentage", tier_data.get("sellPercentage", 25)),
-            target_price=tier_data.get("target_price", tier_data.get("targetPrice", 50000))
-        ).model_dump())
+        tier_type = tier_data.get("tier_type", "exit")
+        tier_id = str(uuid.uuid4())
+        alert_id = str(uuid.uuid4())
+        
+        # Determine alert type based on tier type
+        alert_type = "price_below" if tier_type == "entry" else "price_above"
+        action_word = "Buy" if tier_type == "entry" else "Sell"
+        percentage = tier_data.get("sell_percentage", tier_data.get("sellPercentage", 25))
+        target_price = tier_data.get("target_price", tier_data.get("targetPrice", 50000))
+        tier_name = tier_data.get("name", f"{'Entry' if tier_type == 'entry' else 'Exit'} {i+1}")
+        
+        # Create alert
+        alert_data = {
+            "alert_id": alert_id,
+            "user_id": user["id"],
+            "asset_symbol": request.asset_symbol.upper(),
+            "asset_type": "crypto",
+            "alert_type": alert_type,
+            "target_value": target_price,
+            "notification_method": "email",
+            "status": "active",
+            "note": f"{tier_type.upper()} STRATEGY: {tier_name} - {action_word} {percentage}% at ${target_price:,.2f}",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "is_exit_strategy": True,
+            "exit_strategy_id": None,  # Will update after strategy created
+            "exit_tier_id": tier_id
+        }
+        
+        await db.alerts.insert_one(alert_data)
+        alerts_created += 1
+        
+        tiers.append({
+            "tier_id": tier_id,
+            "name": tier_name,
+            "tier_type": tier_type,
+            "sell_percentage": percentage,
+            "target_price": target_price,
+            "alert_created": True,
+            "alert_id": alert_id,
+            "executed": False,
+            "executed_at": None
+        })
     
     strategy = ExitStrategy(
         user_id=user["id"],
@@ -136,10 +176,18 @@ async def create_exit_strategy(
     
     await db.exit_strategies.insert_one(strategy.model_dump())
     
+    # Update alerts with strategy ID
+    for tier in tiers:
+        await db.alerts.update_one(
+            {"alert_id": tier["alert_id"]},
+            {"$set": {"exit_strategy_id": strategy.strategy_id}}
+        )
+    
     return {
         "success": True,
         "strategy_id": strategy.strategy_id,
-        "message": f"Exit strategy created for {request.asset_symbol}"
+        "alerts_created": alerts_created,
+        "message": f"Strategy created for {request.asset_symbol} with {alerts_created} alert(s)"
     }
 
 
@@ -149,9 +197,20 @@ async def update_exit_strategy(
     request: UpdateExitStrategyRequest,
     user: dict = Depends(get_current_user)
 ):
-    """Update an exit strategy"""
+    """Update an exit strategy - auto-manages alerts"""
+    
+    # Get existing strategy
+    existing = await db.exit_strategies.find_one({
+        "user_id": user["id"],
+        "strategy_id": strategy_id
+    })
+    
+    if not existing:
+        raise HTTPException(status_code=404, detail="Strategy not found")
     
     update_data = {"updated_at": datetime.now(timezone.utc)}
+    alerts_created = 0
+    alerts_deleted = 0
     
     if request.quantity is not None:
         update_data["quantity"] = request.quantity
@@ -159,20 +218,80 @@ async def update_exit_strategy(
         update_data["average_cost_basis"] = request.average_cost_basis
     if request.tax_rate is not None:
         update_data["tax_rate"] = request.tax_rate
+    
     if request.tiers is not None:
+        # Get existing tier IDs to track deletions
+        existing_tier_ids = {t["tier_id"] for t in existing.get("tiers", [])}
+        new_tier_ids = set()
+        
         # Process tiers
         tiers = []
         for i, tier_data in enumerate(request.tiers):
+            tier_id = tier_data.get("tier_id", str(uuid.uuid4()))
+            new_tier_ids.add(tier_id)
+            
+            tier_type = tier_data.get("tier_type", "exit")
+            percentage = tier_data.get("sell_percentage", tier_data.get("sellPercentage", 25))
+            target_price = tier_data.get("target_price", tier_data.get("targetPrice", 50000))
+            tier_name = tier_data.get("name", f"{'Entry' if tier_type == 'entry' else 'Exit'} {i+1}")
+            
+            # Check if tier already has an alert
+            existing_alert_id = tier_data.get("alert_id")
+            alert_type = "price_below" if tier_type == "entry" else "price_above"
+            action_word = "Buy" if tier_type == "entry" else "Sell"
+            
+            if existing_alert_id:
+                # Update existing alert
+                await db.alerts.update_one(
+                    {"alert_id": existing_alert_id},
+                    {"$set": {
+                        "alert_type": alert_type,
+                        "target_value": target_price,
+                        "note": f"{tier_type.upper()} STRATEGY: {tier_name} - {action_word} {percentage}% at ${target_price:,.2f}",
+                        "status": "active" if not tier_data.get("executed") else "triggered"
+                    }}
+                )
+                alert_id = existing_alert_id
+            else:
+                # Create new alert
+                alert_id = str(uuid.uuid4())
+                alert_data = {
+                    "alert_id": alert_id,
+                    "user_id": user["id"],
+                    "asset_symbol": existing["asset_symbol"],
+                    "asset_type": "crypto",
+                    "alert_type": alert_type,
+                    "target_value": target_price,
+                    "notification_method": "email",
+                    "status": "active",
+                    "note": f"{tier_type.upper()} STRATEGY: {tier_name} - {action_word} {percentage}% at ${target_price:,.2f}",
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "is_exit_strategy": True,
+                    "exit_strategy_id": strategy_id,
+                    "exit_tier_id": tier_id
+                }
+                await db.alerts.insert_one(alert_data)
+                alerts_created += 1
+            
             tiers.append({
-                "tier_id": tier_data.get("tier_id", str(uuid.uuid4())),
-                "name": tier_data.get("name", f"Tier {i+1}"),
-                "sell_percentage": tier_data.get("sell_percentage", tier_data.get("sellPercentage", 25)),
-                "target_price": tier_data.get("target_price", tier_data.get("targetPrice", 50000)),
-                "alert_created": tier_data.get("alert_created", False),
-                "alert_id": tier_data.get("alert_id"),
+                "tier_id": tier_id,
+                "name": tier_name,
+                "tier_type": tier_type,
+                "sell_percentage": percentage,
+                "target_price": target_price,
+                "alert_created": True,
+                "alert_id": alert_id,
                 "executed": tier_data.get("executed", False),
                 "executed_at": tier_data.get("executed_at")
             })
+        
+        # Delete alerts for removed tiers
+        removed_tier_ids = existing_tier_ids - new_tier_ids
+        for old_tier in existing.get("tiers", []):
+            if old_tier["tier_id"] in removed_tier_ids and old_tier.get("alert_id"):
+                await db.alerts.delete_one({"alert_id": old_tier["alert_id"]})
+                alerts_deleted += 1
+        
         update_data["tiers"] = tiers
     
     result = await db.exit_strategies.update_one(
@@ -180,10 +299,12 @@ async def update_exit_strategy(
         {"$set": update_data}
     )
     
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Strategy not found")
-    
-    return {"success": True, "message": "Strategy updated"}
+    return {
+        "success": True,
+        "message": "Strategy updated",
+        "alerts_created": alerts_created,
+        "alerts_deleted": alerts_deleted
+    }
 
 
 @router.delete("/strategies/{strategy_id}")

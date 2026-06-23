@@ -964,7 +964,7 @@ export const AlertDashboard = ({ getAuthHeader, user, onLogout, portfolioContent
               data-testid="nav-exit-strategy"
             >
               <Calculator size={18} weight={activeNav === 'exit-strategy' ? 'fill' : 'regular'} />
-              Exit Strategy
+              Strategy Planner
               <span className="text-[10px] border border-[#00C805]/30 text-[#00C805] px-1.5 py-0.5 ml-auto font-mono">NEW</span>
             </button>
           </nav>
