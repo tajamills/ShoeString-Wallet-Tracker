@@ -281,26 +281,23 @@ export const TermsModal = ({ isOpen, onAccept }) => {
         </ScrollArea>
 
         <div className="space-y-4 pt-4">
-          <div className="flex items-start space-x-3 p-4 bg-[#050505]/50 rounded-lg border border-[#1F1F22]">
-            <Checkbox 
-              id="terms-agreement" 
-              checked={agreed}
-              onCheckedChange={setAgreed}
-              className="mt-1 border-[#1F1F22] data-[state=checked]:bg-white text-black"
-              data-testid="terms-checkbox"
-            />
-            <label 
-              htmlFor="terms-agreement" 
-              className="text-sm text-white cursor-pointer leading-relaxed"
-            >
+          <button 
+            type="button"
+            onClick={() => setAgreed(!agreed)}
+            className="flex items-start space-x-3 p-4 bg-[#050505]/50 rounded-lg border border-[#1F1F22] w-full text-left"
+          >
+            <div className={`mt-1 w-5 h-5 min-w-[20px] border-2 rounded flex items-center justify-center ${agreed ? 'bg-white border-white' : 'border-[#1F1F22]'}`}>
+              {agreed && <span className="text-black text-sm font-bold">✓</span>}
+            </div>
+            <span className="text-sm text-white leading-relaxed">
               I have read and agree to the <span className="text-blue-400 font-semibold">Terms of Service</span>, <span className="text-blue-400 font-semibold">Privacy Policy</span>, and <span className="text-blue-400 font-semibold">Disclaimer</span>, and I understand that Crypto Bag Tracker provides informational blockchain analytics only, on a best-effort basis, with <span className="text-[#FFB800] font-semibold">no guarantee of accuracy or completeness</span>.
-            </label>
-          </div>
+            </span>
+          </button>
 
           <Button
             onClick={handleAccept}
             disabled={!agreed}
-            className="w-full bg-white text-black hover:bg-gray-200 disabled:bg-[#161618] disabled:text-[#8A8A93]500 h-12 text-lg"
+            className="w-full bg-white text-black hover:bg-gray-200 disabled:bg-[#161618] disabled:text-[#8A8A93] h-12 text-lg"
             data-testid="accept-terms-btn"
           >
             {agreed ? 'I Accept - Continue to Crypto Bag Tracker' : 'Please read and accept the Terms of Service'}
