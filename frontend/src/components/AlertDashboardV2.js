@@ -843,32 +843,60 @@ export const AlertDashboard = ({ getAuthHeader, user, onLogout, portfolioContent
   return (
     <div className="min-h-screen bg-[#050505]">
       {/* Mobile Header - Only visible on small screens */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-[#0C0C0E] border-b border-[#1F1F22] px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-white flex items-center justify-center">
-            <ChartLineUp size={14} weight="bold" className="text-black" />
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-[#0C0C0E] border-b border-[#1F1F22]">
+        <div className="px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 bg-white flex items-center justify-center">
+              <ChartLineUp size={14} weight="bold" className="text-black" />
+            </div>
+            <span className="text-white font-semibold text-xs">
+              CRYPTOBAG<span className="text-[#8A8A93]">TRACKER</span>
+            </span>
           </div>
-          <span className="text-white font-semibold text-xs">
-            CRYPTOBAG<span className="text-[#8A8A93]">TRACKER</span>
-          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setActiveNav('alerts')}
+              className={`px-3 py-1.5 text-xs font-mono ${activeNav === 'alerts' ? 'bg-white text-black' : 'text-[#8A8A93]'}`}
+            >
+              ALERTS
+            </button>
+            <button
+              onClick={() => setActiveNav('portfolio')}
+              className={`px-3 py-1.5 text-xs font-mono ${activeNav === 'portfolio' ? 'bg-white text-black' : 'text-[#8A8A93]'}`}
+            >
+              BAG
+            </button>
+            <button onClick={onLogout} className="p-1.5 text-[#8A8A93]">
+              <SignOut size={18} />
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setActiveNav('alerts')}
-            className={`px-3 py-1.5 text-xs font-mono ${activeNav === 'alerts' ? 'bg-white text-black' : 'text-[#8A8A93]'}`}
-          >
-            ALERTS
-          </button>
-          <button
-            onClick={() => setActiveNav('portfolio')}
-            className={`px-3 py-1.5 text-xs font-mono ${activeNav === 'portfolio' ? 'bg-white text-black' : 'text-[#8A8A93]'}`}
-          >
-            BAG
-          </button>
-          <button onClick={onLogout} className="p-1.5 text-[#8A8A93]">
-            <SignOut size={18} />
-          </button>
-        </div>
+        
+        {/* Mobile Subscription Banner */}
+        {activeNav === 'alerts' && !canCreateAlerts && (
+          <div className="px-4 py-2 bg-[#161618] border-t border-[#1F1F22]">
+            <div className="flex items-center justify-between">
+              <span className="text-[#8A8A93] text-xs">Trial expired</span>
+              <button
+                onClick={handleSubscribe}
+                disabled={actionLoading}
+                className="bg-[#00C805] text-black px-3 py-1 text-xs font-semibold"
+              >
+                {actionLoading ? 'LOADING...' : 'SUBSCRIBE $18.88/MO'}
+              </button>
+            </div>
+          </div>
+        )}
+        
+        {/* Mobile Trial Banner */}
+        {activeNav === 'alerts' && subscription?.status === 'trialing' && daysRemaining > 0 && (
+          <div className="px-4 py-2 bg-[#161618] border-t border-[#1F1F22]">
+            <div className="flex items-center justify-between">
+              <span className="text-[#8A8A93] text-xs">{daysRemaining} day{daysRemaining !== 1 ? 's' : ''} left in trial</span>
+              <span className="text-[#00C805] text-xs font-mono">AUTO-RENEWS</span>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex">
