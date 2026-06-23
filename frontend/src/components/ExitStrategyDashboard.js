@@ -238,6 +238,7 @@ const ExitStrategyDashboard = ({ getAuthHeader }) => {
           <h2 className="text-white font-semibold text-sm">SELECT ASSET</h2>
         </div>
         <div className="flex flex-wrap gap-2">
+          {/* Show saved strategies */}
           {strategies.map(s => (
             <button
               key={s.asset_symbol}
@@ -252,6 +253,16 @@ const ExitStrategyDashboard = ({ getAuthHeader }) => {
               {s.tiers?.length > 0 && <Bell className="w-3 h-3 inline ml-1" />}
             </button>
           ))}
+          
+          {/* Show current unsaved asset if it's not in saved strategies */}
+          {selectedAsset && !strategies.find(s => s.asset_symbol === selectedAsset) && (
+            <button
+              className="px-4 py-2 font-mono text-sm border bg-[#00C805] text-black border-[#00C805]"
+            >
+              {selectedAsset}
+              <span className="text-[10px] ml-1 opacity-70">(unsaved)</span>
+            </button>
+          )}
           
           {showNewAssetForm ? (
             <div className="flex items-center gap-2">
@@ -315,7 +326,7 @@ const ExitStrategyDashboard = ({ getAuthHeader }) => {
                 value={currentStrategy.quantity}
                 onChange={(e) => setCurrentStrategy({ ...currentStrategy, quantity: parseFloat(e.target.value) || 0 })}
                 className="w-full bg-[#161618] border border-[#1F1F22] text-white px-3 py-2 font-mono focus:outline-none focus:ring-1 focus:ring-[#00C805]"
-                step="0.0001"
+                step="any"
               />
             </div>
             <div>
@@ -325,6 +336,7 @@ const ExitStrategyDashboard = ({ getAuthHeader }) => {
                 value={currentStrategy.average_cost_basis}
                 onChange={(e) => setCurrentStrategy({ ...currentStrategy, average_cost_basis: parseFloat(e.target.value) || 0 })}
                 className="w-full bg-[#161618] border border-[#1F1F22] text-white px-3 py-2 font-mono focus:outline-none focus:ring-1 focus:ring-[#00C805]"
+                step="any"
               />
             </div>
           </div>
@@ -355,32 +367,22 @@ const ExitStrategyDashboard = ({ getAuthHeader }) => {
           </div>
         ) : (
           <div className="p-4 space-y-3">
-            {entryTiers.map((tier) => (
+            {entryTiers.map((tier, index) => (
               <div key={tier.tier_id} className="bg-[#161618] border border-[#1F1F22] p-4 flex flex-wrap items-center gap-4">
-                <input
-                  type="text"
-                  value={tier.name}
-                  onChange={(e) => updateTier(tier.tier_id, 'name', e.target.value)}
-                  className="w-28 bg-[#0C0C0E] border border-[#1F1F22] text-white px-2 py-1.5 font-mono text-sm"
-                />
-                <div className="flex items-center gap-2">
-                  <span className="text-[#8A8A93] text-xs">BUY</span>
-                  <input
-                    type="number"
-                    value={tier.sell_percentage}
-                    onChange={(e) => updateTier(tier.tier_id, 'sell_percentage', e.target.value)}
-                    className="w-16 bg-[#0C0C0E] border border-[#1F1F22] text-white px-2 py-1.5 font-mono text-sm text-right"
-                  />
-                  <span className="text-[#8A8A93] text-xs">%</span>
+                <div className="bg-[#3B82F6]/20 border border-[#3B82F6]/40 px-3 py-1.5 text-[#3B82F6] font-mono text-sm font-semibold">
+                  ENTRY {index + 1}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[#8A8A93] text-xs">WHEN PRICE ≤</span>
+                  <span className="text-[#8A8A93] text-xs">ALERT WHEN</span>
+                  <span className="text-white font-mono">{currentStrategy.asset_symbol}</span>
+                  <span className="text-[#8A8A93] text-xs">DROPS TO</span>
                   <span className="text-[#8A8A93]">$</span>
                   <input
                     type="number"
                     value={tier.target_price}
                     onChange={(e) => updateTier(tier.tier_id, 'target_price', e.target.value)}
                     className="w-28 bg-[#0C0C0E] border border-[#1F1F22] text-white px-2 py-1.5 font-mono text-sm text-right"
+                    step="any"
                   />
                 </div>
                 {tier.alert_created && <Bell className="w-4 h-4 text-[#3B82F6]" />}
@@ -430,19 +432,20 @@ const ExitStrategyDashboard = ({ getAuthHeader }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {exitCalculations.map((tier) => (
+                  {exitCalculations.map((tier, index) => (
                     <tr key={tier.tier_id} className="border-b border-[#1F1F22] hover:bg-[#161618]">
                       <td className="px-4 py-3">
-                        <input type="text" value={tier.name} onChange={(e) => updateTier(tier.tier_id, 'name', e.target.value)}
-                          className="w-24 bg-transparent border-b border-transparent hover:border-[#1F1F22] text-white font-mono text-sm focus:outline-none focus:border-[#00C805]" />
+                        <span className="bg-[#00C805]/20 border border-[#00C805]/40 px-2 py-1 text-[#00C805] font-mono text-sm font-semibold">
+                          EXIT {index + 1}
+                        </span>
                       </td>
                       <td className="px-4 py-3">
                         <input type="number" value={tier.sell_percentage} onChange={(e) => updateTier(tier.tier_id, 'sell_percentage', e.target.value)}
-                          className="w-20 bg-[#161618] border border-[#1F1F22] text-white px-2 py-1 text-right font-mono text-sm" min="0" max="100" />
+                          className="w-20 bg-[#161618] border border-[#1F1F22] text-white px-2 py-1 text-right font-mono text-sm" min="0" max="100" step="any" />
                       </td>
                       <td className="px-4 py-3">
                         <input type="number" value={tier.target_price} onChange={(e) => updateTier(tier.tier_id, 'target_price', e.target.value)}
-                          className="w-28 bg-[#161618] border border-[#1F1F22] text-white px-2 py-1 text-right font-mono text-sm" min="0" />
+                          className="w-28 bg-[#161618] border border-[#1F1F22] text-white px-2 py-1 text-right font-mono text-sm" min="0" step="any" />
                       </td>
                       <td className="px-4 py-3 text-right font-mono text-[#8A8A93]">{formatNumber(tier.tokensSold)}</td>
                       <td className="px-4 py-3 text-right font-mono text-white">{formatCurrency(tier.grossRevenue)}</td>
@@ -468,11 +471,12 @@ const ExitStrategyDashboard = ({ getAuthHeader }) => {
 
             {/* Mobile Cards */}
             <div className="md:hidden p-4 space-y-3">
-              {exitCalculations.map((tier) => (
+              {exitCalculations.map((tier, index) => (
                 <div key={tier.tier_id} className="bg-[#161618] border border-[#1F1F22] p-4 space-y-3">
                   <div className="flex items-center justify-between">
-                    <input type="text" value={tier.name} onChange={(e) => updateTier(tier.tier_id, 'name', e.target.value)}
-                      className="bg-transparent text-white font-mono font-bold focus:outline-none" />
+                    <span className="bg-[#00C805]/20 border border-[#00C805]/40 px-2 py-1 text-[#00C805] font-mono text-sm font-semibold">
+                      EXIT {index + 1}
+                    </span>
                     <div className="flex items-center gap-2">
                       {tier.alert_created && <Bell className="w-4 h-4 text-[#00C805]" />}
                       <button onClick={() => removeTier(tier.tier_id)} className="text-[#8A8A93] hover:text-[#FF3B30]"><Trash className="w-4 h-4" /></button>
@@ -482,12 +486,12 @@ const ExitStrategyDashboard = ({ getAuthHeader }) => {
                     <div>
                       <label className="text-[#8A8A93] text-xs block mb-1">SELL %</label>
                       <input type="number" value={tier.sell_percentage} onChange={(e) => updateTier(tier.tier_id, 'sell_percentage', e.target.value)}
-                        className="w-full bg-[#0C0C0E] border border-[#1F1F22] text-white px-2 py-1.5 font-mono text-sm" />
+                        className="w-full bg-[#0C0C0E] border border-[#1F1F22] text-white px-2 py-1.5 font-mono text-sm" step="any" />
                     </div>
                     <div>
                       <label className="text-[#8A8A93] text-xs block mb-1">TARGET ($)</label>
                       <input type="number" value={tier.target_price} onChange={(e) => updateTier(tier.tier_id, 'target_price', e.target.value)}
-                        className="w-full bg-[#0C0C0E] border border-[#1F1F22] text-white px-2 py-1.5 font-mono text-sm" />
+                        className="w-full bg-[#0C0C0E] border border-[#1F1F22] text-white px-2 py-1.5 font-mono text-sm" step="any" />
                     </div>
                   </div>
                   <div className="pt-2 border-t border-[#1F1F22] space-y-1 text-sm">
