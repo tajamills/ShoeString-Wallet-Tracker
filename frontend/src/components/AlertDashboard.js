@@ -478,7 +478,7 @@ const SubscriptionBanner = ({ subscription, onSubscribe, loading }) => {
           className="bg-white text-black font-medium px-5 py-2 rounded-lg hover:bg-white/90 transition-colors text-sm"
           data-testid="subscribe-expired-btn"
         >
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Subscribe — $18.88/mo'}
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Subscribe — $8.88/mo'}
         </button>
       </div>
     );
@@ -502,7 +502,7 @@ const SubscriptionBanner = ({ subscription, onSubscribe, loading }) => {
       >
         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Start Free Trial'}
       </button>
-      <p className="text-white/30 text-xs mt-3">7 days free, then $18.88/month</p>
+      <p className="text-white/30 text-xs mt-3">7 days free, then $8.88/month</p>
     </div>
   );
 };

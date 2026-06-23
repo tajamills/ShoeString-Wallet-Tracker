@@ -41,7 +41,7 @@ export const usePayment = (user, getAuthHeader, fetchUserProfile) => {
         if (typeof window.gtag === 'function') {
           window.gtag('event', 'conversion', {
             'send_to': 'AW-18133757900/9gFsCOewzagcEMzf7MZD',
-            'value': 18.88,
+            'value': 8.88,
             'currency': 'USD',
             'transaction_id': sessionId
           });

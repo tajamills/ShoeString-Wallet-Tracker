@@ -882,7 +882,7 @@ export const AlertDashboard = ({ getAuthHeader, user, onLogout, portfolioContent
                 disabled={actionLoading}
                 className="bg-[#00C805] text-black px-3 py-1 text-xs font-semibold"
               >
-                {actionLoading ? 'LOADING...' : 'SUBSCRIBE $18.88/MO'}
+                {actionLoading ? 'LOADING...' : 'SUBSCRIBE $8.88/MO'}
               </button>
             </div>
           </div>
