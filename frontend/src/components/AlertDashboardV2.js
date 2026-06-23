@@ -873,12 +873,7 @@ export const AlertDashboard = ({ getAuthHeader, user, onLogout, portfolioContent
             >
               ALERTS
             </button>
-            <button
-              onClick={() => setActiveNav('portfolio')}
-              className={`px-3 py-1.5 text-xs font-mono ${activeNav === 'portfolio' ? 'bg-white text-black' : 'text-[#8A8A93]'}`}
-            >
-              BAG
-            </button>
+            {/* BAG tab hidden on mobile for now */}
             <button onClick={onLogout} className="p-1.5 text-[#8A8A93]">
               <SignOut size={18} />
             </button>
