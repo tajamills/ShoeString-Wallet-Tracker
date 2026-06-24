@@ -868,14 +868,19 @@ export const AlertDashboard = ({ getAuthHeader, user, onLogout, portfolioContent
               CRYPTOBAG<span className="text-[#8A8A93]">TRACKER</span>
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <button
               onClick={() => setActiveNav('alerts')}
-              className={`px-3 py-1.5 text-xs font-mono ${activeNav === 'alerts' ? 'bg-white text-black' : 'text-[#8A8A93]'}`}
+              className={`px-2 py-1.5 text-[10px] font-mono ${activeNav === 'alerts' ? 'bg-white text-black' : 'text-[#8A8A93]'}`}
             >
               ALERTS
             </button>
-            {/* BAG tab hidden on mobile for now */}
+            <button
+              onClick={() => setActiveNav('exit-strategy')}
+              className={`px-2 py-1.5 text-[10px] font-mono ${activeNav === 'exit-strategy' ? 'bg-white text-black' : 'text-[#8A8A93]'}`}
+            >
+              STRATEGY
+            </button>
             <button onClick={onLogout} className="p-1.5 text-[#8A8A93]">
               <SignOut size={18} />
             </button>
