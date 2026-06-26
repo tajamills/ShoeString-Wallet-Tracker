@@ -389,7 +389,9 @@ async def handle_stripe_webhook(request: Request):
                     logger.warning(f"Payment failed for user {user['id']}")
         
         return {"status": "success"}
-        
+    
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Stripe webhook processing error: {str(e)}")
         raise HTTPException(status_code=500, detail="Webhook processing failed")

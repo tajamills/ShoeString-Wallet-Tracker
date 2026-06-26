@@ -231,13 +231,11 @@ async def handle_alert_stripe_webhook(request: Request):
     webhook_secret = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
     
     try:
-        if webhook_secret:
-            event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
-        else:
-            # For testing without webhook signature verification
-            import json
-            event = json.loads(payload)
-            event = stripe.Event.construct_from(event, stripe.api_key)
+        if not webhook_secret:
+            logger.error("STRIPE_WEBHOOK_SECRET not configured - rejecting webhook")
+            raise HTTPException(status_code=500, detail="Webhook secret not configured")
+        
+        event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
         
         event_type = event["type"]
         data = event["data"]["object"]
