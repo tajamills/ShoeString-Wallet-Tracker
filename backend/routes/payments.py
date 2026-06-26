@@ -223,6 +223,22 @@ async def handle_stripe_webhook(request: Request):
                     }
                 )
                 
+                # Also update alert_subscriptions for the alerts system
+                await db.alert_subscriptions.update_one(
+                    {"user_id": user_id},
+                    {
+                        "$set": {
+                            "status": "active",
+                            "tier": "unlimited",
+                            "stripe_subscription_id": subscription_id,
+                            "stripe_customer_id": customer_id,
+                            "updated_at": datetime.now(timezone.utc)
+                        }
+                    },
+                    upsert=True
+                )
+                logger.info(f"Updated alert subscription to active for user {user_id}")
+                
                 await db.payment_transactions.update_one(
                     {"session_id": session_id},
                     {
@@ -287,14 +303,22 @@ async def handle_stripe_webhook(request: Request):
             
             if user:
                 update_data = {"subscription_status": status}
+                alert_status = "active" if status == "active" else status
                 
                 if status in ['canceled', 'unpaid']:
                     update_data["subscription_tier"] = "free"
+                    alert_status = "expired"
                     logger.info(f"User {user['id']} subscription {status}, downgraded to free")
                 
                 await db.users.update_one(
                     {"id": user["id"]},
                     {"$set": update_data}
+                )
+                
+                # Also update alert_subscriptions
+                await db.alert_subscriptions.update_one(
+                    {"user_id": user["id"]},
+                    {"$set": {"status": alert_status, "updated_at": datetime.now(timezone.utc)}}
                 )
         
         elif event_type == 'customer.subscription.deleted':
@@ -314,6 +338,13 @@ async def handle_stripe_webhook(request: Request):
                         }
                     }
                 )
+                
+                # Also update alert_subscriptions
+                await db.alert_subscriptions.update_one(
+                    {"user_id": user["id"]},
+                    {"$set": {"status": "expired", "tier": "expired", "updated_at": datetime.now(timezone.utc)}}
+                )
+                
                 logger.info(f"User {user['id']} subscription canceled, downgraded to free")
                 
                 try:

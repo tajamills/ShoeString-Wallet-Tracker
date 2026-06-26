@@ -1,0 +1,40 @@
+{
+  "summary": "Tested Stripe webhook fix (alert_subscriptions update) and mobile UI changes. Backend: 8/8 pytest cases pass — both /api/payments/webhook/stripe and /api/alerts/webhook/stripe exist, reject invalid/missing Stripe signatures, and the payments webhook source correctly upserts the alert_subscriptions collection on checkout.session.completed, customer.subscription.updated, and customer.subscription.deleted events. Frontend: mobile header shows ALERTS | STRATEGY tabs, clicking STRATEGY loads the ENTRY & EXIT STRATEGY dashboard, and UNLOCK ACCESS sidebar card is correctly hidden for trialing/active users.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/payments/webhook/stripe", "issue": "On signature failure the handler raises HTTPException(400) inside the outer try/except, which then re-wraps it as 500 'Webhook processing failed' (see except Exception at line 393). Stripe expects 400 for sig errors so it can stop retrying. Add an explicit `except HTTPException: raise` before the broad except."},
+      {"endpoint": "POST /api/alerts/webhook/stripe", "issue": "Same wrapper issue — SignatureVerificationError is caught and re-raised as HTTPException(400) but the trailing `except Exception as e` block returns 500. Returns 500 for invalid signatures (verified: returns 500 in live test) instead of 400."},
+      {"endpoint": "POST /api/alerts/webhook/stripe", "issue": "If STRIPE_WEBHOOK_SECRET is empty the code constructs the event WITHOUT signature verification (testing fallback). This is a security risk in production — guard with an env flag or remove entirely."},
+      {"endpoint": "/api/payments/webhook/stripe customer.subscription.updated", "issue": "Mapping is partial: only sets alert_subscriptions.status (not tier). When Stripe sends status='past_due' or 'trialing', tier in alert_subscriptions is never refreshed. Consider mirroring full status_map used in alert_routes.py."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_stripe_webhooks.py",
+    "/app/test_reports/pytest/stripe_webhooks_results.xml"
+  ],
+  "action_items": [
+    "In /app/backend/routes/payments.py handle_stripe_webhook(): add `except HTTPException: raise` before `except Exception as e:` so 400 signature errors are not re-wrapped as 500. Stripe needs 400 to distinguish bad signatures from server errors.",
+    "Remove or env-gate the no-secret fallback branch in alert_routes.handle_alert_stripe_webhook (lines 234-240) — never accept unsigned webhooks in production.",
+    "Consider unifying both webhook handlers (payments + alerts) into a single endpoint to avoid divergent logic (e.g., alerts webhook handles 'past_due', payments webhook does not)."
+  ],
+  "critical_code_review_comments": [
+    "Two Stripe webhook endpoints exist (/api/payments/webhook/stripe and /api/alerts/webhook/stripe) doing partially overlapping work on db.alert_subscriptions. This duplication will cause drift; consolidate to one endpoint.",
+    "payments.py line 393-395 swallows specific 400 HTTPExceptions (signature/payload errors) into a generic 500. Verified in live test — POST with invalid signature returns 500, not 400. Add `except HTTPException: raise` before the bare exception handler.",
+    "alert_routes.py L234-240 falls back to parsing the event WITHOUT signature verification when STRIPE_WEBHOOK_SECRET is missing/empty. Production-unsafe.",
+    "In payments.py customer.subscription.updated branch, alert_subscriptions only gets status updated. If subscription becomes 'past_due', tier stays as previous value — keep tier in sync (e.g., set tier='expired' when status in ['canceled','unpaid','past_due'])."
+  ],
+  "updated_files": ["/app/backend/tests/test_stripe_webhooks.py", "/app/test_reports/pytest/stripe_webhooks_results.xml"],
+  "success_rate": {"backend": "100% (8/8 pytest)", "frontend": "100% (3/3 review-request flows verified)"},
+  "test_credentials": "mobiletest@test.com / test123456 — verified working (status=trialing, 3 days remaining)",
+  "seed_data_creation": "None. Tests use static fake Stripe payloads with invalid signatures (rejected as expected) so no DB rows are created.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Stripe webhook signature verification cannot be tested end-to-end (no Stripe CLI / valid webhook secret signing in CI). Tests verify endpoint existence, signature rejection, and that the payments webhook source code contains the alert_subscriptions update logic in all three relevant event branches. The mobile STRATEGY tab and trial-user UNLOCK ACCESS hiding both work as expected. Test user mobiletest@test.com is currently 'trialing' with tier='expired' (odd combination — trialing users may have stale tier='expired' from prior trial end; verify this is intentional). Existing test alerts in DB: 28 alerts for mobiletest user including leftover TESTUI/TESTCOIN entries from iteration 33.",
+  "rca of the issue": "Original bug RCA confirmed: payments webhook only updated `users` collection. Fix verified by source inspection: handler now upserts alert_subscriptions on checkout.session.completed (lines 227-240), customer.subscription.updated (lines 319-322), and customer.subscription.deleted (lines 343-346). Live signature-rejection works but returns 500 instead of 400 (minor handler bug noted above)."
+}
